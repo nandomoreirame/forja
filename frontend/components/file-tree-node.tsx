@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { FileIcon } from "./file-icon";
 import { useFileTreeStore, type FileNode } from "@/stores/file-tree";
+import { useFilePreviewStore } from "@/stores/file-preview";
 
 interface FileTreeNodeProps {
   node: FileNode;
@@ -8,12 +9,16 @@ interface FileTreeNodeProps {
 }
 
 export function FileTreeNode({ node, depth }: FileTreeNodeProps) {
-  const { isExpanded, toggleExpanded } = useFileTreeStore();
+  const { isExpanded, toggleExpanded, selectFile } = useFileTreeStore();
+  const currentFile = useFilePreviewStore((s) => s.currentFile);
   const expanded = isExpanded(node.path);
+  const isActive = !node.isDir && currentFile === node.path;
 
   const handleClick = () => {
     if (node.isDir) {
       toggleExpanded(node.path);
+    } else {
+      selectFile(node.path);
     }
   };
 
@@ -21,7 +26,9 @@ export function FileTreeNode({ node, depth }: FileTreeNodeProps) {
     <div>
       <button
         type="button"
-        className="flex w-full items-center gap-1.5 px-2 py-1 text-left transition-colors duration-100 hover:bg-ctp-surface0 group"
+        className={`flex w-full items-center gap-1.5 px-2 py-1 text-left transition-colors duration-100 hover:bg-ctp-surface0 group ${
+          isActive ? "bg-ctp-surface0" : ""
+        }`}
         style={{ paddingLeft: `${depth * 12 + 8}px` }}
         onClick={handleClick}
       >
@@ -42,7 +49,9 @@ export function FileTreeNode({ node, depth }: FileTreeNodeProps) {
           isOpen={expanded}
         />
 
-        <span className="truncate text-sm text-ctp-subtext0 group-hover:text-ctp-text">
+        <span className={`truncate text-sm group-hover:text-ctp-text ${
+          isActive ? "text-ctp-text" : "text-ctp-subtext0"
+        }`}>
           {node.name}
         </span>
       </button>

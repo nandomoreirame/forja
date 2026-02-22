@@ -1,6 +1,9 @@
-import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import { create } from "zustand";
+import { useFilePreviewStore } from "./file-preview";
+
+export const APP_NAME = "Forja for Claude Code";
 
 export interface FileNode {
   name: string;
@@ -25,6 +28,8 @@ interface FileTreeState {
   setTree: (tree: DirectoryTree | null) => void;
   toggleExpanded: (path: string) => void;
   isExpanded: (path: string) => boolean;
+  collapseAll: () => void;
+  selectFile: (path: string) => Promise<void>;
 }
 
 export const useFileTreeStore = create<FileTreeState>((set, get) => ({
@@ -46,7 +51,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
       if (selected) {
         const result = await invoke<DirectoryTree>(
           "read_directory_tree_command",
-          { path: selected, maxDepth: 3 },
+          { path: selected, maxDepth: 8 },
         );
         set({
           currentPath: selected,
@@ -73,4 +78,10 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
   },
 
   isExpanded: (path: string) => get().expandedPaths.has(path),
+
+  collapseAll: () => set({ expandedPaths: new Set<string>() }),
+
+  selectFile: async (path: string) => {
+    await useFilePreviewStore.getState().loadFile(path);
+  },
 }));

@@ -1,28 +1,56 @@
-import { useEffect, useState } from "react";
+import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
-  Menu,
+  Copy,
   FolderOpen,
   Info,
+  Keyboard,
+  Menu,
   Minus,
   PanelLeft,
+  Plus,
   Square,
-  Copy,
   X,
 } from "lucide-react";
-import { useFileTreeStore } from "@/stores/file-tree";
+import { useEffect, useState } from "react";
+import { AboutDialog } from "./about-dialog";
+import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
 const appWindow = getCurrentWindow();
+const isMac = navigator.userAgent.includes("Mac");
 
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
-  const { isOpen, toggleSidebar, openProject } = useFileTreeStore();
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const { isOpen, tree, currentPath, toggleSidebar, openProject } = useFileTreeStore();
+  const { nextTabId, addTab } = useTerminalTabsStore();
+  const title = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
+
+  const createNewTab = () => {
+    if (!currentPath) return;
+    const tabId = nextTabId();
+    addTab(tabId, currentPath);
+  };
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "?") {
+        event.preventDefault();
+        setShortcutsOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   useEffect(() => {
     appWindow.isMaximized().then(setMaximized);
@@ -42,23 +70,7 @@ export function Titlebar() {
       data-tauri-drag-region
       className="relative flex h-10 shrink-0 select-none items-center justify-between px-3"
     >
-      {/* Left: sidebar toggle */}
-      <button
-        onClick={toggleSidebar}
-        className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-        aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
-      >
-        <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
-      </button>
-
-      <span
-        data-tauri-drag-region
-        className="pointer-events-none absolute inset-x-0 text-center text-sm font-semibold text-ctp-overlay1"
-      >
-        Forja
-      </span>
-
-      {/* Right: menu + window controls */}
+      {/* Left: menu + sidebar toggle */}
       <div className="flex items-center">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -69,18 +81,54 @@ export function Titlebar() {
               <Menu className="h-4 w-4" strokeWidth={1.5} />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-48 border-none">
+          <DropdownMenuContent align="start" className="min-w-52 border-none">
+            <DropdownMenuItem onClick={createNewTab} disabled={!currentPath}>
+              <Plus className="h-3.5 w-3.5" />
+              New Session
+              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+                {isMac ? "\u2318" : "Ctrl"}+T
+              </span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={openProject}>
               <FolderOpen className="h-3.5 w-3.5" />
               Open Project
+              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+                {isMac ? "\u2318" : "Ctrl"}+O
+              </span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setShortcutsOpen(true)}>
+              <Keyboard className="h-3.5 w-3.5" />
+              Shortcuts
+              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+                {isMac ? "\u2318" : "Ctrl"}+?
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setAboutOpen(true)}>
               <Info className="h-3.5 w-3.5" />
-              Sobre o Forja
+              About
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
+        <button
+          onClick={toggleSidebar}
+          className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+          aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+        >
+          <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
+        </button>
+      </div>
+
+      <span
+        data-tauri-drag-region
+        className="pointer-events-none absolute inset-x-0 text-center text-sm font-semibold text-ctp-overlay1"
+      >
+        {title}
+      </span>
+
+      {/* Right: window controls */}
+      <div className="flex items-center">
         <button
           onClick={() => appWindow.minimize()}
           className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
@@ -111,6 +159,8 @@ export function Titlebar() {
           <X className="h-3.5 w-3.5" strokeWidth={1.5} />
         </button>
       </div>
+      <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
     </div>
   );
 }
