@@ -106,8 +106,13 @@ pub async fn spawn_pty(
     app: tauri::AppHandle,
     tab_id: String,
     path: String,
+    session_type: Option<String>,
 ) -> Result<String, String> {
-    let session = PtySession::spawn("claude", &path, 24, 80)?;
+    let command = match session_type.as_deref() {
+        Some("terminal") => std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string()),
+        _ => "claude".to_string(),
+    };
+    let session = PtySession::spawn(&command, &path, 24, 80)?;
 
     let reader = session
         .master
