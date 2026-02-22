@@ -5,9 +5,9 @@ import { TabBar } from "../tab-bar";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
 const baseTabs: TerminalTab[] = [
-  { id: "tab-1", name: "Claude #1", path: "/a", isRunning: true },
-  { id: "tab-2", name: "Claude #2", path: "/b", isRunning: true },
-  { id: "tab-3", name: "Claude #3", path: "/c", isRunning: false },
+  { id: "tab-1", name: "Claude #1", path: "/a", isRunning: true, sessionType: "claude-code" },
+  { id: "tab-2", name: "Claude #2", path: "/b", isRunning: true, sessionType: "claude-code" },
+  { id: "tab-3", name: "Claude #3", path: "/c", isRunning: false, sessionType: "claude-code" },
 ];
 
 describe("TabBar", () => {

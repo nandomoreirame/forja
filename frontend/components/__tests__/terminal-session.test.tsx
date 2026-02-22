@@ -16,6 +16,8 @@ vi.mock("@xterm/xterm", () => ({
     dispose = mockDispose;
     onData = mockOnData;
     loadAddon = mockLoadAddon;
+    attachCustomKeyEventHandler = vi.fn();
+    options = {};
     rows = 24;
     cols = 80;
   },

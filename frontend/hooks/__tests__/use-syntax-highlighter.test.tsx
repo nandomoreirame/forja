@@ -5,7 +5,7 @@ import { useSyntaxHighlighter } from '@/hooks/use-syntax-highlighter';
 // Mock Shiki to avoid WASM loading issues in jsdom
 vi.mock('shiki', () => ({
   createHighlighter: vi.fn().mockResolvedValue({
-    codeToHtml: vi.fn((code: string, opts: { lang: string; theme: string }) => {
+    codeToHtml: vi.fn((code: string) => {
       // Simulate Shiki's HTML output structure
       return `<pre class="shiki catppuccin-mocha" style="background-color:#1e1e2e" tabindex="0"><code><span class="line"><span style="color:#cdd6f4">${code}</span></span></code></pre>`;
     }),
