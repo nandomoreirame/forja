@@ -1,0 +1,30 @@
+import { create } from "zustand";
+
+const DEFAULT_FONT_SIZE = 14;
+const MIN_FONT_SIZE = 8;
+const MAX_FONT_SIZE = 32;
+const ZOOM_STEP = 2;
+
+interface TerminalZoomState {
+  fontSize: number;
+
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetZoom: () => void;
+}
+
+export const useTerminalZoomStore = create<TerminalZoomState>((set) => ({
+  fontSize: DEFAULT_FONT_SIZE,
+
+  zoomIn: () =>
+    set((state) => ({
+      fontSize: Math.min(state.fontSize + ZOOM_STEP, MAX_FONT_SIZE),
+    })),
+
+  zoomOut: () =>
+    set((state) => ({
+      fontSize: Math.max(state.fontSize - ZOOM_STEP, MIN_FONT_SIZE),
+    })),
+
+  resetZoom: () => set({ fontSize: DEFAULT_FONT_SIZE }),
+}));
