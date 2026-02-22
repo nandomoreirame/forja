@@ -5,11 +5,13 @@
 **Goal:** Add a collapsible file tree sidebar with project directory structure, file icons by type, toolbar actions, and "Open Project" menu item.
 
 **Architecture:**
+
 - **Frontend:** React component with Zustand state for sidebar visibility and current directory
 - **Backend:** Rust Tauri command to read directory structure recursively with file metadata
 - **IPC:** Tauri command `read_directory_tree` returns nested file tree structure
 
 **Tech Stack:**
+
 - React 19 + TypeScript
 - Zustand (state management)
 - Lucide React (icons)
@@ -24,6 +26,7 @@
 ## Task 1: Add Rust Dependencies and File Tree Types
 
 **Files:**
+
 - Modify: `backend/Cargo.toml`
 - Create: `backend/src/file_tree.rs`
 
@@ -93,6 +96,7 @@ git commit -m "feat: add file tree types and walkdir dependency"
 ## Task 2: Implement Directory Reading Tauri Command
 
 **Files:**
+
 - Modify: `backend/src/file_tree.rs`
 - Modify: `backend/src/main.rs`
 
@@ -283,6 +287,7 @@ git commit -m "feat: implement directory tree reading with Tauri command"
 ## Task 3: Create Frontend File Tree Store (Zustand)
 
 **Files:**
+
 - Create: `frontend/stores/file-tree.ts`
 - Modify: `frontend/App.tsx` (import store to verify types)
 
@@ -442,6 +447,7 @@ git commit -m "feat: add file tree Zustand store with tests"
 ## Task 4: Create File Icon Component
 
 **Files:**
+
 - Create: `frontend/components/file-icon.tsx`
 - Create: `frontend/components/file-icon.test.tsx`
 
@@ -613,6 +619,7 @@ git commit -m "feat: add file icon component with extension mapping"
 ## Task 5: Create File Tree Sidebar Component
 
 **Files:**
+
 - Create: `frontend/components/file-tree-sidebar.tsx`
 - Create: `frontend/components/file-tree-node.tsx`
 
@@ -846,6 +853,7 @@ git commit -m "feat: add file tree sidebar with collapsible nodes"
 ## Task 6: Add "Open Project" Menu Item to Titlebar
 
 **Files:**
+
 - Modify: `frontend/components/titlebar.tsx`
 - Modify: `frontend/App.tsx` (integrate sidebar and open project)
 
@@ -942,6 +950,7 @@ git commit -m "feat: add Open Project menu item to titlebar"
 ## Task 7: Integrate Sidebar into App Layout
 
 **Files:**
+
 - Modify: `frontend/App.tsx`
 
 **Step 1: Import sidebar component and add to layout**
@@ -1098,6 +1107,7 @@ git commit -m "feat: integrate file tree sidebar into app layout with directory 
 ## Task 8: Add Keyboard Shortcut for Sidebar Toggle
 
 **Files:**
+
 - Modify: `frontend/App.tsx`
 - Create: `frontend/hooks/use-keyboard-shortcut.ts`
 
@@ -1183,6 +1193,7 @@ git commit -m "feat: add Cmd+B keyboard shortcut to toggle sidebar"
 ## Task 9: Add Visual Polish and Animations
 
 **Files:**
+
 - Modify: `frontend/components/file-tree-sidebar.tsx`
 - Modify: `frontend/styles/globals.css` (if needed for custom scrollbar)
 
@@ -1247,6 +1258,7 @@ git commit -m "feat: add slide-in animation and custom scrollbar to sidebar"
 ## Task 10: Update Documentation
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 - Modify: `docs/MVP-SCOPE.md` (if exists)
 
@@ -1271,6 +1283,7 @@ git commit -m "feat: add slide-in animation and custom scrollbar to sidebar"
 ### App Layout
 
 ```
+
 ┌─────────────────────────────────────────────────┐
 │  Git Header (32px) — branch + modified files    │
 ├──────┬──────────────────┬──────────────────────┤
@@ -1282,6 +1295,7 @@ git commit -m "feat: add slide-in animation and custom scrollbar to sidebar"
 └──────┴──────────────────┴──────────────────────┘
 │  Status Bar (24px) — state, last activity       │
 └─────────────────────────────────────────────────┘
+
 ```
 ```
 
