@@ -14,7 +14,7 @@ export function FileTreeSidebar() {
       className="flex h-full w-80 shrink-0 flex-col border-r border-ctp-surface0 bg-ctp-mantle"
     >
       {/* Header */}
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b border-ctp-surface0 px-3">
+      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-ctp-surface0 px-3">
         {tree ? (
           <>
             <FileIcon isDir isOpen />
