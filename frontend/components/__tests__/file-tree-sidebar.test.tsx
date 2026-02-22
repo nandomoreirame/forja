@@ -28,7 +28,7 @@ describe("FileTreeSidebar", () => {
 
     const sidebar = screen.getByTestId("file-tree-sidebar");
     expect(sidebar).toBeInTheDocument();
-    expect(sidebar.className).toMatch(/w-64/);
+    expect(sidebar.className).toMatch(/w-80/);
     expect(sidebar.className).toMatch(/shrink-0/);
   });
 

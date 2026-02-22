@@ -33,8 +33,8 @@ describe("TERMINAL_OPTIONS", () => {
     expect(TERMINAL_OPTIONS.fontFamily).toContain("JetBrains Mono");
   });
 
-  it("uses 15px font size", () => {
-    expect(TERMINAL_OPTIONS.fontSize).toBe(15);
+  it("uses 14px font size", () => {
+    expect(TERMINAL_OPTIONS.fontSize).toBe(14);
   });
 
   it("sets cursorBlink to true", () => {

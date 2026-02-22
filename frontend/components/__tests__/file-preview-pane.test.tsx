@@ -45,7 +45,7 @@ describe("FilePreviewPane", () => {
     });
     render(<FilePreviewPane />);
     const pane = screen.getByTestId("file-preview-pane");
-    expect(pane.className).toMatch(/w-1\/2/);
+    expect(pane.className).toMatch(/basis-1\/2/);
   });
 
   it("shows loading state when isLoading is true", () => {

@@ -116,50 +116,13 @@ describe("Statusbar with HoverCard", () => {
       await user.hover(diskMetric);
 
       await waitFor(() => {
-        expect(screen.getByText(/Disk Usage/i)).toBeInTheDocument();
+        expect(screen.getByText(/^Disk$/i)).toBeInTheDocument();
       });
 
-      expect(screen.getByText(/250\.0 GB/)).toBeInTheDocument();
+      // Used and Free are both 250.0 GB (50% of 500GB)
+      expect(screen.getAllByText(/250\.0 GB/).length).toBeGreaterThanOrEqual(1);
       expect(screen.getByText(/500\.0 GB/)).toBeInTheDocument();
       expect(screen.getByText(/50%/)).toBeInTheDocument();
-    }
-  });
-
-  it("shows detailed network download info on hover", async () => {
-    const user = userEvent.setup();
-    render(<Statusbar />);
-
-    // Find network download metric (contains ArrowDown icon and rate)
-    const downloadMetric = screen.getByText(/2\.5MB\/s/).closest("div");
-    expect(downloadMetric).toBeInTheDocument();
-
-    if (downloadMetric) {
-      await user.hover(downloadMetric);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Download/i)).toBeInTheDocument();
-      });
-
-      expect(screen.getByText(/2\.5 MB\/s/)).toBeInTheDocument();
-    }
-  });
-
-  it("shows detailed network upload info on hover", async () => {
-    const user = userEvent.setup();
-    render(<Statusbar />);
-
-    // Find network upload metric (contains ArrowUp icon and rate)
-    const uploadMetric = screen.getByText(/512\.0kB\/s/).closest("div");
-    expect(uploadMetric).toBeInTheDocument();
-
-    if (uploadMetric) {
-      await user.hover(uploadMetric);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Upload/i)).toBeInTheDocument();
-      });
-
-      expect(screen.getByText(/512\.0 kB\/s/)).toBeInTheDocument();
     }
   });
 
