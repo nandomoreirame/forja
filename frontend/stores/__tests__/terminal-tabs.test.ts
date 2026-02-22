@@ -4,10 +4,10 @@ import { useTerminalTabsStore } from "../terminal-tabs";
 /**
  * Helper that mirrors the real app flow: nextTabId() then addTab().
  */
-function createTab(path: string) {
+function createTab(path: string, sessionType?: 'claude-code' | 'terminal') {
   const store = useTerminalTabsStore.getState();
   const tabId = store.nextTabId();
-  useTerminalTabsStore.getState().addTab(tabId, path);
+  useTerminalTabsStore.getState().addTab(tabId, path, sessionType);
   return tabId;
 }
 
@@ -36,6 +36,7 @@ describe("useTerminalTabsStore", () => {
       name: "Session #1",
       path: "/test/path",
       isRunning: true,
+      sessionType: "claude-code",
     });
     expect(state.activeTabId).toBe(tabId);
   });
@@ -54,7 +55,7 @@ describe("useTerminalTabsStore", () => {
   });
 
   it("removes a tab and activates the previous one", () => {
-    const id1 = createTab("/a");
+    createTab("/a");
     const id2 = createTab("/b");
     const id3 = createTab("/c");
 
@@ -89,7 +90,7 @@ describe("useTerminalTabsStore", () => {
 
   it("sets active tab", () => {
     const id1 = createTab("/a");
-    const id2 = createTab("/b");
+    createTab("/b");
 
     useTerminalTabsStore.getState().setActiveTab(id1);
 
@@ -114,5 +115,26 @@ describe("useTerminalTabsStore", () => {
     expect(id1).toBe("tab-1");
     expect(id2).toBe("tab-2");
     expect(useTerminalTabsStore.getState().counter).toBe(2);
+  });
+
+  it("adds tab with sessionType 'claude-code'", () => {
+    createTab("/test/path", "claude-code");
+
+    const state = useTerminalTabsStore.getState();
+    expect(state.tabs[0].sessionType).toBe("claude-code");
+  });
+
+  it("adds tab with sessionType 'terminal'", () => {
+    createTab("/test/path", "terminal");
+
+    const state = useTerminalTabsStore.getState();
+    expect(state.tabs[0].sessionType).toBe("terminal");
+  });
+
+  it("defaults to 'claude-code' when sessionType is not provided", () => {
+    createTab("/test/path");
+
+    const state = useTerminalTabsStore.getState();
+    expect(state.tabs[0].sessionType).toBe("claude-code");
   });
 });

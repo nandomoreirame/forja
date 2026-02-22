@@ -5,6 +5,7 @@ export interface TerminalTab {
   name: string;
   path: string;
   isRunning: boolean;
+  sessionType: 'claude-code' | 'terminal';
 }
 
 interface TerminalTabsState {
@@ -13,7 +14,7 @@ interface TerminalTabsState {
   counter: number;
 
   nextTabId: () => string;
-  addTab: (id: string, path: string) => void;
+  addTab: (id: string, path: string, sessionType?: 'claude-code' | 'terminal') => void;
   removeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
@@ -30,13 +31,14 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     return `tab-${newCounter}`;
   },
 
-  addTab: (id: string, path: string) => {
+  addTab: (id: string, path: string, sessionType: 'claude-code' | 'terminal' = 'claude-code') => {
     const currentCounter = get().counter;
     const tab: TerminalTab = {
       id,
       name: `Session #${currentCounter}`,
       path,
       isRunning: true,
+      sessionType,
     };
     set((state) => ({
       tabs: [...state.tabs, tab],
