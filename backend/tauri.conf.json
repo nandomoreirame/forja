@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicholasrice/tauri/tauri-v2/crates/tauri-cli/schema.json",
-  "productName": "Forja",
+  "productName": "Forja for Claude Code",
   "version": "0.1.0",
   "identifier": "dev.forja.terminal",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "Forja",
+        "title": "Forja for Claude Code",
         "width": 1200,
         "height": 800,
         "minWidth": 800,

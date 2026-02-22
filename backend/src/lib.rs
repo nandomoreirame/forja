@@ -1,7 +1,11 @@
+mod file_reader;
 mod file_tree;
+mod git_info;
 mod metrics;
+mod pty;
 
 use metrics::MetricsCollector;
+use pty::PtyState;
 use std::thread;
 use std::time::Duration;
 use tauri::Emitter;
@@ -16,7 +20,17 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, file_tree::read_directory_tree_command])
+        .manage(PtyState::default())
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            file_reader::read_file_command,
+            file_tree::read_directory_tree_command,
+            pty::spawn_pty,
+            pty::write_pty,
+            pty::resize_pty,
+            pty::close_pty,
+            git_info::get_git_info_command,
+        ])
         .setup(|app| {
             let handle = app.handle().clone();
             thread::spawn(move || {
