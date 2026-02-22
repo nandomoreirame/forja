@@ -31,7 +31,7 @@ export function FilePreviewPane() {
       className="flex h-full basis-1/2 grow-0 shrink-0 flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
     >
       {/* Header */}
-      <div className="flex h-10 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
+      <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <FileCode className="h-4 w-4 shrink-0 text-ctp-overlay1" strokeWidth={1.5} />
           <span className="truncate text-sm font-semibold text-ctp-text">
