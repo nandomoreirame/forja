@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Geist Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Menlo",
+    monospace;
+
+  /* Catppuccin Mocha palette */
+  --color-ctp-crust: #11111b;
+  --color-ctp-mantle: #181825;
+  --color-ctp-base: #1e1e2e;
+  --color-ctp-surface0: #313244;
+  --color-ctp-surface1: #45475a;
+  --color-ctp-surface2: #585b70;
+  --color-ctp-overlay0: #6c7086;
+  --color-ctp-overlay1: #7f849c;
+  --color-ctp-overlay2: #9399b2;
+  --color-ctp-subtext0: #a6adc8;
+  --color-ctp-subtext1: #bac2de;
+  --color-ctp-text: #cdd6f4;
+  --color-ctp-rosewater: #f5e0dc;
+  --color-ctp-flamingo: #f2cdcd;
+  --color-ctp-pink: #f5c2e7;
+  --color-ctp-mauve: #cba6f7;
+  --color-ctp-red: #f38ba8;
+  --color-ctp-maroon: #eba0ac;
+  --color-ctp-peach: #fab387;
+  --color-ctp-yellow: #f9e2af;
+  --color-ctp-green: #a6e3a1;
+  --color-ctp-teal: #94e2d5;
+  --color-ctp-sky: #89dceb;
+  --color-ctp-sapphire: #74c7ec;
+  --color-ctp-blue: #89b4fa;
+  --color-ctp-lavender: #b4befe;
+
+  /* Brand (mapped to Catppuccin Mauve) */
+  --color-brand: #cba6f7;
+  --color-brand-hover: #b4befe;
+  --color-brand-subtle: #251e3a;
+  --color-brand-border: #585b70;
+
+  /* Semantic colors (Catppuccin Mocha) */
+  --color-success: #a6e3a1;
+  --color-success-bg: #1a2a1e;
+  --color-success-border: #2d4a35;
+
+  --color-warning: #f9e2af;
+  --color-warning-bg: #2a2520;
+  --color-warning-border: #4a3d25;
+
+  --color-error: #f38ba8;
+  --color-error-bg: #2a1520;
+  --color-error-border: #4a2535;
+
+  --color-info: #89b4fa;
+  --color-info-bg: #1a2030;
+  --color-info-border: #254065;
+
+  /* shadcn/ui semantic colors (needed for Tailwind v4 utility classes) */
+  --color-background: #1e1e2e;
+  --color-foreground: #cdd6f4;
+  --color-card: #313244;
+  --color-card-foreground: #cdd6f4;
+  --color-popover: #181825;
+  --color-popover-foreground: #cdd6f4;
+  --color-primary: #cba6f7;
+  --color-primary-foreground: #1e1e2e;
+  --color-secondary: #313244;
+  --color-secondary-foreground: #cdd6f4;
+  --color-muted: #313244;
+  --color-muted-foreground: #7f849c;
+  --color-accent: #313244;
+  --color-accent-foreground: #cdd6f4;
+  --color-destructive: #f38ba8;
+  --color-destructive-foreground: #1e1e2e;
+  --color-border: #313244;
+  --color-input: #313244;
+  --color-ring: #cba6f7;
+  --radius: 0.5rem;
+}
+
+:root {
+  /* Background Stack (Catppuccin Mocha) */
+  --bg-base: #1e1e2e;
+  --bg-elevated: #181825;
+  --bg-card: #313244;
+  --bg-hover: #45475a;
+  --bg-active: #585b70;
+
+  /* Foreground (Catppuccin Mocha) */
+  --fg-primary: #cdd6f4;
+  --fg-secondary: #a6adc8;
+  --fg-muted: #6c7086;
+
+  /* Borders (Catppuccin Mocha) */
+  --border-default: #313244;
+  --border-subtle: #181825;
+  --border-strong: #45475a;
+
+  /* shadcn/ui CSS variables */
+  --background: var(--bg-base);
+  --foreground: var(--fg-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--fg-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--fg-primary);
+  --primary: var(--color-brand);
+  --primary-foreground: #1e1e2e;
+  --secondary: var(--bg-card);
+  --secondary-foreground: var(--fg-primary);
+  --muted: var(--bg-card);
+  --muted-foreground: var(--fg-secondary);
+  --accent: var(--bg-card);
+  --accent-foreground: var(--fg-primary);
+  --destructive: var(--color-error);
+  --destructive-foreground: #1e1e2e;
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--color-brand);
+  --radius: 0.5rem;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* Custom scrollbar for file tree */
+.file-tree-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-tree-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.file-tree-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+.file-tree-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
