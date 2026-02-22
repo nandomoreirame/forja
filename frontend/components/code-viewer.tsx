@@ -26,7 +26,7 @@ export function CodeViewer({ code, filename }: CodeViewerProps) {
 
   return (
     <div
-      className="code-viewer overflow-auto p-4 text-sm"
+      className="code-viewer overflow-y-auto overflow-x-scroll p-4 text-sm"
       dangerouslySetInnerHTML={{ __html: html }}
       style={{
         fontFamily: 'JetBrains Mono, Fira Code, monospace',
