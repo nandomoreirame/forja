@@ -1,13 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Anvil, FolderOpen, PanelLeft, Plus, TerminalSquare } from "lucide-react";
+import { Anvil, FolderOpen, PanelLeft, Plus, Search, TerminalSquare } from "lucide-react";
 import { useCallback, useEffect } from "react";
+import { CommandPalette } from "./components/command-palette";
 import { FilePreviewPane } from "./components/file-preview-pane";
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
 import { Statusbar } from "./components/statusbar";
 import { TabBar } from "./components/tab-bar";
 import { TerminalPane } from "./components/terminal-pane";
 import { Titlebar } from "./components/titlebar";
+import { useCommandPaletteStore } from "./stores/command-palette";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
@@ -68,6 +70,23 @@ function EmptyState() {
             <Kbd>{mod}</Kbd>
             <span className="text-[11px] text-ctp-surface1">+</span>
             <Kbd>B</Kbd>
+          </span>
+        </button>
+
+        <button
+          onClick={() => useCommandPaletteStore.getState().open("commands")}
+          className="group flex items-center justify-between gap-8 rounded-md px-4 py-2 text-left transition-colors hover:bg-ctp-mantle"
+        >
+          <span className="flex items-center gap-2 text-sm text-ctp-subtext0 group-hover:text-ctp-text">
+            <Search className="h-4 w-4" strokeWidth={1.5} />
+            Command Palette
+          </span>
+          <span className="flex items-center gap-1">
+            <Kbd>{mod}</Kbd>
+            <span className="text-[11px] text-ctp-surface1">+</span>
+            <Kbd>Shift</Kbd>
+            <span className="text-[11px] text-ctp-surface1">+</span>
+            <Kbd>P</Kbd>
           </span>
         </button>
       </div>
@@ -155,7 +174,17 @@ function App() {
         event.preventDefault();
         if (activeTabId) closeTab(activeTabId);
       }
-      if (mod && event.key === "p") {
+      if (mod && event.shiftKey && event.key.toLowerCase() === "p") {
+        event.preventDefault();
+        useCommandPaletteStore.getState().open("commands");
+      } else if (mod && !event.shiftKey && event.key === "p") {
+        event.preventDefault();
+        const { tree: t, currentPath: cp } = useFileTreeStore.getState();
+        if (t && cp) {
+          useCommandPaletteStore.getState().open("files");
+        }
+      }
+      if (mod && event.key === "e") {
         event.preventDefault();
         useFilePreviewStore.getState().togglePreview();
       }
@@ -208,6 +237,7 @@ function App() {
         </div>
       </div>
       <Statusbar />
+      <CommandPalette />
     </div>
   );
 }

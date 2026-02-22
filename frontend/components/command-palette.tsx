@@ -1,0 +1,156 @@
+import { useAppDialogsStore } from "@/stores/app-dialogs";
+import { useCommandPaletteStore } from "@/stores/command-palette";
+import { useFilePreviewStore } from "@/stores/file-preview";
+import { useFileTreeStore } from "@/stores/file-tree";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
+import { flattenFileTree } from "@/lib/flatten-file-tree";
+import {
+  FolderOpen,
+  Info,
+  Keyboard,
+  PanelLeft,
+  PanelRight,
+  Plus,
+} from "lucide-react";
+import { useMemo } from "react";
+import { FileIcon } from "./file-icon";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from "./ui/command";
+
+const isMac = navigator.userAgent.includes("Mac");
+const mod = isMac ? "\u2318" : "Ctrl";
+
+export function CommandPalette() {
+  const { isOpen, mode, close } = useCommandPaletteStore();
+  const { tree, currentPath } = useFileTreeStore();
+
+  const flatFiles = useMemo(() => {
+    if (!tree || !currentPath) return [];
+    return flattenFileTree(tree.root, currentPath);
+  }, [tree, currentPath]);
+
+  const handleFileSelect = (filePath: string) => {
+    useFilePreviewStore.getState().loadFile(filePath);
+    close();
+  };
+
+  const handleCommand = (command: string) => {
+    switch (command) {
+      case "new-session": {
+        const { nextTabId, addTab } = useTerminalTabsStore.getState();
+        const { currentPath } = useFileTreeStore.getState();
+        if (currentPath) {
+          const tabId = nextTabId();
+          addTab(tabId, currentPath);
+        }
+        break;
+      }
+      case "open-project":
+        useFileTreeStore.getState().openProject();
+        break;
+      case "toggle-sidebar":
+        useFileTreeStore.getState().toggleSidebar();
+        break;
+      case "toggle-file-preview":
+        useFilePreviewStore.getState().togglePreview();
+        break;
+      case "keyboard-shortcuts":
+        useAppDialogsStore.getState().setShortcutsOpen(true);
+        break;
+      case "about":
+        useAppDialogsStore.getState().setAboutOpen(true);
+        break;
+    }
+    close();
+  };
+
+  return (
+    <CommandDialog open={isOpen} onOpenChange={(open) => !open && close()}>
+      <CommandInput
+        placeholder={mode === "files" ? "Search files..." : "Type a command..."}
+      />
+      <CommandList>
+        <CommandEmpty>
+          {mode === "files" ? "No files found." : "No commands found."}
+        </CommandEmpty>
+
+        {mode === "files" && (
+          <CommandGroup heading="Files">
+            {flatFiles.map((file) => (
+              <CommandItem
+                key={file.path}
+                value={file.relativePath}
+                onSelect={() => handleFileSelect(file.path)}
+              >
+                <FileIcon
+                  isDir={false}
+                  extension={file.extension}
+                />
+                <span className="truncate">{file.relativePath}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {mode === "commands" && (
+          <CommandGroup heading="Commands">
+            <CommandItem
+              value="New Session"
+              onSelect={() => handleCommand("new-session")}
+            >
+              <Plus className="h-4 w-4" strokeWidth={1.5} />
+              New Session
+              <CommandShortcut>{mod}+T</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              value="Open Project"
+              onSelect={() => handleCommand("open-project")}
+            >
+              <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
+              Open Project
+              <CommandShortcut>{mod}+O</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              value="Toggle Sidebar"
+              onSelect={() => handleCommand("toggle-sidebar")}
+            >
+              <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
+              Toggle Sidebar
+              <CommandShortcut>{mod}+B</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              value="Toggle File Preview"
+              onSelect={() => handleCommand("toggle-file-preview")}
+            >
+              <PanelRight className="h-4 w-4" strokeWidth={1.5} />
+              Toggle File Preview
+              <CommandShortcut>{mod}+E</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              value="Keyboard Shortcuts"
+              onSelect={() => handleCommand("keyboard-shortcuts")}
+            >
+              <Keyboard className="h-4 w-4" strokeWidth={1.5} />
+              Keyboard Shortcuts
+              <CommandShortcut>{mod}+?</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              value="About"
+              onSelect={() => handleCommand("about")}
+            >
+              <Info className="h-4 w-4" strokeWidth={1.5} />
+              About
+            </CommandItem>
+          </CommandGroup>
+        )}
+      </CommandList>
+    </CommandDialog>
+  );
+}

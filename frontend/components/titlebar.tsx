@@ -1,3 +1,5 @@
+import { useAppDialogsStore } from "@/stores/app-dialogs";
+import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -10,6 +12,7 @@ import {
   Minus,
   PanelLeft,
   Plus,
+  Search,
   Square,
   X,
 } from "lucide-react";
@@ -29,8 +32,7 @@ const isMac = navigator.userAgent.includes("Mac");
 
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
-  const [aboutOpen, setAboutOpen] = useState(false);
-  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const { aboutOpen, setAboutOpen, shortcutsOpen, setShortcutsOpen } = useAppDialogsStore();
   const { isOpen, tree, currentPath, toggleSidebar, openProject } = useFileTreeStore();
   const { nextTabId, addTab } = useTerminalTabsStore();
   const title = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
@@ -45,12 +47,12 @@ export function Titlebar() {
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === "?") {
         event.preventDefault();
-        setShortcutsOpen((prev) => !prev);
+        setShortcutsOpen(!shortcutsOpen);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [shortcutsOpen, setShortcutsOpen]);
 
   useEffect(() => {
     appWindow.isMaximized().then(setMaximized);
@@ -94,6 +96,13 @@ export function Titlebar() {
               Open Project
               <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
                 {isMac ? "\u2318" : "Ctrl"}+O
+              </span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => useCommandPaletteStore.getState().open("commands")}>
+              <Search className="h-3.5 w-3.5" />
+              Command Palette
+              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+                {isMac ? "\u2318" : "Ctrl"}+Shift+P
               </span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

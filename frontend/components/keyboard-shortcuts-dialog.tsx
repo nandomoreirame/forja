@@ -24,9 +24,11 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
   {
     section: "General",
     items: [
+      { label: "File Search", keys: [mod, "P"] },
+      { label: "Command Palette", keys: [mod, "Shift", "P"] },
       { label: "Open Project", keys: [mod, "O"] },
       { label: "Toggle Sidebar", keys: [mod, "B"] },
-      { label: "Toggle File Preview", keys: [mod, "P"] },
+      { label: "Toggle File Preview", keys: [mod, "E"] },
       { label: "Keyboard Shortcuts", keys: [mod, "?"] },
     ],
   },
