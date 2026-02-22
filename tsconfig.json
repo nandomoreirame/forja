@@ -18,11 +18,12 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
+    "types": ["vitest/globals", "@testing-library/jest-dom/vitest"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./frontend/*"]
     }
   },
-  "include": ["frontend"],
+  "include": ["frontend", "tests"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
