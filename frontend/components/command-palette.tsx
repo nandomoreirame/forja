@@ -2,7 +2,6 @@ import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
-import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
 import {
   FolderOpen,
@@ -44,12 +43,7 @@ export function CommandPalette() {
   const handleCommand = (command: string) => {
     switch (command) {
       case "new-session": {
-        const { nextTabId, addTab } = useTerminalTabsStore.getState();
-        const { currentPath } = useFileTreeStore.getState();
-        if (currentPath) {
-          const tabId = nextTabId();
-          addTab(tabId, currentPath);
-        }
+        useAppDialogsStore.getState().setNewSessionOpen(true);
         break;
       }
       case "open-project":

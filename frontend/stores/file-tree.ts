@@ -56,7 +56,6 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         set({
           currentPath: selected,
           tree: result,
-          isOpen: true,
           expandedPaths: new Set<string>(),
         });
       }

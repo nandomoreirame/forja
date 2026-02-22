@@ -13,6 +13,7 @@ export function TerminalPane() {
           tabId={tab.id}
           path={tab.path}
           isVisible={tab.id === activeTabId}
+          sessionType={tab.sessionType}
         />
       ))}
     </div>

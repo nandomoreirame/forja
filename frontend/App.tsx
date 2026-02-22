@@ -5,14 +5,17 @@ import { useCallback, useEffect } from "react";
 import { CommandPalette } from "./components/command-palette";
 import { FilePreviewPane } from "./components/file-preview-pane";
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
+import { NewSessionDialog } from "./components/new-session-dialog";
 import { Statusbar } from "./components/statusbar";
 import { TabBar } from "./components/tab-bar";
 import { TerminalPane } from "./components/terminal-pane";
 import { Titlebar } from "./components/titlebar";
+import { useAppDialogsStore } from "./stores/app-dialogs";
 import { useCommandPaletteStore } from "./stores/command-palette";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
+import { useTerminalZoomStore } from "./stores/terminal-zoom";
 
 interface PtyExitPayload {
   tab_id: string;
@@ -94,7 +97,7 @@ function EmptyState() {
   );
 }
 
-function NoSessionsState({ onNewTab }: { onNewTab: () => void }) {
+function NoSessionsState({ onOpenDialog }: { onOpenDialog: () => void }) {
   const isMac = navigator.userAgent.includes("Mac");
   const mod = isMac ? "\u2318" : "Ctrl";
 
@@ -102,9 +105,9 @@ function NoSessionsState({ onNewTab }: { onNewTab: () => void }) {
     <div className="flex flex-1 flex-col items-center justify-center gap-6">
       <TerminalSquare className="h-12 w-12 text-ctp-surface1" strokeWidth={1.5} />
       <div className="flex flex-col items-center gap-2">
-        <p className="text-sm text-ctp-overlay1">No active Claude Code sessions</p>
+        <p className="text-sm text-ctp-overlay1">No active sessions</p>
         <button
-          onClick={onNewTab}
+          onClick={onOpenDialog}
           className="group mt-2 flex items-center gap-2 rounded-md px-4 py-2 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
@@ -124,11 +127,20 @@ function App() {
   const { tree, currentPath, toggleSidebar, openProject } = useFileTreeStore();
   const { tabs, activeTabId, nextTabId, addTab, removeTab, setActiveTab } =
     useTerminalTabsStore();
-  const createNewTab = useCallback(() => {
-    if (!currentPath) return;
-    const tabId = nextTabId();
-    addTab(tabId, currentPath);
-  }, [currentPath, nextTabId, addTab]);
+
+  const handleNewSessionType = useCallback(
+    (sessionType: "claude-code" | "terminal") => {
+      if (!currentPath) return;
+      const tabId = nextTabId();
+      addTab(tabId, currentPath, sessionType);
+      useAppDialogsStore.getState().setNewSessionOpen(false);
+    },
+    [currentPath, nextTabId, addTab]
+  );
+
+  const openNewSessionDialog = useCallback(() => {
+    useAppDialogsStore.getState().setNewSessionOpen(true);
+  }, []);
 
   const closeTab = useCallback(
     async (tabId: string) => {
@@ -168,7 +180,7 @@ function App() {
       }
       if (mod && event.key === "t") {
         event.preventDefault();
-        createNewTab();
+        openNewSessionDialog();
       }
       if (mod && event.key === "w") {
         event.preventDefault();
@@ -188,6 +200,19 @@ function App() {
         event.preventDefault();
         useFilePreviewStore.getState().togglePreview();
       }
+      // Ctrl+Alt+= / Ctrl+Alt+- / Ctrl+Alt+0: zoom
+      if (mod && event.altKey && (event.key === "=" || event.key === "+")) {
+        event.preventDefault();
+        useTerminalZoomStore.getState().zoomIn();
+      }
+      if (mod && event.altKey && event.key === "-") {
+        event.preventDefault();
+        useTerminalZoomStore.getState().zoomOut();
+      }
+      if (mod && event.altKey && event.key === "0") {
+        event.preventDefault();
+        useTerminalZoomStore.getState().resetZoom();
+      }
       // Ctrl+Tab / Ctrl+Shift+Tab: cycle tabs
       if (event.ctrlKey && event.key === "Tab") {
         event.preventDefault();
@@ -203,7 +228,7 @@ function App() {
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [toggleSidebar, openProject, createNewTab, closeTab, activeTabId, tabs, setActiveTab]);
+  }, [toggleSidebar, openProject, openNewSessionDialog, closeTab, activeTabId, tabs, setActiveTab]);
 
   const hasProject = tree && currentPath;
 
@@ -224,10 +249,10 @@ function App() {
                   activeTabId={activeTabId}
                   onSelectTab={setActiveTab}
                   onCloseTab={closeTab}
-                  onNewTab={createNewTab}
+                  onNewTab={openNewSessionDialog}
                 />
                 {tabs.length === 0 ? (
-                  <NoSessionsState onNewTab={createNewTab} />
+                  <NoSessionsState onOpenDialog={openNewSessionDialog} />
                 ) : (
                   <TerminalPane />
                 )}
@@ -238,6 +263,11 @@ function App() {
       </div>
       <Statusbar />
       <CommandPalette />
+      <NewSessionDialog
+        open={useAppDialogsStore((s) => s.newSessionOpen)}
+        onOpenChange={useAppDialogsStore.getState().setNewSessionOpen}
+        onSessionTypeSelect={handleNewSessionType}
+      />
     </div>
   );
 }

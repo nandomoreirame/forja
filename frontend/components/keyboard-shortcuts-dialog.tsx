@@ -41,6 +41,14 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
       { label: "Previous Tab", keys: ["Ctrl", "Shift", "Tab"] },
     ],
   },
+  {
+    section: "Terminal",
+    items: [
+      { label: "Zoom In", keys: [mod, "Alt", "="] },
+      { label: "Zoom Out", keys: [mod, "Alt", "-"] },
+      { label: "Reset Zoom", keys: [mod, "Alt", "0"] },
+    ],
+  },
 ];
 
 function Kbd({ children }: { children: React.ReactNode }) {

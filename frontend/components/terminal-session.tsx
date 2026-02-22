@@ -5,15 +5,17 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
+import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useEffect, useRef } from "react";
 
 interface TerminalSessionProps {
   tabId: string;
   path: string;
   isVisible: boolean;
+  sessionType?: "claude-code" | "terminal";
 }
 
-export function TerminalSession({ tabId, path, isVisible }: TerminalSessionProps) {
+export function TerminalSession({ tabId, path, isVisible, sessionType = "claude-code" }: TerminalSessionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -45,6 +47,14 @@ export function TerminalSession({ tabId, path, isVisible }: TerminalSessionProps
       // WebGL not available, fall back to canvas renderer
     }
 
+    terminal.attachCustomKeyEventHandler((event) => {
+      const mod = event.metaKey || event.ctrlKey;
+      if (mod && event.altKey && (event.key === "=" || event.key === "+" || event.key === "-" || event.key === "0")) {
+        return false;
+      }
+      return true;
+    });
+
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
 
@@ -61,7 +71,7 @@ export function TerminalSession({ tabId, path, isVisible }: TerminalSessionProps
       const dims = fitAddon.proposeDimensions();
       const rows = dims?.rows ?? 24;
       const cols = dims?.cols ?? 80;
-      spawn(path).then(() => {
+      spawn(path, sessionType).then(() => {
         if (!aborted) resize(rows, cols);
       });
     });
@@ -86,6 +96,22 @@ export function TerminalSession({ tabId, path, isVisible }: TerminalSessionProps
       terminal.dispose();
     };
   }, [tabId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply zoom (font size) changes
+  useEffect(() => {
+    return useTerminalZoomStore.subscribe((state) => {
+      const terminal = terminalRef.current;
+      const fitAddon = fitAddonRef.current;
+      if (!terminal || !fitAddon) return;
+
+      terminal.options.fontSize = state.fontSize;
+      fitAddon.fit();
+      const dims = fitAddon.proposeDimensions();
+      if (dims) {
+        resize(dims.rows, dims.cols);
+      }
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fit when becoming visible
   useEffect(() => {

@@ -48,10 +48,11 @@ export function usePty(options: UsePtyOptions) {
     };
   }, []);
 
-  const spawn = useCallback(async (path: string): Promise<string> => {
+  const spawn = useCallback(async (path: string, sessionType?: string): Promise<string> => {
     const tabId = await invoke<string>("spawn_pty", {
       tabId: tabIdRef.current,
       path,
+      sessionType,
     });
     setIsRunning(true);
     return tabId;
