@@ -28,7 +28,7 @@ export function FilePreviewPane() {
   return (
     <div
       data-testid="file-preview-pane"
-      className="flex h-full w-1/2 flex-col border-r border-ctp-surface0 bg-ctp-base"
+      className="flex h-full basis-1/2 grow-0 shrink-0 flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
     >
       {/* Header */}
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">

@@ -1,7 +1,7 @@
-import { FolderOpen, ChevronsDownUp } from "lucide-react";
 import { useFileTreeStore } from "@/stores/file-tree";
-import { FileTreeNode } from "./file-tree-node";
+import { ChevronsDownUp, FolderOpen } from "lucide-react";
 import { FileIcon } from "./file-icon";
+import { FileTreeNode } from "./file-tree-node";
 
 export function FileTreeSidebar() {
   const { isOpen, tree, expandedPaths, openProject, collapseAll } = useFileTreeStore();
@@ -11,7 +11,7 @@ export function FileTreeSidebar() {
   return (
     <div
       data-testid="file-tree-sidebar"
-      className="flex h-full w-64 shrink-0 flex-col border-r border-ctp-surface0 bg-ctp-mantle"
+      className="flex h-full w-80 shrink-0 flex-col border-r border-ctp-surface0 bg-ctp-mantle"
     >
       {/* Header */}
       <div className="flex h-10 shrink-0 items-center gap-2 border-b border-ctp-surface0 px-3">

@@ -181,26 +181,30 @@ function App() {
   return (
     <div className="relative flex h-full flex-col bg-ctp-base">
       <Titlebar />
-      {hasProject && (
-        <TabBar
-          tabs={tabs}
-          activeTabId={activeTabId}
-          onSelectTab={setActiveTab}
-          onCloseTab={closeTab}
-          onNewTab={createNewTab}
-        />
-      )}
       <div className="flex flex-1 overflow-hidden">
         <FileTreeSidebar />
-        <FilePreviewPane />
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {!hasProject ? (
-            <EmptyState />
-          ) : tabs.length === 0 ? (
-            <NoSessionsState onNewTab={createNewTab} />
-          ) : (
-            <TerminalPane />
-          )}
+        <div className="flex min-w-0 flex-1 overflow-hidden">
+          <FilePreviewPane />
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            {!hasProject ? (
+              <EmptyState />
+            ) : (
+              <>
+                <TabBar
+                  tabs={tabs}
+                  activeTabId={activeTabId}
+                  onSelectTab={setActiveTab}
+                  onCloseTab={closeTab}
+                  onNewTab={createNewTab}
+                />
+                {tabs.length === 0 ? (
+                  <NoSessionsState onNewTab={createNewTab} />
+                ) : (
+                  <TerminalPane />
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
       <Statusbar />
