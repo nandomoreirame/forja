@@ -20,6 +20,10 @@ vi.mock("@tauri-apps/api/event", () => ({
   },
 }));
 
+vi.mock("@tauri-apps/api/window", () => ({
+  getCurrentWindow: () => ({ label: "main" }),
+}));
+
 describe("usePty", () => {
   beforeEach(() => {
     mockInvoke.mockClear();
@@ -145,6 +149,7 @@ describe("usePty", () => {
     expect(mockInvoke).toHaveBeenCalledWith("spawn_pty", {
       tabId: "tab-1",
       path: "/test/path",
+      windowLabel: "main",
     });
     expect(tabId).toBe("tab-1");
     expect(result.current.isRunning).toBe(true);
