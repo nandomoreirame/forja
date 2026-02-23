@@ -1,10 +1,58 @@
-import { useFileTreeStore } from "@/stores/file-tree";
+import { useFileTreeStore, type FileNode } from "@/stores/file-tree";
 import { ChevronsDownUp, FolderOpen } from "lucide-react";
+import { useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { FileIcon } from "./file-icon";
 import { FileTreeNode } from "./file-tree-node";
 
+interface FlatNode {
+  node: FileNode;
+  depth: number;
+}
+
+function flattenVisibleNodes(
+  nodes: FileNode[],
+  expandedPaths: Record<string, boolean>,
+  depth: number = 0,
+): FlatNode[] {
+  const result: FlatNode[] = [];
+  for (const node of nodes) {
+    result.push({ node, depth });
+    if (node.isDir && expandedPaths[node.path] && node.children) {
+      result.push(...flattenVisibleNodes(node.children, expandedPaths, depth + 1));
+    }
+  }
+  return result;
+}
+
+const ITEM_HEIGHT = 28;
+const OVERSCAN = 15;
+
 export function FileTreeSidebar() {
-  const { isOpen, tree, expandedPaths, openProject, collapseAll } = useFileTreeStore();
+  const isOpen = useFileTreeStore((s) => s.isOpen);
+  const tree = useFileTreeStore((s) => s.tree);
+  const expandedPaths = useFileTreeStore((s) => s.expandedPaths);
+  const openProject = useFileTreeStore((s) => s.openProject);
+  const collapseAll = useFileTreeStore((s) => s.collapseAll);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const flatNodes = useMemo(() => {
+    if (!tree?.root.children) return [];
+    return flattenVisibleNodes(tree.root.children, expandedPaths);
+  }, [tree, expandedPaths]);
+
+  const hasExpandedPaths = useMemo(
+    () => Object.values(expandedPaths).some(Boolean),
+    [expandedPaths],
+  );
+
+  const virtualizer = useVirtualizer({
+    count: flatNodes.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => ITEM_HEIGHT,
+    overscan: OVERSCAN,
+  });
 
   if (!isOpen) return null;
 
@@ -28,7 +76,7 @@ export function FileTreeSidebar() {
         {tree && (
           <button
             onClick={collapseAll}
-            disabled={expandedPaths.size === 0}
+            disabled={!hasExpandedPaths}
             className="inline-flex h-7 w-7 items-center justify-center rounded text-ctp-overlay1 transition-colors duration-100 hover:bg-ctp-surface0 hover:text-ctp-text disabled:opacity-30 disabled:pointer-events-none"
             aria-label="Collapse all folders"
           >
@@ -38,12 +86,27 @@ export function FileTreeSidebar() {
       </div>
 
       {/* File tree */}
-      <div className="file-tree-scroll flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="file-tree-scroll flex-1 overflow-y-auto">
         {tree ? (
-          <div className="py-1">
-            {tree.root.children?.map((node) => (
-              <FileTreeNode key={node.path} node={node} depth={0} />
-            ))}
+          <div
+            className="relative py-1"
+            style={{ height: `${virtualizer.getTotalSize()}px` }}
+          >
+            {virtualizer.getVirtualItems().map((virtualItem) => {
+              const { node, depth } = flatNodes[virtualItem.index];
+              return (
+                <div
+                  key={node.path}
+                  className="absolute left-0 top-0 w-full"
+                  style={{
+                    height: `${virtualItem.size}px`,
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                >
+                  <FileTreeNode node={node} depth={depth} />
+                </div>
+              );
+            })}
           </div>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-4">

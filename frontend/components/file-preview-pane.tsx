@@ -1,8 +1,24 @@
+import { lazy, Suspense, useMemo } from 'react';
 import { X, FileCode, AlertCircle } from 'lucide-react';
 import { useFilePreviewStore } from '@/stores/file-preview';
 import { CodeViewer } from './code-viewer';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+
+// Lazy load markdown renderer only when a .md file is opened
+const LazyMarkdown = lazy(() =>
+  Promise.all([
+    import('react-markdown'),
+    import('remark-gfm'),
+  ]).then(([reactMarkdown, remarkGfm]) => ({
+    default: function MarkdownRenderer({ content }: { content: string }) {
+      const ReactMarkdown = reactMarkdown.default;
+      return (
+        <ReactMarkdown remarkPlugins={[remarkGfm.default]}>
+          {content}
+        </ReactMarkdown>
+      );
+    },
+  }))
+);
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -15,15 +31,19 @@ function formatFileSize(bytes: number): string {
 }
 
 export function FilePreviewPane() {
-  const { isOpen, currentFile, content, isLoading, error, closePreview } =
-    useFilePreviewStore();
+  const isOpen = useFilePreviewStore((s) => s.isOpen);
+  const currentFile = useFilePreviewStore((s) => s.currentFile);
+  const content = useFilePreviewStore((s) => s.content);
+  const isLoading = useFilePreviewStore((s) => s.isLoading);
+  const error = useFilePreviewStore((s) => s.error);
+  const closePreview = useFilePreviewStore((s) => s.closePreview);
+
+  const filename = useMemo(() => currentFile?.split('/').pop() || '', [currentFile]);
+  const isMarkdown = filename.endsWith('.md');
 
   if (!isOpen) {
     return null;
   }
-
-  const filename = currentFile?.split('/').pop() || '';
-  const isMarkdown = filename.endsWith('.md');
 
   return (
     <div
@@ -81,9 +101,15 @@ export function FilePreviewPane() {
           <>
             {isMarkdown ? (
               <div className="markdown prose prose-invert max-w-none p-4">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {content.content}
-                </ReactMarkdown>
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center p-4">
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+                    </div>
+                  }
+                >
+                  <LazyMarkdown content={content.content} />
+                </Suspense>
               </div>
             ) : (
               <CodeViewer code={content.content} filename={filename} />

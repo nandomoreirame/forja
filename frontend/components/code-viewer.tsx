@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSyntaxHighlighter } from '@/hooks/use-syntax-highlighter';
 
 interface CodeViewerProps {
@@ -9,12 +9,23 @@ interface CodeViewerProps {
 export function CodeViewer({ code, filename }: CodeViewerProps) {
   const { isReady, hasError, highlight, detectLanguage } = useSyntaxHighlighter();
   const [html, setHtml] = useState<string>('');
+  const prevKeyRef = useRef<string>('');
+
+  const language = useMemo(() => detectLanguage(filename), [detectLanguage, filename]);
 
   useEffect(() => {
     if (!isReady) return;
-    const language = detectLanguage(filename);
-    highlight(code, language).then(setHtml);
-  }, [code, filename, isReady, highlight, detectLanguage]);
+
+    const key = `${language}:${code}`;
+    if (key === prevKeyRef.current) return;
+    prevKeyRef.current = key;
+
+    let cancelled = false;
+    highlight(code, language).then((result) => {
+      if (!cancelled) setHtml(result);
+    });
+    return () => { cancelled = true; };
+  }, [code, language, isReady, highlight]);
 
   if (hasError || (isReady && !html && code)) {
     return (
@@ -52,3 +63,5 @@ export function CodeViewer({ code, filename }: CodeViewerProps) {
     />
   );
 }
+
+export default CodeViewer;

@@ -1,11 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Anvil, FolderOpen, PanelLeft, Plus, Search, TerminalSquare } from "lucide-react";
-import { useCallback, useEffect } from "react";
-import { CommandPalette } from "./components/command-palette";
-import { FilePreviewPane } from "./components/file-preview-pane";
+import { lazy, Suspense, useCallback, useEffect, useRef } from "react";
+import { MOD_KEY } from "./lib/platform";
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
-import { NewSessionDialog } from "./components/new-session-dialog";
 import { Statusbar } from "./components/statusbar";
 import { TabBar } from "./components/tab-bar";
 import { TerminalPane } from "./components/terminal-pane";
@@ -16,6 +14,17 @@ import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
+
+// Lazy load non-essential components
+const CommandPalette = lazy(() =>
+  import("./components/command-palette").then((m) => ({ default: m.CommandPalette }))
+);
+const FilePreviewPane = lazy(() =>
+  import("./components/file-preview-pane").then((m) => ({ default: m.FilePreviewPane }))
+);
+const NewSessionDialog = lazy(() =>
+  import("./components/new-session-dialog").then((m) => ({ default: m.NewSessionDialog }))
+);
 
 interface PtyExitPayload {
   tab_id: string;
@@ -32,8 +41,7 @@ function Kbd({ children }: { children: React.ReactNode }) {
 
 function EmptyState() {
   const { openProject, toggleSidebar } = useFileTreeStore();
-  const isMac = navigator.userAgent.includes("Mac");
-  const mod = isMac ? "\u2318" : "Ctrl";
+  const mod = MOD_KEY;
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-10">
@@ -98,8 +106,7 @@ function EmptyState() {
 }
 
 function NoSessionsState({ onOpenDialog }: { onOpenDialog: () => void }) {
-  const isMac = navigator.userAgent.includes("Mac");
-  const mod = isMac ? "\u2318" : "Ctrl";
+  const mod = MOD_KEY;
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6">
@@ -124,9 +131,21 @@ function NoSessionsState({ onOpenDialog }: { onOpenDialog: () => void }) {
 }
 
 function App() {
-  const { tree, currentPath, toggleSidebar, openProject } = useFileTreeStore();
-  const { tabs, activeTabId, nextTabId, addTab, removeTab, setActiveTab } =
-    useTerminalTabsStore();
+  const tree = useFileTreeStore((s) => s.tree);
+  const currentPath = useFileTreeStore((s) => s.currentPath);
+  const tabs = useTerminalTabsStore((s) => s.tabs);
+  const activeTabId = useTerminalTabsStore((s) => s.activeTabId);
+  const nextTabId = useTerminalTabsStore((s) => s.nextTabId);
+  const addTab = useTerminalTabsStore((s) => s.addTab);
+  const removeTab = useTerminalTabsStore((s) => s.removeTab);
+  const setActiveTab = useTerminalTabsStore((s) => s.setActiveTab);
+  const newSessionOpen = useAppDialogsStore((s) => s.newSessionOpen);
+
+  // Refs for keyboard handler to avoid recreating listener
+  const tabsRef = useRef(tabs);
+  const activeTabIdRef = useRef(activeTabId);
+  tabsRef.current = tabs;
+  activeTabIdRef.current = activeTabId;
 
   const handleNewSessionType = useCallback(
     (sessionType: "claude-code" | "terminal") => {
@@ -154,7 +173,6 @@ function App() {
     [removeTab],
   );
 
-
   // Auto-close tab when Claude session exits
   useEffect(() => {
     const unlisten = listen<PtyExitPayload>("pty:exit", (event) => {
@@ -165,70 +183,83 @@ function App() {
     };
   }, [removeTab]);
 
-  // Keyboard shortcuts
+  // Keyboard shortcuts - stable handler using refs for mutable values
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
 
       if (mod && event.key === "b") {
         event.preventDefault();
-        toggleSidebar();
+        useFileTreeStore.getState().toggleSidebar();
+        return;
       }
       if (mod && event.key === "o") {
         event.preventDefault();
-        openProject();
+        useFileTreeStore.getState().openProject();
+        return;
       }
       if (mod && event.key === "t") {
         event.preventDefault();
-        openNewSessionDialog();
+        useAppDialogsStore.getState().setNewSessionOpen(true);
+        return;
       }
       if (mod && event.key === "w") {
         event.preventDefault();
-        if (activeTabId) closeTab(activeTabId);
+        const id = activeTabIdRef.current;
+        if (id) closeTab(id);
+        return;
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "p") {
         event.preventDefault();
         useCommandPaletteStore.getState().open("commands");
-      } else if (mod && !event.shiftKey && event.key === "p") {
+        return;
+      }
+      if (mod && !event.shiftKey && event.key === "p") {
         event.preventDefault();
         const { tree: t, currentPath: cp } = useFileTreeStore.getState();
         if (t && cp) {
           useCommandPaletteStore.getState().open("files");
         }
+        return;
       }
       if (mod && event.key === "e") {
         event.preventDefault();
         useFilePreviewStore.getState().togglePreview();
+        return;
       }
-      // Ctrl+Alt+= / Ctrl+Alt+- / Ctrl+Alt+0: zoom
       if (mod && event.altKey && (event.key === "=" || event.key === "+")) {
         event.preventDefault();
         useTerminalZoomStore.getState().zoomIn();
+        return;
       }
       if (mod && event.altKey && event.key === "-") {
         event.preventDefault();
         useTerminalZoomStore.getState().zoomOut();
+        return;
       }
       if (mod && event.altKey && event.key === "0") {
         event.preventDefault();
         useTerminalZoomStore.getState().resetZoom();
+        return;
       }
       // Ctrl+Tab / Ctrl+Shift+Tab: cycle tabs
       if (event.ctrlKey && event.key === "Tab") {
         event.preventDefault();
-        if (tabs.length > 1 && activeTabId) {
-          const currentIndex = tabs.findIndex((t) => t.id === activeTabId);
+        const currentTabs = tabsRef.current;
+        const currentActive = activeTabIdRef.current;
+        if (currentTabs.length > 1 && currentActive) {
+          const currentIndex = currentTabs.findIndex((t) => t.id === currentActive);
           const nextIndex = event.shiftKey
-            ? (currentIndex - 1 + tabs.length) % tabs.length
-            : (currentIndex + 1) % tabs.length;
-          setActiveTab(tabs[nextIndex].id);
+            ? (currentIndex - 1 + currentTabs.length) % currentTabs.length
+            : (currentIndex + 1) % currentTabs.length;
+          useTerminalTabsStore.getState().setActiveTab(currentTabs[nextIndex].id);
         }
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [toggleSidebar, openProject, openNewSessionDialog, closeTab, activeTabId, tabs, setActiveTab]);
+  }, [closeTab]);
 
   const hasProject = tree && currentPath;
 
@@ -238,7 +269,9 @@ function App() {
       <div className="flex flex-1 overflow-hidden">
         <FileTreeSidebar />
         <div className="flex min-w-0 flex-1 overflow-hidden">
-          <FilePreviewPane />
+          <Suspense fallback={null}>
+            <FilePreviewPane />
+          </Suspense>
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             {!hasProject ? (
               <EmptyState />
@@ -262,12 +295,18 @@ function App() {
         </div>
       </div>
       <Statusbar />
-      <CommandPalette />
-      <NewSessionDialog
-        open={useAppDialogsStore((s) => s.newSessionOpen)}
-        onOpenChange={useAppDialogsStore.getState().setNewSessionOpen}
-        onSessionTypeSelect={handleNewSessionType}
-      />
+      <Suspense fallback={null}>
+        <CommandPalette />
+      </Suspense>
+      <Suspense fallback={null}>
+        {newSessionOpen && (
+          <NewSessionDialog
+            open={newSessionOpen}
+            onOpenChange={useAppDialogsStore.getState().setNewSessionOpen}
+            onSessionTypeSelect={handleNewSessionType}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }
