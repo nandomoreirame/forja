@@ -24,23 +24,33 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn check_claude_installed() -> Result<String, String> {
-    let cmd = if cfg!(target_os = "windows") {
-        std::process::Command::new("where")
+    if cfg!(target_os = "windows") {
+        let cmd = std::process::Command::new("where")
             .arg("claude")
-            .output()
-    } else {
-        std::process::Command::new("which")
-            .arg("claude")
-            .output()
-    };
-
-    match cmd {
-        Ok(output) if output.status.success() => {
-            let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            Ok(path)
+            .output();
+        match cmd {
+            Ok(output) if output.status.success() => {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                Ok(path)
+            }
+            Ok(_) => Err("Claude Code CLI not found in PATH".to_string()),
+            Err(e) => Err(format!("Failed to check for claude: {}", e)),
         }
-        Ok(_) => Err("Claude Code CLI not found in PATH".to_string()),
-        Err(e) => Err(format!("Failed to check for claude: {}", e)),
+    } else {
+        // Use a login shell to resolve the full user PATH, since desktop-launched
+        // apps inherit a minimal PATH that excludes ~/.local/bin, ~/.nvm, etc.
+        let shell = std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string());
+        let cmd = std::process::Command::new(&shell)
+            .args(["-l", "-c", "which claude"])
+            .output();
+        match cmd {
+            Ok(output) if output.status.success() => {
+                let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                Ok(path)
+            }
+            Ok(_) => Err("Claude Code CLI not found in PATH".to_string()),
+            Err(e) => Err(format!("Failed to check for claude: {}", e)),
+        }
     }
 }
 
