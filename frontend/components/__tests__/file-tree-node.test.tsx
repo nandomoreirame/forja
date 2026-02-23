@@ -11,7 +11,7 @@ vi.mock("@tauri-apps/plugin-dialog", () => ({ open: vi.fn() }));
 describe("FileTreeNode", () => {
   beforeEach(() => {
     useFileTreeStore.setState({
-      expandedPaths: new Set<string>(),
+      expandedPaths: {},
     });
     useFilePreviewStore.setState({
       isOpen: false,

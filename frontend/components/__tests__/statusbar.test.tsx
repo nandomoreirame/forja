@@ -26,6 +26,7 @@ describe("Statusbar with HoverCard", () => {
       cpuHistory: [30, 35, 40, 45],
       rxHistory: [1024, 2048, 3072],
       txHistory: [512, 768, 1024],
+      historyVersion: 0,
     });
   });
 
@@ -152,6 +153,7 @@ describe("Statusbar with HoverCard", () => {
       cpuHistory: [30, 35, 40, 45],
       rxHistory: [1024, 2048, 3072],
       txHistory: [512, 768, 1024],
+      historyVersion: 0,
     });
 
     render(<Statusbar />);
@@ -166,6 +168,7 @@ describe("Statusbar with HoverCard", () => {
       cpuHistory: [],
       rxHistory: [],
       txHistory: [],
+      historyVersion: 0,
     });
 
     render(<Statusbar />);

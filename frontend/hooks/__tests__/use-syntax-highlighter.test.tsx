@@ -1,23 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { useSyntaxHighlighter } from '@/hooks/use-syntax-highlighter';
 
-// Mock Shiki to avoid WASM loading issues in jsdom
-vi.mock('shiki', () => ({
-  createHighlighter: vi.fn().mockResolvedValue({
-    codeToHtml: vi.fn((code: string) => {
-      // Simulate Shiki's HTML output structure
-      return `<pre class="shiki catppuccin-mocha" style="background-color:#1e1e2e" tabindex="0"><code><span class="line"><span style="color:#cdd6f4">${code}</span></span></code></pre>`;
-    }),
+const mockHighlighter = {
+  codeToHtml: vi.fn((code: string) => {
+    return `<pre class="shiki catppuccin-mocha" style="background-color:#1e1e2e" tabindex="0"><code><span class="line"><span style="color:#cdd6f4">${code}</span></span></code></pre>`;
   }),
+  loadLanguage: vi.fn().mockResolvedValue(undefined),
+};
+
+const mockCreateHighlighterCore = vi.fn().mockResolvedValue(mockHighlighter);
+
+vi.mock('shiki/core', () => ({
+  createHighlighterCore: (...args: unknown[]) => mockCreateHighlighterCore(...args),
+}));
+
+vi.mock('shiki/engine/oniguruma', () => ({
+  createOnigurumaEngine: vi.fn().mockReturnValue({}),
 }));
 
 describe('useSyntaxHighlighter', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCreateHighlighterCore.mockResolvedValue(mockHighlighter);
+    // Reset the module-level singleton between tests
+    vi.resetModules();
   });
 
+  async function importHook() {
+    const mod = await import('@/hooks/use-syntax-highlighter');
+    return mod.useSyntaxHighlighter;
+  }
+
   it('should initialize and set isReady to true', async () => {
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     expect(result.current.isReady).toBe(false);
@@ -28,6 +43,7 @@ describe('useSyntaxHighlighter', () => {
   });
 
   it('should highlight code and return HTML string', async () => {
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     await waitFor(() => {
@@ -43,6 +59,7 @@ describe('useSyntaxHighlighter', () => {
   });
 
   it('should detect language from file extension correctly', async () => {
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     await waitFor(() => {
@@ -69,6 +86,7 @@ describe('useSyntaxHighlighter', () => {
   });
 
   it('should return plaintext for unknown extensions', async () => {
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     await waitFor(() => {
@@ -80,6 +98,7 @@ describe('useSyntaxHighlighter', () => {
   });
 
   it('should handle files without extensions', async () => {
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     await waitFor(() => {
@@ -91,6 +110,7 @@ describe('useSyntaxHighlighter', () => {
   });
 
   it('should handle uppercase extensions', async () => {
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     await waitFor(() => {
@@ -103,19 +123,19 @@ describe('useSyntaxHighlighter', () => {
   });
 
   it('should return raw code when highlighter is not ready', async () => {
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     const code = 'const x = 42;';
     const html = await result.current.highlight(code, 'typescript');
 
-    // When not ready, should return the raw code
     expect(html).toBe(code);
   });
 
-  it('should set hasError when createHighlighter fails', async () => {
-    const { createHighlighter } = await import('shiki');
-    vi.mocked(createHighlighter).mockRejectedValueOnce(new Error('WASM failed to load'));
+  it('should set hasError when createHighlighterCore fails', async () => {
+    mockCreateHighlighterCore.mockRejectedValueOnce(new Error('WASM failed to load'));
 
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     await waitFor(() => {
@@ -126,9 +146,9 @@ describe('useSyntaxHighlighter', () => {
   });
 
   it('should return raw code from highlight when hasError is true', async () => {
-    const { createHighlighter } = await import('shiki');
-    vi.mocked(createHighlighter).mockRejectedValueOnce(new Error('WASM failed'));
+    mockCreateHighlighterCore.mockRejectedValueOnce(new Error('WASM failed'));
 
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     await waitFor(() => {
@@ -140,20 +160,17 @@ describe('useSyntaxHighlighter', () => {
     expect(html).toBe(code);
   });
 
-  it('should fallback to plaintext for unsupported languages', async () => {
-    const { createHighlighter } = await import('shiki');
-    const mockHighlighter = {
-      codeToHtml: vi.fn()
-        .mockImplementationOnce(() => {
-          throw new Error('Language not supported');
-        })
-        .mockImplementationOnce((code: string) => {
-          return `<pre class="shiki catppuccin-mocha"><code>${code}</code></pre>`;
-        }),
+  it('should fallback to plaintext when language load fails', async () => {
+    const failHighlighter = {
+      codeToHtml: vi.fn((code: string) => {
+        return `<pre class="shiki catppuccin-mocha"><code>${code}</code></pre>`;
+      }),
+      loadLanguage: vi.fn().mockRejectedValue(new Error('Language not supported')),
     };
 
-    vi.mocked(createHighlighter).mockResolvedValueOnce(mockHighlighter as any);
+    mockCreateHighlighterCore.mockResolvedValueOnce(failHighlighter);
 
+    const useSyntaxHighlighter = await importHook();
     const { result } = renderHook(() => useSyntaxHighlighter());
 
     await waitFor(() => {
@@ -163,8 +180,7 @@ describe('useSyntaxHighlighter', () => {
     const code = 'some code';
     const html = await result.current.highlight(code, 'unsupported-lang');
 
-    // Should fallback to plaintext
-    expect(mockHighlighter.codeToHtml).toHaveBeenCalledWith(code, {
+    expect(failHighlighter.codeToHtml).toHaveBeenCalledWith(code, {
       lang: 'plaintext',
       theme: 'catppuccin-mocha',
     });

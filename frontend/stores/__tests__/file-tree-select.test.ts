@@ -18,7 +18,7 @@ describe("useFileTreeStore - selectFile", () => {
       isOpen: false,
       currentPath: null,
       tree: null,
-      expandedPaths: new Set<string>(),
+      expandedPaths: {},
     });
 
     useFilePreviewStore.setState({

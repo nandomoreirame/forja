@@ -1,15 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { Suspense } from "react";
 import { FilePreviewPane } from "../file-preview-pane";
 import { useFilePreviewStore } from "@/stores/file-preview";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/plugin-dialog", () => ({ open: vi.fn() }));
-vi.mock("shiki", () => ({
-  createHighlighter: vi.fn().mockResolvedValue({
-    codeToHtml: vi.fn((code) => `<pre><code>${code}</code></pre>`),
-    dispose: vi.fn(),
+vi.mock("shiki/core", () => ({
+  createHighlighterCore: vi.fn().mockResolvedValue({
+    codeToHtml: vi.fn((code: string) => `<pre><code>${code}</code></pre>`),
+    loadLanguage: vi.fn().mockResolvedValue(undefined),
   }),
+}));
+vi.mock("shiki/engine/oniguruma", () => ({
+  createOnigurumaEngine: vi.fn().mockReturnValue({}),
 }));
 vi.mock("react-markdown", () => ({
   default: ({ children }: { children: string }) => (
@@ -19,6 +23,10 @@ vi.mock("react-markdown", () => ({
 vi.mock("remark-gfm", () => ({
   default: () => {},
 }));
+
+function renderWithSuspense(ui: React.ReactElement) {
+  return render(<Suspense fallback={null}>{ui}</Suspense>);
+}
 
 describe("FilePreviewPane", () => {
   beforeEach(() => {
@@ -32,7 +40,7 @@ describe("FilePreviewPane", () => {
   });
 
   it("returns null when isOpen is false", () => {
-    const { container } = render(<FilePreviewPane />);
+    const { container } = renderWithSuspense(<FilePreviewPane />);
     expect(container.innerHTML).toBe("");
   });
 
@@ -43,7 +51,7 @@ describe("FilePreviewPane", () => {
       currentFile: "/test/file.ts",
       content: { path: "/test/file.ts", content: "const x = 1;", size: 12 },
     });
-    render(<FilePreviewPane />);
+    renderWithSuspense(<FilePreviewPane />);
     const pane = screen.getByTestId("file-preview-pane");
     expect(pane.className).toMatch(/basis-1\/2/);
   });
@@ -54,7 +62,7 @@ describe("FilePreviewPane", () => {
       isLoading: true,
       currentFile: "/test/file.ts",
     });
-    render(<FilePreviewPane />);
+    renderWithSuspense(<FilePreviewPane />);
     expect(screen.getByTestId("file-preview-pane")).toBeInTheDocument();
     const spinner = document.querySelector(".animate-spin");
     expect(spinner).toBeInTheDocument();
@@ -67,7 +75,7 @@ describe("FilePreviewPane", () => {
       currentFile: "/test/file.ts",
       error: "File not found",
     });
-    render(<FilePreviewPane />);
+    renderWithSuspense(<FilePreviewPane />);
     expect(screen.getByText("File not found")).toBeInTheDocument();
     expect(screen.getByTestId("error-icon")).toBeInTheDocument();
   });
@@ -79,7 +87,7 @@ describe("FilePreviewPane", () => {
       currentFile: "/path/to/example.ts",
       content: { path: "/path/to/example.ts", content: "const x = 1;", size: 12 },
     });
-    render(<FilePreviewPane />);
+    renderWithSuspense(<FilePreviewPane />);
     expect(screen.getByText("example.ts")).toBeInTheDocument();
   });
 
@@ -90,7 +98,7 @@ describe("FilePreviewPane", () => {
       currentFile: "/test/file.ts",
       content: { path: "/test/file.ts", content: "const x = 1;", size: 12 },
     });
-    render(<FilePreviewPane />);
+    renderWithSuspense(<FilePreviewPane />);
     const closeButton = screen.getByLabelText("Close preview");
     expect(closeButton).toBeInTheDocument();
 
@@ -107,19 +115,22 @@ describe("FilePreviewPane", () => {
       currentFile: "/test/file.ts",
       content: { path: "/test/file.ts", content: "const x = 1;", size: 2048 },
     });
-    render(<FilePreviewPane />);
+    renderWithSuspense(<FilePreviewPane />);
     expect(screen.getByText("2.0 KB")).toBeInTheDocument();
   });
 
-  it("renders markdown content for .md files", () => {
+  it("renders markdown content for .md files", async () => {
     useFilePreviewStore.setState({
       isOpen: true,
       isLoading: false,
       currentFile: "/test/README.md",
       content: { path: "/test/README.md", content: "# Hello", size: 7 },
     });
-    render(<FilePreviewPane />);
-    expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
+    renderWithSuspense(<FilePreviewPane />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
+    });
     expect(screen.getByText("# Hello")).toBeInTheDocument();
   });
 });
