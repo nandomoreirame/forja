@@ -150,8 +150,7 @@ Open source developer tooling builds reputation and fast organic adoption. The d
 
 ## 🔗 Useful Links
 
-- **Repo:** https://github.com/nandomoreirame/forja (to be created)
-- **Origin issue:** https://github.com/nandomoreirame/ideias/issues/41
+- **Repo:** https://github.com/nandomoreirame/forja
 - **References:** Warp, Hyper, GNOME Terminal
 
 ---

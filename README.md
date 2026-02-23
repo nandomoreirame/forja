@@ -1,8 +1,10 @@
 # Forja
 
-> [Issue #41](https://github.com/nandomoreirame/ideias/issues/41) | Desktop Apps
-
 A dedicated GUI client for Claude Code, built with Rust (Tauri 2) + React. Not just another terminal: it's the forge where code is shaped with artificial intelligence.
+
+## Screenshot
+
+![Forja - Home Screen](screenshot.png)
 
 ## Concept
 
@@ -66,6 +68,40 @@ Main Workspace
 ## Strategy
 
 Open source from day 1. Community first, monetization later (sponsorships, pro features for teams).
+
+## Installation
+
+Download the latest release from [GitHub Releases](https://github.com/nandomoreirame/forja/releases):
+
+- **macOS**: `.dmg` (Apple Silicon + Intel)
+- **Linux**: `.AppImage` or `.deb`
+
+### Prerequisites
+
+Forja requires [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code/overview) installed:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+## Build from Source
+
+```bash
+# Clone
+git clone https://github.com/nandomoreirame/forja.git
+cd forja
+
+# Install dependencies
+pnpm install
+
+# Run in development mode
+pnpm tauri dev
+
+# Build for production
+pnpm tauri build
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 
 ## Documentation
 
