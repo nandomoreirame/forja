@@ -13,8 +13,19 @@ pub struct PtySession {
 }
 
 impl PtySession {
+    #[cfg(test)]
     pub fn spawn(
         command: &str,
+        cwd: &str,
+        rows: u16,
+        cols: u16,
+    ) -> Result<Self, String> {
+        Self::spawn_with_args(command, &[], cwd, rows, cols)
+    }
+
+    pub fn spawn_with_args(
+        command: &str,
+        args: &[&str],
         cwd: &str,
         rows: u16,
         cols: u16,
@@ -30,7 +41,11 @@ impl PtySession {
         let pair = pty_system.openpty(size).map_err(|e| e.to_string())?;
 
         let mut cmd = CommandBuilder::new(command);
+        for arg in args {
+            cmd.arg(arg);
+        }
         cmd.cwd(cwd);
+        cmd.env("TERM", "xterm-256color");
 
         let child = pair.slave.spawn_command(cmd).map_err(|e| e.to_string())?;
         drop(pair.slave);
@@ -88,6 +103,18 @@ pub struct PtyExitPayload {
     pub code: i32,
 }
 
+fn get_user_shell() -> String {
+    std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string())
+}
+
+fn spawn_session(cwd: &str, session_type: Option<&str>) -> Result<PtySession, String> {
+    let shell = get_user_shell();
+    match session_type {
+        Some("terminal") => PtySession::spawn_with_args(&shell, &["-l"], cwd, 24, 80),
+        _ => PtySession::spawn_with_args(&shell, &["-l", "-c", "exec claude"], cwd, 24, 80),
+    }
+}
+
 pub struct PtyState {
     pub sessions: Arc<Mutex<HashMap<String, PtySession>>>,
 }
@@ -108,11 +135,7 @@ pub async fn spawn_pty(
     path: String,
     session_type: Option<String>,
 ) -> Result<String, String> {
-    let command = match session_type.as_deref() {
-        Some("terminal") => std::env::var("SHELL").unwrap_or_else(|_| "bash".to_string()),
-        _ => "claude".to_string(),
-    };
-    let session = PtySession::spawn(&command, &path, 24, 80)?;
+    let session = spawn_session(&path, session_type.as_deref())?;
 
     let reader = session
         .master
@@ -132,7 +155,7 @@ pub async fn spawn_pty(
     let reader_tab_id = tab_id.clone();
     std::thread::spawn(move || {
         let mut reader = reader;
-        let mut buf = [0u8; 4096];
+        let mut buf = [0u8; 32768];
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => {
@@ -304,9 +327,171 @@ mod tests {
     }
 
     #[test]
+    fn test_spawn_with_args_passes_arguments() {
+        let session = PtySession::spawn_with_args(
+            "echo",
+            &["hello", "from", "args"],
+            &std::env::temp_dir().to_string_lossy(),
+            24,
+            80,
+        )
+        .expect("Failed to spawn echo with args");
+
+        let mut buf = [0u8; 1024];
+        let mut output = String::new();
+
+        let start = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(3);
+
+        while start.elapsed() < timeout {
+            match session.reader.lock().unwrap().read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    output.push_str(&String::from_utf8_lossy(&buf[..n]));
+                    if output.contains("hello") {
+                        break;
+                    }
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+                Err(_) => break,
+            }
+        }
+
+        assert!(
+            output.contains("hello from args"),
+            "Expected 'hello from args', got: {:?}",
+            output
+        );
+    }
+
+    #[test]
+    fn test_spawn_session_terminal_uses_login_shell() {
+        // Terminal session should spawn a login shell that has TERM set
+        let session = spawn_session(
+            &std::env::temp_dir().to_string_lossy(),
+            Some("terminal"),
+        )
+        .expect("Failed to spawn terminal session");
+
+        // Write a command to check TERM, then exit
+        session.write(b"printenv TERM && exit\n").expect("Failed to write");
+
+        let mut buf = [0u8; 4096];
+        let mut output = String::new();
+
+        let start = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(5);
+
+        while start.elapsed() < timeout {
+            match session.reader.lock().unwrap().read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    output.push_str(&String::from_utf8_lossy(&buf[..n]));
+                    if output.contains("xterm-256color") {
+                        break;
+                    }
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+                Err(_) => break,
+            }
+        }
+
+        assert!(
+            output.contains("xterm-256color"),
+            "Expected TERM=xterm-256color in terminal session, got: {:?}",
+            output
+        );
+
+        let _ = session.kill();
+    }
+
+    #[test]
     fn test_pty_state_default_is_empty() {
         let state = PtyState::default();
         let sessions = state.sessions.lock().unwrap();
         assert!(sessions.is_empty());
+    }
+
+    #[test]
+    fn test_spawn_sets_term_env_var() {
+        let session = PtySession::spawn_with_args(
+            "printenv",
+            &["TERM"],
+            &std::env::temp_dir().to_string_lossy(),
+            24,
+            80,
+        )
+        .expect("Failed to spawn printenv TERM");
+
+        let mut buf = [0u8; 1024];
+        let mut output = String::new();
+
+        let start = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(3);
+
+        while start.elapsed() < timeout {
+            match session.reader.lock().unwrap().read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    output.push_str(&String::from_utf8_lossy(&buf[..n]));
+                    if output.contains("xterm") {
+                        break;
+                    }
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+                Err(_) => break,
+            }
+        }
+
+        assert!(
+            output.contains("xterm-256color"),
+            "Expected 'xterm-256color' from printenv TERM, got: {:?}",
+            output
+        );
+    }
+
+    #[test]
+    fn test_spawn_inherits_path_env_var() {
+        let session = PtySession::spawn_with_args(
+            "printenv",
+            &["PATH"],
+            &std::env::temp_dir().to_string_lossy(),
+            24,
+            80,
+        )
+        .expect("Failed to spawn printenv PATH");
+
+        let mut buf = [0u8; 4096];
+        let mut output = String::new();
+
+        let start = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(3);
+
+        while start.elapsed() < timeout {
+            match session.reader.lock().unwrap().read(&mut buf) {
+                Ok(0) => break,
+                Ok(n) => {
+                    output.push_str(&String::from_utf8_lossy(&buf[..n]));
+                    if output.contains("/") {
+                        break;
+                    }
+                }
+                Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                }
+                Err(_) => break,
+            }
+        }
+
+        assert!(
+            !output.trim().is_empty(),
+            "Expected PATH value (inherited from parent), got empty output",
+        );
     }
 }
