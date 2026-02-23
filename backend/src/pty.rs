@@ -134,6 +134,7 @@ pub async fn spawn_pty(
     tab_id: String,
     path: String,
     session_type: Option<String>,
+    window_label: String,
 ) -> Result<String, String> {
     let session = spawn_session(&path, session_type.as_deref())?;
 
@@ -150,16 +151,17 @@ pub async fn spawn_pty(
         sessions.insert(tab_id.clone(), session);
     }
 
-    // Start reader thread scoped to this tab_id
+    // Start reader thread scoped to this tab_id + window_label
     let app_handle = app.clone();
     let reader_tab_id = tab_id.clone();
+    let reader_window_label = window_label;
     std::thread::spawn(move || {
         let mut reader = reader;
         let mut buf = [0u8; 32768];
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => {
-                    let _ = app_handle.emit("pty:exit", PtyExitPayload {
+                    let _ = app_handle.emit_to(&reader_window_label, "pty:exit", PtyExitPayload {
                         tab_id: reader_tab_id.clone(),
                         code: 0,
                     });
@@ -167,13 +169,13 @@ pub async fn spawn_pty(
                 }
                 Ok(n) => {
                     let data = String::from_utf8_lossy(&buf[..n]).to_string();
-                    let _ = app_handle.emit("pty:data", PtyDataPayload {
+                    let _ = app_handle.emit_to(&reader_window_label, "pty:data", PtyDataPayload {
                         tab_id: reader_tab_id.clone(),
                         data,
                     });
                 }
                 Err(_) => {
-                    let _ = app_handle.emit("pty:exit", PtyExitPayload {
+                    let _ = app_handle.emit_to(&reader_window_label, "pty:exit", PtyExitPayload {
                         tab_id: reader_tab_id.clone(),
                         code: 1,
                     });
