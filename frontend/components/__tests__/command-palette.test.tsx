@@ -31,7 +31,7 @@ const mockFileTreeState = {
 };
 
 vi.mock("@/stores/file-tree", () => ({
-  APP_NAME: "Forja for Claude Code",
+  APP_NAME: "Forja",
   useFileTreeStore: Object.assign(
     () => mockFileTreeState,
     { getState: () => mockFileTreeState }

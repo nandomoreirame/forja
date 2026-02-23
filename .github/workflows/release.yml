@@ -40,11 +40,11 @@ jobs:
 
             | Platform | Architecture | File |
             |----------|-------------|------|
-            | macOS | Apple Silicon (arm64) | `Forja for Claude Code_${{ steps.version.outputs.version }}_aarch64.dmg` |
-            | macOS | Intel (x64) | `Forja for Claude Code_${{ steps.version.outputs.version }}_x64.dmg` |
-            | Linux | x64 (.deb) | `forja-for-claude-code_${{ steps.version.outputs.version }}_amd64.deb` |
-            | Linux | x64 (.rpm) | `forja-for-claude-code-${{ steps.version.outputs.version }}-1.x86_64.rpm` |
-            | Linux | x64 (.AppImage) | `forja-for-claude-code_${{ steps.version.outputs.version }}_amd64.AppImage` |
+            | macOS | Apple Silicon (arm64) | `Forja_${{ steps.version.outputs.version }}_aarch64.dmg` |
+            | macOS | Intel (x64) | `Forja_${{ steps.version.outputs.version }}_x64.dmg` |
+            | Linux | x64 (.deb) | `forja_${{ steps.version.outputs.version }}_amd64.deb` |
+            | Linux | x64 (.rpm) | `forja-${{ steps.version.outputs.version }}-1.x86_64.rpm` |
+            | Linux | x64 (.AppImage) | `forja_${{ steps.version.outputs.version }}_amd64.AppImage` |
 
             > **macOS note:** This app is not notarized. Right-click > Open to bypass Gatekeeper on first launch.
 

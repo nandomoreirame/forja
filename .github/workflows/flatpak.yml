@@ -45,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          DEB_NAME="forja-for-claude-code_${VERSION}_amd64.deb"
+          DEB_NAME="forja_${VERSION}_amd64.deb"
           curl -sL \
             -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/octet-stream" \
@@ -63,10 +63,10 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           SHA256=$(sha256sum "$deb_path" | cut -d' ' -f1)
           REPO="${{ github.repository }}"
-          DEB_URL="https://github.com/${REPO}/releases/download/${{ steps.version.outputs.tag }}/forja-for-claude-code_${VERSION}_amd64.deb"
+          DEB_URL="https://github.com/${REPO}/releases/download/${{ steps.version.outputs.tag }}/forja_${VERSION}_amd64.deb"
 
           sed -i \
-            -e "s|url: .*forja-for-claude-code.*\.deb|url: ${DEB_URL}|" \
+            -e "s|url: .*forja.*\.deb|url: ${DEB_URL}|" \
             -e "s|sha256: .*|sha256: ${SHA256}|" \
             .flatpak/dev.forja.terminal.yml
 
@@ -74,7 +74,7 @@ jobs:
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
         with:
           manifest-path: .flatpak/dev.forja.terminal.yml
-          bundle: forja-for-claude-code.flatpak
+          bundle: forja.flatpak
 
       - name: Upload Flatpak to release
         env:
@@ -84,5 +84,5 @@ jobs:
           curl -s \
             -H "Authorization: token $GH_TOKEN" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary @forja-for-claude-code.flatpak \
-            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release.outputs.id }}/assets?name=forja-for-claude-code_${VERSION}.flatpak"
+            --data-binary @forja.flatpak \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release.outputs.id }}/assets?name=forja_${VERSION}.flatpak"

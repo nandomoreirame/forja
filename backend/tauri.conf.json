@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicholasrice/tauri/tauri-v2/crates/tauri-cli/schema.json",
-  "productName": "Forja for Claude Code",
+  "productName": "Forja",
   "version": "0.1.0",
   "identifier": "dev.forja.terminal",
   "build": {
@@ -13,7 +13,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "Forja for Claude Code",
+        "title": "Forja",
         "width": 1200,
         "height": 800,
         "minWidth": 800,
@@ -24,7 +24,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
+      "csp": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; img-src 'self' asset: https://asset.localhost; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
     }
   },
   "bundle": {

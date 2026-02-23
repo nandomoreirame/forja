@@ -3,7 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { create } from "zustand";
 import { useFilePreviewStore } from "./file-preview";
 
-export const APP_NAME = "Forja for Claude Code";
+export const APP_NAME = "Forja";
 
 export interface FileNode {
   name: string;

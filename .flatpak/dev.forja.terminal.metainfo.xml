@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
   <id>dev.forja.terminal</id>
-  <name>Forja for Claude Code</name>
+  <name>Forja</name>
   <summary>A dedicated desktop client for Claude Code</summary>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>

@@ -24,7 +24,7 @@ vi.mock("@tauri-apps/api/app", () => ({
 }));
 
 vi.mock("@/stores/file-tree", () => ({
-  APP_NAME: "Forja for Claude Code",
+  APP_NAME: "Forja",
   useFileTreeStore: () => ({
     isOpen: false,
     tree: null,

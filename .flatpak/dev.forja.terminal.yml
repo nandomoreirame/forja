@@ -2,7 +2,7 @@ app-id: dev.forja.terminal
 runtime: org.gnome.Platform
 runtime-version: "46"
 sdk: org.gnome.Sdk
-command: forja-for-claude-code
+command: forja
 
 finish-args:
   - --share=ipc
@@ -16,20 +16,20 @@ modules:
   - name: forja-terminal
     buildsystem: simple
     build-commands:
-      - ar x forja-for-claude-code.deb
+      - ar x forja.deb
       - tar xf data.tar.*
-      - install -Dm755 usr/bin/forja-for-claude-code /app/bin/forja-for-claude-code
+      - install -Dm755 usr/bin/forja /app/bin/forja
       - cp -r usr/share/icons /app/share/icons || true
-      - install -Dm644 /app/share/icons/hicolor/128x128/apps/forja-for-claude-code.png
+      - install -Dm644 /app/share/icons/hicolor/128x128/apps/forja.png
         /app/share/icons/hicolor/128x128/apps/dev.forja.terminal.png || true
       - install -Dm644 dev.forja.terminal.metainfo.xml
         /app/share/metainfo/dev.forja.terminal.metainfo.xml
       - |
         cat > /app/share/applications/dev.forja.terminal.desktop << 'DESKTOP'
         [Desktop Entry]
-        Name=Forja for Claude Code
+        Name=Forja
         Comment=A dedicated desktop client for Claude Code
-        Exec=forja-for-claude-code
+        Exec=forja
         Icon=dev.forja.terminal
         Terminal=false
         Type=Application
@@ -37,8 +37,8 @@ modules:
         DESKTOP
     sources:
       - type: file
-        url: https://github.com/OWNER/forja-terminal/releases/download/vVERSION/forja-for-claude-code_VERSION_amd64.deb
+        url: https://github.com/OWNER/forja-terminal/releases/download/vVERSION/forja_VERSION_amd64.deb
         sha256: PLACEHOLDER_SHA256
-        dest-filename: forja-for-claude-code.deb
+        dest-filename: forja.deb
       - type: file
         path: dev.forja.terminal.metainfo.xml
