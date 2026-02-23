@@ -1,24 +1,8 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { Component, useMemo, type ErrorInfo, type ReactNode } from 'react';
 import { X, FileCode, AlertCircle } from 'lucide-react';
 import { useFilePreviewStore } from '@/stores/file-preview';
 import { CodeViewer } from './code-viewer';
-
-// Lazy load markdown renderer only when a .md file is opened
-const LazyMarkdown = lazy(() =>
-  Promise.all([
-    import('react-markdown'),
-    import('remark-gfm'),
-  ]).then(([reactMarkdown, remarkGfm]) => ({
-    default: function MarkdownRenderer({ content }: { content: string }) {
-      const ReactMarkdown = reactMarkdown.default;
-      return (
-        <ReactMarkdown remarkPlugins={[remarkGfm.default]}>
-          {content}
-        </ReactMarkdown>
-      );
-    },
-  }))
-);
+import { MarkdownRenderer } from './markdown-renderer';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -30,7 +14,63 @@ function formatFileSize(bytes: number): string {
   }
 }
 
-export function FilePreviewPane() {
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  onClose: () => void;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class PreviewErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('FilePreviewPane render error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          data-testid="file-preview-pane"
+          className="flex h-full basis-1/2 grow-0 shrink-0 flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
+        >
+          <div className="flex h-9 shrink-0 items-center justify-end border-b border-ctp-surface0 px-3">
+            <button
+              onClick={this.props.onClose}
+              aria-label="Close preview"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+            >
+              <X className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </div>
+          <div className="flex flex-1 items-center justify-center p-4">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <AlertCircle className="h-8 w-8 text-ctp-red" strokeWidth={1.5} />
+              <div>
+                <p className="text-sm font-medium text-ctp-text">Failed to render preview</p>
+                <p className="mt-1 text-xs text-ctp-overlay1">An error occurred while rendering this file.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function FilePreviewPaneContent() {
   const isOpen = useFilePreviewStore((s) => s.isOpen);
   const currentFile = useFilePreviewStore((s) => s.currentFile);
   const content = useFilePreviewStore((s) => s.content);
@@ -98,23 +138,13 @@ export function FilePreviewPane() {
         )}
 
         {!isLoading && !error && content && (
-          <>
-            {isMarkdown ? (
-              <div className="markdown prose prose-invert max-w-none p-4">
-                <Suspense
-                  fallback={
-                    <div className="flex items-center justify-center p-4">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-                    </div>
-                  }
-                >
-                  <LazyMarkdown content={content.content} />
-                </Suspense>
-              </div>
-            ) : (
-              <CodeViewer code={content.content} filename={filename} />
-            )}
-          </>
+          isMarkdown ? (
+            <div className="p-4">
+              <MarkdownRenderer content={content.content} />
+            </div>
+          ) : (
+            <CodeViewer code={content.content} filename={filename} />
+          )
         )}
       </div>
 
@@ -127,5 +157,15 @@ export function FilePreviewPane() {
         </div>
       )}
     </div>
+  );
+}
+
+export function FilePreviewPane() {
+  const closePreview = useFilePreviewStore((s) => s.closePreview);
+
+  return (
+    <PreviewErrorBoundary onClose={closePreview}>
+      <FilePreviewPaneContent />
+    </PreviewErrorBoundary>
   );
 }

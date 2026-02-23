@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { MemoryStick, Cpu, Database, HardDrive, GitBranch, FileText } from "lucide-react";
 import { useSystemMetrics } from "@/hooks/use-system-metrics";
 import { useFilePreviewStore } from "@/stores/file-preview";
@@ -119,22 +121,39 @@ function GitSection() {
   const currentPath = useFileTreeStore((s) => s.currentPath);
   const [gitInfo, setGitInfo] = useState<GitInfo | null>(null);
 
+  const fetchGitInfo = useCallback(() => {
+    if (!currentPath) return;
+    invoke<GitInfo>("get_git_info_command", { filePath: currentPath })
+      .then(setGitInfo)
+      .catch(() => setGitInfo(null));
+  }, [currentPath]);
+
+  // Start watcher and poll as fallback (30s)
   useEffect(() => {
     if (!currentPath) {
       setGitInfo(null);
       return;
     }
 
-    const fetchGitInfo = () => {
-      invoke<GitInfo>("get_git_info_command", { filePath: currentPath })
-        .then(setGitInfo)
-        .catch(() => setGitInfo(null));
-    };
-
     fetchGitInfo();
-    const interval = setInterval(fetchGitInfo, 10000);
-    return () => clearInterval(interval);
-  }, [currentPath]);
+    const windowLabel = getCurrentWindow().label;
+    invoke("start_watcher", { path: currentPath, windowLabel }).catch(() => {});
+    const interval = setInterval(fetchGitInfo, 30000);
+    return () => {
+      clearInterval(interval);
+      invoke("stop_watcher", { windowLabel }).catch(() => {});
+    };
+  }, [currentPath, fetchGitInfo]);
+
+  // Listen for git:changed events from file watcher
+  useEffect(() => {
+    const unlisten = listen("git:changed", () => {
+      fetchGitInfo();
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, [fetchGitInfo]);
 
   if (!gitInfo?.isGitRepo) {
     return null;
@@ -171,13 +190,17 @@ function FileInfoSection() {
       .catch(() => setFileStatus(null));
   }, [currentFile]);
 
+  const lines = useMemo(
+    () => (content ? countLines(content.content) : 0),
+    [content],
+  );
+
   if (!isOpen || !currentFile || !content) {
     return null;
   }
 
   const filename = currentFile.split("/").pop() || "";
   const language = getLanguageDisplay(filename);
-  const lines = useMemo(() => countLines(content.content), [content.content]);
   const statusEntry = fileStatus
     ? GIT_STATUS_LABELS[fileStatus] || {
         label: fileStatus,

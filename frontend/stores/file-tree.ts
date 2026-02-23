@@ -25,6 +25,7 @@ interface FileTreeState {
 
   toggleSidebar: () => void;
   openProject: () => Promise<void>;
+  openProjectPath: (path: string) => Promise<void>;
   setTree: (tree: DirectoryTree | null) => void;
   toggleExpanded: (path: string) => void;
   isExpanded: (path: string) => boolean;
@@ -48,17 +49,49 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         title: "Select Project Directory",
       });
 
-      if (selected) {
-        const result = await invoke<DirectoryTree>(
-          "read_directory_tree_command",
-          { path: selected, maxDepth: 8 },
-        );
-        set({
-          currentPath: selected,
-          tree: result,
-          expandedPaths: {},
-        });
+      if (!selected) return;
+
+      // If a project is already open, open in a new window
+      const { currentPath: current } = get();
+      if (current) {
+        await invoke("open_project_in_new_window", { path: selected });
+        return;
       }
+
+      const result = await invoke<DirectoryTree>(
+        "read_directory_tree_command",
+        { path: selected, maxDepth: 8 },
+      );
+      set({
+        currentPath: selected,
+        tree: result,
+        expandedPaths: {},
+      });
+      invoke("add_recent_project", { path: selected }).catch(() => {});
+    } catch (error) {
+      console.error("Failed to load project directory:", error);
+    }
+  },
+
+  openProjectPath: async (path: string) => {
+    try {
+      // If a project is already open, open in a new window
+      const { currentPath: current } = get();
+      if (current) {
+        await invoke("open_project_in_new_window", { path });
+        return;
+      }
+
+      const result = await invoke<DirectoryTree>(
+        "read_directory_tree_command",
+        { path, maxDepth: 8 },
+      );
+      set({
+        currentPath: path,
+        tree: result,
+        expandedPaths: {},
+      });
+      invoke("add_recent_project", { path }).catch(() => {});
     } catch (error) {
       console.error("Failed to load project directory:", error);
     }

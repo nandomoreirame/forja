@@ -10,8 +10,16 @@ import("@fontsource/geist-sans/600.css");
 import("@fontsource/geist-sans/700.css");
 import("@fontsource-variable/jetbrains-mono/index.css");
 
+function getInitialProjectPath(): string | null {
+  const params = new URLSearchParams(window.location.search);
+  const project = params.get("project");
+  return project ? decodeURIComponent(project) : null;
+}
+
+const initialProjectPath = getInitialProjectPath();
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <App initialProjectPath={initialProjectPath} />
   </React.StrictMode>,
 );

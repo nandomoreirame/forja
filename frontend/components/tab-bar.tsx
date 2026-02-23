@@ -1,4 +1,5 @@
 import { Plus, X } from "lucide-react";
+import { useSessionStateStore } from "@/stores/session-state";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
 interface TabBarProps {
@@ -16,11 +17,14 @@ export function TabBar({
   onCloseTab,
   onNewTab,
 }: TabBarProps) {
+  const sessionStates = useSessionStateStore((s) => s.states);
+
   return (
     <div className="flex h-9 items-center border-b border-ctp-surface0 bg-ctp-mantle">
       <div role="tablist" className="flex flex-1 items-center overflow-x-auto">
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
+          const sessionState = sessionStates[tab.id] ?? "idle";
           return (
             <button
               key={tab.id}
@@ -33,6 +37,18 @@ export function TabBar({
                   : "text-ctp-overlay1 hover:text-ctp-subtext0"
               } ${!tab.isRunning ? "italic opacity-60" : ""}`}
             >
+              <span
+                aria-label={`Session state: ${sessionState}`}
+                className={`inline-block h-2 w-2 shrink-0 rounded-full ${
+                  sessionState === "thinking"
+                    ? "animate-pulse bg-brand"
+                    : sessionState === "ready"
+                      ? "bg-ctp-green"
+                      : sessionState === "exited"
+                        ? "bg-ctp-red"
+                        : "bg-ctp-surface1"
+                }`}
+              />
               <span>{tab.name}</span>
               <span
                 role="button"

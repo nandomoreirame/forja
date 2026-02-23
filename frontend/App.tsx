@@ -1,9 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { Anvil, FolderOpen, PanelLeft, Plus, Search, TerminalSquare } from "lucide-react";
-import { lazy, Suspense, useCallback, useEffect, useRef } from "react";
+import { AlertCircle, Anvil, Clock, FolderOpen, PanelLeft, Plus, Search, TerminalSquare } from "lucide-react";
+import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from "react";
 import { MOD_KEY } from "./lib/platform";
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
+import { FilePreviewPane } from "./components/file-preview-pane";
 import { Statusbar } from "./components/statusbar";
 import { TabBar } from "./components/tab-bar";
 import { TerminalPane } from "./components/terminal-pane";
@@ -13,18 +14,66 @@ import { useCommandPaletteStore } from "./stores/command-palette";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
+import { useSessionStateStore } from "./stores/session-state";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
+
+// Root error boundary to prevent blank screen on any React crash
+interface AppErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class AppErrorBoundary extends Component<{ children: ReactNode }, AppErrorBoundaryState> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): AppErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Forja app error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-full flex-col items-center justify-center gap-4 bg-ctp-base p-8">
+          <AlertCircle className="h-12 w-12 text-ctp-red" strokeWidth={1.5} />
+          <h1 className="text-lg font-semibold text-ctp-text">Something went wrong</h1>
+          <p className="max-w-md text-center text-sm text-ctp-overlay1">
+            {this.state.error?.message || 'An unexpected error occurred.'}
+          </p>
+          <button
+            onClick={() => this.setState({ hasError: false, error: null })}
+            className="rounded-md bg-ctp-surface0 px-4 py-2 text-sm text-ctp-text transition-colors hover:bg-ctp-surface1"
+          >
+            Try Again
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 // Lazy load non-essential components
 const CommandPalette = lazy(() =>
   import("./components/command-palette").then((m) => ({ default: m.CommandPalette }))
 );
-const FilePreviewPane = lazy(() =>
-  import("./components/file-preview-pane").then((m) => ({ default: m.FilePreviewPane }))
-);
 const NewSessionDialog = lazy(() =>
   import("./components/new-session-dialog").then((m) => ({ default: m.NewSessionDialog }))
 );
+const ClaudeNotFoundDialog = lazy(() =>
+  import("./components/claude-not-found-dialog").then((m) => ({ default: m.ClaudeNotFoundDialog }))
+);
+
+interface PtyDataPayload {
+  tab_id: string;
+  data: string;
+}
 
 interface PtyExitPayload {
   tab_id: string;
@@ -39,9 +88,22 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
+interface RecentProject {
+  path: string;
+  name: string;
+  last_opened: string;
+}
+
 function EmptyState() {
-  const { openProject, toggleSidebar } = useFileTreeStore();
+  const { openProject, openProjectPath, toggleSidebar } = useFileTreeStore();
   const mod = MOD_KEY;
+  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
+
+  useEffect(() => {
+    invoke<RecentProject[]>("get_recent_projects")
+      .then(setRecentProjects)
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-10">
@@ -101,6 +163,31 @@ function EmptyState() {
           </span>
         </button>
       </div>
+
+      {recentProjects.length > 0 && (
+        <div className="flex w-full max-w-sm flex-col gap-2">
+          <div className="flex items-center gap-2 px-2 text-xs text-ctp-overlay0">
+            <Clock className="h-3 w-3" strokeWidth={1.5} />
+            <span>Recent Projects</span>
+          </div>
+          <div className="flex flex-col gap-0.5">
+            {recentProjects.map((project) => (
+              <button
+                key={project.path}
+                onClick={() => openProjectPath(project.path)}
+                className="group flex flex-col gap-0.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-ctp-mantle"
+              >
+                <span className="text-sm text-ctp-subtext0 group-hover:text-ctp-text">
+                  {project.name}
+                </span>
+                <span className="truncate text-xs text-ctp-overlay0">
+                  {project.path}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -130,7 +217,7 @@ function NoSessionsState({ onOpenDialog }: { onOpenDialog: () => void }) {
   );
 }
 
-function App() {
+function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const tree = useFileTreeStore((s) => s.tree);
   const currentPath = useFileTreeStore((s) => s.currentPath);
   const tabs = useTerminalTabsStore((s) => s.tabs);
@@ -140,6 +227,22 @@ function App() {
   const removeTab = useTerminalTabsStore((s) => s.removeTab);
   const setActiveTab = useTerminalTabsStore((s) => s.setActiveTab);
   const newSessionOpen = useAppDialogsStore((s) => s.newSessionOpen);
+  const [claudeNotFound, setClaudeNotFound] = useState(false);
+
+  // Auto-open project when launched via query param from a new window
+  useEffect(() => {
+    if (initialProjectPath && !currentPath) {
+      useFileTreeStore.getState().openProjectPath(initialProjectPath);
+    }
+  }, [initialProjectPath, currentPath]);
+
+  // Check if claude CLI is installed when project opens
+  useEffect(() => {
+    if (!currentPath) return;
+    invoke("check_claude_installed").catch(() => {
+      setClaudeNotFound(true);
+    });
+  }, [currentPath]);
 
   // Refs for keyboard handler to avoid recreating listener
   const tabsRef = useRef(tabs);
@@ -173,10 +276,22 @@ function App() {
     [removeTab],
   );
 
+  // Track session state from PTY output
+  useEffect(() => {
+    const unlisten = listen<PtyDataPayload>("pty:data", (event) => {
+      useSessionStateStore.getState().onData(event.payload.tab_id);
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
   // Auto-close tab when Claude session exits
   useEffect(() => {
     const unlisten = listen<PtyExitPayload>("pty:exit", (event) => {
-      removeTab(event.payload.tab_id);
+      const { tab_id } = event.payload;
+      useSessionStateStore.getState().onExit(tab_id);
+      removeTab(tab_id);
     });
     return () => {
       unlisten.then((fn) => fn());
@@ -264,14 +379,13 @@ function App() {
   const hasProject = tree && currentPath;
 
   return (
+    <AppErrorBoundary>
     <div className="relative flex h-full flex-col bg-ctp-base">
       <Titlebar />
       <div className="flex flex-1 overflow-hidden">
         <FileTreeSidebar />
         <div className="flex min-w-0 flex-1 overflow-hidden">
-          <Suspense fallback={null}>
-            <FilePreviewPane />
-          </Suspense>
+          <FilePreviewPane />
           <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             {!hasProject ? (
               <EmptyState />
@@ -287,7 +401,9 @@ function App() {
                 {tabs.length === 0 ? (
                   <NoSessionsState onOpenDialog={openNewSessionDialog} />
                 ) : (
-                  <TerminalPane />
+                  <div className="flex min-h-0 flex-1 overflow-hidden">
+                    <TerminalPane />
+                  </div>
                 )}
               </>
             )}
@@ -307,7 +423,16 @@ function App() {
           />
         )}
       </Suspense>
+      <Suspense fallback={null}>
+        {claudeNotFound && (
+          <ClaudeNotFoundDialog
+            open={claudeNotFound}
+            onResolved={() => setClaudeNotFound(false)}
+          />
+        )}
+      </Suspense>
     </div>
+    </AppErrorBoundary>
   );
 }
 

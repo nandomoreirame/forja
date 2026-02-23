@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 interface PtyDataPayload {
   tab_id: string;
@@ -53,6 +54,7 @@ export function usePty(options: UsePtyOptions) {
       tabId: tabIdRef.current,
       path,
       sessionType,
+      windowLabel: getCurrentWindow().label,
     });
     setIsRunning(true);
     return tabId;

@@ -1,3 +1,4 @@
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { create } from "zustand";
 
 export interface TerminalTab {
@@ -28,7 +29,8 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   nextTabId: () => {
     const newCounter = get().counter + 1;
     set({ counter: newCounter });
-    return `tab-${newCounter}`;
+    const windowLabel = getCurrentWindow().label;
+    return `${windowLabel}-tab-${newCounter}`;
   },
 
   addTab: (id: string, path: string, sessionType: 'claude-code' | 'terminal' = 'claude-code') => {
