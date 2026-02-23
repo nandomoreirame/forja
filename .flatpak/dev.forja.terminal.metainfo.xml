@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.forja.terminal</id>
+  <name>Forja for Claude Code</name>
+  <summary>A dedicated desktop client for Claude Code</summary>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <description>
+    <p>
+      Forja transforms the raw terminal experience into a rich visual interface
+      with markdown rendering, syntax-highlighted code blocks, and Git context.
+      It is purpose-built for Claude Code workflows.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Rich markdown rendering with syntax highlighting</li>
+      <li>Integrated terminal with PTY support</li>
+      <li>Git status and branch information</li>
+      <li>File tree sidebar</li>
+      <li>System metrics status bar</li>
+    </ul>
+  </description>
+
+  <categories>
+    <category>Development</category>
+    <category>IDE</category>
+  </categories>
+
+  <url type="homepage">https://github.com/OWNER/forja-terminal</url>
+  <url type="bugtracker">https://github.com/OWNER/forja-terminal/issues</url>
+
+  <launchable type="desktop-id">dev.forja.terminal.desktop</launchable>
+
+  <content_rating type="oars-1.1" />
+</component>
