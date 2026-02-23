@@ -35,8 +35,8 @@ pub fn run() {
             let handle = app.handle().clone();
             thread::spawn(move || {
                 let mut collector = MetricsCollector::new();
-                // Initial pause so sysinfo can compute accurate CPU usage
-                thread::sleep(Duration::from_secs(1));
+                // Short pause so sysinfo can compute accurate CPU usage
+                thread::sleep(Duration::from_millis(250));
 
                 loop {
                     let metrics = collector.collect();

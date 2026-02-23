@@ -26,8 +26,9 @@ pub struct MetricsCollector {
 
 impl MetricsCollector {
     pub fn new() -> Self {
-        let mut system = System::new_all();
-        system.refresh_all();
+        let mut system = System::new();
+        system.refresh_cpu_usage();
+        system.refresh_memory();
 
         let networks = Networks::new_with_refreshed_list();
         let mut total_rx = 0u64;

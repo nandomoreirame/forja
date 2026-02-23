@@ -20,73 +20,49 @@ pub fn get_git_info_command(file_path: String) -> Result<GitInfo, String> {
         path
     };
 
-    // Check if inside a git repository
-    let is_git = Command::new("git")
-        .args(["rev-parse", "--is-inside-work-tree"])
+    // Single combined command: --branch gives us branch info + porcelain status
+    let output = Command::new("git")
+        .args(["status", "--porcelain", "--branch"])
         .current_dir(dir)
-        .output()
-        .map(|o| o.status.success())
-        .unwrap_or(false);
+        .output();
 
-    if !is_git {
-        return Ok(GitInfo {
-            is_git_repo: false,
-            branch: None,
-            file_status: None,
-            changed_files: 0,
-        });
-    }
+    let output = match output {
+        Ok(o) if o.status.success() => {
+            String::from_utf8(o.stdout).unwrap_or_default()
+        }
+        _ => {
+            return Ok(GitInfo {
+                is_git_repo: false,
+                branch: None,
+                file_status: None,
+                changed_files: 0,
+            });
+        }
+    };
 
-    let branch = Command::new("git")
-        .args(["branch", "--show-current"])
-        .current_dir(dir)
-        .output()
-        .ok()
-        .and_then(|o| {
-            if o.status.success() {
-                String::from_utf8(o.stdout)
-                    .ok()
-                    .map(|s| s.trim().to_string())
-            } else {
-                None
-            }
+    let mut lines = output.lines();
+
+    // First line: ## branch...tracking or ## HEAD (detached)
+    let branch = lines
+        .next()
+        .and_then(|l| l.strip_prefix("## "))
+        .map(|b| {
+            // Split on "..." to remove tracking info
+            b.split("...").next().unwrap_or(b).to_string()
         })
-        .filter(|s| !s.is_empty());
+        .filter(|s| !s.is_empty() && s != "HEAD (no branch)");
 
-    let file_status = Command::new("git")
-        .args(["status", "--porcelain", "--", &file_path])
-        .current_dir(dir)
-        .output()
-        .ok()
-        .and_then(|o| {
-            if o.status.success() {
-                let output = String::from_utf8(o.stdout).ok()?;
-                let line = output.trim();
-                if line.is_empty() {
-                    None
-                } else {
-                    Some(line[..2].trim().to_string())
-                }
-            } else {
-                None
-            }
-        });
+    let status_lines: Vec<&str> = lines.filter(|l| !l.is_empty()).collect();
+    let changed_files = status_lines.len() as u32;
 
-    let changed_files = Command::new("git")
-        .args(["status", "--porcelain"])
-        .current_dir(dir)
-        .output()
-        .ok()
-        .and_then(|o| {
-            if o.status.success() {
-                String::from_utf8(o.stdout)
-                    .ok()
-                    .map(|s| s.lines().filter(|l| !l.is_empty()).count() as u32)
-            } else {
-                Some(0)
-            }
+    // Find status for the specific file
+    let file_status = status_lines
+        .iter()
+        .find(|line| {
+            let file_part = if line.len() > 3 { &line[3..] } else { "" };
+            file_part == file_path || file_path.ends_with(file_part)
         })
-        .unwrap_or(0);
+        .map(|line| line[..2].trim().to_string());
 
     Ok(GitInfo {
         is_git_repo: true,
