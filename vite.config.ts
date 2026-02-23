@@ -13,6 +13,30 @@ export default defineConfig({
     },
   },
   clearScreen: false,
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom"],
+          "vendor-xterm": [
+            "@xterm/xterm",
+            "@xterm/addon-fit",
+            "@xterm/addon-web-links",
+            "@xterm/addon-webgl",
+          ],
+          "vendor-markdown": ["react-markdown", "remark-gfm"],
+          "vendor-ui": [
+            "radix-ui",
+            "cmdk",
+            "class-variance-authority",
+            "clsx",
+            "tailwind-merge",
+          ],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 600,
+  },
   server: {
     port: 1420,
     strictPort: true,

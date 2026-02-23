@@ -16,6 +16,7 @@
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.0.0",
     "@fontsource/geist-sans": "^5.0.0",
+    "@tanstack/react-virtual": "^3.13.18",
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-opener": "^2.5.3",
     "@xterm/addon-fit": "^0.11.0",
