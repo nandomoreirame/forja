@@ -315,7 +315,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       }
       if (mod && event.key === "t") {
         event.preventDefault();
-        useAppDialogsStore.getState().setNewSessionOpen(true);
+        if (useFileTreeStore.getState().currentPath) {
+          useAppDialogsStore.getState().setNewSessionOpen(true);
+        }
         return;
       }
       if (mod && event.key === "w") {
