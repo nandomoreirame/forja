@@ -111,7 +111,7 @@ fn spawn_session(cwd: &str, session_type: Option<&str>) -> Result<PtySession, St
     let shell = get_user_shell();
     match session_type {
         Some("terminal") => PtySession::spawn_with_args(&shell, &["-l"], cwd, 24, 80),
-        _ => PtySession::spawn_with_args(&shell, &["-l", "-c", "exec claude"], cwd, 24, 80),
+        _ => PtySession::spawn_with_args(&shell, &["-l", "-c", "exec claude --dangerously-skip-permissions --verbose"], cwd, 24, 80),
     }
 }
 
