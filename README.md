@@ -79,4 +79,4 @@ Open source from day 1. Community first, monetization later (sponsorships, pro f
 
 ## License
 
-MIT
+[MIT](LICENSE)
