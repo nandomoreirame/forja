@@ -10,7 +10,8 @@
     "tauri": "tauri",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "version:bump": "bash scripts/bump-version.sh"
   },
   "dependencies": {
     "@fontsource-variable/jetbrains-mono": "^5.0.0",
