@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 interface SparklineProps {
   data: number[];
   width?: number;
@@ -5,7 +7,7 @@ interface SparklineProps {
   color?: string;
 }
 
-export function Sparkline({
+export const Sparkline = memo(function Sparkline({
   data,
   width = 48,
   height = 12,
@@ -22,8 +24,12 @@ export function Sparkline({
     );
   }
 
-  const min = Math.min(...data);
-  const max = Math.max(...data);
+  let min = Infinity;
+  let max = -Infinity;
+  for (const v of data) {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
   const range = max - min || 1;
 
   const points = data
@@ -51,4 +57,4 @@ export function Sparkline({
       />
     </svg>
   );
-}
+});

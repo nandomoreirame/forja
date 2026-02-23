@@ -76,12 +76,16 @@ export function TerminalSession({ tabId, path, isVisible, sessionType = "claude-
       });
     });
 
+    let resizeTimeout: ReturnType<typeof setTimeout>;
     const handleResize = () => {
       fitAddon.fit();
-      const newDims = fitAddon.proposeDimensions();
-      if (newDims) {
-        resize(newDims.rows, newDims.cols);
-      }
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const newDims = fitAddon.proposeDimensions();
+        if (newDims) {
+          resize(newDims.rows, newDims.cols);
+        }
+      }, 100);
     };
 
     const resizeObserver = new ResizeObserver(handleResize);
@@ -90,6 +94,7 @@ export function TerminalSession({ tabId, path, isVisible, sessionType = "claude-
     return () => {
       aborted = true;
       cancelAnimationFrame(rafId);
+      clearTimeout(resizeTimeout);
       resizeObserver.disconnect();
       dataDisposable.dispose();
       close();

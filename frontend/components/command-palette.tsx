@@ -23,8 +23,8 @@ import {
   CommandShortcut,
 } from "./ui/command";
 
-const isMac = navigator.userAgent.includes("Mac");
-const mod = isMac ? "\u2318" : "Ctrl";
+import { MOD_KEY } from "@/lib/platform";
+const mod = MOD_KEY;
 
 export function CommandPalette() {
   const { isOpen, mode, close } = useCommandPaletteStore();

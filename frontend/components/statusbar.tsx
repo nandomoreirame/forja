@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { MemoryStick, Cpu, Database, HardDrive, GitBranch, FileText } from "lucide-react";
 import { useSystemMetrics } from "@/hooks/use-system-metrics";
@@ -70,8 +70,12 @@ function getLanguageDisplay(filename: string): string {
   return LANGUAGE_DISPLAY[ext] || ext.toUpperCase() || "Plain Text";
 }
 
-function getLineCount(content: string): number {
-  return content.split("\n").length;
+function countLines(content: string): number {
+  let count = 1;
+  for (let i = 0; i < content.length; i++) {
+    if (content[i] === '\n') count++;
+  }
+  return count;
 }
 
 const GIT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -128,7 +132,7 @@ function GitSection() {
     };
 
     fetchGitInfo();
-    const interval = setInterval(fetchGitInfo, 5000);
+    const interval = setInterval(fetchGitInfo, 10000);
     return () => clearInterval(interval);
   }, [currentPath]);
 
@@ -173,7 +177,7 @@ function FileInfoSection() {
 
   const filename = currentFile.split("/").pop() || "";
   const language = getLanguageDisplay(filename);
-  const lines = getLineCount(content.content);
+  const lines = useMemo(() => countLines(content.content), [content.content]);
   const statusEntry = fileStatus
     ? GIT_STATUS_LABELS[fileStatus] || {
         label: fileStatus,

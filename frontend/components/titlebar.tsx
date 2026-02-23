@@ -1,8 +1,9 @@
+import { IS_MAC } from "@/lib/platform";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { type Window, getCurrentWindow } from "@tauri-apps/api/window";
 import {
   Copy,
   FolderOpen,
@@ -27,8 +28,13 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-const appWindow = getCurrentWindow();
-const isMac = navigator.userAgent.includes("Mac");
+let _appWindow: Window | null = null;
+function getAppWindow() {
+  if (!_appWindow) _appWindow = getCurrentWindow();
+  return _appWindow;
+}
+
+const isMac = IS_MAC;
 
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
@@ -55,10 +61,10 @@ export function Titlebar() {
   }, [shortcutsOpen, setShortcutsOpen]);
 
   useEffect(() => {
-    appWindow.isMaximized().then(setMaximized);
+    getAppWindow().isMaximized().then(setMaximized);
 
-    const unlisten = appWindow.onResized(async () => {
-      const isMax = await appWindow.isMaximized();
+    const unlisten = getAppWindow().onResized(async () => {
+      const isMax = await getAppWindow().isMaximized();
       setMaximized(isMax);
     });
 
@@ -139,7 +145,7 @@ export function Titlebar() {
       {/* Right: window controls */}
       <div className="flex items-center">
         <button
-          onClick={() => appWindow.minimize()}
+          onClick={() => getAppWindow().minimize()}
           className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
           aria-label="Minimize"
         >
@@ -148,7 +154,7 @@ export function Titlebar() {
 
         <button
           onClick={() =>
-            maximized ? appWindow.unmaximize() : appWindow.maximize()
+            maximized ? getAppWindow().unmaximize() : getAppWindow().maximize()
           }
           className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
           aria-label={maximized ? "Restore" : "Maximize"}
@@ -161,7 +167,7 @@ export function Titlebar() {
         </button>
 
         <button
-          onClick={() => appWindow.close()}
+          onClick={() => getAppWindow().close()}
           className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-red/20 hover:text-ctp-red"
           aria-label="Close"
         >
