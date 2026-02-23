@@ -1,0 +1,88 @@
+name: Flatpak
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  build-flatpak:
+    name: Build Flatpak
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-46
+      options: --privileged
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${{ github.event.workflow_run.head_branch }}"
+          VERSION="${TAG#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Get release info
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          dnf install -y jq || apt-get install -y jq || true
+          RELEASE_ID=$(curl -s \
+            -H "Authorization: token $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.version.outputs.tag }}" \
+            | jq -r '.id')
+          echo "id=$RELEASE_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Download .deb from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          DEB_NAME="forja-for-claude-code_${VERSION}_amd64.deb"
+          curl -sL \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/octet-stream" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/assets/$(
+              curl -s \
+                -H "Authorization: token $GH_TOKEN" \
+                "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.version.outputs.tag }}" \
+                | jq -r ".assets[] | select(.name == \"$DEB_NAME\") | .id"
+            )" \
+            -o "$DEB_NAME"
+          echo "deb_path=$DEB_NAME" >> "$GITHUB_ENV"
+
+      - name: Update Flatpak manifest with real URL and SHA256
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          SHA256=$(sha256sum "$deb_path" | cut -d' ' -f1)
+          REPO="${{ github.repository }}"
+          DEB_URL="https://github.com/${REPO}/releases/download/${{ steps.version.outputs.tag }}/forja-for-claude-code_${VERSION}_amd64.deb"
+
+          sed -i \
+            -e "s|url: .*forja-for-claude-code.*\.deb|url: ${DEB_URL}|" \
+            -e "s|sha256: .*|sha256: ${SHA256}|" \
+            .flatpak/dev.forja.terminal.yml
+
+      - name: Build Flatpak
+        uses: flatpak/flatpak-github-actions/flatpak-builder@v6
+        with:
+          manifest-path: .flatpak/dev.forja.terminal.yml
+          bundle: forja-for-claude-code.flatpak
+
+      - name: Upload Flatpak to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          curl -s \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @forja-for-claude-code.flatpak \
+            "https://uploads.github.com/repos/${{ github.repository }}/releases/${{ steps.release.outputs.id }}/assets?name=forja-for-claude-code_${VERSION}.flatpak"
