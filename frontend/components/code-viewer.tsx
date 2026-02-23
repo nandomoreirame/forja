@@ -7,7 +7,7 @@ interface CodeViewerProps {
 }
 
 export function CodeViewer({ code, filename }: CodeViewerProps) {
-  const { isReady, highlight, detectLanguage } = useSyntaxHighlighter();
+  const { isReady, hasError, highlight, detectLanguage } = useSyntaxHighlighter();
   const [html, setHtml] = useState<string>('');
 
   useEffect(() => {
@@ -15,6 +15,22 @@ export function CodeViewer({ code, filename }: CodeViewerProps) {
     const language = detectLanguage(filename);
     highlight(code, language).then(setHtml);
   }, [code, filename, isReady, highlight, detectLanguage]);
+
+  if (hasError || (isReady && !html && code)) {
+    return (
+      <pre
+        data-testid="code-viewer-fallback"
+        className="code-viewer overflow-y-auto overflow-x-scroll p-4 text-sm text-ctp-text"
+        style={{
+          fontFamily: 'JetBrains Mono, Fira Code, monospace',
+          fontSize: '13px',
+          lineHeight: '1.5',
+        }}
+      >
+        <code>{code}</code>
+      </pre>
+    );
+  }
 
   if (!isReady || !html) {
     return (

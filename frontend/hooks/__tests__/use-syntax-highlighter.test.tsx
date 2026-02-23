@@ -112,6 +112,34 @@ describe('useSyntaxHighlighter', () => {
     expect(html).toBe(code);
   });
 
+  it('should set hasError when createHighlighter fails', async () => {
+    const { createHighlighter } = await import('shiki');
+    vi.mocked(createHighlighter).mockRejectedValueOnce(new Error('WASM failed to load'));
+
+    const { result } = renderHook(() => useSyntaxHighlighter());
+
+    await waitFor(() => {
+      expect(result.current.hasError).toBe(true);
+    });
+
+    expect(result.current.isReady).toBe(false);
+  });
+
+  it('should return raw code from highlight when hasError is true', async () => {
+    const { createHighlighter } = await import('shiki');
+    vi.mocked(createHighlighter).mockRejectedValueOnce(new Error('WASM failed'));
+
+    const { result } = renderHook(() => useSyntaxHighlighter());
+
+    await waitFor(() => {
+      expect(result.current.hasError).toBe(true);
+    });
+
+    const code = 'const x = 42;';
+    const html = await result.current.highlight(code, 'typescript');
+    expect(html).toBe(code);
+  });
+
   it('should fallback to plaintext for unsupported languages', async () => {
     const { createHighlighter } = await import('shiki');
     const mockHighlighter = {

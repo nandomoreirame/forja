@@ -42,6 +42,7 @@ const LANGUAGE_MAP: Record<string, string> = {
 export function useSyntaxHighlighter() {
   const [highlighter, setHighlighter] = useState<Highlighter | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     let disposed = false;
@@ -56,6 +57,10 @@ export function useSyntaxHighlighter() {
       }
       setHighlighter(hl);
       setIsReady(true);
+    }).catch(() => {
+      if (!disposed) {
+        setHasError(true);
+      }
     });
 
     return () => {
@@ -88,6 +93,7 @@ export function useSyntaxHighlighter() {
 
   return {
     isReady,
+    hasError,
     highlight,
     detectLanguage,
   };
