@@ -21,7 +21,7 @@ interface FileTreeState {
   isOpen: boolean;
   currentPath: string | null;
   tree: DirectoryTree | null;
-  expandedPaths: Set<string>;
+  expandedPaths: Record<string, boolean>;
 
   toggleSidebar: () => void;
   openProject: () => Promise<void>;
@@ -36,7 +36,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
   isOpen: false,
   currentPath: null,
   tree: null,
-  expandedPaths: new Set<string>(),
+  expandedPaths: {},
 
   toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
 
@@ -56,7 +56,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         set({
           currentPath: selected,
           tree: result,
-          expandedPaths: new Set<string>(),
+          expandedPaths: {},
         });
       }
     } catch (error) {
@@ -67,18 +67,17 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
   setTree: (tree: DirectoryTree | null) => set({ tree }),
 
   toggleExpanded: (path: string) => {
-    const expanded = new Set(get().expandedPaths);
-    if (expanded.has(path)) {
-      expanded.delete(path);
-    } else {
-      expanded.add(path);
-    }
-    set({ expandedPaths: expanded });
+    set((state) => ({
+      expandedPaths: {
+        ...state.expandedPaths,
+        [path]: !state.expandedPaths[path],
+      },
+    }));
   },
 
-  isExpanded: (path: string) => get().expandedPaths.has(path),
+  isExpanded: (path: string) => !!get().expandedPaths[path],
 
-  collapseAll: () => set({ expandedPaths: new Set<string>() }),
+  collapseAll: () => set({ expandedPaths: {} }),
 
   selectFile: async (path: string) => {
     await useFilePreviewStore.getState().loadFile(path);
