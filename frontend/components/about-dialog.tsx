@@ -122,7 +122,7 @@ function HomeView({
       </p>
 
       <span className="mt-3 rounded-full bg-ctp-surface0 px-3 py-1 font-mono text-xs text-ctp-subtext0">
-        {appInfo.version}
+        v{appInfo.version} build: {__BUILD_HASH__}
       </span>
 
       <div className="mt-6 w-full space-y-2">
@@ -173,7 +173,8 @@ function DetailsView({
       <SubViewHeader title="Details" onBack={onBack} />
       <div className="px-5 py-4">
         <div className="divide-y divide-ctp-base/30 overflow-hidden rounded-lg bg-ctp-surface0">
-          <InfoRow label="Version" value={appInfo.version} />
+          <InfoRow label="Version" value={`v${appInfo.version}`} />
+          <InfoRow label="Build" value={__BUILD_HASH__} />
           <InfoRow label="Tauri Version" value={appInfo.tauriVersion || "N/A"} />
           <InfoRow label="OS" value={appInfo.os || "Unknown"} />
           <InfoRow label="Platform" value={appInfo.platform || "Unknown"} />

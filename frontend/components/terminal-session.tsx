@@ -2,9 +2,12 @@ import { usePty } from "@/hooks/use-pty";
 import { TERMINAL_OPTIONS } from "@/lib/terminal-theme";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
+import { CanvasAddon } from "@xterm/addon-canvas";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
+import { useSessionStateStore } from "@/stores/session-state";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useEffect, useRef } from "react";
 
@@ -19,13 +22,28 @@ export function TerminalSession({ tabId, path, isVisible, sessionType = "claude-
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const pendingDataRef = useRef<string[]>([]);
+  const flushRafRef = useRef<number>(0);
 
   const { spawn, write, resize, close } = usePty({
     tabId,
     onData: (data) => {
-      terminalRef.current?.write(data);
+      useSessionStateStore.getState().onData(tabId);
+      pendingDataRef.current.push(data);
+      if (!flushRafRef.current) {
+        flushRafRef.current = requestAnimationFrame(() => {
+          flushRafRef.current = 0;
+          const terminal = terminalRef.current;
+          if (terminal && pendingDataRef.current.length > 0) {
+            terminal.write(pendingDataRef.current.join(""));
+            pendingDataRef.current.length = 0;
+          }
+        });
+      }
     },
     onExit: () => {
+      useSessionStateStore.getState().onExit(tabId);
+      useTerminalTabsStore.getState().removeTab(tabId);
       terminalRef.current?.write("\r\n\x1b[1;33m[Session ended]\x1b[0m\r\n");
     },
   });
@@ -42,12 +60,22 @@ export function TerminalSession({ tabId, path, isVisible, sessionType = "claude-
     terminal.open(containerRef.current);
 
     try {
-      terminal.loadAddon(new WebglAddon());
+      const webgl = new WebglAddon();
+      webgl.onContextLoss(() => {
+        webgl.dispose();
+        terminal.loadAddon(new CanvasAddon());
+      });
+      terminal.loadAddon(webgl);
     } catch {
-      // WebGL not available, fall back to canvas renderer
+      terminal.loadAddon(new CanvasAddon());
     }
 
     terminal.attachCustomKeyEventHandler((event) => {
+      // Never interfere with dead key composition (accents, tilde, grave)
+      if (event.isComposing || event.key === "Dead" || event.key === "AltGraph") {
+        return true;
+      }
+
       const mod = event.metaKey || event.ctrlKey;
       if (mod && event.altKey && (event.key === "=" || event.key === "+" || event.key === "-" || event.key === "0")) {
         return false;
@@ -94,6 +122,8 @@ export function TerminalSession({ tabId, path, isVisible, sessionType = "claude-
     return () => {
       aborted = true;
       cancelAnimationFrame(rafId);
+      if (flushRafRef.current) cancelAnimationFrame(flushRafRef.current);
+      pendingDataRef.current.length = 0;
       clearTimeout(resizeTimeout);
       resizeObserver.disconnect();
       dataDisposable.dispose();
