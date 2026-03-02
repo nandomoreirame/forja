@@ -1,5 +1,4 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
 import { AlertCircle, Anvil, Clock, FolderOpen, PanelLeft, Plus, Search, TerminalSquare } from "lucide-react";
 import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from "react";
 import { MOD_KEY } from "./lib/platform";
@@ -14,7 +13,6 @@ import { useCommandPaletteStore } from "./stores/command-palette";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
-import { useSessionStateStore } from "./stores/session-state";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
 
 // Root error boundary to prevent blank screen on any React crash
@@ -69,16 +67,6 @@ const NewSessionDialog = lazy(() =>
 const ClaudeNotFoundDialog = lazy(() =>
   import("./components/claude-not-found-dialog").then((m) => ({ default: m.ClaudeNotFoundDialog }))
 );
-
-interface PtyDataPayload {
-  tab_id: string;
-  data: string;
-}
-
-interface PtyExitPayload {
-  tab_id: string;
-  code: number;
-}
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
@@ -275,28 +263,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     },
     [removeTab],
   );
-
-  // Track session state from PTY output
-  useEffect(() => {
-    const unlisten = listen<PtyDataPayload>("pty:data", (event) => {
-      useSessionStateStore.getState().onData(event.payload.tab_id);
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, []);
-
-  // Auto-close tab when Claude session exits
-  useEffect(() => {
-    const unlisten = listen<PtyExitPayload>("pty:exit", (event) => {
-      const { tab_id } = event.payload;
-      useSessionStateStore.getState().onExit(tab_id);
-      removeTab(tab_id);
-    });
-    return () => {
-      unlisten.then((fn) => fn());
-    };
-  }, [removeTab]);
 
   // Keyboard shortcuts - stable handler using refs for mutable values
   useEffect(() => {
