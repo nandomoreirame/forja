@@ -90,6 +90,15 @@ fn open_project_in_new_window(app: tauri::AppHandle, path: String) -> Result<Str
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Ensure dead key composition works on Linux/WebKitGTK
+    // when no IBus/Fcitx5 input method is installed.
+    #[cfg(target_os = "linux")]
+    {
+        if std::env::var("GTK_IM_MODULE").is_err() {
+            std::env::set_var("GTK_IM_MODULE", "gtk-im-context-simple");
+        }
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())

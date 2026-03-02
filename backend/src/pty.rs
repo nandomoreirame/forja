@@ -1,7 +1,7 @@
 use portable_pty::{native_pty_system, CommandBuilder, MasterPty, PtySize};
 use std::collections::HashMap;
 use std::io::{Read, Write};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use tauri::Emitter;
 
 pub struct PtySession {
@@ -116,13 +116,13 @@ fn spawn_session(cwd: &str, session_type: Option<&str>) -> Result<PtySession, St
 }
 
 pub struct PtyState {
-    pub sessions: Arc<Mutex<HashMap<String, PtySession>>>,
+    pub sessions: Arc<RwLock<HashMap<String, Arc<PtySession>>>>,
 }
 
 impl Default for PtyState {
     fn default() -> Self {
         Self {
-            sessions: Arc::new(Mutex::new(HashMap::new())),
+            sessions: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }
@@ -147,8 +147,8 @@ pub async fn spawn_pty(
 
     // Store session
     {
-        let mut sessions = state.sessions.lock().map_err(|e| e.to_string())?;
-        sessions.insert(tab_id.clone(), session);
+        let mut sessions = state.sessions.write().map_err(|e| e.to_string())?;
+        sessions.insert(tab_id.clone(), Arc::new(session));
     }
 
     // Start reader thread scoped to this tab_id + window_label
@@ -158,27 +158,44 @@ pub async fn spawn_pty(
     std::thread::spawn(move || {
         let mut reader = reader;
         let mut buf = [0u8; 32768];
+        let mut batch = Vec::with_capacity(65536);
+        let max_batch: usize = 65536;
+        let data_event = format!("pty:data:{}", reader_tab_id);
+        let exit_event = format!("pty:exit:{}", reader_tab_id);
+
         loop {
             match reader.read(&mut buf) {
                 Ok(0) => {
-                    let _ = app_handle.emit_to(&reader_window_label, "pty:exit", PtyExitPayload {
-                        tab_id: reader_tab_id.clone(),
-                        code: 0,
-                    });
+                    if !batch.is_empty() {
+                        let data = String::from_utf8_lossy(&batch).to_string();
+                        let _ = app_handle.emit_to(
+                            &reader_window_label, &data_event,
+                            PtyDataPayload { tab_id: reader_tab_id.clone(), data },
+                        );
+                    }
+                    let _ = app_handle.emit_to(
+                        &reader_window_label, &exit_event,
+                        PtyExitPayload { tab_id: reader_tab_id.clone(), code: 0 },
+                    );
                     break;
                 }
                 Ok(n) => {
-                    let data = String::from_utf8_lossy(&buf[..n]).to_string();
-                    let _ = app_handle.emit_to(&reader_window_label, "pty:data", PtyDataPayload {
-                        tab_id: reader_tab_id.clone(),
-                        data,
-                    });
+                    batch.extend_from_slice(&buf[..n]);
+                    // Flush when buffer is full or read was partial (burst ended)
+                    if batch.len() >= max_batch || n < buf.len() {
+                        let data = String::from_utf8_lossy(&batch).to_string();
+                        let _ = app_handle.emit_to(
+                            &reader_window_label, &data_event,
+                            PtyDataPayload { tab_id: reader_tab_id.clone(), data },
+                        );
+                        batch.clear();
+                    }
                 }
                 Err(_) => {
-                    let _ = app_handle.emit_to(&reader_window_label, "pty:exit", PtyExitPayload {
-                        tab_id: reader_tab_id.clone(),
-                        code: 1,
-                    });
+                    let _ = app_handle.emit_to(
+                        &reader_window_label, &exit_event,
+                        PtyExitPayload { tab_id: reader_tab_id.clone(), code: 1 },
+                    );
                     break;
                 }
             }
@@ -194,8 +211,10 @@ pub async fn write_pty(
     tab_id: String,
     data: String,
 ) -> Result<(), String> {
-    let sessions = state.sessions.lock().map_err(|e| e.to_string())?;
-    let session = sessions.get(&tab_id).ok_or(format!("No PTY session for tab {}", tab_id))?;
+    let session = {
+        let sessions = state.sessions.read().map_err(|e| e.to_string())?;
+        Arc::clone(sessions.get(&tab_id).ok_or(format!("No PTY session for tab {}", tab_id))?)
+    };
     session.write(data.as_bytes())
 }
 
@@ -206,8 +225,10 @@ pub async fn resize_pty(
     rows: u16,
     cols: u16,
 ) -> Result<(), String> {
-    let sessions = state.sessions.lock().map_err(|e| e.to_string())?;
-    let session = sessions.get(&tab_id).ok_or(format!("No PTY session for tab {}", tab_id))?;
+    let session = {
+        let sessions = state.sessions.read().map_err(|e| e.to_string())?;
+        Arc::clone(sessions.get(&tab_id).ok_or(format!("No PTY session for tab {}", tab_id))?)
+    };
     session.resize(rows, cols)
 }
 
@@ -216,8 +237,11 @@ pub async fn close_pty(
     state: tauri::State<'_, PtyState>,
     tab_id: String,
 ) -> Result<(), String> {
-    let mut sessions = state.sessions.lock().map_err(|e| e.to_string())?;
-    if let Some(session) = sessions.remove(&tab_id) {
+    let session = {
+        let mut sessions = state.sessions.write().map_err(|e| e.to_string())?;
+        sessions.remove(&tab_id)
+    };
+    if let Some(session) = session {
         session.kill()?;
     }
     Ok(())
@@ -414,7 +438,7 @@ mod tests {
     #[test]
     fn test_pty_state_default_is_empty() {
         let state = PtyState::default();
-        let sessions = state.sessions.lock().unwrap();
+        let sessions = state.sessions.read().unwrap();
         assert!(sessions.is_empty());
     }
 
