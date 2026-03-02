@@ -1,0 +1,372 @@
+<html lang="en" class="scroll-smooth"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forja - The Terminal for Claude Code</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #000000; color: #d4d4d4; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        /* Grain texture simulation */
+        .bg-grain {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #444; }
+    </style>
+</head>
+<body class="antialiased selection:bg-orange-900/30 selection:text-orange-200 overflow-x-hidden">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 border-b border-white/5 bg-black/80 backdrop-blur-md h-[60px] flex items-center justify-center">
+        <div class="w-full max-w-7xl px-6 flex items-center justify-between">
+            <div class="flex items-center gap-2 group cursor-pointer">
+                <iconify-icon icon="solar:sledgehammer-linear" class="text-orange-500 text-xl group-hover:rotate-12 transition-transform duration-300"></iconify-icon>
+                <span class="text-white font-medium tracking-tighter text-lg">Forja</span>
+            </div>
+
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-400">
+                <a href="#" class="hover:text-white transition-colors flex items-center gap-1.5">
+                    <iconify-icon icon="solar:star-linear" class="text-lg"></iconify-icon>
+                    <span>524</span>
+                </a>
+                <a href="#" class="hover:text-white transition-colors">Docs</a>
+                <a href="#" class="flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-3 py-1.5 rounded-full border border-white/5 transition-all">
+                    <iconify-icon icon="solar:download-linear" class="text-lg"></iconify-icon>
+                    <span>Download v1.0</span>
+                </a>
+            </div>
+
+            <button class="md:hidden text-white">
+                <iconify-icon icon="solar:hamburger-menu-linear" class="text-2xl"></iconify-icon>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden">
+        <!-- Background Gradient Glow -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-orange-900/20 blur-[120px] rounded-full pointer-events-none -z-10 opacity-50"></div>
+
+        <div class="max-w-4xl mx-auto text-center flex flex-col items-center">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-neutral-300 mb-8 font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                Open Source · MIT License
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-medium text-transparent bg-clip-text bg-gradient-to-b from-white to-white/50 tracking-tighter leading-[1.1] mb-6">
+                The terminal designed<br>for Claude Code.
+            </h1>
+
+            <p class="text-lg md:text-xl text-neutral-400 max-w-2xl leading-relaxed mb-10 font-light">
+                Stop wrestling with fragmented windows. Forja provides a native, low-latency workspace optimized for AI-driven development.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+                <button class="w-full sm:w-auto h-12 px-8 rounded-lg bg-white text-black font-medium hover:bg-neutral-200 transition-colors flex items-center justify-center gap-2">
+                    <iconify-icon icon="solar:monitor-linear" class="text-xl"></iconify-icon>
+                    Download for macOS
+                </button>
+                <button class="w-full sm:w-auto h-12 px-8 rounded-lg bg-black border border-neutral-800 text-neutral-300 font-medium hover:text-white hover:border-neutral-700 transition-colors flex items-center justify-center gap-2 group">
+                    <iconify-icon icon="solar:github-circle-linear" class="text-xl"></iconify-icon>
+                    <span>View on GitHub</span>
+                    <iconify-icon icon="solar:arrow-right-linear" class="group-hover:translate-x-0.5 transition-transform"></iconify-icon>
+                </button>
+            </div>
+
+            <div class="mt-12 flex items-center gap-6 text-neutral-600 grayscale opacity-60">
+                <div class="flex items-center gap-1.5"><iconify-icon icon="logos:linux-tux" class="text-lg"></iconify-icon> <span class="text-xs font-medium">Linux</span></div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="logos:apple" class="text-lg"></iconify-icon> <span class="text-xs font-medium">macOS</span></div>
+                <div class="flex items-center gap-1.5"><iconify-icon icon="logos:electron" class="text-lg"></iconify-icon> <span class="text-xs font-medium">Electron</span></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Visual -->
+    <section class="px-6 pb-32">
+        <div class="max-w-6xl mx-auto relative group">
+            <!-- Glow behind -->
+            <div class="absolute inset-0 bg-gradient-to-t from-orange-500/10 to-transparent blur-3xl -z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
+
+            <div class="border border-white/10 rounded-xl bg-[#050505] shadow-2xl overflow-hidden">
+                <!-- Window Controls -->
+                <div class="h-10 border-b border-white/5 flex items-center px-4 bg-white/[0.02]">
+                    <div class="flex gap-2">
+                        <div class="w-3 h-3 rounded-full bg-neutral-800 border border-black/20"></div>
+                        <div class="w-3 h-3 rounded-full bg-neutral-800 border border-black/20"></div>
+                        <div class="w-3 h-3 rounded-full bg-neutral-800 border border-black/20"></div>
+                    </div>
+                    <div class="mx-auto text-xs font-mono text-neutral-600">forja — ~/projects/claude-demo</div>
+                </div>
+
+                <!-- Fake Terminal Interface -->
+                <div class="aspect-video w-full bg-[#050505] p-6 font-mono text-sm relative grid grid-cols-[240px_1fr] gap-0 h-[500px] md:h-[600px]">
+
+                    <!-- Sidebar -->
+                    <div class="border-r border-white/5 pr-4 hidden md:block">
+                        <div class="text-neutral-500 text-xs font-medium uppercase tracking-wider mb-4">Files</div>
+                        <div class="flex flex-col gap-2 text-neutral-400">
+                            <div class="flex items-center gap-2 text-white"><iconify-icon icon="solar:folder-open-linear"></iconify-icon> src</div>
+                            <div class="flex items-center gap-2 pl-4"><iconify-icon icon="solar:document-text-linear"></iconify-icon> app.tsx</div>
+                            <div class="flex items-center gap-2 pl-4 text-orange-400"><iconify-icon icon="solar:document-text-linear"></iconify-icon> utils.ts</div>
+                            <div class="flex items-center gap-2 pl-4"><iconify-icon icon="solar:document-text-linear"></iconify-icon> types.d.ts</div>
+                            <div class="flex items-center gap-2"><iconify-icon icon="solar:folder-linear"></iconify-icon> public</div>
+                            <div class="flex items-center gap-2"><iconify-icon icon="solar:document-text-linear"></iconify-icon> package.json</div>
+                        </div>
+                    </div>
+
+                    <!-- Terminal Area -->
+                    <div class="pl-0 md:pl-6 overflow-hidden flex flex-col h-full">
+                         <!-- Simulated Claude Output -->
+                        <div class="flex-1 text-neutral-300 space-y-2">
+                            <div class="flex gap-2">
+                                <span class="text-green-500">➜</span>
+                                <span class="text-blue-400">~/claude-demo</span>
+                                <span class="text-neutral-500">git:(main)</span>
+                                <span>claude</span>
+                            </div>
+                            <div class="pt-2 pb-4">
+                                <span class="bg-neutral-800 px-2 py-1 rounded text-xs text-white">Claude Code</span>
+                            </div>
+                            <div class="text-neutral-400">
+                                &gt; Reading project context... <span class="text-green-500">Done</span><br>
+                                &gt; I noticed you want to refactor the utility functions in <span class="text-orange-400">src/utils.ts</span>.
+                                Based on the recent changes, I should split the date parsers into a separate module.
+                            </div>
+                            <div class="border-l-2 border-orange-500/50 pl-3 py-2 my-2 bg-orange-500/5 text-orange-100/90 text-xs">
+                                <div>Proposed Changes:</div>
+                                <div class="opacity-70 mt-1">
+                                    - Create src/date-utils.ts<br>
+                                    - Move formatDate and parseISO to new file<br>
+                                    - Update imports in app.tsx
+                                </div>
+                            </div>
+                            <div class="flex gap-2 items-center pt-2">
+                                <span class="text-neutral-500">Execute changes? [Y/n]</span>
+                                <span class="w-2 h-4 bg-white animate-pulse"></span>
+                            </div>
+                        </div>
+
+                        <!-- Bottom Status Bar -->
+                        <div class="h-8 border-t border-white/5 flex items-center justify-between text-xs text-neutral-600 mt-auto">
+                            <div class="flex gap-4">
+                                <span>main*</span>
+                                <span>0 errors</span>
+                            </div>
+                            <div class="flex gap-4">
+                                <span>Ln 12, Col 4</span>
+                                <span>UTF-8</span>
+                                <span>TypeScript</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="text-center text-neutral-500 text-sm mt-6 font-medium">Forja running Claude Code CLI in integrated mode.</p>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="py-24 px-6 border-t border-white/5 bg-neutral-950/30">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="text-3xl font-medium tracking-tight text-white mb-16 text-center">Why build a dedicated terminal?</h2>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-black border border-white/10 rounded-xl p-8 hover:border-white/20 transition-colors">
+                    <div class="w-12 h-12 bg-neutral-900 rounded-lg flex items-center justify-center mb-6 border border-white/5 text-orange-500">
+                        <iconify-icon icon="solar:minimize-square-linear" class="text-2xl"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium text-white mb-3">Context Switching</h3>
+                    <p class="text-neutral-500 leading-relaxed text-sm">
+                        Editor in one window, terminal in another, documentation in a browser. You lose flow state every time you Alt-Tab to check output.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-black border border-white/10 rounded-xl p-8 hover:border-white/20 transition-colors">
+                    <div class="w-12 h-12 bg-neutral-900 rounded-lg flex items-center justify-center mb-6 border border-white/5 text-orange-500">
+                        <iconify-icon icon="solar:stopwatch-linear" class="text-2xl"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium text-white mb-3">Input Latency</h3>
+                    <p class="text-neutral-500 leading-relaxed text-sm">
+                        Standard electron terminals often suffer from rendering lag. Forja uses xterm.js with WebGL acceleration for &lt;16ms latency.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-black border border-white/10 rounded-xl p-8 hover:border-white/20 transition-colors">
+                    <div class="w-12 h-12 bg-neutral-900 rounded-lg flex items-center justify-center mb-6 border border-white/5 text-orange-500">
+                        <iconify-icon icon="solar:refresh-circle-linear" class="text-2xl"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium text-white mb-3">Session Amnesia</h3>
+                    <p class="text-neutral-500 leading-relaxed text-sm">
+                        Closing your terminal usually kills your context. Forja persists workspaces, so Claude remembers exactly where you left off.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-32 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col gap-32">
+
+            <!-- Feature 1 -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1">
+                    <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mb-6 text-orange-500">
+                        <iconify-icon icon="solar:command-linear" class="text-2xl"></iconify-icon>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-medium tracking-tight text-white mb-4">Native PTY Architecture</h3>
+                    <p class="text-neutral-400 leading-relaxed mb-6">
+                        Built on top of node-pty and xterm.js, Forja behaves exactly like your native shell. Zsh, Fish, Bash—it all works out of the box with zero configuration required.
+                    </p>
+                    <ul class="space-y-3 text-sm text-neutral-300">
+                        <li class="flex items-center gap-3"><iconify-icon icon="solar:check-circle-linear" class="text-orange-500"></iconify-icon> GPU Accelerated rendering</li>
+                        <li class="flex items-center gap-3"><iconify-icon icon="solar:check-circle-linear" class="text-orange-500"></iconify-icon> Full ANSI color support</li>
+                    </ul>
+                </div>
+                <div class="order-1 md:order-2 bg-neutral-900/20 border border-white/10 rounded-xl aspect-[4/3] relative overflow-hidden flex items-center justify-center shadow-2xl">
+                    <!-- Abstraction of Terminal -->
+                    <div class="w-3/4 h-3/4 bg-black border border-white/10 rounded-lg p-4 font-mono text-xs text-neutral-500">
+                        <div class="text-green-500">$ npm run dev</div>
+                        <div class="mt-2 text-white">ready started server on 0.0.0.0:3000, url: http://localhost:3000</div>
+                        <div class="mt-1">event - compiled client and server successfully in 451ms (156 modules)</div>
+                        <div class="mt-1 text-yellow-500">wait - compiling...</div>
+                        <div class="mt-1">event - compiled client and server successfully in 32ms (156 modules)</div>
+                        <div class="mt-2 w-2 h-4 bg-orange-500"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="bg-neutral-900/20 border border-white/10 rounded-xl aspect-[4/3] relative overflow-hidden flex items-center justify-center shadow-2xl">
+                     <!-- Abstraction of Workspace -->
+                     <div class="absolute left-0 top-0 bottom-0 w-16 border-r border-white/10 bg-black flex flex-col items-center py-6 gap-6">
+                        <div class="w-10 h-10 rounded-lg bg-white/10 border border-white/10"></div>
+                        <div class="w-10 h-10 rounded-lg bg-transparent border border-white/5 opacity-50"></div>
+                        <div class="w-10 h-10 rounded-lg bg-transparent border border-white/5 opacity-50"></div>
+                     </div>
+                     <div class="pl-20 pr-8 w-full">
+                        <div class="h-2 w-24 bg-neutral-800 rounded mb-4"></div>
+                        <div class="h-32 w-full bg-neutral-900/50 border border-white/5 rounded-lg"></div>
+                     </div>
+                </div>
+                <div>
+                    <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mb-6 text-orange-500">
+                        <iconify-icon icon="solar:case-round-linear" class="text-2xl"></iconify-icon>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-medium tracking-tight text-white mb-4">Project-based Workspaces</h3>
+                    <p class="text-neutral-400 leading-relaxed mb-6">
+                        Stop cd-ing into directories. Forja treats folders as first-class citizens. Switch between client, server, and infra repos instantly, preserving your shell history and environment variables.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1">
+                    <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mb-6 text-orange-500">
+                        <iconify-icon icon="solar:git-branch-linear" class="text-2xl"></iconify-icon>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-medium tracking-tight text-white mb-4">Real-time Git Diff</h3>
+                    <p class="text-neutral-400 leading-relaxed mb-6">
+                        When Claude suggests edits, see exactly what changed before you commit. The integrated diff view highlights additions and deletions directly alongside your terminal stream.
+                    </p>
+                </div>
+                <div class="order-1 md:order-2 bg-neutral-900/20 border border-white/10 rounded-xl aspect-[4/3] relative overflow-hidden flex items-center justify-center shadow-2xl">
+                     <!-- Abstraction of Diff -->
+                     <div class="w-3/4 h-2/3 bg-black border border-white/10 rounded-lg overflow-hidden font-mono text-xs">
+                         <div class="bg-red-900/20 border-l-2 border-red-500 p-2 text-red-200/70">- const MAX_RETRIES = 3;</div>
+                         <div class="bg-green-900/20 border-l-2 border-green-500 p-2 text-green-200/70">+ const MAX_RETRIES = 5;</div>
+                         <div class="p-2 text-neutral-600">  // Increased retries for stability</div>
+                         <div class="bg-green-900/20 border-l-2 border-green-500 p-2 text-green-200/70">+ await delay(1000);</div>
+                     </div>
+                </div>
+            </div>
+
+             <!-- Feature 4 -->
+             <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="bg-neutral-900/20 border border-white/10 rounded-xl aspect-[4/3] relative overflow-hidden flex items-center justify-center shadow-2xl">
+                    <!-- Abstraction of File Tree -->
+                    <div class="w-2/3 h-full border-r border-white/10 bg-black p-6 font-mono text-xs text-neutral-400 space-y-3">
+                         <div class="flex items-center gap-2"><iconify-icon icon="solar:folder-open-linear"></iconify-icon> node_modules <span class="text-neutral-700 ml-auto text-[10px]">IGNORED</span></div>
+                         <div class="flex items-center gap-2 text-white"><iconify-icon icon="solar:folder-open-linear"></iconify-icon> src</div>
+                         <div class="pl-4 flex items-center gap-2"><iconify-icon icon="solar:document-text-linear"></iconify-icon> index.ts</div>
+                         <div class="pl-4 flex items-center gap-2 text-orange-400"><iconify-icon icon="solar:document-text-linear"></iconify-icon> config.ts <span class="w-1.5 h-1.5 rounded-full bg-orange-500 ml-2"></span></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center mb-6 text-orange-500">
+                        <iconify-icon icon="solar:file-text-linear" class="text-2xl"></iconify-icon>
+                    </div>
+                    <h3 class="text-2xl md:text-3xl font-medium tracking-tight text-white mb-4">Smart File Watcher</h3>
+                    <p class="text-neutral-400 leading-relaxed mb-6">
+                        Forja watches your file system efficiently. It knows to ignore your massive `node_modules` folder but instantly reflects changes in your source code, keeping the LLM context perfectly synced.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-32 px-6">
+        <div class="max-w-4xl mx-auto text-center relative">
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-r from-orange-500/5 via-orange-500/10 to-orange-500/5 blur-3xl -z-10 rounded-full opacity-50"></div>
+
+            <h2 class="text-4xl md:text-5xl font-medium tracking-tighter text-white mb-6">Built for the future of coding.</h2>
+            <p class="text-xl text-neutral-400 mb-10 font-light">Open source. Free forever. No telemetry.</p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button class="h-12 px-8 rounded-lg bg-white text-black font-medium hover:bg-neutral-200 transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
+                    <iconify-icon icon="solar:download-linear" class="text-lg"></iconify-icon>
+                    Download v1.0
+                </button>
+                <button class="h-12 px-8 rounded-lg bg-neutral-900 border border-neutral-800 text-white font-medium hover:bg-neutral-800 transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
+                    <iconify-icon icon="solar:star-linear" class="text-lg text-orange-500"></iconify-icon>
+                    Star on GitHub
+                </button>
+            </div>
+
+            <div class="mt-8 text-xs text-neutral-500 font-mono">
+                MIT License · v1.0.4 · 24MB
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/5 bg-black py-12 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+            <div class="flex flex-col items-center md:items-start gap-2">
+                <div class="flex items-center gap-2">
+                    <iconify-icon icon="solar:sledgehammer-linear" class="text-orange-500"></iconify-icon>
+                    <span class="text-white font-medium tracking-tighter">Forja</span>
+                </div>
+                <p class="text-sm text-neutral-500">The missing interface for AI coding.</p>
+            </div>
+
+            <div class="flex gap-8 text-sm text-neutral-400">
+                <a href="#" class="hover:text-white transition-colors">GitHub</a>
+                <a href="#" class="hover:text-white transition-colors">Docs</a>
+                <a href="#" class="hover:text-white transition-colors">Releases</a>
+                <a href="#" class="hover:text-white transition-colors">Issues</a>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/5 text-center md:text-left">
+            <p class="text-xs text-neutral-600">
+                Built with ❤️ using Electron + React. Open Source under MIT License.
+            </p>
+        </div>
+    </footer>
+
+
+</body></html>
