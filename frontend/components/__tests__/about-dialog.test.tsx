@@ -38,11 +38,11 @@ describe("AboutDialog", () => {
       ).toBeInTheDocument();
     });
 
-    it("renders version badge", async () => {
+    it("renders version badge with build hash", async () => {
       render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/0\.1\.0/)).toBeInTheDocument();
+        expect(screen.getByText(/v0\.1\.0 build:/)).toBeInTheDocument();
       });
     });
 

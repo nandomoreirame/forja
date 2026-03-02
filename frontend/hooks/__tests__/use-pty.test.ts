@@ -37,11 +37,11 @@ describe("usePty", () => {
     expect(result.current.isRunning).toBe(false);
   });
 
-  it("calls write_pty with tabId when write is called", async () => {
+  it("calls write_pty with tabId when write is called", () => {
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
-    await act(async () => {
-      await result.current.write("hello");
+    act(() => {
+      result.current.write("hello");
     });
 
     expect(mockInvoke).toHaveBeenCalledWith("write_pty", {
@@ -77,37 +77,29 @@ describe("usePty", () => {
     expect(result.current.isRunning).toBe(false);
   });
 
-  it("sets up pty:data and pty:exit listeners on mount", () => {
+  it("sets up scoped pty:data and pty:exit listeners on mount", () => {
     renderHook(() => usePty({ tabId: "tab-1" }));
 
-    expect(mockListen).toHaveBeenCalledWith("pty:data", expect.any(Function));
-    expect(mockListen).toHaveBeenCalledWith("pty:exit", expect.any(Function));
+    expect(mockListen).toHaveBeenCalledWith("pty:data:tab-1", expect.any(Function));
+    expect(mockListen).toHaveBeenCalledWith("pty:exit:tab-1", expect.any(Function));
   });
 
-  it("calls onData callback only for matching tab_id", () => {
+  it("calls onData callback when scoped event fires", () => {
     const onData = vi.fn();
     renderHook(() => usePty({ tabId: "tab-1", onData }));
 
-    // Matching tab_id
     act(() => {
-      listenCallbacks["pty:data"]?.({
+      listenCallbacks["pty:data:tab-1"]?.({
         payload: { tab_id: "tab-1", data: "hello" },
       });
     });
     expect(onData).toHaveBeenCalledWith("hello");
 
-    onData.mockClear();
-
-    // Non-matching tab_id should be ignored
-    act(() => {
-      listenCallbacks["pty:data"]?.({
-        payload: { tab_id: "tab-2", data: "world" },
-      });
-    });
-    expect(onData).not.toHaveBeenCalled();
+    // tab-2 events go to a different scoped listener, not this one
+    expect(listenCallbacks["pty:data:tab-2"]).toBeUndefined();
   });
 
-  it("calls onExit and sets isRunning false only for matching tab_id", async () => {
+  it("calls onExit and sets isRunning false when scoped exit event fires", async () => {
     const onExit = vi.fn();
     const { result } = renderHook(() => usePty({ tabId: "tab-1", onExit }));
 
@@ -118,18 +110,9 @@ describe("usePty", () => {
     });
     expect(result.current.isRunning).toBe(true);
 
-    // Non-matching tab_id - should NOT set isRunning to false
+    // Scoped exit event for this tab
     act(() => {
-      listenCallbacks["pty:exit"]?.({
-        payload: { tab_id: "tab-2", code: 0 },
-      });
-    });
-    expect(result.current.isRunning).toBe(true);
-    expect(onExit).not.toHaveBeenCalled();
-
-    // Matching tab_id
-    act(() => {
-      listenCallbacks["pty:exit"]?.({
+      listenCallbacks["pty:exit:tab-1"]?.({
         payload: { tab_id: "tab-1", code: 0 },
       });
     });
