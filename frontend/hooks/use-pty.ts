@@ -30,17 +30,14 @@ export function usePty(options: UsePtyOptions) {
   tabIdRef.current = options.tabId;
 
   useEffect(() => {
-    const unlistenData = listen<PtyDataPayload>("pty:data", (event) => {
-      if (event.payload.tab_id === tabIdRef.current) {
-        onDataRef.current?.(event.payload.data);
-      }
+    const id = tabIdRef.current;
+    const unlistenData = listen<PtyDataPayload>(`pty:data:${id}`, (event) => {
+      onDataRef.current?.(event.payload.data);
     });
 
-    const unlistenExit = listen<PtyExitPayload>("pty:exit", (event) => {
-      if (event.payload.tab_id === tabIdRef.current) {
-        setIsRunning(false);
-        onExitRef.current?.(event.payload.code);
-      }
+    const unlistenExit = listen<PtyExitPayload>(`pty:exit:${id}`, (event) => {
+      setIsRunning(false);
+      onExitRef.current?.(event.payload.code);
     });
 
     return () => {
@@ -61,8 +58,8 @@ export function usePty(options: UsePtyOptions) {
   }, []);
 
   const write = useCallback(
-    async (data: string) => {
-      await invoke("write_pty", { tabId: tabIdRef.current, data });
+    (data: string) => {
+      invoke("write_pty", { tabId: tabIdRef.current, data });
     },
     [],
   );
