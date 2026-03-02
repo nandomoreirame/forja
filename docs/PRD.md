@@ -1,11 +1,11 @@
 # Forja - PRD (Product Requirements Document)
 
-> Complete technical specification for implementation
+> Complete technical specification — Tauri → Electron Migration
 
 **Author:** Fernando Moreira
-**Date:** 02/22/2025
-**Version:** 1.0
-**Status:** 📝 Draft
+**Date:** 02/03/2026
+**Version:** 2.0
+**Status:** ✅ Approved
 
 ---
 
@@ -13,562 +13,397 @@
 
 ### Vision
 
-> Make Claude Code accessible and delightful for any developer or vibe-coder, transforming the raw terminal experience into a rich, contextual GUI focused on the development workflow.
+> To be the definitive desktop environment for developers who use agentic AIs — unifying fluid terminals, AI sessions, file tree, and git diff in per-project workspaces.
 
 ### Problem Statement
 
-**What's happening:**
-Claude Code users interact with a powerful tool through a standard terminal that doesn't render markdown, doesn't preserve visual session context, and forces the user to constantly switch between windows.
+**What is happening:**
+The current version of Forja (Tauri 2 + Rust) has critical fluidity issues in the integrated terminal (PTY via Rust with latency in Rust↔WebView serialization), plus WebView inconsistencies between operating systems, making the experience inferior to what a simple native terminal offers.
 
 **Who is affected:**
-Experienced devs and vibe-coders who use Claude Code as a central part of their development workflow.
+Developers (Fernando + partner) who use Claude Code daily and need a workspace-organized environment.
 
 **Cost of not solving:**
-Loss of productivity, cognitive fatigue when interpreting raw markdown, loss of context between sessions, and inferior experience compared to the tool's real potential.
+Continuing to use the app with visible bugs → loss of credibility as an open source project → no community adoption.
 
 **How they solve it today:**
-Standard terminal (iTerm2, Warp, etc.) with Claude Code CLI. Some use tmux for splits, others manually switch between windows.
+Native terminal (fish/zsh) + Claude Code CLI + VS Code side-by-side — no integration, no workspace context.
 
 ### Goals
 
-- [ ] **Reduce Claude Code workflow friction**
-  → Metric: Average window switching time | Target: close to zero
+- [x] **Fluid PTY terminal** — latency <16ms, same as VS Code
+  → Metric: input lag benchmark | Target: <16ms
 
-- [ ] **Deliver functional enhanced rendering**
-  → Metric: 100% of markdown visually rendered | Target: MVP
+- [x] **Functional workspace** — open project with full context in <2s
+  → Metric: open time | Target: <2s
 
-- [ ] **Build active open source base**
-  → Metric: GitHub Stars | Target: 500 in 3 months
+- [x] **Complete migration without visual loss** — React UI preserved
+  → Metric: reused components | Target: >80%
 
-### Non-Goals (Out of Scope)
+### Non-Goals
 
-- ❌ Support for other AI agents (Cursor, Copilot) — exclusive focus on Claude Code
-- ❌ Shell Pane in MVP — scope simplification
-- ❌ Mobile or web version — desktop only
-- ❌ Cloud session synchronization — local first
-- ❌ Monetization in MVP — pure open source
+- ❌ Widget system — v1.2
+- ❌ WebView embed — v1.1
+- ❌ Multi-AI (Gemini, Codex) — v1.1
+- ❌ Windows support — future
+- ❌ Cloud workspace sync — future
 
 ---
 
 ## 👤 User Personas
 
-### Persona 1: Lucas — Full-Stack Dev
+### Persona 1: Fernando — The Creator
 
-**Who they are:**
-
-- **Name:** Lucas, 28 years old
-- **Role:** Full-Stack Developer
-- **Context:** Works at a startup, uses Claude Code daily for feature development and code review
+**Who they are:** Full-stack developer, 30s, Linux (primary), uses Claude Code as their primary daily development tool.
 
 **Background:**
-Lucas adopted Claude Code 3 months ago and is addicted to the productivity it offers. The problem is that the standard terminal makes it difficult to follow long responses with markdown, code blocks, and diffs. He keeps VS Code open on the side to be able to read the output decently.
+Builds tools for the Claude Code community. Uses the terminal extensively. Wants an environment that "disappears" and lets the work flow — no visible bugs, no latency, no constant window switching.
 
 **Main Pain:**
-Having to interpret raw markdown in the terminal and switch between 3 different windows (terminal, editor, browser) during a Claude Code session.
+The current Forja has slow and buggy TTY — he uses the native terminal more than the very app he created.
 
 **Goals:**
 
-- See Claude's output visually formatted
-- Keep project context (branch, changed files) visible
-- Not need to switch between windows
-
-**Frustrations:**
-
-- Raw markdown is hard to read in long responses
-- Loses session history when closing the terminal
-- Code blocks don't have syntax highlighting
+- Terminal that works perfectly
+- See file tree and git diff without leaving the app
+- Have a per-project workspace that remembers state
 
 **Tech Savviness:** High
 
 **Quote:**
-> "Claude Code is amazing, but reading raw markdown in the terminal is painful. I always keep VS Code open on the side just to be able to follow the responses."
+> "I created the app but use the native terminal because my own terminal inside the app is bad."
 
 ---
 
-### Persona 2: Mariana — Vibe-Coder
+### Persona 2: Partner — The macOS User
 
-**Who they are:**
-
-- **Name:** Mariana, 24 years old
-- **Role:** Designer who learned to code with AI
-- **Context:** Creates personal and freelance projects using Claude Code as main development tool
-
-**Background:**
-Mariana doesn't have a deep technical background, but uses Claude Code to build real projects. For her, the terminal is intimidating and the lack of visual feedback makes it even harder to follow what Claude is doing.
+**Who they are:** Developer, macOS, Forja collaborator.
 
 **Main Pain:**
-Terminal interface is hostile for those who didn't grow up with it. Raw markdown, without visual context, makes the experience confusing.
+macOS WebView (WebKit) renders differently from Linux — visual bugs and different behaviors in the Tauri version.
 
 **Goals:**
 
-- Understand what Claude is doing visually
-- Have clear feedback about project state
-- Not need to deeply understand the terminal
+- App that works the same on macOS
+- Contribute without needing to debug platform differences
 
-**Frustrations:**
-
-- Pure terminal is intimidating
-- Doesn't know if Claude finished executing or is processing
-- Can't easily see which files were changed
-
-**Tech Savviness:** Low-Medium
-
-**Quote:**
-> "I use Claude Code, but honestly the terminal scares me. I wish for something more visual, that shows me what's happening."
+**Tech Savviness:** High
 
 ---
 
 ## 📖 User Stories
 
-### Persona 1: Lucas (Full-Stack Dev)
+### Core Stories (Must-Have)
 
-#### Core Stories (Must-Have)
+- [x] As a developer, I want to open a workspace (folder) to have all the project context in one place
+  - **Criteria:**
+    - [ ] I select a folder via the file system
+    - [ ] File tree loads automatically
+    - [ ] Terminal opens at the project root
+    - [ ] Workspace is saved in history
 
-- [x] As a dev, I want to open an existing project in Forja to start a Claude Code session without configuration
-  - **Acceptance criteria:**
-    - [x] I can select a folder from the filesystem
-    - [x] Recent projects appear on the initial screen
-    - [x] The session opens directly with Claude Code active in the correct directory
+- [x] As a developer, I want a fluid terminal to use Claude Code without latency
+  - **Criteria:**
+    - [ ] Input lag <16ms
+    - [ ] Full ANSI color support
+    - [ ] Responsive resize (terminal resizes with the window)
+    - [ ] Multiple terminal tabs
+    - [ ] Smooth scroll in history
 
-- [x] As a dev, I want to see Claude's output with rendered markdown so I don't need to interpret raw text
-  - **Acceptance criteria:**
-    - [x] Headers, bold, italic, lists rendered as HTML
-    - [x] Code blocks with syntax highlighting by language
-    - [x] Clickable links in output
+- [x] As a developer, I want to see the project's git diff to review changes without leaving the app
+  - **Criteria:**
+    - [ ] List of modified files
+    - [ ] Side-by-side or inline diff
+    - [ ] Status indicator (added/modified/deleted)
 
-- [x] As a dev, I want to see the current branch and modified files to keep project context
-  - **Acceptance criteria:**
-    - [x] Git branch displayed in session header
-    - [x] List of modified files (unstaged + staged) visible
-    - [x] Updates automatically when files change
-
-#### Secondary Stories (Should-Have)
-
-- [ ] As a dev, I want conversation history to persist to resume a previous session
-- [ ] As a dev, I want to see session token usage to control costs
-
-#### Future Stories (Could-Have)
-
-- [ ] As a dev, I want an integrated shell pane to run commands without leaving Forja
-- [ ] As a dev, I want to see visual diffs of files changed by Claude
-
----
-
-### Persona 2: Mariana (Vibe-Coder)
-
-#### Core Stories (Must-Have)
-
-- [x] As a vibe-coder, I want a clear initial screen to open my project without intimidation
-  - **Acceptance criteria:**
-    - [x] Clean interface with few elements
-    - [x] Recent projects with directory name
-    - [x] Clear button to open new folder
-
-- [x] As a vibe-coder, I want to clearly see when Claude is processing or finished so I know when I can interact
-  - **Acceptance criteria:**
-    - [x] Visual loading/processing indicator
-    - [x] Clear state: "Claude is thinking...", "Ready"
-    - [x] Input disabled while Claude processes
+- [x] As a developer, I want to view files with syntax highlight to review code quickly
+  - **Criteria:**
+    - [ ] Opens file from file tree with click
+    - [ ] Syntax highlight for the most common languages (JS/TS/Rust/Python/Go)
+    - [ ] Read-only is acceptable in MVP
 
 ---
 
 ## ⚙️ Features & Requirements
 
-### Feature 1: Project Selector
+### Feature 1: Tauri → Electron Migration
 
-**Description:**
-Forja's initial screen that allows the user to select, open, and manage projects. It's the application's entry point.
+**Description:** Rewrite the app's main process from Rust/Tauri to Node.js/Electron, preserving the existing React renderer with minimal IPC adaptations.
 
-**Priority:** 🔴 P0 (Must)
-
-**User Story:**
-As a user, I want to select my project easily to start a Claude Code session without friction.
+**Priority:** 🔴 P0
 
 **Functional Requirements:**
 
 | ID | Requirement | Priority | Notes |
-|---|---|---|---|
-| F1.1 | Display list of recent projects (last 10) | P0 | Persist in local config |
-| F1.2 | "Open Folder" button with native file picker | P0 | Use OS native dialog via Tauri |
-| F1.3 | Display directory name and full path | P0 | Truncate long path |
-| F1.4 | Favorite projects (pin to top) | P1 | Drag to reorder |
-| F1.5 | Auto-discovery of Git repos in filesystem | P2 | Optional scan |
+|----|-------------|----------|-------|
+| F1.1 | Setup electron-vite as bundler | P0 | Replaces Tauri CLI |
+| F1.2 | Main process in TypeScript | P0 | electron/main.ts |
+| F1.3 | Preload script with contextBridge | P0 | Security — no direct nodeIntegration |
+| F1.4 | IPC channels replacing Tauri invoke | P0 | Map all existing invokes |
+| F1.5 | Linux + macOS build pipeline | P0 | electron-builder with targets |
+| F1.6 | React components reuse | P0 | Only adapt IPC calls |
 
 **Acceptance Criteria:**
 
-- [ ] Recent projects load in < 200ms
-- [ ] File picker opens in < 500ms
-- [ ] Project selection starts session in < 2s
-- [ ] Persists between app restarts
-
-**UI/UX Requirements:**
-
-- Layout: Grid of cards with project name + icon + path
-- Empty state: "No recent projects. Open a folder to get started."
-- Responsive to window resize
+- [ ] App opens without errors on Linux and macOS
+- [ ] React components render the same as Tauri
+- [ ] IPC working (main ↔ renderer)
+- [ ] Build generates binaries for both platforms
 
 ---
 
-### Feature 2: Claude Code Pane
+### Feature 2: PTY Terminal (node-pty + xterm.js)
 
-**Description:**
-Main workspace area. A PTY running `claude` with enhanced rendering — transforms raw output into rendered markdown, code blocks with syntax highlighting, and interactive interface.
+**Description:** Real integrated terminal using node-pty in the main process and xterm.js in the renderer, communicating via IPC.
 
-**Priority:** 🔴 P0 (Must)
+**Priority:** 🔴 P0
 
 **Functional Requirements:**
 
 | ID | Requirement | Priority | Notes |
-|---|---|---|---|
-| F2.1 | PTY connected to `claude` process | P0 | Via Rust `portable-pty` |
-| F2.2 | Input field to send messages to Claude | P0 | Enter to send, Shift+Enter for new line |
-| F2.3 | Markdown rendering in output (headers, bold, lists) | P0 | Detect and render in real-time |
-| F2.4 | Code blocks with syntax highlighting | P0 | Use Shiki or Prism |
-| F2.5 | State indicator (thinking / ready) | P0 | PTY output parsing |
-| F2.6 | Conversation history scroll | P0 | Unlimited scrollback in memory |
-| F2.7 | "Copy" button on each code block | P1 | Clipboard API |
-| F2.8 | Clickable links in output | P1 | Open in default browser |
+|----|-------------|----------|-------|
+| F2.1 | Spawn PTY via node-pty in main process | P0 | OS default shell (fish/bash/zsh) |
+| F2.2 | Output streaming via IPC to xterm.js | P0 | ipcMain → ipcRenderer |
+| F2.3 | xterm.js input sent to PTY | P0 | ipcRenderer → ipcMain → pty.write() |
+| F2.4 | Synchronized terminal resize | P0 | pty.resize() on ResizeObserver |
+| F2.5 | Multiple terminal tabs | P0 | Map of PTY instances per tabId |
+| F2.6 | addons: fit, web-links, search | P1 | Improved UX |
+| F2.7 | Visual theme consistent with app | P1 | CSS variables → xterm theme object |
 
 **Acceptance Criteria:**
 
-- [ ] Claude responds within normal latency (no Forja overhead)
-- [ ] Markdown renders in real-time as output arrives
-- [ ] Code blocks identify language correctly in > 90% of cases
-- [ ] "thinking" state appears in < 300ms after sending message
+- [ ] Input lag <16ms measured
+- [ ] Claude Code runs without issues
+- [ ] Full ANSI colors (256 colors + truecolor)
+- [ ] Terminal resizes without breaking layout
+- [ ] Ctrl+C, Ctrl+D, Ctrl+L work correctly
 
-**UI/UX Requirements:**
+**Terminal IPC Architecture:**
 
-- Output: Scroll area with alternating messages (user / claude)
-- Input: Sticky at bottom, expandable multiline
-- Loading: Animated dots or subtle spinner while Claude processes
-- Error state: Clear message if `claude` is not installed
+```
+[xterm.js - Renderer]
+  → ipcRenderer.send('pty:input', {tabId, data})
+  ← ipcRenderer.on('pty:output', {tabId, data})
+  → ipcRenderer.send('pty:resize', {tabId, cols, rows})
+
+[main.ts - Main Process]
+  ipcMain.on('pty:input') → pty.write(data)
+  ipcMain.on('pty:resize') → pty.resize(cols, rows)
+  pty.onData → mainWindow.webContents.send('pty:output')
+```
 
 ---
 
-### Feature 3: Markdown Preview
+### Feature 3: Workspace Manager
 
-**Description:**
-Visual rendering of Claude's output — visually differentiates user messages and Claude responses, with full support for markdown elements.
+**Description:** System for opening, saving, and switching between projects (folders), each with its own state (terminal tabs, open file, etc).
 
-**Priority:** 🔴 P0 (Must)
+**Priority:** 🔴 P0
 
 **Functional Requirements:**
 
 | ID | Requirement | Priority | Notes |
-|---|---|---|---|
-| F3.1 | Render headers (H1-H6) | P0 | |
-| F3.2 | Render bold, italic, strikethrough | P0 | |
-| F3.3 | Render ordered and unordered lists | P0 | |
-| F3.4 | Render code blocks with detected language | P0 | |
-| F3.5 | Render inline code | P0 | |
-| F3.6 | Render tables | P1 | |
-| F3.7 | Render blockquotes | P1 | |
-| F3.8 | Render links | P1 | Open in browser |
-
-**Acceptance Criteria:**
-
-- [ ] All standard markdown (CommonMark) rendered correctly
-- [ ] No flash of unrendered content (FOUC)
-- [ ] Performance: no lag when receiving long output (> 5000 words)
+|----|-------------|----------|-------|
+| F3.1 | Open folder via native dialog | P0 | dialog.showOpenDialog |
+| F3.2 | Workspace persists in electron-store | P0 | List of recent workspaces |
+| F3.3 | Workspace saves basic state | P1 | Open terminal tabs, active file |
+| F3.4 | Switcher between open workspaces | P1 | Sidebar or header dropdown |
 
 ---
 
-### Feature 4: Git Integration
+### Feature 4: File Tree
 
-**Description:**
-Displays Git context of the current project in header or sidebar: active branch and list of modified files. Automatic update via file watcher.
+**Description:** Sidebar with the active workspace's file tree, with support for real-time change watcher.
 
-**Priority:** 🔴 P0 (Must)
+**Priority:** 🔴 P0
 
 **Functional Requirements:**
 
 | ID | Requirement | Priority | Notes |
-|---|---|---|---|
-| F4.1 | Display current Git branch in header | P0 | Via `git branch --show-current` |
-| F4.2 | Display counter of modified files | P0 | Unstaged + staged |
-| F4.3 | List modified files (name + status) | P0 | M, A, D, R status |
-| F4.4 | Automatic update when detecting changes | P0 | File watcher on `.git` |
-| F4.5 | Visual indicator when not a Git repo | P1 | "Not a git repo" |
+|----|-------------|----------|-------|
+| F4.1 | List files/folders recursively | P0 | Ignore node_modules, .git by default |
+| F4.2 | Expand/collapse folders | P0 | State persisted per workspace |
+| F4.3 | File watcher (chokidar) | P0 | Updates tree in real time |
+| F4.4 | Open file in viewer on click | P0 | IPC → main reads file → renderer displays |
+| F4.5 | Icons by file type | P1 | vscode-icons or similar |
+| F4.6 | Git status on files (M/A/D) | P1 | Integrate with simple-git |
 
-**Acceptance Criteria:**
+---
 
-- [ ] Branch updates in < 500ms after change
-- [ ] File list updates in < 1s after Claude modifies files
-- [ ] Works with local Git repos (no remote authentication)
-- [ ] Graceful fallback when not a Git repo
+### Feature 5: Git Diff Viewer
+
+**Description:** Panel to view git changes in the active workspace, with list of modified files and inline diff.
+
+**Priority:** 🔴 P0
+
+**Functional Requirements:**
+
+| ID | Requirement | Priority | Notes |
+|----|-------------|----------|-------|
+| F5.1 | List of files with git status | P0 | simple-git status |
+| F5.2 | Inline diff of selected file | P0 | simple-git diff + diff renderer |
+| F5.3 | Visual indicators (added/modified/deleted) | P0 | Semantic colors |
+| F5.4 | Automatic update on change detection | P1 | chokidar watch .git/index |
+
+---
+
+### Feature 6: File Viewer
+
+**Description:** File visualization panel with syntax highlight, read-only in MVP.
+
+**Priority:** 🔴 P0
+
+**Functional Requirements:**
+
+| ID | Requirement | Priority | Notes |
+|----|-------------|----------|-------|
+| F6.1 | Display selected file content | P0 | Via IPC — main reads, renderer displays |
+| F6.2 | Syntax highlight | P0 | Shiki (lighter than CodeMirror for read-only) |
+| F6.3 | Line numbers | P0 | |
+| F6.4 | Tabs for open files | P1 | Multiple files simultaneously |
 
 ---
 
 ## 🛠 Technical Stack
 
-### Frontend
+### Definitive Stack
 
-| Layer | Technology | Why |
-|---|---|---|
-| Framework | React 19 + TypeScript | Rich ecosystem, familiarity |
-| Styling | Tailwind CSS | Utility-first, speed |
-| Components | shadcn/ui | High-quality, accessible |
-| Terminal | xterm.js | Mature, VT support, scrollback |
-| Markdown | react-markdown + remark | Extensible, performant |
-| Syntax Highlight | Shiki | Best highlight quality |
-| State | Zustand | Simple, no boilerplate |
+| Layer | Technology | Justification |
+|-------|-----------|---------------|
+| Desktop framework | Electron 33+ | Mature PTY, native WebView, Node.js APIs |
+| Bundler/Dev | electron-vite | HMR, TypeScript, modern structure |
+| Language | TypeScript (strict) | Main + Renderer + Preload |
+| Renderer | React 19 + Vite | Reuse Tauri components |
+| Styling | Tailwind CSS + shadcn/ui | Preserve existing visual |
+| Terminal renderer | xterm.js + addons | Battle-tested, used by VS Code |
+| PTY | node-pty | The only mature one for Electron |
+| File system | Node.js fs + chokidar | Real-time watcher |
+| Git | simple-git | Node.js wrapper for git CLI |
+| Syntax highlight | Shiki | Lightweight, server-side, no overhead |
+| Persistence | electron-store | Config and recent workspaces |
+| Build/Release | electron-builder | Targets Linux (.AppImage, .deb) + macOS (.dmg) |
 
-### Backend (Rust / Tauri)
-
-| Layer | Technology | Why |
-|---|---|---|
-| Desktop Framework | Tauri 2 | Rust backend + WebView, small binaries |
-| PTY Management | portable-pty (crate) | Cross-platform PTY |
-| VT Parser | vte (crate) | VT100/ANSI sequence parser |
-| File Watcher | notify (crate) | Cross-platform file watching |
-| Git Info | git2 (crate) or CLI | Bindings for libgit2 |
-| Config Storage | serde + toml | Simple, readable |
-| IPC | Tauri Commands + Events | Frontend ↔ Backend communication |
-
-### Architecture
+### Folder Structure (electron-vite)
 
 ```
-[React Frontend]
-    |
-    | Tauri IPC (Commands + Events)
-    |
-[Rust Backend]
-    ├── PTY Manager (portable-pty)
-    │   └── Spawns `claude` process
-    │   └── Stream output → Frontend via Events
-    ├── File Watcher (notify)
-    │   └── Monitors .git/ for changes
-    │   └── Emits Git events → Frontend
-    ├── Git Reader (git2)
-    │   └── Current branch
-    │   └── File status
-    └── Config Manager (serde/toml)
-        └── Recent projects
-        └── User preferences
+forja/
+├── electron/
+│   ├── main.ts          # Main process
+│   ├── preload.ts       # Secure bridge (contextBridge)
+│   └── services/
+│       ├── pty.ts       # PTY instances management
+│       ├── workspace.ts # fs reading, file tree
+│       └── git.ts       # simple-git wrapper
+├── src/
+│   ├── components/      # React components (reused from Tauri)
+│   ├── features/
+│   │   ├── terminal/
+│   │   ├── filetree/
+│   │   ├── gitdiff/
+│   │   └── fileviewer/
+│   └── App.tsx
+├── electron-builder.config.ts
+└── electron.vite.config.ts
 ```
 
-**Key Decisions:**
+### IPC Channels Map
 
-1. **xterm.js for raw terminal** — handle VT sequences in frontend, Rust does PTY
-2. **Hybrid rendering** — xterm.js for input/raw mode, React components for rendered output
-3. **Events for streaming** — Tauri Events to stream PTY output in real-time
-4. **Local config** — `~/.config/forja/config.toml` for recent projects and preferences
-5. **Git via CLI** — Use `git` via Command for MVP, migrate to `git2` if needed
+```typescript
+// pty
+'pty:spawn'    // main: creates new PTY instance
+'pty:input'    // renderer → main: sends input
+'pty:output'   // main → renderer: output stream
+'pty:resize'   // renderer → main: resizes
+'pty:kill'     // renderer → main: kills process
+
+// workspace
+'workspace:open'     // opens folder selection dialog
+'workspace:list'     // lists recent workspaces
+'workspace:filetree' // returns file tree
+
+// file
+'file:read'          // reads file content
+'file:watch'         // starts watcher on workspace
+
+// git
+'git:status'         // lists modified files
+'git:diff'           // diff of specific file
+```
 
 ---
 
 ## 🔄 User Flows
 
-### Flow 1: Open Project and Start Session
-
-**Happy Path:**
+### Main Flow: Open Workspace and Start Claude Code
 
 ```
-App opens → Project Selector
-  → User clicks recent project (or "Open Folder")
-  → File picker (if new project)
-  → Workspace opens with Claude Code Pane active
-  → PTY spawns `claude` in selected directory
-  → Git header shows branch + modified files
-  → Input enabled, Claude ready
+1. App opens → Welcome screen / last workspace
+2. User clicks "Open Workspace" → native dialog
+3. Selects folder → workspace loads
+4. File tree populates automatically (chokidar start)
+5. Terminal tab opens at project root
+6. User types `claude` → Claude Code session starts
+7. Claude Code runs fluidly on PTY
+8. User clicks on file in file tree → opens in viewer
+9. User opens Git Diff tab → sees Claude's changes
 ```
-
-**Error Paths:**
-
-- `claude` not installed → Modal: "Claude Code CLI not found. Install with `npm i -g @anthropic-ai/claude-code`" + link
-- Directory no longer exists → Toast: "Folder not found. Please select another."
-- No read permission → Toast: "Permission denied for this folder."
 
 ---
 
-### Flow 2: Interaction with Claude
-
-**Happy Path:**
-
-```
-User types message → Presses Enter
-  → Input disabled
-  → "Claude is thinking..." indicator appears
-  → Output starts arriving (streaming)
-  → Markdown rendered in real-time
-  → Code blocks with syntax highlighting
-  → Indicator disappears, input re-enabled
-```
-
-**Error Paths:**
-
-- PTY process died → Banner: "Session ended. Start a new session?" + button
-- Timeout without response (> 60s) → Toast: "Claude is taking longer than expected..."
-
----
-
-## 🗄 Non-Functional Requirements
+## 🏗 Non-Functional Requirements
 
 ### Performance
 
-| Requirement | Target | How to Measure |
-|---|---|---|
-| App startup time | < 2s | Tauri built-in metrics |
-| Project Selector load | < 200ms | Custom timer |
-| PTY response latency | < 50ms overhead | Benchmark vs direct terminal |
-| Markdown render (long output) | < 100ms | React Profiler |
-| File watcher update | < 1s | Manual test |
+| Requirement | Target |
+|-------------|--------|
+| TTY input latency | <16ms |
+| Workspace load time | <2s |
+| File tree (1000 files) | <500ms |
+| App startup (cold) | <3s |
 
 ### Security
 
-- [ ] PTY runs with current user permissions (no escalation)
-- [ ] Tauri CSP configured (no eval, inline scripts)
-- [ ] Local config doesn't store API keys (Claude Code manages this)
-- [ ] No telemetry without explicit opt-in
-
-### Accessibility
-
-- [ ] Keyboard navigation in Project Selector
-- [ ] ARIA labels on interactive elements
-- [ ] WCAG AA minimum contrast
-- [ ] Screen reader support in rendered output
+- [ ] `nodeIntegration: false` in renderer
+- [ ] `contextIsolation: true`
+- [ ] All communication via contextBridge (preload)
+- [ ] No arbitrary code execution via IPC
 
 ### Platform Support
 
-- [ ] macOS (primary target, Apple Silicon + Intel)
-- [ ] Linux (secondary target)
-- [ ] Windows (future — Tauri supports, but PTY has peculiarities)
+- [ ] Linux: Ubuntu 22.04+, Arch, Fedora (.AppImage + .deb)
+- [ ] macOS: 13+ Ventura (.dmg, Apple Silicon + Intel)
 
 ---
 
-## 📌 Integrations
+## ⚠️ Edge Cases
 
-### Claude Code CLI
+### PTY crashes (child process dies)
 
-**Purpose:** Main process running inside PTY
+- Detect via `pty.onExit`
+- Show indicator "Process exited (code X)" in the terminal
+- Offer "Restart Shell" button
 
-**Requirement:** `claude` installed globally on user's system
+### Workspace with giant node_modules
 
-**Detection:**
+- File tree ignores `node_modules`, `.git`, `dist`, `.next` by default
+- Watcher excludes the same paths
 
-```rust
-// Check if claude is available
-Command::new("which").arg("claude").output()
-// or on Windows: where claude
-```
+### macOS vs Linux default shell
 
-**Error Handling:**
-
-- Not found → Onboarding with installation instructions
-- Incompatible version → Warning (without blocking)
-
----
-
-### Git CLI / libgit2
-
-**Purpose:** Branch information and file status
-
-**Endpoints Used:**
-
-- `git branch --show-current` → branch name
-- `git status --porcelain` → modified files
-
-**Update Strategy:**
-
-- File watcher on `.git/` directory
-- Re-execute Git queries when detecting changes
-
----
-
-## ⚠️ Edge Cases & Error Handling
-
-### Edge Case 1: `claude` CLI not installed
-
-**Problem:** User opens Forja without having Claude Code installed
-
-**Solution:** Detect when opening workspace, before spawning PTY
-
-**UI Behavior:**
-
-- Blocking modal with clear instructions
-- Direct link to Claude Code documentation
-- "Try Again" button after installation
-
----
-
-### Edge Case 2: Project is not a Git repository
-
-**Problem:** User opens folder without `.git/`
-
-**Solution:** Git header shows "Not a Git repo" state without crashing
-
-**UI Behavior:**
-
-- Header displays Git icon with tooltip "Not a git repository"
-- Modified files list doesn't appear
-- Session works normally (Git is not mandatory)
-
----
-
-### Edge Case 3: PTY process ends unexpectedly
-
-**Problem:** `claude` process dies during session
-
-**Solution:** Monitor process exit code via Tauri
-
-**UI Behavior:**
-
-- Banner at top of pane: "Session ended unexpectedly"
-- "Restart Session" button (restarts PTY in same directory)
-- Previous output kept for reference
-
----
-
-### Edge Case 4: Very long output (> 10,000 tokens)
-
-**Problem:** Rendering performance degrades with very long outputs
-
-**Solution:** History virtualization (render only visible items)
-
-**UI Behavior:**
-
-- Smooth scroll without lag
-- "Scroll to bottom" button when scrolling up
+- Detect shell via `process.env.SHELL` → fallback `/bin/bash`
 
 ---
 
 ## 📊 Success Metrics
 
-### North Star Metric
-
-**Metric:** Weekly active sessions
-**Definition:** Number of Claude Code sessions started via Forja
-**Target (3m):** 500/week
-**How to measure:** Opt-in telemetry (`session_started` event)
-
-### Feature-Specific Metrics
-
-| Feature | Metric | Target (3m) | Tool |
-|---|---|---|---|
-| Project Selector | Projects opened per user/week | > 5 | Telemetry |
-| Claude Code Pane | Completed sessions (no crash) | > 95% | Error tracking |
-| Markdown Preview | N/A (qualitative) | Positive feedback | GitHub Issues |
-| Git Integration | Users with Git repo | > 80% | Telemetry |
-
-### Community Metrics
-
-| Metric | Baseline | Target (3m) | How to Measure |
-|---|---|---|---|
-| GitHub Stars | 0 | 500 | GitHub |
-| Downloads | 0 | 1,000 | GitHub Releases |
-| Contributors | 0 | 5 | GitHub |
-| Opened Issues/PRs | 0 | 50 | GitHub |
+| Metric | Target | How to Measure |
+|--------|--------|----------------|
+| TTY input latency | <16ms | xterm.js performance test |
+| GitHub stars | 500 in 3m | GitHub Insights |
+| Open critical issues | 0 P0 bugs | GitHub Issues |
+| Contributors | 3+ in 3m | GitHub Contributors |
 
 ---
 
-## 📝 Open Questions
-
-- [ ] Hybrid rendering (xterm.js + React components): how to detect where output is pure markdown vs raw terminal?
-- [ ] Opt-in telemetry: which tool to use that respects privacy? (Plausible, self-hosted PostHog?)
-- [ ] Automatic app updates: use Tauri updater or leave it to the user?
-- [ ] Icon and final name: is "Forja" definitive? (check trademark conflicts)
-
----
-
-**Last Updated:** 02/22/2025
-**Next Review:** Post-initial setup
+**Last Updated:** 02/03/2026
+**Next Review:** After Sprint 2

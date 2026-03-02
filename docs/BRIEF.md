@@ -1,22 +1,22 @@
 # Forja - Brief
 
-> Executive product summary
+> Executive Summary — Tauri → Electron Migration
 
-**Date:** 02/22/2025
+**Date:** 02/03/2026
 **Author:** Fernando Moreira
-**Status:** 🔍 Discovery
+**Status:** 🚀 In Development
 
 ---
 
 ## 🎯 Problem (in one sentence)
 
-> Devs and vibe-coders who use Claude Code in the terminal suffer from illegible markdown, loss of context between sessions, and the constant need to switch between terminal and editor.
+> Developers using Claude Code and other agentic AIs lack a dedicated, fluid desktop environment organized by workspaces — they constantly switch between terminal, editor, browser, and documentation without any integration.
 
 ---
 
 ## ✨ Solution (in one sentence)
 
-> Forja is an open source desktop client for Claude Code that delivers enhanced rendering (markdown, diffs, code blocks), project-based sessions, and git integration — all in a dedicated GUI built with Tauri 2 + React.
+> A cross-platform desktop app (Linux/macOS) that unifies fluid PTY terminals, agentic AI sessions, file tree, git diff, and widgets in a single workspace organized by project.
 
 ---
 
@@ -25,48 +25,40 @@
 ### Primary Persona
 
 **Who they are:**
-Developers and vibe-coders who already use Claude Code via terminal, whether in professional or personal projects, and feel friction in the current workflow.
+Solo developer or developer duo who uses Claude Code (and eventually other AI CLIs) as their primary development tool. Technical, comfortable with the terminal, demanding about performance and UX.
 
 **Main pain:**
-Claude Code output is illegible in the standard terminal (raw markdown), session context is lost between uses, and it's necessary to switch between multiple windows to edit, review diffs, and chat with Claude.
+The workflow with agentic AIs is fragmented — terminal in one window, editor in another, browser in another, with no shared project context.
 
 **Desired outcome:**
-Have a single, visual, and organized environment to interact with Claude Code — without giving up the power of the terminal.
+An environment where opening a workspace immediately brings up the terminal, the AI session, the file tree, and the git diff for the project — all together, with no configuration needed.
 
 ---
 
 ## 🚀 Value Proposition
 
-### Competitive Differentiator
+### Competitive Differentiators
 
-- ✅ **Claude Code-first** — not a generic terminal with AI, it's a GUI 100% dedicated to Claude Code workflow
-- ✅ **Real enhanced rendering** — markdown rendered as HTML, code blocks with syntax highlight, visual diffs
-- ✅ **Project-based sessions** — isolated context per project, without losing history
-- ✅ **Open source from day 1** — community as competitive advantage
+- ✅ **Real, fluid PTY terminal** — node-pty + xterm.js, just like VS Code, without Tauri/WebView bugs
+- ✅ **Workspace-first** — each project has its own context (terminal, AI session, files, git)
+- ✅ **Open source + extensible** — starts simple, evolves into a widget system with WebView, multi-AI, etc.
+- ✅ **True cross-platform** — Linux and macOS from day 1 (Windows in the future)
 
-### Vs Current Alternatives
+### Vs. Current Alternatives
 
-| Alternative | Problem | Forja solves |
-|---|---|---|
-| Standard terminal (`claude` CLI) | Raw markdown, no visual context | Rich rendering + session memory |
-| Claude Desktop (official) | Generic, not focused on dev workflow | Code-focused experience |
-| opcode (ex-Claudia) | Pivoted to other models | Exclusive focus on Claude Code |
-| Warp | Generic terminal, Claude is just an agent | Claude Code as first-class citizen |
+| Alternative | Problem | Forja |
+|-------------|---------|-------|
+| Native terminal + Claude Code | No workspace organization, no UI | Integrated workspace with context |
+| Superset.sh | Mac-only, focused on git/PRs, no widgets | Cross-platform, focus on AI + productivity |
+| Freeter | No real terminal, no AI | PTY terminal + AI sessions as core |
+| VS Code + extensions | Heavy, generic, not optimized for agentic AI | Dedicated to the agentic AI workflow |
 
 ---
 
 ## 💰 Business Model
 
-**Model:** Open Source (MIT) — no monetization in MVP
-
-**Strategy:**
-
-- Launch open source, build community
-- Sponsorships (GitHub Sponsors, Open Collective)
-- Pro features for teams in the future (v2+)
-
-**Why it makes sense:**
-Open source developer tooling builds reputation and fast organic adoption. The differentiator of being "the community's official Claude Code GUI" is worth more than premature monetization.
+**Model:** Open Source (MIT)
+**Monetization:** None in MVP — building community and personal use
 
 ---
 
@@ -74,18 +66,17 @@ Open source developer tooling builds reputation and fast organic adoption. The d
 
 ### North Star Metric
 
-**Metric:** Weekly active sessions (projects opened in Forja)
-**Target (3 months):** 500 sessions/week
-**How to measure:** Opt-in telemetry (Plausible or similar)
+**Metric:** GitHub stars + weekly active users
+**Target (3 months):** 500 stars, 50 active users
+**How to measure:** GitHub Insights + opt-in analytics in the app
 
 ### Secondary Metrics
 
-| Metric | Baseline | Target (3m) | How to Measure |
-|---|---|---|---|
-| GitHub stars | 0 | 500 | GitHub |
-| Total downloads | 0 | 1,000 | GitHub Releases |
-| Contributors | 0 | 5 | GitHub |
-| Community-opened issues | 0 | 50+ | GitHub Issues |
+| Metric | Target (3m) | How to Measure |
+|--------|-------------|----------------|
+| Reported issues resolved | >80% in 7 days | GitHub Issues |
+| Workspace open time | <2s | Performance benchmark |
+| TTY input latency | <16ms | xterm.js benchmark |
 
 ---
 
@@ -93,67 +84,53 @@ Open source developer tooling builds reputation and fast organic adoption. The d
 
 ### ✅ What's IN the MVP
 
-- [x] Project Selector (recent projects + browse filesystem)
-- [x] Claude Code Pane (PTY with rendered markdown and code blocks)
-- [x] Markdown Preview of Claude's output
-- [x] Basic Git Integration (current branch + modified files in header)
+- [x] Tauri → Electron migration (electron-vite)
+- [x] Fluid PTY terminal (node-pty + xterm.js, multiple tabs)
+- [x] Claude Code session in the terminal
+- [x] Sidebar with workspace file tree
+- [x] Git diff viewer
+- [x] File viewer with syntax highlight
+- [x] Workspace — open folder as project
 
-### ❌ What's NOT IN the MVP
+### ❌ What's NOT in the MVP
 
-- ❌ Separate Shell Pane — unnecessary layout complexity now
-- ❌ Complete Session Manager — v1.1
-- ❌ Context Panel (token usage, history) — v1.1
-- ❌ Monaco Editor in code blocks — xterm.js solves for MVP
+- ❌ WebView widget (browser → localhost)
+- ❌ Widget system / mini apps
+- ❌ Multiple AIs (Gemini CLI, Codex)
+- ❌ Multi-window / customizable layout
 
 ---
 
-## ⏱️ Timeline
+## ⏱️ Timeline (Sprints)
 
-| Milestone | Deadline | Status |
-|---|---|---|
-| Setup (Tauri 2 + React + PTY) | Week 1-2 | ⏳ Pending |
-| Functional Project Selector | Week 2-3 | ⏳ Pending |
-| Claude Code Pane + Rendering | Week 3-5 | ⏳ Pending |
-| Git Integration | Week 5-6 | ⏳ Pending |
-| Polish + Alpha release | Week 7-8 | ⏳ Pending |
+| Sprint | Delivery | Estimated Deadline |
+|--------|----------|--------------------|
+| Sprint 0 | Electron setup + migrated repo | 3 days |
+| Sprint 1 | Fluid PTY terminal | 5 days |
+| Sprint 2 | Workspace + File Tree | 4 days |
+| Sprint 3 | Git Diff + File Viewer | 4 days |
+| Sprint 4 | Polish + Release v1.0 | 3 days |
 
-**Total estimated time:** 6-8 weeks
+**Total estimated:** ~3 weeks
 
 ---
 
 ## 🚨 Main Risks
 
 | Risk | Probability | Impact | Mitigation |
-|---|---|---|---|
-| Learning curve in Rust/Tauri | High | High | Start with simpler backend (file system), evolve to PTY |
-| Complex PTY management | Medium | High | Use `portable-pty` crate, study Warp examples |
-| Dependency on Claude Code CLI (Anthropic changes API) | Low | High | Maintain abstraction layer, follow changelog |
-| Slow community adoption | Medium | Medium | Launch on Product Hunt + Reddit r/ClaudeAI + X on day 1 |
+|------|-------------|--------|-----------|
+| Partial reuse of React components | Low | Medium | IPC is different but isolated — only adapt API calls |
+| node-pty on Linux/macOS with different behaviors | Medium | High | Test on both OSes from Sprint 1 |
+| Scope creep (wanting to add widgets early) | High | High | Follow sprints strictly |
 
 ---
 
-## ❓ Hypotheses to Validate
-
-1. **Problem Hypothesis:**
-   Claude Code users feel real friction with the standard terminal and would seek a GUI alternative
-   ➜ Validate: Post question on r/ClaudeAI and X before launch
-
-2. **Solution Hypothesis:**
-   Enhanced rendering + project-based sessions significantly reduces friction
-   ➜ Validate: Alpha with 5-10 devs from network, collect qualitative feedback
-
-3. **Adoption Hypothesis:**
-   The community will contribute and help evolve the project
-   ➜ Validate: First 5 external contributors in 3 months
-
----
-
-## 🔗 Useful Links
+## 🔗 Links
 
 - **Repo:** https://github.com/nandomoreirame/forja
-- **References:** Warp, Hyper, GNOME Terminal
+- **Reference 1:** https://superset.sh
+- **Reference 2:** https://freeter.io
 
 ---
 
-**Last updated:** 02/22/2025
-**Next review:** Post-alpha release
+**Last updated:** 02/03/2026
