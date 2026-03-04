@@ -52,10 +52,11 @@ export default defineConfig({
             "clsx",
             "tailwind-merge",
           ],
+          "vendor-monaco": ["monaco-editor"],
         },
       },
     },
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 4000,
   },
   server: {
     port: 1420,
