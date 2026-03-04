@@ -137,9 +137,7 @@ function EmptyState() {
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
   const workspaces = useWorkspaceStore((s) => s.workspaces);
-  const openWorkspaceInNewWindow = useWorkspaceStore(
-    (s) => s.openWorkspaceInNewWindow,
-  );
+  const activateWorkspace = useWorkspaceStore((s) => s.activateWorkspace);
   const setCreateWorkspaceOpen = useAppDialogsStore(
     (s) => s.setCreateWorkspaceOpen,
   );
@@ -254,7 +252,7 @@ function EmptyState() {
             {workspaces.map((workspace) => (
               <button
                 key={workspace.id}
-                onClick={() => openWorkspaceInNewWindow(workspace.id)}
+                onClick={() => activateWorkspace(workspace.id)}
                 className="group flex flex-col gap-0.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-ctp-mantle"
               >
                 <span className="text-sm text-ctp-subtext0 group-hover:text-ctp-text">

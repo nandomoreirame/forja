@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@/lib/ipc";
+import { useFileTreeStore } from "./file-tree";
 
 export interface Workspace {
   id: string;
@@ -22,6 +23,7 @@ interface WorkspaceState {
   removeProject: (workspaceId: string, projectPath: string) => Promise<void>;
   setActiveWorkspace: (id: string | null) => Promise<void>;
   openWorkspaceInNewWindow: (workspaceId: string) => Promise<void>;
+  activateWorkspace: (workspaceId: string) => Promise<void>;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
@@ -77,5 +79,22 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   openWorkspaceInNewWindow: async (workspaceId) => {
     await invoke("open_workspace_in_new_window", { workspaceId });
+  },
+
+  activateWorkspace: async (workspaceId) => {
+    const { workspaces } = get();
+    const workspace = workspaces.find((w) => w.id === workspaceId);
+    if (!workspace) return;
+
+    await get().setActiveWorkspace(workspaceId);
+
+    const fileTreeState = useFileTreeStore.getState();
+    for (const projectPath of workspace.projects) {
+      await fileTreeState.loadProjectTree(projectPath);
+    }
+
+    if (workspace.projects.length > 0) {
+      fileTreeState.openProjectPath(workspace.projects[0]);
+    }
   },
 }));
