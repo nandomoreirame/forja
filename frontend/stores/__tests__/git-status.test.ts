@@ -10,6 +10,7 @@ describe("useGitStatusStore", () => {
     useGitStatusStore.setState({
       statuses: {},
       projectPath: null,
+      statusesByProject: {},
     });
     vi.clearAllMocks();
   });
@@ -18,6 +19,7 @@ describe("useGitStatusStore", () => {
     const state = useGitStatusStore.getState();
     expect(state.statuses).toEqual({});
     expect(state.projectPath).toBeNull();
+    expect(state.statusesByProject).toEqual({});
   });
 
   it("getFileStatus returns undefined when no statuses loaded", () => {
@@ -94,6 +96,7 @@ describe("useGitStatusStore", () => {
     });
     expect(useGitStatusStore.getState().statuses).toEqual(mockResult);
     expect(useGitStatusStore.getState().projectPath).toBe("/project");
+    expect(useGitStatusStore.getState().statusesByProject["/project"]).toEqual(mockResult);
   });
 
   it("fetchStatuses handles error gracefully", async () => {

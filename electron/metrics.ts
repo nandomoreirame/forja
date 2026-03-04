@@ -1,8 +1,9 @@
 import si from "systeminformation";
 import type { WebContents } from "electron";
 
-const INTERVAL_MS = 2000;
+const INTERVAL_MS = 5000;
 let metricsInterval: ReturnType<typeof setInterval> | null = null;
+let lastMetrics: SystemMetrics | null = null;
 
 interface NetworkState {
   rxBytes: number;
@@ -24,12 +25,22 @@ export interface SystemMetrics {
   network_tx_rate: number;
 }
 
+function hasMetricsChanged(current: SystemMetrics): boolean {
+  if (!lastMetrics) return true;
+  return (
+    Math.abs(current.cpu_usage - lastMetrics.cpu_usage) > 1 ||
+    Math.abs(current.memory_used - lastMetrics.memory_used) > 10 * 1024 * 1024
+  );
+}
+
 export function startMetricsLoop(getWindows: () => WebContents[]): void {
   if (metricsInterval) return;
 
   metricsInterval = setInterval(async () => {
     try {
       const metrics = await collectMetrics();
+      if (!hasMetricsChanged(metrics)) return;
+      lastMetrics = metrics;
       const windows = getWindows();
       for (const win of windows) {
         if (!win.isDestroyed()) {

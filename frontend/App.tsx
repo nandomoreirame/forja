@@ -5,6 +5,7 @@ import {
   Anvil,
   Clock,
   FolderOpen,
+  PanelRight,
   TerminalSquare,
 } from "lucide-react";
 import {
@@ -32,11 +33,13 @@ import {
   ResizablePanelGroup,
 } from "./components/ui/resizable";
 import { MOD_KEY } from "./lib/platform";
+import { useShallow } from "zustand/react/shallow";
 import { useAppDialogsStore } from "./stores/app-dialogs";
 import { useCommandPaletteStore } from "./stores/command-palette";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
 import { useGitStatusStore } from "./stores/git-status";
+import { useGitDiffStore } from "./stores/git-diff";
 import { useSessionStateStore } from "./stores/session-state";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
@@ -121,6 +124,10 @@ interface PtyExitPayload {
   code: number;
 }
 
+interface GitChangedPayload {
+  path: string;
+}
+
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
     <kbd className="inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-[11px] text-ctp-overlay1">
@@ -142,7 +149,7 @@ function EmptyState() {
   useEffect(() => {
     invoke<RecentProject[]>("get_recent_projects")
       .then((result) => setRecentProjects(result ?? []))
-      .catch(() => {});
+      .catch((err) => console.warn("[App] IPC call failed:", err));
   }, []);
 
   return (
@@ -220,21 +227,39 @@ function NoSessionsState({
 }
 
 function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
-  const tree = useFileTreeStore((s) => s.tree);
-  const currentPath = useFileTreeStore((s) => s.currentPath);
-  const trees = useFileTreeStore((s) => s.trees);
-  const isSidebarOpen = useFileTreeStore((s) => s.isOpen);
+  const { tree, currentPath, trees, isSidebarOpen } = useFileTreeStore(
+    useShallow((s) => ({
+      tree: s.tree,
+      currentPath: s.currentPath,
+      trees: s.trees,
+      isSidebarOpen: s.isOpen,
+    })),
+  );
   const isPreviewOpen = useFilePreviewStore((s) => s.isOpen);
-  const tabs = useTerminalTabsStore((s) => s.tabs);
-  const activeTabId = useTerminalTabsStore((s) => s.activeTabId);
-  const nextTabId = useTerminalTabsStore((s) => s.nextTabId);
-  const addTab = useTerminalTabsStore((s) => s.addTab);
-  const removeTab = useTerminalTabsStore((s) => s.removeTab);
-  const setActiveTab = useTerminalTabsStore((s) => s.setActiveTab);
+  const {
+    isTerminalPaneOpen,
+    tabs,
+    activeTabId,
+    nextTabId,
+    addTab,
+    removeTab,
+    setActiveTab,
+  } = useTerminalTabsStore(
+    useShallow((s) => ({
+      isTerminalPaneOpen: s.isTerminalPaneOpen,
+      tabs: s.tabs,
+      activeTabId: s.activeTabId,
+      nextTabId: s.nextTabId,
+      addTab: s.addTab,
+      removeTab: s.removeTab,
+      setActiveTab: s.setActiveTab,
+    })),
+  );
   const createWorkspaceOpen = useAppDialogsStore((s) => s.createWorkspaceOpen);
   const [claudeNotFound, setClaudeNotFound] = useState(false);
   const sidebarPanelRef = usePanelRef();
   const previewPanelRef = usePanelRef();
+  const terminalPanelRef = usePanelRef();
   const { panelSizes, loaded: panelPrefsLoaded, savePanelSize } =
     usePanelPreferences();
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
@@ -248,21 +273,37 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     else if (!isSidebarOpen && !panel.isCollapsed()) panel.collapse();
   }, [isSidebarOpen]);
 
+  // Sync preview + terminal panel sizes together
+  // Both effects need to know about each other's state to calculate correct sizes
+  const savedPreviewSize = effectivePanelSizes.previewSize > 0 && effectivePanelSizes.previewSize < 100
+    ? effectivePanelSizes.previewSize
+    : 35;
+
   // Sync preview panel collapse with store
   useEffect(() => {
     const panel = previewPanelRef.current;
     if (!panel) return;
     if (isPreviewOpen) {
-      const preferredSize =
-        effectivePanelSizes.previewSize > 0
-          ? effectivePanelSizes.previewSize
-          : 35;
       if (panel.isCollapsed()) panel.expand();
-      panel.resize(preferredSize);
+      // If terminal is hidden, preview takes full width
+      const size = isTerminalPaneOpen ? savedPreviewSize : 100;
+      panel.resize(`${size}%`);
     } else if (!panel.isCollapsed()) {
       panel.collapse();
     }
-  }, [isPreviewOpen, effectivePanelSizes.previewSize]);
+  }, [isPreviewOpen, savedPreviewSize, isTerminalPaneOpen]);
+
+  // Sync terminal panel visibility with store via resize
+  useEffect(() => {
+    const terminal = terminalPanelRef.current;
+    if (!terminal) return;
+    if (isTerminalPaneOpen) {
+      const targetSize = isPreviewOpen ? 100 - savedPreviewSize : 100;
+      terminal.resize(`${targetSize}%`);
+    } else {
+      terminal.resize("0%");
+    }
+  }, [isTerminalPaneOpen, isPreviewOpen, savedPreviewSize]);
 
   // Read workspace param from query string (set once on mount)
   const [workspaceId] = useState(() => {
@@ -322,9 +363,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const settings = useUserSettingsStore((s) => s.settings);
   useEffect(() => {
     // Apply window opacity
-    invoke("set_window_opacity", { opacity: settings.window.opacity }).catch(() => {});
+    invoke("set_window_opacity", { opacity: settings.window.opacity }).catch((err) => console.warn("[App] IPC call failed:", err));
     // Apply zoom level
-    invoke("set_zoom_level", { level: settings.window.zoomLevel }).catch(() => {});
+    invoke("set_zoom_level", { level: settings.window.zoomLevel }).catch((err) => console.warn("[App] IPC call failed:", err));
     // Terminal font settings
     useTerminalZoomStore.getState().setBaseFontSize(settings.terminal.fontSize);
     useTerminalZoomStore.getState().setFontFamily(settings.terminal.fontFamily);
@@ -343,39 +384,73 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     }
   }, [initialProjectPath, currentPath]);
 
-  // Check if any AI CLI is installed when project opens
+  // Check if any AI CLI is installed when project opens (deferred)
   useEffect(() => {
     if (!currentPath) return;
-    invoke<Record<string, boolean>>("detect_installed_clis", {
-      binaries: getAllCliBinaries(),
-    })
-      .then((results) => {
-        const anyInstalled = Object.values(results).some(Boolean);
-        if (!anyInstalled) {
-          setClaudeNotFound(true);
-        }
+    const idleId = requestIdleCallback(() => {
+      invoke<Record<string, boolean>>("detect_installed_clis", {
+        binaries: getAllCliBinaries(),
       })
-      .catch(() => {
-        setClaudeNotFound(true);
-      });
+        .then((results) => {
+          const anyInstalled = Object.values(results).some(Boolean);
+          if (!anyInstalled) {
+            setClaudeNotFound(true);
+          }
+        })
+        .catch(() => {
+          setClaudeNotFound(true);
+        });
+    });
+    return () => cancelIdleCallback(idleId);
   }, [currentPath]);
 
-  // Fetch git file statuses when project changes
+  // Fetch git file statuses when project changes (deferred)
   useEffect(() => {
     if (!currentPath) {
       useGitStatusStore.getState().clearStatuses();
+      useGitDiffStore.getState().reset();
       return;
     }
-    useGitStatusStore.getState().fetchStatuses(currentPath);
+    const idleId = requestIdleCallback(() => {
+      useGitStatusStore.getState().fetchStatuses(currentPath);
+      useGitDiffStore.getState().fetchChangedFiles(currentPath);
+    });
+    return () => cancelIdleCallback(idleId);
   }, [currentPath]);
+
+  // Keep git state warm for every loaded project in a multi-project workspace
+  // Only fetch for newly added projects (avoids refetching all on every trees change)
+  const fetchedProjectsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const projectPaths = Object.keys(trees);
+    for (const projectPath of projectPaths) {
+      if (!fetchedProjectsRef.current.has(projectPath)) {
+        fetchedProjectsRef.current.add(projectPath);
+        useGitStatusStore.getState().fetchStatuses(projectPath);
+        useGitDiffStore.getState().fetchChangedFiles(projectPath);
+      }
+    }
+    // Clean up removed projects
+    for (const cached of fetchedProjectsRef.current) {
+      if (!trees[cached]) {
+        fetchedProjectsRef.current.delete(cached);
+      }
+    }
+  }, [trees]);
 
   // Refresh git file statuses on git:changed events
   useEffect(() => {
-    const unlisten = listen("git:changed", () => {
-      const path = useFileTreeStore.getState().currentPath;
-      if (path) {
-        useGitStatusStore.getState().fetchStatuses(path);
+    const unlisten = listen<GitChangedPayload>("git:changed", (event) => {
+      const changedProjectPath = event.payload?.path;
+      if (changedProjectPath) {
+        useGitStatusStore.getState().fetchStatuses(changedProjectPath);
+        useGitDiffStore.getState().refresh(changedProjectPath);
+        return;
       }
+      const fallbackPath = useFileTreeStore.getState().currentPath;
+      if (!fallbackPath) return;
+      useGitStatusStore.getState().fetchStatuses(fallbackPath);
+      useGitDiffStore.getState().refresh(fallbackPath);
     });
     return () => {
       unlisten.then((fn) => fn());
@@ -484,6 +559,39 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         useCommandPaletteStore.getState().open("commands");
         return;
       }
+      if (mod && event.shiftKey && event.key.toLowerCase() === "g") {
+        event.preventDefault();
+        const projectPath = useFileTreeStore.getState().currentPath;
+        if (!projectPath) return;
+        const diffState = useGitDiffStore.getState();
+        const files = diffState.changedFilesByProject[projectPath] ?? [];
+        if (files.length === 0) return;
+        useFilePreviewStore.getState().openPreview();
+        const targetPath =
+          diffState.selectedProjectPath === projectPath && diffState.selectedPath
+            ? diffState.selectedPath
+            : files[0].path;
+        diffState.selectChangedFile(projectPath, targetPath);
+        return;
+      }
+      if (mod && event.altKey && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+        event.preventDefault();
+        const projectPath = useFileTreeStore.getState().currentPath;
+        if (!projectPath) return;
+        const diffState = useGitDiffStore.getState();
+        const files = diffState.changedFilesByProject[projectPath] ?? [];
+        if (files.length === 0) return;
+
+        const currentIndex = files.findIndex((f) => f.path === diffState.selectedPath);
+        const fallbackIndex = currentIndex === -1 ? 0 : currentIndex;
+        const nextIndex =
+          event.key === "ArrowDown"
+            ? (fallbackIndex + 1) % files.length
+            : (fallbackIndex - 1 + files.length) % files.length;
+        useFilePreviewStore.getState().openPreview();
+        diffState.selectChangedFile(projectPath, files[nextIndex].path);
+        return;
+      }
       if (mod && !event.shiftKey && event.key === "p") {
         event.preventDefault();
         const { tree: t, currentPath: cp } = useFileTreeStore.getState();
@@ -492,9 +600,19 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         }
         return;
       }
+      if (mod && event.key === "j") {
+        event.preventDefault();
+        useTerminalTabsStore.getState().toggleTerminalPane();
+        return;
+      }
       if (mod && event.key === "e") {
         event.preventDefault();
         useFilePreviewStore.getState().togglePreview();
+        return;
+      }
+      if (mod && event.shiftKey && event.key.toLowerCase() === "s") {
+        event.preventDefault();
+        useUserSettingsStore.getState().toggleStatusbar();
         return;
       }
       if (mod && event.altKey && (event.key === "=" || event.key === "+")) {
@@ -573,64 +691,102 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               defaultSize={`${100 - effectivePanelSizes.sidebarSize}%`}
               order={2}
             >
-              <ResizablePanelGroup orientation="horizontal">
-                <ResizablePanel
-                  panelRef={previewPanelRef}
-                  defaultSize={isPreviewOpen ? `${effectivePanelSizes.previewSize}%` : "0%"}
-                  minSize="20%"
-                  collapsible
-                  collapsedSize="0%"
-                  order={1}
-                  onResize={(size) => {
-                    // Only sync drag-to-collapse; preview opens only via file click
-                    if (
-                      size.asPercentage === 0 &&
-                      useFilePreviewStore.getState().isOpen
-                    ) {
-                      useFilePreviewStore.getState().togglePreview();
-                    }
-                    if (size.asPercentage > 0) {
-                      savePanelSize("previewSize", size.asPercentage);
-                    }
-                  }}
-                >
-                  <FilePreviewPane />
-                </ResizablePanel>
-                <ResizableHandle
-                  disabled={!isPreviewOpen}
-                  className={isPreviewOpen ? "" : "opacity-0 w-0"}
-                />
-                <ResizablePanel
-                  defaultSize={isPreviewOpen ? `${100 - effectivePanelSizes.previewSize}%` : "100%"}
-                  minSize="20%"
-                  order={2}
-                >
-                  <div className="flex h-full min-w-0 flex-col overflow-hidden">
-                    {!hasProject ? (
-                      <EmptyState />
-                    ) : (
-                      <>
-                        <TabBar
-                          tabs={tabs}
-                          activeTabId={activeTabId}
-                          onSelectTab={setActiveTab}
-                          onCloseTab={closeTab}
-                          onSessionTypeSelect={handleNewSessionType}
-                        />
-                        {tabs.length === 0 ? (
-                          <NoSessionsState
-                            onSessionTypeSelect={handleNewSessionType}
-                          />
+              <div className="flex h-full">
+                <div className="relative min-w-0 flex-1">
+                  <ResizablePanelGroup orientation="horizontal">
+                    <ResizablePanel
+                      panelRef={previewPanelRef}
+                      defaultSize={isPreviewOpen ? `${isTerminalPaneOpen ? savedPreviewSize : 100}%` : "0%"}
+                      minSize="20%"
+                      collapsible
+                      collapsedSize="0%"
+                      order={1}
+                      onResize={(size) => {
+                        // Only sync drag-to-collapse; preview opens only via file click
+                        if (
+                          size.asPercentage === 0 &&
+                          useFilePreviewStore.getState().isOpen
+                        ) {
+                          useFilePreviewStore.getState().togglePreview();
+                        }
+                        // Only persist the split ratio when both panels are visible
+                        // (avoids saving 100% when terminal is hidden)
+                        if (size.asPercentage > 0 && useTerminalTabsStore.getState().isTerminalPaneOpen) {
+                          savePanelSize("previewSize", size.asPercentage);
+                        }
+                      }}
+                    >
+                      <FilePreviewPane />
+                    </ResizablePanel>
+                    <ResizableHandle
+                      disabled={!isPreviewOpen || !isTerminalPaneOpen}
+                      className={isPreviewOpen && isTerminalPaneOpen ? "" : "opacity-0 w-0"}
+                    />
+                    <ResizablePanel
+                      panelRef={terminalPanelRef}
+                      defaultSize={
+                        isTerminalPaneOpen
+                          ? isPreviewOpen ? `${100 - savedPreviewSize}%` : "100%"
+                          : "0%"
+                      }
+                      minSize="0%"
+                      order={2}
+                      onResize={(size) => {
+                        const storeIsOpen = useTerminalTabsStore.getState().isTerminalPaneOpen;
+                        // Snap-to-close: if user drags terminal very small, hide it
+                        if (size.asPercentage < 5 && storeIsOpen) {
+                          useTerminalTabsStore.getState().toggleTerminalPane();
+                        }
+                      }}
+                    >
+                      <div className="flex h-full min-w-0 flex-col overflow-hidden">
+                        {!hasProject ? (
+                          <EmptyState />
                         ) : (
-                          <div className="flex min-h-0 flex-1 overflow-hidden">
-                            <TerminalPane />
-                          </div>
+                          <>
+                            <TabBar
+                              tabs={tabs}
+                              activeTabId={activeTabId}
+                              onSelectTab={setActiveTab}
+                              onCloseTab={closeTab}
+                              onSessionTypeSelect={handleNewSessionType}
+                            />
+                            {tabs.length === 0 ? (
+                              <NoSessionsState
+                                onSessionTypeSelect={handleNewSessionType}
+                              />
+                            ) : (
+                              <div className="flex min-h-0 flex-1 overflow-hidden">
+                                <TerminalPane />
+                              </div>
+                            )}
+                          </>
                         )}
-                      </>
-                    )}
+                      </div>
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                  {!isTerminalPaneOpen && !isPreviewOpen && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ctp-base">
+                      <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
+                      <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
+                      <p className="text-sm text-ctp-overlay1">
+                        A dedicated desktop client for vibe coders
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {!isTerminalPaneOpen && (
+                  <div className="flex shrink-0 flex-col items-center border-l border-ctp-surface0 bg-ctp-mantle pt-1">
+                    <button
+                      onClick={() => useTerminalTabsStore.getState().toggleTerminalPane()}
+                      className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                      aria-label="Show terminal"
+                    >
+                      <PanelRight className="h-4 w-4" strokeWidth={1.5} />
+                    </button>
                   </div>
-                </ResizablePanel>
-              </ResizablePanelGroup>
+                )}
+              </div>
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
