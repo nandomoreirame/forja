@@ -2,6 +2,10 @@ import { getCurrentWindow } from "@/lib/ipc";
 import { getSessionDisplayName, type SessionType } from "@/lib/cli-registry";
 import { create } from "zustand";
 
+const RENDERER_INSTANCE_ID = `${Date.now().toString(36)}-${Math.random()
+  .toString(36)
+  .slice(2, 8)}`;
+
 export interface TerminalTab {
   id: string;
   name: string;
@@ -34,7 +38,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     const newCounter = get().counter + 1;
     set({ counter: newCounter });
     const windowLabel = getCurrentWindow().label;
-    return `${windowLabel}-tab-${newCounter}`;
+    return `${windowLabel}-${RENDERER_INSTANCE_ID}-tab-${newCounter}`;
   },
 
   addTab: (id: string, path: string, sessionType: SessionType = 'claude') => {

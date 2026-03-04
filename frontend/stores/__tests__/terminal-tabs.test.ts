@@ -117,8 +117,8 @@ describe("useTerminalTabsStore", () => {
     const id1 = store.nextTabId();
     const id2 = useTerminalTabsStore.getState().nextTabId();
 
-    expect(id1).toBe("main-tab-1");
-    expect(id2).toBe("main-tab-2");
+    expect(id1).toMatch(/^main-.+-tab-1$/);
+    expect(id2).toMatch(/^main-.+-tab-2$/);
     expect(useTerminalTabsStore.getState().counter).toBe(2);
   });
 
