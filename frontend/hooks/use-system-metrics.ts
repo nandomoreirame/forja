@@ -40,7 +40,7 @@ export function useSystemMetrics() {
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch((err) => console.warn("[use-system-metrics] Cleanup unlisten failed:", err));
     };
   }, []);
 
