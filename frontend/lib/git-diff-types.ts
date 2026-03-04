@@ -11,6 +11,8 @@ export interface GitDiffResult {
   patch: string;
   truncated: boolean;
   isBinary: boolean;
+  originalContent?: string;
+  modifiedContent?: string;
 }
 
 export interface GitProjectCounters {
