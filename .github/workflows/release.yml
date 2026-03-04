@@ -10,7 +10,6 @@ permissions:
 
 env:
   NODE_VERSION: "22"
-  RUST_TOOLCHAIN: "stable"
 
 jobs:
   create-release:
@@ -40,44 +39,27 @@ jobs:
 
             | Platform | Architecture | File |
             |----------|-------------|------|
-            | macOS | Apple Silicon (arm64) | `Forja_${{ steps.version.outputs.version }}_aarch64.dmg` |
-            | macOS | Intel (x64) | `Forja_${{ steps.version.outputs.version }}_x64.dmg` |
-            | Linux | x64 (.deb) | `forja_${{ steps.version.outputs.version }}_amd64.deb` |
-            | Linux | x64 (.rpm) | `forja-${{ steps.version.outputs.version }}-1.x86_64.rpm` |
-            | Linux | x64 (.AppImage) | `forja_${{ steps.version.outputs.version }}_amd64.AppImage` |
+            | macOS | Apple Silicon (arm64) | `Forja-${{ steps.version.outputs.version }}-arm64.dmg` |
+            | macOS | Intel (x64) | `Forja-${{ steps.version.outputs.version }}.dmg` |
+            | Linux | x64 (.deb) | `Forja_${{ steps.version.outputs.version }}_amd64.deb` |
+            | Linux | x64 (.AppImage) | `Forja-${{ steps.version.outputs.version }}.AppImage` |
 
             > **macOS note:** This app is not notarized. Right-click > Open to bypass Gatekeeper on first launch.
 
-  build-tauri:
+  build-electron:
     name: Build (${{ matrix.label }})
     needs: create-release
     strategy:
       fail-fast: false
       matrix:
         include:
-          - label: macOS (Apple Silicon)
+          - label: macOS
             runner: macos-latest
-            rust-target: aarch64-apple-darwin
-          - label: macOS (Intel)
-            runner: macos-latest
-            rust-target: x86_64-apple-darwin
           - label: Linux (x64)
-            runner: ubuntu-22.04
-            rust-target: ""
+            runner: ubuntu-latest
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            rpm
 
       - uses: pnpm/action-setup@v4
         with:
@@ -88,28 +70,29 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust-target }}
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: backend
+      - name: Rebuild native addons for Electron
+        run: npx electron-rebuild
 
-      - run: pnpm install --frozen-lockfile
-
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+      - name: Build and package
+        run: pnpm build:electron
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts
+        uses: softprops/action-gh-release@v2
         with:
-          tauriScript: pnpm tauri
-          releaseId: ${{ needs.create-release.outputs.release_id }}
-          args: ${{ matrix.rust-target && format('--target {0}', matrix.rust-target) || '' }}
+          release_id: ${{ needs.create-release.outputs.release_id }}
+          files: |
+            release/**/*.dmg
+            release/**/*.AppImage
+            release/**/*.deb
 
   publish-release:
     name: Publish Release
-    needs: [create-release, build-tauri]
+    needs: [create-release, build-electron]
     runs-on: ubuntu-latest
     steps:
       - name: Publish release
