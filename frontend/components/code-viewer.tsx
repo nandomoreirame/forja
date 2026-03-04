@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useSyntaxHighlighter } from '@/hooks/use-syntax-highlighter';
 import { sanitizeHtml } from '@/lib/sanitize-html';
 
@@ -7,7 +7,7 @@ interface CodeViewerProps {
   filename: string;
 }
 
-export function CodeViewer({ code, filename }: CodeViewerProps) {
+export const CodeViewer = memo(function CodeViewer({ code, filename }: CodeViewerProps) {
   const { isReady, hasError, highlight, detectLanguage } = useSyntaxHighlighter();
   const [html, setHtml] = useState<string>('');
   const prevKeyRef = useRef<string>('');
@@ -63,6 +63,6 @@ export function CodeViewer({ code, filename }: CodeViewerProps) {
       }}
     />
   );
-}
+});
 
 export default CodeViewer;

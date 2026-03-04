@@ -20,7 +20,11 @@ import {
   type ReactNode
 } from "react";
 import { usePanelRef } from "react-resizable-panels";
-import { FilePreviewPane } from "./components/file-preview-pane";
+const FilePreviewPane = lazy(() =>
+  import("./components/file-preview-pane").then((m) => ({
+    default: m.FilePreviewPane,
+  }))
+);
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
 import { NewSessionDropdown } from "./components/new-session-dropdown";
 import { Statusbar } from "./components/statusbar";
@@ -33,9 +37,12 @@ import {
   ResizablePanelGroup,
 } from "./components/ui/resizable";
 import { MOD_KEY } from "./lib/platform";
+import {
+  loadPersistedSessionState,
+  savePersistedSessionState,
+} from "./lib/session-persistence";
 import { useShallow } from "zustand/react/shallow";
 import { useAppDialogsStore } from "./stores/app-dialogs";
-import { useCommandPaletteStore } from "./stores/command-palette";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
 import { useGitStatusStore } from "./stores/git-status";
@@ -45,6 +52,7 @@ import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
 import { useUserSettingsStore } from "./stores/user-settings";
 import { useWorkspaceStore } from "./stores/workspace";
+import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
 import {
   getPanelSizesForLayout,
   usePanelPreferences,
@@ -236,6 +244,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     })),
   );
   const isPreviewOpen = useFilePreviewStore((s) => s.isOpen);
+  const previewCurrentFile = useFilePreviewStore((s) => s.currentFile);
   const {
     isTerminalPaneOpen,
     tabs,
@@ -256,7 +265,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     })),
   );
   const createWorkspaceOpen = useAppDialogsStore((s) => s.createWorkspaceOpen);
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const [claudeNotFound, setClaudeNotFound] = useState(false);
+  const [sessionRestoreDone, setSessionRestoreDone] = useState(false);
   const sidebarPanelRef = usePanelRef();
   const previewPanelRef = usePanelRef();
   const terminalPanelRef = usePanelRef();
@@ -343,6 +354,81 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     load();
   }, [workspaceId]);
 
+  // Restore previous user session when opening app without explicit route params
+  useEffect(() => {
+    if (workspaceId || initialProjectPath) {
+      setSessionRestoreDone(true);
+      return;
+    }
+
+    let cancelled = false;
+
+    const restore = async () => {
+      const snapshot = loadPersistedSessionState();
+      if (!snapshot) {
+        if (!cancelled) setSessionRestoreDone(true);
+        return;
+      }
+
+      const workspaceStore = useWorkspaceStore.getState();
+      const fileTreeStore = useFileTreeStore.getState();
+      const previewStore = useFilePreviewStore.getState();
+      const tabsStore = useTerminalTabsStore.getState();
+
+      // 1) Restore workspace/project
+      if (snapshot.activeWorkspaceId) {
+        await workspaceStore.activateWorkspace(snapshot.activeWorkspaceId);
+      } else if (snapshot.activeProjectPath) {
+        await fileTreeStore.openProjectPath(snapshot.activeProjectPath);
+      }
+
+      if (snapshot.activeProjectPath) {
+        const latestTreeState = useFileTreeStore.getState();
+        if (latestTreeState.trees[snapshot.activeProjectPath]) {
+          latestTreeState.setActiveProjectPath(snapshot.activeProjectPath);
+        }
+      }
+
+      // 2) Restore preview file
+      if (snapshot.preview.isOpen && snapshot.preview.currentFile) {
+        await previewStore.loadFile(snapshot.preview.currentFile);
+      }
+
+      // 3) Restore terminal pane + tabs
+      useTerminalTabsStore.setState({
+        tabs: [],
+        activeTabId: null,
+        isTerminalPaneOpen: snapshot.terminal.isPaneOpen,
+      });
+
+      const restoredTabIds: string[] = [];
+      for (const tab of snapshot.terminal.tabs) {
+        const id = tabsStore.nextTabId();
+        tabsStore.addTab(id, tab.path, tab.sessionType);
+        restoredTabIds.push(id);
+      }
+
+      if (restoredTabIds.length > 0) {
+        const restoredActiveTabId =
+          restoredTabIds[
+            Math.min(snapshot.terminal.activeTabIndex, restoredTabIds.length - 1)
+          ] ?? restoredTabIds[0];
+        tabsStore.setActiveTab(restoredActiveTabId);
+      }
+
+      if (!cancelled) setSessionRestoreDone(true);
+    };
+
+    restore().catch((err) => {
+      console.warn("[App] Failed to restore session:", err);
+      if (!cancelled) setSessionRestoreDone(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId, initialProjectPath]);
+
   // Load user settings on mount and listen for changes
   useEffect(() => {
     useUserSettingsStore.getState().loadSettings();
@@ -355,7 +441,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     );
 
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
 
@@ -453,7 +539,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       useGitDiffStore.getState().refresh(fallbackPath);
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
 
@@ -490,7 +576,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       useSessionStateStore.getState().onData(event.payload.tab_id);
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
 
@@ -502,154 +588,43 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       removeTab(tab_id);
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, [removeTab]);
 
-  // Keyboard shortcuts - stable handler using refs for mutable values
+  // Persist session snapshot across renderer reloads
   useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      const mod = event.metaKey || event.ctrlKey;
+    if (!sessionRestoreDone) return;
+    const activeTabIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+    savePersistedSessionState({
+      activeWorkspaceId,
+      activeProjectPath: currentPath,
+      preview: {
+        isOpen: isPreviewOpen,
+        currentFile: previewCurrentFile,
+      },
+      terminal: {
+        isPaneOpen: isTerminalPaneOpen,
+        activeTabIndex: activeTabIndex >= 0 ? activeTabIndex : 0,
+        tabs: tabs.map((tab) => ({
+          path: tab.path,
+          sessionType: tab.sessionType,
+        })),
+      },
+    });
+  }, [
+    sessionRestoreDone,
+    activeWorkspaceId,
+    currentPath,
+    isPreviewOpen,
+    previewCurrentFile,
+    isTerminalPaneOpen,
+    tabs,
+    activeTabId,
+  ]);
 
-      if (mod && event.key === "s") {
-        const settingsState = useUserSettingsStore.getState();
-        if (settingsState.editorOpen && settingsState.editorDirty) {
-          event.preventDefault();
-          settingsState.saveEditorContent();
-          return;
-        }
-      }
-      if (mod && event.key === ",") {
-        event.preventDefault();
-        useUserSettingsStore.getState().openSettingsEditor();
-        useFilePreviewStore.getState().openPreview();
-        return;
-      }
-      if (mod && event.key === "b") {
-        event.preventDefault();
-        const { tree: t, trees: tr } = useFileTreeStore.getState();
-        if (t !== null || Object.keys(tr).length > 0) {
-          useFileTreeStore.getState().toggleSidebar();
-        }
-        return;
-      }
-      if (mod && event.key === "o") {
-        event.preventDefault();
-        useFileTreeStore.getState().openProject();
-        return;
-      }
-      if (mod && event.key === "t") {
-        event.preventDefault();
-        const cp = useFileTreeStore.getState().currentPath;
-        if (cp) {
-          const tabStore = useTerminalTabsStore.getState();
-          const id = tabStore.nextTabId();
-          tabStore.addTab(id, cp, "terminal");
-        }
-        return;
-      }
-      if (mod && event.key === "w") {
-        event.preventDefault();
-        const id = activeTabIdRef.current;
-        if (id) closeTab(id);
-        return;
-      }
-      if (mod && event.shiftKey && event.key.toLowerCase() === "p") {
-        event.preventDefault();
-        useCommandPaletteStore.getState().open("commands");
-        return;
-      }
-      if (mod && event.shiftKey && event.key.toLowerCase() === "g") {
-        event.preventDefault();
-        const projectPath = useFileTreeStore.getState().currentPath;
-        if (!projectPath) return;
-        const diffState = useGitDiffStore.getState();
-        const files = diffState.changedFilesByProject[projectPath] ?? [];
-        if (files.length === 0) return;
-        useFilePreviewStore.getState().openPreview();
-        const targetPath =
-          diffState.selectedProjectPath === projectPath && diffState.selectedPath
-            ? diffState.selectedPath
-            : files[0].path;
-        diffState.selectChangedFile(projectPath, targetPath);
-        return;
-      }
-      if (mod && event.altKey && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
-        event.preventDefault();
-        const projectPath = useFileTreeStore.getState().currentPath;
-        if (!projectPath) return;
-        const diffState = useGitDiffStore.getState();
-        const files = diffState.changedFilesByProject[projectPath] ?? [];
-        if (files.length === 0) return;
-
-        const currentIndex = files.findIndex((f) => f.path === diffState.selectedPath);
-        const fallbackIndex = currentIndex === -1 ? 0 : currentIndex;
-        const nextIndex =
-          event.key === "ArrowDown"
-            ? (fallbackIndex + 1) % files.length
-            : (fallbackIndex - 1 + files.length) % files.length;
-        useFilePreviewStore.getState().openPreview();
-        diffState.selectChangedFile(projectPath, files[nextIndex].path);
-        return;
-      }
-      if (mod && !event.shiftKey && event.key === "p") {
-        event.preventDefault();
-        const { tree: t, currentPath: cp } = useFileTreeStore.getState();
-        if (t && cp) {
-          useCommandPaletteStore.getState().open("files");
-        }
-        return;
-      }
-      if (mod && event.key === "j") {
-        event.preventDefault();
-        useTerminalTabsStore.getState().toggleTerminalPane();
-        return;
-      }
-      if (mod && event.key === "e") {
-        event.preventDefault();
-        useFilePreviewStore.getState().togglePreview();
-        return;
-      }
-      if (mod && event.shiftKey && event.key.toLowerCase() === "s") {
-        event.preventDefault();
-        useUserSettingsStore.getState().toggleStatusbar();
-        return;
-      }
-      if (mod && event.altKey && (event.key === "=" || event.key === "+")) {
-        event.preventDefault();
-        useTerminalZoomStore.getState().zoomIn();
-        return;
-      }
-      if (mod && event.altKey && event.key === "-") {
-        event.preventDefault();
-        useTerminalZoomStore.getState().zoomOut();
-        return;
-      }
-      if (mod && event.altKey && event.key === "0") {
-        event.preventDefault();
-        useTerminalZoomStore.getState().resetZoom();
-        return;
-      }
-      // Ctrl+Tab / Ctrl+Shift+Tab: cycle tabs
-      if (event.ctrlKey && event.key === "Tab") {
-        event.preventDefault();
-        const currentTabs = tabsRef.current;
-        const currentActive = activeTabIdRef.current;
-        if (currentTabs.length > 1 && currentActive) {
-          const currentIndex = currentTabs.findIndex(
-            (t) => t.id === currentActive,
-          );
-          const nextIndex = event.shiftKey
-            ? (currentIndex - 1 + currentTabs.length) % currentTabs.length
-            : (currentIndex + 1) % currentTabs.length;
-          useTerminalTabsStore.getState().setActiveTab(currentTabs[nextIndex].id);
-        }
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [closeTab]);
+  // Keyboard shortcuts extracted to dedicated hook
+  useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab });
 
   return (
     <AppErrorBoundary>
@@ -716,7 +691,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                         }
                       }}
                     >
-                      <FilePreviewPane />
+                      <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent" /></div>}>
+                        <FilePreviewPane />
+                      </Suspense>
                     </ResizablePanel>
                     <ResizableHandle
                       disabled={!isPreviewOpen || !isTerminalPaneOpen}

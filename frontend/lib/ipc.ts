@@ -44,8 +44,11 @@ function getAPI() {
 
 export function invoke<T = unknown>(command: string, args?: unknown): Promise<T> {
   const api = getAPI();
-  if (!api) return Promise.resolve(undefined as unknown as T);
-  return api.invoke(command, args) as Promise<T>;
+  if (!api) {
+    console.warn(`[ipc] electronAPI not available, cannot invoke "${command}"`);
+    return Promise.resolve(undefined as T);
+  }
+  return api.invoke(command, args).then((result) => result as T);
 }
 
 export interface IpcEvent<T> {
