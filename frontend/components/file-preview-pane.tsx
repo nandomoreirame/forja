@@ -2,11 +2,18 @@ import { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode
 import { X, FileCode, AlertCircle } from 'lucide-react';
 import { invoke } from '@/lib/ipc';
 import { useFilePreviewStore } from '@/stores/file-preview';
+import { useGitDiffStore } from '@/stores/git-diff';
 import { useUserSettingsStore } from '@/stores/user-settings';
 import { GIT_STATUS_LABELS } from '@/lib/git-constants';
 import { CodeViewer } from './code-viewer';
+import { ImageViewer } from './image-viewer';
 import { MarkdownRenderer } from './markdown-renderer';
 import { SettingsEditor } from './settings-editor';
+import { GitDiffViewer } from './git-diff-viewer';
+
+const IMAGE_EXTENSIONS = new Set([
+  "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "bmp",
+]);
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -137,12 +144,20 @@ function FilePreviewPaneContent() {
   const error = useFilePreviewStore((s) => s.error);
   const closePreview = useFilePreviewStore((s) => s.closePreview);
   const editorOpen = useUserSettingsStore((s) => s.editorOpen);
+  const selectedDiff = useGitDiffStore((s) => s.selectedDiff);
+  const diffMode = useGitDiffStore((s) => s.diffMode);
+  const setDiffMode = useGitDiffStore((s) => s.setDiffMode);
+  const isLoadingDiff = useGitDiffStore((s) => s.isLoadingDiff);
   const [fileGitStatus, setFileGitStatus] = useState<string | null>(null);
 
   const filename = useMemo(() => currentFile?.split('/').pop() || '', [currentFile]);
-  const isMarkdown = filename.endsWith('.md');
+  const ext = useMemo(() => filename.split(".").pop()?.toLowerCase() || "", [filename]);
+  const isImage = content?.encoding === "base64" && IMAGE_EXTENSIONS.has(ext);
+  const isMarkdown = !isImage && filename.endsWith('.md');
   const lines = useMemo(() => (content ? countLines(content.content) : 0), [content]);
   const language = useMemo(() => getLanguageDisplay(filename), [filename]);
+  const displayName = selectedDiff?.path.split("/").pop() || filename;
+  const isDiffView = Boolean(selectedDiff || isLoadingDiff);
   const gitStatusEntry = fileGitStatus
     ? GIT_STATUS_LABELS[fileGitStatus] || { label: fileGitStatus, color: "text-ctp-overlay1" }
     : null;
@@ -175,10 +190,10 @@ function FilePreviewPaneContent() {
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <FileCode className="h-4 w-4 shrink-0 text-ctp-overlay1" strokeWidth={1.5} />
           <span className="truncate text-sm font-semibold text-ctp-text">
-            {filename}
+            {displayName}
           </span>
           <span className="inline-flex shrink-0 items-center rounded bg-ctp-surface0 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-ctp-overlay1">
-            Preview
+            {isDiffView ? "Diff" : "Preview"}
           </span>
         </div>
         <button
@@ -191,7 +206,7 @@ function FilePreviewPaneContent() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 select-text overflow-auto">
+      <div className="flex-1 select-text overflow-hidden">
         {isLoading && (
           <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -217,8 +232,19 @@ function FilePreviewPaneContent() {
           </div>
         )}
 
-        {!isLoading && !error && content && (
-          isMarkdown ? (
+        {isDiffView ? (
+          <GitDiffViewer
+            diff={selectedDiff}
+            mode={diffMode}
+            onModeChange={setDiffMode}
+            isLoading={isLoadingDiff}
+          />
+        ) : null}
+
+        {!isDiffView && !isLoading && !error && content && (
+          isImage ? (
+            <ImageViewer content={content.content} filename={filename} />
+          ) : isMarkdown ? (
             <div className="p-4">
               <MarkdownRenderer content={content.content} />
             </div>
@@ -229,15 +255,25 @@ function FilePreviewPaneContent() {
       </div>
 
       {/* Footer */}
-      {!isLoading && !error && content && (
-        <div className="flex h-7 shrink-0 items-center gap-3 border-t border-ctp-surface0 px-3 font-mono text-[11px] text-ctp-overlay1">
-          <span>{lines} {lines === 1 ? "line" : "lines"}</span>
-          <span className="text-ctp-surface1">|</span>
-          <span>{formatFileSize(content.size)}</span>
-          <span className="text-ctp-surface1">|</span>
-          <span>UTF-8</span>
-          <span className="text-ctp-surface1">|</span>
-          <span className="text-ctp-subtext0">{language}</span>
+      {!isDiffView && !isLoading && !error && content && (
+        <div className="flex h-9 shrink-0 items-center gap-3 border-t border-ctp-surface0 px-3 font-mono text-[11px] text-ctp-overlay1">
+          {isImage ? (
+            <>
+              <span>{formatFileSize(content.size)}</span>
+              <span className="text-ctp-surface1">|</span>
+              <span className="text-ctp-subtext0">{ext.toUpperCase()}</span>
+            </>
+          ) : (
+            <>
+              <span>{lines} {lines === 1 ? "line" : "lines"}</span>
+              <span className="text-ctp-surface1">|</span>
+              <span>{formatFileSize(content.size)}</span>
+              <span className="text-ctp-surface1">|</span>
+              <span>UTF-8</span>
+              <span className="text-ctp-surface1">|</span>
+              <span className="text-ctp-subtext0">{language}</span>
+            </>
+          )}
           {gitStatusEntry && (
             <>
               <span className="text-ctp-surface1">|</span>

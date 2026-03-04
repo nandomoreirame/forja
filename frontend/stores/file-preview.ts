@@ -5,6 +5,7 @@ export interface FileContent {
   path: string;
   content: string;
   size: number;
+  encoding?: "base64";
 }
 
 interface FilePreviewState {
