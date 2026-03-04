@@ -6,11 +6,8 @@ const mockInvoke = vi.fn();
 const mockListen = vi.fn();
 let listenCallbacks: Record<string, (event: { payload: unknown }) => void> = {};
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("@/lib/ipc", () => ({
   invoke: (...args: unknown[]) => mockInvoke(...args),
-}));
-
-vi.mock("@tauri-apps/api/event", () => ({
   listen: (event: string, callback: (event: { payload: unknown }) => void) => {
     listenCallbacks[event] = callback;
     mockListen(event, callback);
@@ -18,9 +15,6 @@ vi.mock("@tauri-apps/api/event", () => ({
       delete listenCallbacks[event];
     });
   },
-}));
-
-vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({ label: "main" }),
 }));
 
@@ -153,5 +147,21 @@ describe("usePty", () => {
     });
     expect(tabId).toBe("tab-1");
     expect(result.current.isRunning).toBe(true);
+  });
+
+  it("passes sessionType to spawn_pty", async () => {
+    mockInvoke.mockResolvedValueOnce("tab-1");
+    const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
+
+    await act(async () => {
+      await result.current.spawn("/test/path", "gemini");
+    });
+
+    expect(mockInvoke).toHaveBeenCalledWith("spawn_pty", {
+      tabId: "tab-1",
+      path: "/test/path",
+      sessionType: "gemini",
+      windowLabel: "main",
+    });
   });
 });

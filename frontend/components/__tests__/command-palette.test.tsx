@@ -8,11 +8,8 @@ beforeAll(() => {
   Element.prototype.scrollIntoView = vi.fn();
 });
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
-}));
-
-vi.mock("@tauri-apps/plugin-dialog", () => ({
   open: vi.fn(),
 }));
 

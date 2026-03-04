@@ -3,8 +3,9 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Titlebar } from "../titlebar";
 
-vi.mock("@tauri-apps/api/window", () => {
+vi.mock("@/lib/ipc", () => {
   const appWindow = {
+    label: "main",
     isMaximized: vi.fn().mockResolvedValue(false),
     onResized: vi.fn().mockResolvedValue(() => {}),
     minimize: vi.fn(),
@@ -14,14 +15,11 @@ vi.mock("@tauri-apps/api/window", () => {
   };
   return {
     getCurrentWindow: () => appWindow,
+    getName: vi.fn().mockResolvedValue("Forja"),
+    getVersion: vi.fn().mockResolvedValue("0.1.0"),
+    getElectronVersion: vi.fn().mockResolvedValue("32.0.0"),
   };
 });
-
-vi.mock("@tauri-apps/api/app", () => ({
-  getName: vi.fn().mockResolvedValue("Forja"),
-  getVersion: vi.fn().mockResolvedValue("0.1.0"),
-  getTauriVersion: vi.fn().mockResolvedValue("2.5.0"),
-}));
 
 vi.mock("@/stores/file-tree", () => ({
   APP_NAME: "Forja",

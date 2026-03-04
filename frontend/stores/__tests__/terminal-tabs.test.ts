@@ -1,14 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useTerminalTabsStore } from "../terminal-tabs";
+import type { SessionType } from "@/lib/cli-registry";
 
-vi.mock("@tauri-apps/api/window", () => ({
+vi.mock("@/lib/ipc", () => ({
   getCurrentWindow: () => ({ label: "main" }),
 }));
 
 /**
  * Helper that mirrors the real app flow: nextTabId() then addTab().
  */
-function createTab(path: string, sessionType?: 'claude-code' | 'terminal') {
+function createTab(path: string, sessionType?: SessionType) {
   const store = useTerminalTabsStore.getState();
   const tabId = store.nextTabId();
   useTerminalTabsStore.getState().addTab(tabId, path, sessionType);
@@ -37,10 +38,10 @@ describe("useTerminalTabsStore", () => {
     expect(state.tabs).toHaveLength(1);
     expect(state.tabs[0]).toEqual({
       id: tabId,
-      name: "Session #1",
+      name: "Claude Code #1",
       path: "/test/path",
       isRunning: true,
-      sessionType: "claude-code",
+      sessionType: "claude",
     });
     expect(state.activeTabId).toBe(tabId);
   });
@@ -52,9 +53,9 @@ describe("useTerminalTabsStore", () => {
 
     const state = useTerminalTabsStore.getState();
     expect(state.tabs.map((t) => t.name)).toEqual([
-      "Session #1",
-      "Session #2",
-      "Session #3",
+      "Claude Code #1",
+      "Claude Code #2",
+      "Claude Code #3",
     ]);
   });
 
@@ -121,11 +122,12 @@ describe("useTerminalTabsStore", () => {
     expect(useTerminalTabsStore.getState().counter).toBe(2);
   });
 
-  it("adds tab with sessionType 'claude-code'", () => {
-    createTab("/test/path", "claude-code");
+  it("adds tab with sessionType 'claude'", () => {
+    createTab("/test/path", "claude");
 
     const state = useTerminalTabsStore.getState();
-    expect(state.tabs[0].sessionType).toBe("claude-code");
+    expect(state.tabs[0].sessionType).toBe("claude");
+    expect(state.tabs[0].name).toBe("Claude Code #1");
   });
 
   it("adds tab with sessionType 'terminal'", () => {
@@ -133,12 +135,32 @@ describe("useTerminalTabsStore", () => {
 
     const state = useTerminalTabsStore.getState();
     expect(state.tabs[0].sessionType).toBe("terminal");
+    expect(state.tabs[0].name).toBe("Terminal #1");
   });
 
-  it("defaults to 'claude-code' when sessionType is not provided", () => {
+  it("adds tab with sessionType 'gemini'", () => {
+    createTab("/test/path", "gemini");
+
+    const state = useTerminalTabsStore.getState();
+    expect(state.tabs[0].sessionType).toBe("gemini");
+    expect(state.tabs[0].name).toBe("Gemini CLI #1");
+  });
+
+  it("defaults to 'claude' when sessionType is not provided", () => {
     createTab("/test/path");
 
     const state = useTerminalTabsStore.getState();
-    expect(state.tabs[0].sessionType).toBe("claude-code");
+    expect(state.tabs[0].sessionType).toBe("claude");
+  });
+
+  it("creates tabs with mixed session types and correct names", () => {
+    createTab("/path/a", "claude");
+    createTab("/path/b", "gemini");
+    createTab("/path/c", "terminal");
+
+    const state = useTerminalTabsStore.getState();
+    expect(state.tabs[0].name).toBe("Claude Code #1");
+    expect(state.tabs[1].name).toBe("Gemini CLI #2");
+    expect(state.tabs[2].name).toBe("Terminal #3");
   });
 });

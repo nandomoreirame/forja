@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MarkdownRenderer } from "../markdown-renderer";
 
-vi.mock("@tauri-apps/plugin-opener", () => ({
+vi.mock("@/lib/ipc", () => ({
   openUrl: vi.fn(),
 }));
 vi.mock("shiki/core", () => ({

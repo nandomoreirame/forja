@@ -2,11 +2,8 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { FileTreeSidebar } from "../file-tree-sidebar";
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
-}));
-
-vi.mock("@tauri-apps/plugin-dialog", () => ({
   open: vi.fn(),
 }));
 

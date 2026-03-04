@@ -3,11 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ClaudeNotFoundDialog } from "../claude-not-found-dialog";
 
-vi.mock("@tauri-apps/api/core", () => ({
+vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
-}));
-
-vi.mock("@tauri-apps/plugin-opener", () => ({
   openUrl: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -55,7 +52,7 @@ describe("ClaudeNotFoundDialog", () => {
   });
 
   it("calls check_claude_installed on Try Again click", async () => {
-    const { invoke } = await import("@tauri-apps/api/core");
+    const { invoke } = await import("@/lib/ipc");
     (invoke as ReturnType<typeof vi.fn>).mockRejectedValue(
       new Error("not found")
     );
@@ -70,7 +67,7 @@ describe("ClaudeNotFoundDialog", () => {
   });
 
   it("calls onResolved when claude is found on retry", async () => {
-    const { invoke } = await import("@tauri-apps/api/core");
+    const { invoke } = await import("@/lib/ipc");
     (invoke as ReturnType<typeof vi.fn>).mockResolvedValue(
       "/usr/local/bin/claude"
     );
@@ -87,7 +84,7 @@ describe("ClaudeNotFoundDialog", () => {
   });
 
   it("shows error message when retry fails", async () => {
-    const { invoke } = await import("@tauri-apps/api/core");
+    const { invoke } = await import("@/lib/ipc");
     (invoke as ReturnType<typeof vi.fn>).mockRejectedValue(
       new Error("still not found")
     );
@@ -105,7 +102,7 @@ describe("ClaudeNotFoundDialog", () => {
   });
 
   it("opens external URL when installation guide is clicked", async () => {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    const { openUrl } = await import("@/lib/ipc");
     const user = userEvent.setup();
     render(<ClaudeNotFoundDialog open={true} onResolved={onResolved} />);
 

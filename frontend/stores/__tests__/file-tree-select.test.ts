@@ -2,12 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useFilePreviewStore } from "@/stores/file-preview";
 
-// Mock Tauri API
-vi.mock("@tauri-apps/api/core", () => ({
+// Mock IPC layer
+vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
-}));
-
-vi.mock("@tauri-apps/plugin-dialog", () => ({
   open: vi.fn(),
 }));
 
@@ -19,6 +16,8 @@ describe("useFileTreeStore - selectFile", () => {
       currentPath: null,
       tree: null,
       expandedPaths: {},
+      trees: {},
+      activeProjectPath: null,
     });
 
     useFilePreviewStore.setState({
@@ -33,7 +32,7 @@ describe("useFileTreeStore - selectFile", () => {
   });
 
   it("should call loadFile on the preview store with the given path", async () => {
-    const { invoke } = await import("@tauri-apps/api/core");
+    const { invoke } = await import("@/lib/ipc");
     const mockContent = {
       path: "/test/file.ts",
       content: "test content",
@@ -55,7 +54,7 @@ describe("useFileTreeStore - selectFile", () => {
   });
 
   it("should propagate errors from loadFile", async () => {
-    const { invoke } = await import("@tauri-apps/api/core");
+    const { invoke } = await import("@/lib/ipc");
     vi.mocked(invoke).mockRejectedValue(new Error("File not found"));
 
     const { selectFile } = useFileTreeStore.getState();

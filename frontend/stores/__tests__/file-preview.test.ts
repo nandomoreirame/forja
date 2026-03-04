@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useFilePreviewStore } from "@/stores/file-preview";
 
-// Mock Tauri API
-vi.mock("@tauri-apps/api/core", () => ({
+// Mock IPC layer
+vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
 }));
 
@@ -81,7 +81,7 @@ describe("useFilePreviewStore", () => {
 
   describe("loadFile", () => {
     it("should set loading state initially", async () => {
-      const { invoke } = await import("@tauri-apps/api/core");
+      const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockImplementation(
         () =>
           new Promise((resolve) => {
@@ -109,7 +109,7 @@ describe("useFilePreviewStore", () => {
     });
 
     it("should load file content successfully", async () => {
-      const { invoke } = await import("@tauri-apps/api/core");
+      const { invoke } = await import("@/lib/ipc");
       const mockContent = {
         path: "/test/file.ts",
         content: "test content",
@@ -134,7 +134,7 @@ describe("useFilePreviewStore", () => {
     });
 
     it("should handle errors when loading file", async () => {
-      const { invoke } = await import("@tauri-apps/api/core");
+      const { invoke } = await import("@/lib/ipc");
       const errorMessage = "File not found";
       vi.mocked(invoke).mockRejectedValue(new Error(errorMessage));
 
@@ -148,7 +148,7 @@ describe("useFilePreviewStore", () => {
     });
 
     it("should handle string errors when loading file", async () => {
-      const { invoke } = await import("@tauri-apps/api/core");
+      const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockRejectedValue("String error message");
 
       const { loadFile } = useFilePreviewStore.getState();
@@ -159,7 +159,7 @@ describe("useFilePreviewStore", () => {
     });
 
     it("should handle unknown errors when loading file", async () => {
-      const { invoke } = await import("@tauri-apps/api/core");
+      const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockRejectedValue({ custom: "error object" });
 
       const { loadFile } = useFilePreviewStore.getState();

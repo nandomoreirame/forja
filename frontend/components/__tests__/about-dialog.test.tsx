@@ -3,13 +3,10 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AboutDialog } from "../about-dialog";
 
-vi.mock("@tauri-apps/api/app", () => ({
+vi.mock("@/lib/ipc", () => ({
   getName: vi.fn().mockResolvedValue("Forja"),
   getVersion: vi.fn().mockResolvedValue("0.1.0"),
-  getTauriVersion: vi.fn().mockResolvedValue("2.5.0"),
-}));
-
-vi.mock("@tauri-apps/plugin-opener", () => ({
+  getElectronVersion: vi.fn().mockResolvedValue("32.0.0"),
   openUrl: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -68,7 +65,7 @@ describe("AboutDialog", () => {
 
       expect(screen.getByText("Details")).toBeInTheDocument();
       expect(screen.getByText("Version")).toBeInTheDocument();
-      expect(screen.getByText("Tauri Version")).toBeInTheDocument();
+      expect(screen.getByText("Electron Version")).toBeInTheDocument();
       expect(screen.getByText("OS")).toBeInTheDocument();
       expect(screen.getByText("Platform")).toBeInTheDocument();
     });
@@ -119,7 +116,7 @@ describe("AboutDialog", () => {
   describe("send feedback", () => {
     it("opens external URL when Send feedback is clicked", async () => {
       const user = userEvent.setup();
-      const { openUrl } = await import("@tauri-apps/plugin-opener");
+      const { openUrl } = await import("@/lib/ipc");
 
       render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
 

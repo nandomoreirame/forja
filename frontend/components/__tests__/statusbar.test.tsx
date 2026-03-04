@@ -8,19 +8,15 @@ import { useFilePreviewStore } from "@/stores/file-preview";
 // Mock the useSystemMetrics hook
 vi.mock("@/hooks/use-system-metrics");
 
-// Mock Tauri APIs used by GitSection and FileInfoSection
-vi.mock("@tauri-apps/api/core", () => ({
+// Mock IPC layer used by GitSection and FileInfoSection
+vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn().mockResolvedValue({
     isGitRepo: false,
     branch: null,
     fileStatus: null,
     changedFiles: 0,
   }),
-}));
-vi.mock("@tauri-apps/api/event", () => ({
   listen: vi.fn().mockResolvedValue(() => {}),
-}));
-vi.mock("@tauri-apps/api/window", () => ({
   getCurrentWindow: () => ({ label: "main" }),
 }));
 

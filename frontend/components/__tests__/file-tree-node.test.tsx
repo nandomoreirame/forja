@@ -5,8 +5,7 @@ import { FileTreeNode } from "../file-tree-node";
 import { useFileTreeStore, type FileNode } from "@/stores/file-tree";
 import { useFilePreviewStore } from "@/stores/file-preview";
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
-vi.mock("@tauri-apps/plugin-dialog", () => ({ open: vi.fn() }));
+vi.mock("@/lib/ipc", () => ({ invoke: vi.fn(), open: vi.fn() }));
 
 describe("FileTreeNode", () => {
   beforeEach(() => {

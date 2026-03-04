@@ -7,6 +7,8 @@ describe("useAppDialogsStore", () => {
       shortcutsOpen: false,
       aboutOpen: false,
       newSessionOpen: false,
+      createWorkspaceOpen: false,
+      createWorkspacePendingPath: null,
     });
   });
 
@@ -15,6 +17,8 @@ describe("useAppDialogsStore", () => {
     expect(state.shortcutsOpen).toBe(false);
     expect(state.aboutOpen).toBe(false);
     expect(state.newSessionOpen).toBe(false);
+    expect(state.createWorkspaceOpen).toBe(false);
+    expect(state.createWorkspacePendingPath).toBeNull();
   });
 
   it("sets shortcutsOpen to true", () => {
@@ -48,5 +52,24 @@ describe("useAppDialogsStore", () => {
     useAppDialogsStore.getState().setNewSessionOpen(true);
     useAppDialogsStore.getState().setNewSessionOpen(false);
     expect(useAppDialogsStore.getState().newSessionOpen).toBe(false);
+  });
+
+  it("sets createWorkspaceOpen to true", () => {
+    useAppDialogsStore.getState().setCreateWorkspaceOpen(true);
+    expect(useAppDialogsStore.getState().createWorkspaceOpen).toBe(true);
+    expect(useAppDialogsStore.getState().createWorkspacePendingPath).toBeNull();
+  });
+
+  it("sets createWorkspaceOpen with pendingPath", () => {
+    useAppDialogsStore.getState().setCreateWorkspaceOpen(true, "/my/project");
+    expect(useAppDialogsStore.getState().createWorkspaceOpen).toBe(true);
+    expect(useAppDialogsStore.getState().createWorkspacePendingPath).toBe("/my/project");
+  });
+
+  it("sets createWorkspaceOpen to false and clears pendingPath", () => {
+    useAppDialogsStore.getState().setCreateWorkspaceOpen(true, "/my/project");
+    useAppDialogsStore.getState().setCreateWorkspaceOpen(false);
+    expect(useAppDialogsStore.getState().createWorkspaceOpen).toBe(false);
+    expect(useAppDialogsStore.getState().createWorkspacePendingPath).toBeNull();
   });
 });

@@ -4,8 +4,7 @@ import { Suspense } from "react";
 import { FilePreviewPane } from "../file-preview-pane";
 import { useFilePreviewStore } from "@/stores/file-preview";
 
-vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
-vi.mock("@tauri-apps/plugin-dialog", () => ({ open: vi.fn() }));
+vi.mock("@/lib/ipc", () => ({ invoke: vi.fn(), open: vi.fn() }));
 vi.mock("shiki/core", () => ({
   createHighlighterCore: vi.fn().mockResolvedValue({
     codeToHtml: vi.fn((code: string) => `<pre><code>${code}</code></pre>`),
