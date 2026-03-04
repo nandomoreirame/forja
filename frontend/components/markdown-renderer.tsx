@@ -41,8 +41,8 @@ function CodeBlock({
         className="code-viewer my-2 overflow-x-auto rounded-md text-sm"
         dangerouslySetInnerHTML={{ __html: html }}
         style={{
-          fontFamily: "JetBrains Mono, Fira Code, monospace",
-          fontSize: "13px",
+          fontFamily: "var(--font-mono)",
+          fontSize: "var(--editor-font-size)",
           lineHeight: "1.5",
         }}
       />

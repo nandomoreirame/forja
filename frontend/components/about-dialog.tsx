@@ -1,6 +1,6 @@
 import {
-  ArrowLeft,
   Anvil,
+  ArrowLeft,
   ChevronRight,
   ExternalLink,
 } from "lucide-react";
@@ -118,11 +118,11 @@ function HomeView({
         {appInfo.name}
       </h2>
       <p className="mt-1 text-sm text-ctp-overlay1">
-        A dedicated desktop client for Claude Code
+        A dedicated desktop client for vibe coders
       </p>
 
       <span className="mt-3 rounded-full bg-ctp-surface0 px-3 py-1 font-mono text-xs text-ctp-subtext0">
-        {appInfo.version}
+        {__APP_VERSION__}
       </span>
 
       <div className="mt-6 w-full space-y-2">
@@ -173,7 +173,7 @@ function DetailsView({
       <SubViewHeader title="Details" onBack={onBack} />
       <div className="px-5 py-4">
         <div className="divide-y divide-ctp-base/30 overflow-hidden rounded-lg bg-ctp-surface0">
-          <InfoRow label="Version" value={appInfo.version} />
+          <InfoRow label="Version" value={__APP_VERSION__} />
           <InfoRow label="Electron Version" value={appInfo.electronVersion || "N/A"} />
           <InfoRow label="OS" value={appInfo.os || "Unknown"} />
           <InfoRow label="Platform" value={appInfo.platform || "Unknown"} />
@@ -288,10 +288,17 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
           getVersion(),
           getElectronVersion(),
         ]);
+        const displayName = name === "Electron" ? "Forja" : name;
 
         const os = navigator.platform;
         const platform = navigator.userAgent;
-        setAppInfo({ name, version, electronVersion, os, platform });
+        setAppInfo({
+          name: displayName,
+          version,
+          electronVersion,
+          os,
+          platform,
+        });
       } catch {
         setAppInfo((prev) => ({
           ...prev,

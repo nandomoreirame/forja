@@ -1,7 +1,9 @@
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
+import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
 import {
   FolderOpen,
@@ -10,6 +12,7 @@ import {
   PanelLeft,
   PanelRight,
   Plus,
+  Settings,
 } from "lucide-react";
 import { useMemo } from "react";
 import { FileIcon } from "./file-icon";
@@ -43,7 +46,12 @@ export function CommandPalette() {
   const handleCommand = (command: string) => {
     switch (command) {
       case "new-session": {
-        useAppDialogsStore.getState().setNewSessionOpen(true);
+        const cp = useFileTreeStore.getState().currentPath;
+        if (cp) {
+          const tabStore = useTerminalTabsStore.getState();
+          const id = tabStore.nextTabId();
+          tabStore.addTab(id, cp, "claude");
+        }
         break;
       }
       case "open-project":
@@ -60,6 +68,10 @@ export function CommandPalette() {
         break;
       case "about":
         useAppDialogsStore.getState().setAboutOpen(true);
+        break;
+      case "open-settings":
+        useUserSettingsStore.getState().openSettingsEditor();
+        useFilePreviewStore.getState().openPreview();
         break;
     }
     close();
@@ -134,6 +146,14 @@ export function CommandPalette() {
               <Keyboard className="h-4 w-4" strokeWidth={1.5} />
               Keyboard Shortcuts
               <CommandShortcut>{mod}+?</CommandShortcut>
+            </CommandItem>
+            <CommandItem
+              value="Open Settings"
+              onSelect={() => handleCommand("open-settings")}
+            >
+              <Settings className="h-4 w-4" strokeWidth={1.5} />
+              Open Settings
+              <CommandShortcut>{mod}+,</CommandShortcut>
             </CommandItem>
             <CommandItem
               value="About"

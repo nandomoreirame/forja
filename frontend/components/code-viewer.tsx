@@ -33,8 +33,8 @@ export function CodeViewer({ code, filename }: CodeViewerProps) {
         data-testid="code-viewer-fallback"
         className="code-viewer overflow-y-auto overflow-x-scroll p-4 text-sm text-ctp-text"
         style={{
-          fontFamily: 'JetBrains Mono, Fira Code, monospace',
-          fontSize: '13px',
+          fontFamily: 'var(--font-mono)',
+          fontSize: 'var(--editor-font-size)',
           lineHeight: '1.5',
         }}
       >
