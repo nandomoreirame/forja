@@ -3,9 +3,13 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Statusbar } from "../statusbar";
 import * as useSystemMetricsModule from "@/hooks/use-system-metrics";
+import * as useAppMetricsModule from "@/hooks/use-app-metrics";
 
 // Mock the useSystemMetrics hook
 vi.mock("@/hooks/use-system-metrics");
+
+// Mock the useAppMetrics hook
+vi.mock("@/hooks/use-app-metrics");
 
 // Mock IPC layer used by GitSection and FileInfoSection
 vi.mock("@/lib/ipc", () => ({
@@ -17,6 +21,7 @@ vi.mock("@/lib/ipc", () => ({
   }),
   listen: vi.fn().mockResolvedValue(() => {}),
   getCurrentWindow: () => ({ label: "main" }),
+  isDev: vi.fn().mockResolvedValue(false),
 }));
 
 const mockMetrics = {
@@ -38,6 +43,12 @@ describe("Statusbar with HoverCard", () => {
       cpuHistory: [30, 35, 40, 45],
       rxHistory: [1024, 2048, 3072],
       txHistory: [512, 768, 1024],
+      historyVersion: 0,
+    });
+    vi.mocked(useAppMetricsModule.useAppMetrics).mockReturnValue({
+      current: null,
+      rssHistory: [],
+      cpuHistory: [],
       historyVersion: 0,
     });
   });
@@ -186,5 +197,55 @@ describe("Statusbar with HoverCard", () => {
     render(<Statusbar />);
 
     expect(screen.getByText(/Loading metrics/i)).toBeInTheDocument();
+  });
+
+  it("renders DevMetrics when isDev is true and app metrics are available", async () => {
+    const { isDev } = await import("@/lib/ipc");
+    vi.mocked(isDev).mockResolvedValue(true);
+
+    vi.mocked(useAppMetricsModule.useAppMetrics).mockReturnValue({
+      current: {
+        total_rss: 150 * 1024 * 1024,
+        heap_used: 98 * 1024 * 1024,
+        heap_total: 128 * 1024 * 1024,
+        total_cpu_percent: 12.5,
+        main_cpu_percent: 5.0,
+        renderer_cpu_percent: 7.5,
+        process_count: 3,
+      },
+      rssHistory: [150 * 1024 * 1024],
+      cpuHistory: [12.5],
+      historyVersion: 1,
+    });
+
+    render(<Statusbar />);
+
+    await waitFor(() => {
+      expect(screen.getByText("DEV")).toBeInTheDocument();
+    });
+  });
+
+  it("does not render DevMetrics when isDev is false", async () => {
+    const { isDev } = await import("@/lib/ipc");
+    vi.mocked(isDev).mockResolvedValue(false);
+
+    vi.mocked(useAppMetricsModule.useAppMetrics).mockReturnValue({
+      current: {
+        total_rss: 150 * 1024 * 1024,
+        heap_used: 98 * 1024 * 1024,
+        heap_total: 128 * 1024 * 1024,
+        total_cpu_percent: 12.5,
+        main_cpu_percent: 5.0,
+        renderer_cpu_percent: 7.5,
+        process_count: 3,
+      },
+      rssHistory: [150 * 1024 * 1024],
+      cpuHistory: [12.5],
+      historyVersion: 1,
+    });
+
+    render(<Statusbar />);
+
+    expect(screen.queryByText("DEV")).not.toBeInTheDocument();
   });
 });

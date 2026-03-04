@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { invoke, listen, getCurrentWindow } from "@/lib/ipc";
+import { invoke, listen, getCurrentWindow, isDev as isDevIpc } from "@/lib/ipc";
 import { MemoryStick, Cpu, Database, HardDrive, GitBranch } from "lucide-react";
 import { useSystemMetrics } from "@/hooks/use-system-metrics";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { Sparkline } from "./sparkline";
+import { DevMetrics } from "./dev-metrics";
 import {
   HoverCard,
   HoverCardTrigger,
@@ -117,6 +118,11 @@ function GitSection() {
 export function Statusbar() {
   const statusbarVisible = useUserSettingsStore((s) => s.settings.statusbar.visible);
   const { current, cpuHistory } = useSystemMetrics();
+  const [devMode, setDevMode] = useState(false);
+
+  useEffect(() => {
+    isDevIpc().then(setDevMode).catch(() => setDevMode(false));
+  }, []);
 
   if (!statusbarVisible) return null;
 
@@ -323,7 +329,8 @@ export function Statusbar() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Right side: git info */}
+      {/* Right side: dev metrics + git info */}
+      {devMode && <DevMetrics />}
       <GitSection />
     </div>
   );
