@@ -88,6 +88,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     await get().setActiveWorkspace(workspaceId);
 
+    // Clear existing trees and expanded paths before loading the new workspace's projects
+    useFileTreeStore.setState({
+      trees: {},
+      expandedPaths: {},
+      tree: null,
+      currentPath: null,
+      activeProjectPath: null,
+    });
+
     const fileTreeState = useFileTreeStore.getState();
     for (const projectPath of workspace.projects) {
       await fileTreeState.loadProjectTree(projectPath);

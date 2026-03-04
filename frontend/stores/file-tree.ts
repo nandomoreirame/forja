@@ -83,6 +83,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         await get().loadProjectTree(selected);
         const updatedTrees = get().trees;
         set({
+          isOpen: true,
           currentPath: selected,
           activeProjectPath: selected,
           tree: updatedTrees[selected] ?? null,
@@ -108,6 +109,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         }
         const updatedTrees = get().trees;
         set({
+          isOpen: true,
           currentPath: selected,
           activeProjectPath: selected,
           tree: updatedTrees[selected] ?? null,
@@ -122,6 +124,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         { path: selected, maxDepth: 8 },
       );
       set({
+        isOpen: true,
         currentPath: selected,
         activeProjectPath: selected,
         tree: result,
@@ -146,6 +149,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         await get().loadProjectTree(path);
         const updatedTrees = get().trees;
         set({
+          isOpen: true,
           currentPath: path,
           activeProjectPath: path,
           tree: updatedTrees[path] ?? null,
@@ -169,6 +173,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         }
         const updatedTrees = get().trees;
         set({
+          isOpen: true,
           currentPath: path,
           activeProjectPath: path,
           tree: updatedTrees[path] ?? null,
@@ -183,6 +188,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
         { path, maxDepth: 8 },
       );
       set({
+        isOpen: true,
         currentPath: path,
         activeProjectPath: path,
         tree: result,
