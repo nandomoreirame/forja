@@ -371,26 +371,41 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       }
 
       const workspaceStore = useWorkspaceStore.getState();
-      const fileTreeStore = useFileTreeStore.getState();
       const previewStore = useFilePreviewStore.getState();
       const tabsStore = useTerminalTabsStore.getState();
 
       // 1) Restore workspace/project
+      await workspaceStore.loadWorkspaces();
+      let restoredProjectPath: string | null = null;
+
       if (snapshot.activeWorkspaceId) {
         await workspaceStore.activateWorkspace(snapshot.activeWorkspaceId);
+        const treeState = useFileTreeStore.getState();
+        const currentAfterWorkspace = treeState.currentPath;
+        if (currentAfterWorkspace) {
+          restoredProjectPath = currentAfterWorkspace;
+        } else if (snapshot.activeProjectPath) {
+          // Workspace restoration can fail if workspace was deleted/invalid.
+          await treeState.openProjectPath(snapshot.activeProjectPath);
+          restoredProjectPath = snapshot.activeProjectPath;
+        }
       } else if (snapshot.activeProjectPath) {
-        await fileTreeStore.openProjectPath(snapshot.activeProjectPath);
+        await useFileTreeStore.getState().openProjectPath(snapshot.activeProjectPath);
+        restoredProjectPath = snapshot.activeProjectPath;
       }
 
       if (snapshot.activeProjectPath) {
         const latestTreeState = useFileTreeStore.getState();
         if (latestTreeState.trees[snapshot.activeProjectPath]) {
           latestTreeState.setActiveProjectPath(snapshot.activeProjectPath);
+          restoredProjectPath = snapshot.activeProjectPath;
         }
       }
 
+      const effectiveProjectPath = restoredProjectPath ?? useFileTreeStore.getState().currentPath;
+
       // 2) Restore preview file
-      if (snapshot.preview.isOpen && snapshot.preview.currentFile) {
+      if (snapshot.preview.isOpen && snapshot.preview.currentFile && effectiveProjectPath) {
         await previewStore.loadFile(snapshot.preview.currentFile);
       }
 
@@ -404,7 +419,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       const restoredTabIds: string[] = [];
       for (const tab of snapshot.terminal.tabs) {
         const id = tabsStore.nextTabId();
-        tabsStore.addTab(id, tab.path, tab.sessionType);
+        const tabPath = tab.path || effectiveProjectPath || snapshot.activeProjectPath || "";
+        if (!tabPath) continue;
+        tabsStore.addTab(id, tabPath, tab.sessionType);
         restoredTabIds.push(id);
       }
 
