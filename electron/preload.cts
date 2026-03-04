@@ -40,5 +40,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getName: () => ipcRenderer.invoke("app:getName"),
     getVersion: () => ipcRenderer.invoke("app:getVersion"),
     getElectronVersion: () => ipcRenderer.invoke("app:getElectronVersion"),
+    isTilingDesktop: () => ipcRenderer.invoke("app:is_tiling_desktop"),
   },
 });

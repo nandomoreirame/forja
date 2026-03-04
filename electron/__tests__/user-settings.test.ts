@@ -2,12 +2,11 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import * as path from "path";
 import * as os from "os";
 
-// Mock fs module
-vi.mock("fs", () => ({
-  existsSync: vi.fn(),
-  readFileSync: vi.fn(),
-  writeFileSync: vi.fn(),
-  mkdirSync: vi.fn(),
+// Mock fs/promises module
+vi.mock("fs/promises", () => ({
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+  mkdir: vi.fn(),
 }));
 
 // Mock chokidar
@@ -38,12 +37,15 @@ describe("user-settings module", () => {
   });
 
   it("loadUserSettings returns defaults with 3 font groups when file does not exist", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(false);
+    const fsp = await import("fs/promises");
+    const enoentError = Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+    vi.mocked(fsp.readFile).mockRejectedValue(enoentError);
+    vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fsp.writeFile).mockResolvedValue(undefined);
 
     const { loadUserSettings } = await import("../user-settings");
 
-    const result = loadUserSettings();
+    const result = await loadUserSettings();
     expect(result.statusbar.visible).toBe(true);
     expect(result.app.fontFamily).toBe("Geist Sans, Inter, system-ui, sans-serif");
     expect(result.app.fontSize).toBe(14);
@@ -57,15 +59,18 @@ describe("user-settings module", () => {
   });
 
   it("loadUserSettings creates settings file with defaults when it does not exist", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(false);
+    const fsp = await import("fs/promises");
+    const enoentError = Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+    vi.mocked(fsp.readFile).mockRejectedValue(enoentError);
+    vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fsp.writeFile).mockResolvedValue(undefined);
 
     const { loadUserSettings } = await import("../user-settings");
-    loadUserSettings();
+    await loadUserSettings();
 
-    expect(fs.mkdirSync).toHaveBeenCalled();
-    expect(fs.writeFileSync).toHaveBeenCalled();
-    const writtenContent = vi.mocked(fs.writeFileSync).mock.calls[0][1] as string;
+    expect(fsp.mkdir).toHaveBeenCalled();
+    expect(fsp.writeFile).toHaveBeenCalled();
+    const writtenContent = vi.mocked(fsp.writeFile).mock.calls[0][1] as string;
     const parsed = JSON.parse(writtenContent);
     expect(parsed.statusbar.visible).toBe(true);
     expect(parsed.app).toBeDefined();
@@ -73,28 +78,26 @@ describe("user-settings module", () => {
   });
 
   it("loadUserSettings parses and merges valid JSON with new format", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
       JSON.stringify({ terminal: { fontSize: 20 } }),
     );
 
     const { loadUserSettings } = await import("../user-settings");
-    const result = loadUserSettings();
+    const result = await loadUserSettings();
 
     expect(result.terminal.fontSize).toBe(20);
     expect(result.statusbar.visible).toBe(true); // default preserved
   });
 
   it("loadUserSettings migrates old editor-only format to terminal (backward compat)", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
       JSON.stringify({ editor: { fontSize: 18, fontFamily: "Custom Mono, monospace" } }),
     );
 
     const { loadUserSettings } = await import("../user-settings");
-    const result = loadUserSettings();
+    const result = await loadUserSettings();
 
     expect(result.editor.fontSize).toBe(18);
     expect(result.terminal.fontSize).toBe(18);
@@ -102,9 +105,8 @@ describe("user-settings module", () => {
   });
 
   it("loadUserSettings validates and clamps out-of-range values for all font groups", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
       JSON.stringify({
         app: { fontSize: 100 },
         editor: { fontSize: 100 },
@@ -114,7 +116,7 @@ describe("user-settings module", () => {
     );
 
     const { loadUserSettings } = await import("../user-settings");
-    const result = loadUserSettings();
+    const result = await loadUserSettings();
 
     expect(result.app.fontSize).toBe(32);
     expect(result.editor.fontSize).toBe(32);
@@ -123,26 +125,24 @@ describe("user-settings module", () => {
   });
 
   it("loadUserSettings returns defaults when JSON is malformed", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue("{invalid json");
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue("{invalid json");
 
     const { loadUserSettings } = await import("../user-settings");
 
-    const result = loadUserSettings();
+    const result = await loadUserSettings();
     expect(result.statusbar.visible).toBe(true);
     expect(result.terminal.fontSize).toBe(14);
   });
 
   it("getCachedSettings returns the same result as last loadUserSettings", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
       JSON.stringify({ terminal: { fontSize: 18 } }),
     );
 
     const { loadUserSettings, getCachedSettings } = await import("../user-settings");
-    loadUserSettings();
+    await loadUserSettings();
     const cached = getCachedSettings();
 
     expect(cached.terminal.fontSize).toBe(18);
@@ -169,18 +169,19 @@ describe("user-settings module", () => {
   });
 
   it("saveUserSettings writes valid JSON and returns validated settings", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fsp.writeFile).mockResolvedValue(undefined);
+    vi.mocked(fsp.readFile).mockResolvedValue(
       JSON.stringify({ terminal: { fontSize: 18 } }),
     );
 
     const { saveUserSettings } = await import("../user-settings");
     const content = JSON.stringify({ terminal: { fontSize: 18 } }, null, 2);
-    const result = saveUserSettings(content);
+    const result = await saveUserSettings(content);
 
-    expect(fs.writeFileSync).toHaveBeenCalled();
-    const writtenContent = vi.mocked(fs.writeFileSync).mock.calls[0][1] as string;
+    expect(fsp.writeFile).toHaveBeenCalled();
+    const writtenContent = vi.mocked(fsp.writeFile).mock.calls[0][1] as string;
     expect(writtenContent).toBe(content);
     expect(result.terminal.fontSize).toBe(18);
   });
@@ -188,19 +189,20 @@ describe("user-settings module", () => {
   it("saveUserSettings throws on invalid JSON", async () => {
     const { saveUserSettings } = await import("../user-settings");
 
-    expect(() => saveUserSettings("{invalid json")).toThrow();
+    await expect(saveUserSettings("{invalid json")).rejects.toThrow();
   });
 
   it("saveUserSettings validates and clamps values after saving", async () => {
-    const fs = await import("fs");
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fsp.writeFile).mockResolvedValue(undefined);
+    vi.mocked(fsp.readFile).mockResolvedValue(
       JSON.stringify({ terminal: { fontSize: 100 } }),
     );
 
     const { saveUserSettings } = await import("../user-settings");
     const content = JSON.stringify({ terminal: { fontSize: 100 } }, null, 2);
-    const result = saveUserSettings(content);
+    const result = await saveUserSettings(content);
 
     expect(result.terminal.fontSize).toBe(32); // clamped
   });
