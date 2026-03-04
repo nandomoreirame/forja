@@ -75,7 +75,7 @@ export function Titlebar() {
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch((err) => console.warn("[titlebar] Cleanup unlisten failed:", err));
     };
   }, []);
 

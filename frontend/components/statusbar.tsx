@@ -90,7 +90,7 @@ function GitSection() {
       fetchGitInfo();
     });
     return () => {
-      unlisten.then((fn) => fn());
+      unlisten.then((fn) => fn()).catch((err) => console.warn("[statusbar] Cleanup unlisten failed:", err));
     };
   }, [fetchGitInfo]);
 

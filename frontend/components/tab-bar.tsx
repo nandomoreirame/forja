@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { PanelRightClose, X } from "lucide-react";
 import { useSessionStateStore } from "@/stores/session-state";
 import { useTerminalTabsStore, type TerminalTab } from "@/stores/terminal-tabs";
@@ -22,18 +23,37 @@ export function TabBar({
 }: TabBarProps) {
   const sessionStates = useSessionStateStore((s) => s.states);
 
+  const handleTabKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+      let next = -1;
+      if (e.key === "ArrowRight") next = (index + 1) % tabs.length;
+      else if (e.key === "ArrowLeft") next = (index - 1 + tabs.length) % tabs.length;
+      if (next >= 0) {
+        e.preventDefault();
+        onSelectTab(tabs[next].id);
+        const el = e.currentTarget.parentElement?.querySelectorAll<HTMLElement>("[role='tab']")[next];
+        el?.focus();
+      }
+    },
+    [tabs, onSelectTab],
+  );
+
   return (
     <div className="flex h-9 items-center border-b border-ctp-surface0 bg-ctp-mantle">
       <div role="tablist" className="flex flex-1 items-center overflow-x-auto">
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
           const sessionState = sessionStates[tab.id] ?? "idle";
           return (
             <button
               key={tab.id}
               role="tab"
+              id={`tab-${tab.id}`}
               aria-selected={isActive}
+              aria-controls={`tabpanel-${tab.id}`}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => onSelectTab(tab.id)}
+              onKeyDown={(e) => handleTabKeyDown(e, index)}
               className={`group relative flex h-9 items-center gap-2 px-3 text-xs transition-colors ${
                 isActive
                   ? "text-ctp-text"

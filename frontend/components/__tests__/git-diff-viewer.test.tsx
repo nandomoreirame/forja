@@ -39,7 +39,7 @@ describe("GitDiffViewer", () => {
     );
 
     expect(screen.getByTestId("git-diff-split")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Unified" }));
+    fireEvent.click(screen.getByRole("button", { name: "Unified view" }));
     expect(onModeChange).toHaveBeenCalledWith("unified");
   });
 });

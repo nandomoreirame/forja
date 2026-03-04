@@ -115,6 +115,8 @@ export function SettingsEditor() {
           onKeyDown={handleKeyDown}
           onScroll={handleScroll}
           spellCheck={false}
+          aria-label="Settings JSON editor"
+          aria-describedby="settings-status"
           className="absolute inset-0 h-full w-full resize-none overflow-auto bg-transparent outline-none"
           style={{
             fontFamily: EDITOR_FONT,
@@ -132,7 +134,7 @@ export function SettingsEditor() {
 
       {/* Footer */}
       <div className="flex h-9 items-center justify-between border-t border-ctp-surface0 px-3">
-        <p className="text-xs text-ctp-overlay1">
+        <p id="settings-status" role="status" aria-live="polite" className="text-xs text-ctp-overlay1">
           {editorError ? (
             <span className="text-ctp-red">{editorError}</span>
           ) : editorDirty ? (

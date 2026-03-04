@@ -288,6 +288,8 @@ export function GitDiffViewer({
         <div className="inline-flex items-center rounded bg-ctp-surface0 p-0.5">
           <button
             type="button"
+            aria-pressed={mode === "split"}
+            aria-label="Split view"
             onClick={() => onModeChange("split")}
             className={`rounded px-2 py-0.5 text-[11px] ${
               mode === "split" ? "bg-ctp-surface1 text-ctp-text" : "text-ctp-overlay1"
@@ -297,6 +299,8 @@ export function GitDiffViewer({
           </button>
           <button
             type="button"
+            aria-pressed={mode === "unified"}
+            aria-label="Unified view"
             onClick={() => onModeChange("unified")}
             className={`rounded px-2 py-0.5 text-[11px] ${
               mode === "unified" ? "bg-ctp-surface1 text-ctp-text" : "text-ctp-overlay1"

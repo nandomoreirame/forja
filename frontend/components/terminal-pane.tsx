@@ -9,13 +9,21 @@ export const TerminalPane = memo(function TerminalPane() {
   return (
     <div className="flex-1 overflow-hidden">
       {tabs.map((tab) => (
-        <TerminalSession
+        <div
           key={tab.id}
-          tabId={tab.id}
-          path={tab.path}
-          isVisible={tab.id === activeTabId}
-          sessionType={tab.sessionType}
-        />
+          role="tabpanel"
+          id={`tabpanel-${tab.id}`}
+          aria-labelledby={`tab-${tab.id}`}
+          hidden={tab.id !== activeTabId}
+          className={tab.id === activeTabId ? "h-full" : ""}
+        >
+          <TerminalSession
+            tabId={tab.id}
+            path={tab.path}
+            isVisible={tab.id === activeTabId}
+            sessionType={tab.sessionType}
+          />
+        </div>
       ))}
     </div>
   );
