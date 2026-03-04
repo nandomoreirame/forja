@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useWorkspaceStore } from "../workspace";
+import { useFileTreeStore } from "../file-tree";
 import type { Workspace } from "../workspace";
 
 const mockInvoke = vi.fn();
@@ -198,6 +199,40 @@ describe("useWorkspaceStore", () => {
 
     expect(mockInvoke).toHaveBeenCalledWith("open_workspace_in_new_window", {
       workspaceId: "ws-1",
+    });
+  });
+
+  describe("activateWorkspace", () => {
+    it("sets active workspace and loads project trees", async () => {
+      const ws = makeWorkspace({
+        id: "ws-1",
+        projects: ["/project/a", "/project/b"],
+      });
+      useWorkspaceStore.setState({ workspaces: [ws] });
+
+      const mockLoadProjectTree = vi.fn().mockResolvedValue(undefined);
+      const mockOpenProjectPath = vi.fn();
+      useFileTreeStore.setState({
+        loadProjectTree: mockLoadProjectTree,
+        openProjectPath: mockOpenProjectPath,
+      });
+
+      mockInvoke.mockResolvedValueOnce(undefined); // set_active_workspace
+
+      await useWorkspaceStore.getState().activateWorkspace("ws-1");
+
+      expect(mockInvoke).toHaveBeenCalledWith("set_active_workspace", { id: "ws-1" });
+      expect(mockLoadProjectTree).toHaveBeenCalledWith("/project/a");
+      expect(mockLoadProjectTree).toHaveBeenCalledWith("/project/b");
+      expect(mockOpenProjectPath).toHaveBeenCalledWith("/project/a");
+    });
+
+    it("does nothing if workspace not found", async () => {
+      useWorkspaceStore.setState({ workspaces: [] });
+
+      await useWorkspaceStore.getState().activateWorkspace("nonexistent");
+
+      expect(mockInvoke).not.toHaveBeenCalled();
     });
   });
 });
