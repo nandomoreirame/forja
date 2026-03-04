@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>dev.forja.terminal</id>
   <name>Forja</name>
-  <summary>A dedicated desktop client for Claude Code</summary>
+  <summary>A dedicated desktop client for vibe coders</summary>
   <metadata_license>MIT</metadata_license>
   <project_license>MIT</project_license>
 

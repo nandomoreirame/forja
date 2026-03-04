@@ -28,7 +28,7 @@ modules:
         cat > /app/share/applications/dev.forja.terminal.desktop << 'DESKTOP'
         [Desktop Entry]
         Name=Forja
-        Comment=A dedicated desktop client for Claude Code
+        Comment=A dedicated desktop client for vibe coders
         Exec=forja
         Icon=dev.forja.terminal
         Terminal=false

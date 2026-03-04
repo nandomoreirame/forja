@@ -4,10 +4,7 @@ node_modules/
 # Build output
 dist/
 dist-electron/
-
-# Rust
-target/
-backend/target/
+*.tsbuildinfo
 
 # Environment
 .env
@@ -24,5 +21,3 @@ Thumbs.db
 *.swp
 *.swo
 
-# Tauri
-backend/gen/
