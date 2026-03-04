@@ -64,5 +64,10 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Open workspace in current window from EmptyState.
 - Prevent new session modal when no project is open.---
 
+## [1.0.1] - 2026-03-04
+### Fixed
+- Allow WASM execution in CSP for syntax highlighting.
+- Set vite base to relative path for production build.---
+
 ## [Unreleased]
 
