@@ -8,6 +8,8 @@ describe("useAppDialogsStore", () => {
       aboutOpen: false,
       createWorkspaceOpen: false,
       createWorkspacePendingPath: null,
+      createWorkspaceEditId: null,
+      createWorkspaceInitialName: null,
     });
   });
 
@@ -17,6 +19,8 @@ describe("useAppDialogsStore", () => {
     expect(state.aboutOpen).toBe(false);
     expect(state.createWorkspaceOpen).toBe(false);
     expect(state.createWorkspacePendingPath).toBeNull();
+    expect(state.createWorkspaceEditId).toBeNull();
+    expect(state.createWorkspaceInitialName).toBeNull();
   });
 
   it("sets shortcutsOpen to true", () => {
@@ -58,5 +62,17 @@ describe("useAppDialogsStore", () => {
     useAppDialogsStore.getState().setCreateWorkspaceOpen(false);
     expect(useAppDialogsStore.getState().createWorkspaceOpen).toBe(false);
     expect(useAppDialogsStore.getState().createWorkspacePendingPath).toBeNull();
+    expect(useAppDialogsStore.getState().createWorkspaceEditId).toBeNull();
+    expect(useAppDialogsStore.getState().createWorkspaceInitialName).toBeNull();
+  });
+
+  it("sets createWorkspaceOpen in rename mode", () => {
+    useAppDialogsStore
+      .getState()
+      .setCreateWorkspaceOpen(true, null, { workspaceId: "ws-1", initialName: "My WS" });
+
+    expect(useAppDialogsStore.getState().createWorkspaceOpen).toBe(true);
+    expect(useAppDialogsStore.getState().createWorkspaceEditId).toBe("ws-1");
+    expect(useAppDialogsStore.getState().createWorkspaceInitialName).toBe("My WS");
   });
 });

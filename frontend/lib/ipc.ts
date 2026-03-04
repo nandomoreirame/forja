@@ -32,6 +32,7 @@ declare global {
         getName: () => Promise<string>;
         getVersion: () => Promise<string>;
         getElectronVersion: () => Promise<string>;
+        isTilingDesktop: () => Promise<boolean>;
       };
     };
   }
@@ -98,6 +99,12 @@ export function getElectronVersion(): Promise<string> {
   const api = getAPI();
   if (!api) return Promise.resolve("0.0.0");
   return api.app.getElectronVersion();
+}
+
+export function isTilingDesktop(): Promise<boolean> {
+  const api = getAPI();
+  if (!api) return Promise.resolve(false);
+  return api.app.isTilingDesktop();
 }
 
 // --- Window ---

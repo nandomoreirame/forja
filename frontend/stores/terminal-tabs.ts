@@ -14,18 +14,21 @@ interface TerminalTabsState {
   tabs: TerminalTab[];
   activeTabId: string | null;
   counter: number;
+  isTerminalPaneOpen: boolean;
 
   nextTabId: () => string;
   addTab: (id: string, path: string, sessionType?: SessionType) => void;
   removeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
+  toggleTerminalPane: () => void;
 }
 
 export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   tabs: [],
   activeTabId: null,
   counter: 0,
+  isTerminalPaneOpen: true,
 
   nextTabId: () => {
     const newCounter = get().counter + 1;
@@ -80,4 +83,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
         t.id === id ? { ...t, isRunning: false } : t
       ),
     })),
+
+  toggleTerminalPane: () =>
+    set((state) => ({ isTerminalPaneOpen: !state.isTerminalPaneOpen })),
 }));

@@ -14,6 +14,7 @@ interface UserSettingsState {
 
   loadSettings: () => Promise<void>;
   setSettings: (settings: UserSettings) => void;
+  toggleStatusbar: () => Promise<void>;
   openSettingsFile: () => Promise<void>;
   openSettingsEditor: () => void;
   closeSettingsEditor: () => void;
@@ -41,6 +42,23 @@ export const useUserSettingsStore = create<UserSettingsState>((set, get) => ({
 
   setSettings: (settings: UserSettings) => {
     set({ settings });
+  },
+
+  toggleStatusbar: async () => {
+    const { settings } = get();
+    const updated = {
+      ...settings,
+      statusbar: { ...settings.statusbar, visible: !settings.statusbar.visible },
+    };
+    try {
+      const saved = await invoke<UserSettings>("save_user_settings", {
+        content: JSON.stringify(updated, null, 2),
+      });
+      set({ settings: saved });
+    } catch {
+      // Fallback: update locally even if save fails
+      set({ settings: updated });
+    }
   },
 
   openSettingsFile: async () => {
