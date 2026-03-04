@@ -1,9 +1,7 @@
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
-import { useSyntaxHighlighter } from "@/hooks/use-syntax-highlighter";
-import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface MarkdownRendererProps {
   content: string;
@@ -16,42 +14,16 @@ function CodeBlock({
   language: string;
   code: string;
 }) {
-  const { isReady, highlight } = useSyntaxHighlighter();
-  const [html, setHtml] = useState<string>("");
-  const prevKeyRef = useRef<string>("");
-
-  useEffect(() => {
-    if (!isReady) return;
-
-    const key = `${language}:${code}`;
-    if (key === prevKeyRef.current) return;
-    prevKeyRef.current = key;
-
-    let cancelled = false;
-    highlight(code, language).then((result) => {
-      if (!cancelled) setHtml(result);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [code, language, isReady, highlight]);
-
-  if (html) {
-    return (
-      <div
-        className="code-viewer my-2 overflow-x-auto rounded-md text-sm"
-        dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "var(--editor-font-size)",
-          lineHeight: "1.5",
-        }}
-      />
-    );
-  }
-
   return (
-    <pre className="my-2 overflow-x-auto rounded-md bg-ctp-mantle p-3 text-sm text-ctp-text">
+    <pre
+      className="my-2 overflow-x-auto rounded-md bg-ctp-mantle p-3 text-sm text-ctp-text"
+      data-language={language}
+      style={{
+        fontFamily: "var(--font-mono)",
+        fontSize: "var(--editor-font-size)",
+        lineHeight: "1.5",
+      }}
+    >
       <code>{code}</code>
     </pre>
   );
