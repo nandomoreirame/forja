@@ -1,4 +1,5 @@
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow } from "@/lib/ipc";
+import { getSessionDisplayName, type SessionType } from "@/lib/cli-registry";
 import { create } from "zustand";
 
 export interface TerminalTab {
@@ -6,7 +7,7 @@ export interface TerminalTab {
   name: string;
   path: string;
   isRunning: boolean;
-  sessionType: 'claude-code' | 'terminal';
+  sessionType: SessionType;
 }
 
 interface TerminalTabsState {
@@ -15,7 +16,7 @@ interface TerminalTabsState {
   counter: number;
 
   nextTabId: () => string;
-  addTab: (id: string, path: string, sessionType?: 'claude-code' | 'terminal') => void;
+  addTab: (id: string, path: string, sessionType?: SessionType) => void;
   removeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
@@ -33,11 +34,11 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     return `${windowLabel}-tab-${newCounter}`;
   },
 
-  addTab: (id: string, path: string, sessionType: 'claude-code' | 'terminal' = 'claude-code') => {
+  addTab: (id: string, path: string, sessionType: SessionType = 'claude') => {
     const currentCounter = get().counter;
     const tab: TerminalTab = {
       id,
-      name: `Session #${currentCounter}`,
+      name: getSessionDisplayName(sessionType, currentCounter),
       path,
       isRunning: true,
       sessionType,

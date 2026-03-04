@@ -1,5 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { invoke, open } from "@/lib/ipc";
 import { create } from "zustand";
 import { useFilePreviewStore } from "./file-preview";
 
@@ -22,10 +21,14 @@ interface FileTreeState {
   currentPath: string | null;
   tree: DirectoryTree | null;
   expandedPaths: Record<string, boolean>;
+  trees: Record<string, DirectoryTree>;
+  activeProjectPath: string | null;
 
   toggleSidebar: () => void;
   openProject: () => Promise<void>;
   openProjectPath: (path: string) => Promise<void>;
+  loadProjectTree: (projectPath: string) => Promise<void>;
+  setActiveProjectPath: (path: string) => void;
   setTree: (tree: DirectoryTree | null) => void;
   toggleExpanded: (path: string) => void;
   isExpanded: (path: string) => boolean;
@@ -38,8 +41,26 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
   currentPath: null,
   tree: null,
   expandedPaths: {},
+  trees: {},
+  activeProjectPath: null,
 
   toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
+
+  loadProjectTree: async (projectPath: string) => {
+    try {
+      const result = await invoke<DirectoryTree>(
+        "read_directory_tree_command",
+        { path: projectPath, maxDepth: 8 },
+      );
+      set((state) => ({
+        trees: { ...state.trees, [projectPath]: result },
+        // Auto-expand the project root so files are visible immediately
+        expandedPaths: { ...state.expandedPaths, [projectPath]: true },
+      }));
+    } catch (error) {
+      console.error("Failed to load project tree:", error);
+    }
+  },
 
   openProject: async () => {
     try {
@@ -51,10 +72,48 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
 
       if (!selected) return;
 
-      // If a project is already open, open in a new window
-      const { currentPath: current } = get();
+      const workspaceStore = await import("./workspace").then(
+        (m) => m.useWorkspaceStore,
+      );
+      const activeWsId = workspaceStore.getState().activeWorkspaceId;
+
+      if (activeWsId) {
+        // Add to current workspace
+        await workspaceStore.getState().addProject(activeWsId, selected);
+        await get().loadProjectTree(selected);
+        const updatedTrees = get().trees;
+        set({
+          currentPath: selected,
+          activeProjectPath: selected,
+          tree: updatedTrees[selected] ?? null,
+        });
+        invoke("add_recent_project", { path: selected }).catch(() => {});
+        invoke("start_watcher", { path: selected }).catch(() => {});
+        return;
+      }
+
+      // If a project is already open, create a workspace grouping both
+      const { currentPath: current, trees: existingTrees } = get();
       if (current) {
-        await invoke("open_project_in_new_window", { path: selected });
+        const baseName = current.split("/").pop() ?? "Workspace";
+        const ws = await workspaceStore
+          .getState()
+          .createWorkspace(baseName, current);
+        await workspaceStore.getState().addProject(ws.id, selected);
+        await workspaceStore.getState().setActiveWorkspace(ws.id);
+        await get().loadProjectTree(selected);
+        // Ensure existing project tree is also in trees map
+        if (!existingTrees[current]) {
+          await get().loadProjectTree(current);
+        }
+        const updatedTrees = get().trees;
+        set({
+          currentPath: selected,
+          activeProjectPath: selected,
+          tree: updatedTrees[selected] ?? null,
+        });
+        invoke("add_recent_project", { path: selected }).catch(() => {});
+        invoke("start_watcher", { path: selected }).catch(() => {});
         return;
       }
 
@@ -64,7 +123,9 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
       );
       set({
         currentPath: selected,
+        activeProjectPath: selected,
         tree: result,
+        trees: { [selected]: result },
         expandedPaths: {},
       });
       invoke("add_recent_project", { path: selected }).catch(() => {});
@@ -75,10 +136,45 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
 
   openProjectPath: async (path: string) => {
     try {
-      // If a project is already open, open in a new window
-      const { currentPath: current } = get();
+      const workspaceStore = await import("./workspace").then(
+        (m) => m.useWorkspaceStore,
+      );
+      const activeWsId = workspaceStore.getState().activeWorkspaceId;
+
+      if (activeWsId) {
+        await workspaceStore.getState().addProject(activeWsId, path);
+        await get().loadProjectTree(path);
+        const updatedTrees = get().trees;
+        set({
+          currentPath: path,
+          activeProjectPath: path,
+          tree: updatedTrees[path] ?? null,
+        });
+        invoke("add_recent_project", { path }).catch(() => {});
+        return;
+      }
+
+      // If a project is already open, create a workspace grouping both
+      const { currentPath: current, trees: existingTrees } = get();
       if (current) {
-        await invoke("open_project_in_new_window", { path });
+        const baseName = current.split("/").pop() ?? "Workspace";
+        const ws = await workspaceStore
+          .getState()
+          .createWorkspace(baseName, current);
+        await workspaceStore.getState().addProject(ws.id, path);
+        await workspaceStore.getState().setActiveWorkspace(ws.id);
+        await get().loadProjectTree(path);
+        if (!existingTrees[current]) {
+          await get().loadProjectTree(current);
+        }
+        const updatedTrees = get().trees;
+        set({
+          currentPath: path,
+          activeProjectPath: path,
+          tree: updatedTrees[path] ?? null,
+        });
+        invoke("add_recent_project", { path }).catch(() => {});
+        invoke("start_watcher", { path }).catch(() => {});
         return;
       }
 
@@ -88,13 +184,21 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => ({
       );
       set({
         currentPath: path,
+        activeProjectPath: path,
         tree: result,
+        trees: { [path]: result },
         expandedPaths: {},
       });
       invoke("add_recent_project", { path }).catch(() => {});
     } catch (error) {
       console.error("Failed to load project directory:", error);
     }
+  },
+
+  setActiveProjectPath: (path: string) => {
+    const trees = get().trees;
+    const tree = trees[path] ?? null;
+    set({ activeProjectPath: path, currentPath: path, tree });
   },
 
   setTree: (tree: DirectoryTree | null) => set({ tree }),
