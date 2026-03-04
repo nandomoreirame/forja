@@ -8,8 +8,20 @@ const packageJson = JSON.parse(
   readFileSync(path.resolve(__dirname, "package.json"), "utf-8")
 ) as { version: string };
 
+const isAnalyze = process.env.ANALYZE === "true";
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    ...(isAnalyze
+      ? [
+          import("rollup-plugin-visualizer").then((m) =>
+            m.visualizer({ open: true, gzipSize: true, filename: "stats.html" }),
+          ),
+        ]
+      : []),
+  ],
   define: {
     __APP_VERSION__: JSON.stringify(packageJson.version),
   },
