@@ -1,7 +1,8 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Titlebar } from "../titlebar";
+import { useAppDialogsStore } from "@/stores/app-dialogs";
 
 vi.mock("@/lib/ipc", () => {
   const appWindow = {
@@ -18,6 +19,7 @@ vi.mock("@/lib/ipc", () => {
     getName: vi.fn().mockResolvedValue("Forja"),
     getVersion: vi.fn().mockResolvedValue("0.1.0"),
     getElectronVersion: vi.fn().mockResolvedValue("32.0.0"),
+    isTilingDesktop: vi.fn().mockResolvedValue(false),
   };
 });
 
@@ -40,6 +42,16 @@ vi.mock("@/stores/file-tree", async () => {
 });
 
 describe("Titlebar", () => {
+  beforeEach(() => {
+    useAppDialogsStore.setState({
+      aboutOpen: false,
+      shortcutsOpen: false,
+      claudeNotFoundOpen: false,
+      createWorkspaceOpen: false,
+      pendingProjectPath: null,
+    });
+  });
+
   it("hides sidebar toggle button when no project is loaded", async () => {
     const { useFileTreeStore } = await import("@/stores/file-tree");
     (useFileTreeStore as any).setState({ tree: null, trees: {}, currentPath: null });
@@ -85,5 +97,17 @@ describe("Titlebar", () => {
     expect(
       await screen.findByRole("dialog")
     ).toBeInTheDocument();
+  });
+
+  it("shows only close button on tiling desktop sessions", async () => {
+    const { isTilingDesktop } = await import("@/lib/ipc");
+    vi.mocked(isTilingDesktop).mockResolvedValueOnce(true);
+
+    render(<Titlebar />);
+
+    expect(await screen.findByRole("button", { name: "Close" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Minimize" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Maximize" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useWorkspaceStore } from "@/stores/workspace";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import {
@@ -13,16 +13,30 @@ import {
 export function CreateWorkspaceDialog() {
   const open = useAppDialogsStore((s) => s.createWorkspaceOpen);
   const pendingPath = useAppDialogsStore((s) => s.createWorkspacePendingPath);
+  const editingWorkspaceId = useAppDialogsStore((s) => s.createWorkspaceEditId);
+  const initialName = useAppDialogsStore((s) => s.createWorkspaceInitialName);
   const setOpen = useAppDialogsStore((s) => s.setCreateWorkspaceOpen);
   const createWorkspace = useWorkspaceStore((s) => s.createWorkspace);
+  const renameWorkspace = useWorkspaceStore((s) => s.renameWorkspace);
   const [name, setName] = useState("");
   const [creating, setCreating] = useState(false);
+  const isRenameMode = Boolean(editingWorkspaceId);
+
+  useEffect(() => {
+    if (open) {
+      setName(initialName ?? "");
+    }
+  }, [open, initialName]);
 
   const handleCreate = async () => {
     if (!name.trim()) return;
     setCreating(true);
     try {
-      await createWorkspace(name.trim(), pendingPath ?? undefined);
+      if (editingWorkspaceId) {
+        await renameWorkspace(editingWorkspaceId, name.trim());
+      } else {
+        await createWorkspace(name.trim(), pendingPath ?? undefined);
+      }
       setName("");
       setOpen(false);
     } finally {
@@ -41,9 +55,13 @@ export function CreateWorkspaceDialog() {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md border-ctp-surface0 bg-ctp-base">
         <DialogHeader>
-          <DialogTitle className="text-ctp-text">Create Workspace</DialogTitle>
+          <DialogTitle className="text-ctp-text">
+            {isRenameMode ? "Rename Workspace" : "Create Workspace"}
+          </DialogTitle>
           <DialogDescription className="text-ctp-overlay1">
-            {pendingPath
+            {isRenameMode
+              ? "Update workspace name"
+              : pendingPath
               ? `Create a workspace with "${pendingPath.split("/").pop()}"`
               : "Create a new workspace to group projects"}
           </DialogDescription>
@@ -77,7 +95,7 @@ export function CreateWorkspaceDialog() {
             disabled={!name.trim() || creating}
             className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-ctp-base transition-colors hover:bg-brand/90 disabled:opacity-50"
           >
-            {creating ? "Creating..." : "Create"}
+            {creating ? (isRenameMode ? "Renaming..." : "Creating...") : isRenameMode ? "Rename" : "Create"}
           </button>
         </DialogFooter>
       </DialogContent>

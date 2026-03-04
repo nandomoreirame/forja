@@ -4,28 +4,41 @@ import { FileIcon } from "./file-icon";
 import { useFileTreeStore, type FileNode } from "@/stores/file-tree";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useGitStatusStore } from "@/stores/git-status";
+import { useGitDiffStore } from "@/stores/git-diff";
 import { getGitBadgeLetter, getGitStatusColor } from "@/lib/git-constants";
 
 interface FileTreeNodeProps {
   node: FileNode;
   depth: number;
+  projectPath?: string;
 }
 
-export const FileTreeNode = memo(function FileTreeNode({ node, depth }: FileTreeNodeProps) {
+export const FileTreeNode = memo(function FileTreeNode({
+  node,
+  depth,
+  projectPath,
+}: FileTreeNodeProps) {
   const expanded = useFileTreeStore((s) => !!s.expandedPaths[node.path]);
   const toggleExpanded = useFileTreeStore((s) => s.toggleExpanded);
   const selectFile = useFileTreeStore((s) => s.selectFile);
   const currentFile = useFilePreviewStore((s) => s.currentFile);
-  const projectPath = useFileTreeStore((s) => s.currentPath);
+  const activeProjectPath = useFileTreeStore((s) => s.currentPath);
   const isActive = !node.isDir && currentFile === node.path;
+  const effectiveProjectPath = projectPath ?? activeProjectPath;
+  const projectCounters = useGitDiffStore((s) =>
+    effectiveProjectPath ? s.projectCountersByPath[effectiveProjectPath] : undefined,
+  );
+  const isProjectRoot = Boolean(node.isDir && effectiveProjectPath && node.path === effectiveProjectPath);
 
-  const relativePath = projectPath
-    ? node.path.substring(projectPath.length + 1)
+  const relativePath = effectiveProjectPath
+    ? node.path.substring(effectiveProjectPath.length + 1)
     : node.path;
 
-  const fileStatus = useGitStatusStore((s) => s.getFileStatus(relativePath));
+  const fileStatus = useGitStatusStore((s) =>
+    s.getFileStatus(relativePath, effectiveProjectPath ?? undefined),
+  );
   const dirHasChanges = useGitStatusStore((s) =>
-    node.isDir ? s.hasChangedChildren(relativePath) : false,
+    node.isDir ? s.hasChangedChildren(relativePath, effectiveProjectPath ?? undefined) : false,
   );
 
   const statusColor = fileStatus ? getGitStatusColor(fileStatus) : null;
@@ -44,11 +57,14 @@ export const FileTreeNode = memo(function FileTreeNode({ node, depth }: FileTree
     : isActive
       ? "text-ctp-text"
       : "text-ctp-subtext0 group-hover:text-ctp-text";
+  const ignoredOpacity = node.ignored ? "opacity-50" : "";
 
   return (
     <button
       type="button"
       className={`flex w-full items-center gap-1.5 px-2 py-1 text-left transition-colors duration-100 hover:bg-ctp-surface0 group ${
+        ignoredOpacity
+      } ${
         isActive ? "bg-ctp-surface0" : ""
       }`}
       style={{ paddingLeft: `${depth * 12 + 8}px` }}
@@ -75,8 +91,17 @@ export const FileTreeNode = memo(function FileTreeNode({ node, depth }: FileTree
         {node.name}
       </span>
 
+      {isProjectRoot && projectCounters && projectCounters.total > 0 && (
+        <span
+          className="ml-auto shrink-0 text-[10px] font-medium text-ctp-overlay1"
+          aria-label={`Changes: M:${projectCounters.modified} A:${projectCounters.added} D:${projectCounters.deleted} U:${projectCounters.untracked}`}
+        >
+          M:{projectCounters.modified} A:{projectCounters.added} D:{projectCounters.deleted} U:{projectCounters.untracked}
+        </span>
+      )}
+
       {/* Git status badge for files */}
-      {!node.isDir && badgeLetter && statusColor && (
+      {!node.isDir && badgeLetter && statusColor && !isProjectRoot && (
         <span
           className={`ml-auto shrink-0 text-xs font-medium ${statusColor}`}
           aria-label={`Git status: ${badgeLetter}`}

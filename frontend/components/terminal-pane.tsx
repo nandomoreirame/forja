@@ -1,7 +1,8 @@
+import { memo } from "react";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { TerminalSession } from "./terminal-session";
 
-export function TerminalPane() {
+export const TerminalPane = memo(function TerminalPane() {
   const tabs = useTerminalTabsStore((s) => s.tabs);
   const activeTabId = useTerminalTabsStore((s) => s.activeTabId);
 
@@ -18,4 +19,4 @@ export function TerminalPane() {
       ))}
     </div>
   );
-}
+});

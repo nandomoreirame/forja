@@ -31,7 +31,7 @@ describe("AboutDialog", () => {
         expect(screen.getByText("Forja")).toBeInTheDocument();
       });
       expect(
-        screen.getByText("A dedicated desktop client for Claude Code")
+        screen.getByText("A dedicated desktop client for vibe coders")
       ).toBeInTheDocument();
     });
 
@@ -122,7 +122,7 @@ describe("AboutDialog", () => {
       await user.click(backButton);
 
       expect(
-        screen.getByText("A dedicated desktop client for Claude Code")
+        screen.getByText("A dedicated desktop client for vibe coders")
       ).toBeInTheDocument();
     });
   });
@@ -187,7 +187,7 @@ describe("AboutDialog", () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText("A dedicated desktop client for Claude Code")
+          screen.getByText("A dedicated desktop client for vibe coders")
         ).toBeInTheDocument();
       });
     });

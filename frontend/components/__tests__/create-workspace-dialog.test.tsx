@@ -15,6 +15,8 @@ describe("CreateWorkspaceDialog", () => {
       aboutOpen: false,
       createWorkspaceOpen: false,
       createWorkspacePendingPath: null,
+      createWorkspaceEditId: null,
+      createWorkspaceInitialName: null,
     });
     useWorkspaceStore.setState({
       workspaces: [],
@@ -139,5 +141,29 @@ describe("CreateWorkspaceDialog", () => {
     fireEvent.click(cancelButton);
 
     expect(useAppDialogsStore.getState().createWorkspaceOpen).toBe(false);
+  });
+
+  it("renders rename mode and submits renameWorkspace", async () => {
+    const mockRenameWorkspace = vi.fn().mockResolvedValue(undefined);
+    useWorkspaceStore.setState({ renameWorkspace: mockRenameWorkspace } as Parameters<typeof useWorkspaceStore.setState>[0]);
+    useAppDialogsStore.setState({
+      createWorkspaceOpen: true,
+      createWorkspaceEditId: "ws-1",
+      createWorkspaceInitialName: "Old Name",
+      createWorkspacePendingPath: null,
+    });
+
+    render(<CreateWorkspaceDialog />);
+
+    expect(screen.getByText("Rename Workspace")).toBeInTheDocument();
+    const input = screen.getByLabelText("Workspace name") as HTMLInputElement;
+    expect(input.value).toBe("Old Name");
+
+    fireEvent.change(input, { target: { value: "New Name" } });
+    fireEvent.click(screen.getByRole("button", { name: /^rename$/i }));
+
+    await waitFor(() => {
+      expect(mockRenameWorkspace).toHaveBeenCalledWith("ws-1", "New Name");
+    });
   });
 });

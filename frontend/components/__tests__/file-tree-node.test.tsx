@@ -87,4 +87,18 @@ describe("FileTreeNode", () => {
 
     expect(selectFileSpy).not.toHaveBeenCalled();
   });
+
+  it("should apply reduced opacity for ignored files", () => {
+    const ignoredNode: FileNode = {
+      name: "ignored.log",
+      path: "/project/ignored.log",
+      isDir: false,
+      extension: "log",
+      ignored: true,
+    };
+
+    render(<FileTreeNode node={ignoredNode} depth={0} />);
+
+    expect(screen.getByRole("button")).toHaveClass("opacity-50");
+  });
 });

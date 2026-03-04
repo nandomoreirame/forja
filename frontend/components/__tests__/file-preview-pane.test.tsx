@@ -138,4 +138,54 @@ describe("FilePreviewPane", () => {
     });
     expect(screen.getByText("# Hello")).toBeInTheDocument();
   });
+
+  it("renders image viewer for PNG files with base64 encoding", () => {
+    const fakeBase64 = "iVBORw0KGgoAAAANSUhEUg";
+    useFilePreviewStore.setState({
+      isOpen: true,
+      isLoading: false,
+      currentFile: "/test/screenshot.png",
+      content: { path: "/test/screenshot.png", content: fakeBase64, size: 1024, encoding: "base64" },
+    });
+    renderWithSuspense(<FilePreviewPane />);
+    const img = screen.getByRole("img");
+    expect(img).toBeInTheDocument();
+    expect(img.getAttribute("src")).toMatch(/^data:image\/png;base64,/);
+  });
+
+  it("renders image viewer for JPG files", () => {
+    const fakeBase64 = "/9j/4AAQSkZJRgABAQ";
+    useFilePreviewStore.setState({
+      isOpen: true,
+      isLoading: false,
+      currentFile: "/test/photo.jpg",
+      content: { path: "/test/photo.jpg", content: fakeBase64, size: 2048, encoding: "base64" },
+    });
+    renderWithSuspense(<FilePreviewPane />);
+    const img = screen.getByRole("img");
+    expect(img.getAttribute("src")).toMatch(/^data:image\/jpeg;base64,/);
+  });
+
+  it("shows image-specific footer for image files", () => {
+    useFilePreviewStore.setState({
+      isOpen: true,
+      isLoading: false,
+      currentFile: "/test/photo.png",
+      content: { path: "/test/photo.png", content: "abc123", size: 38000, encoding: "base64" },
+    });
+    renderWithSuspense(<FilePreviewPane />);
+    expect(screen.getByText("37.1 KB")).toBeInTheDocument();
+    expect(screen.getByText("PNG")).toBeInTheDocument();
+  });
+
+  it("does not show line count in footer for image files", () => {
+    useFilePreviewStore.setState({
+      isOpen: true,
+      isLoading: false,
+      currentFile: "/test/photo.png",
+      content: { path: "/test/photo.png", content: "abc123", size: 1024, encoding: "base64" },
+    });
+    renderWithSuspense(<FilePreviewPane />);
+    expect(screen.queryByText(/line/)).not.toBeInTheDocument();
+  });
 });
