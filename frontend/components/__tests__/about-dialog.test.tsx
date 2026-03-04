@@ -5,7 +5,7 @@ import { AboutDialog } from "../about-dialog";
 
 vi.mock("@/lib/ipc", () => ({
   getName: vi.fn().mockResolvedValue("Forja"),
-  getVersion: vi.fn().mockResolvedValue("0.1.0"),
+  getVersion: vi.fn().mockResolvedValue(__APP_VERSION__),
   getElectronVersion: vi.fn().mockResolvedValue("32.0.0"),
   openUrl: vi.fn().mockResolvedValue(undefined),
 }));
@@ -35,12 +35,36 @@ describe("AboutDialog", () => {
       ).toBeInTheDocument();
     });
 
+    it("shows Forja when Electron returns generic app name", async () => {
+      const { getName } = await import("@/lib/ipc");
+      vi.mocked(getName).mockResolvedValueOnce("Electron");
+
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      await waitFor(() => {
+        expect(screen.getByText("Forja")).toBeInTheDocument();
+      });
+      expect(screen.queryByText("Electron")).not.toBeInTheDocument();
+    });
+
     it("renders version badge", async () => {
       render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
 
       await waitFor(() => {
-        expect(screen.getByText(/0\.1\.0/)).toBeInTheDocument();
+        expect(screen.getByText(__APP_VERSION__)).toBeInTheDocument();
       });
+    });
+
+    it("shows package.json version below description", async () => {
+      const { getVersion } = await import("@/lib/ipc");
+      vi.mocked(getVersion).mockResolvedValueOnce("32.3.3");
+
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      await waitFor(() => {
+        expect(screen.getByText(__APP_VERSION__)).toBeInTheDocument();
+      });
+      expect(screen.queryByText("32.3.3")).not.toBeInTheDocument();
     });
 
     it("renders all four menu items", async () => {
@@ -68,6 +92,23 @@ describe("AboutDialog", () => {
       expect(screen.getByText("Electron Version")).toBeInTheDocument();
       expect(screen.getByText("OS")).toBeInTheDocument();
       expect(screen.getByText("Platform")).toBeInTheDocument();
+    });
+
+    it("shows package.json version in Details version row", async () => {
+      const user = userEvent.setup();
+      const { getVersion, getElectronVersion } = await import("@/lib/ipc");
+      vi.mocked(getVersion).mockResolvedValueOnce("32.3.3");
+      vi.mocked(getElectronVersion).mockResolvedValueOnce("32.3.3");
+
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      const detailsItem = await screen.findByText("Details");
+      await user.click(detailsItem);
+
+      await waitFor(() => {
+        expect(screen.getByText("Version")).toBeInTheDocument();
+      });
+      expect(screen.getByText(__APP_VERSION__)).toBeInTheDocument();
     });
 
     it("returns to home when back button is clicked", async () => {

@@ -4,7 +4,10 @@ import { Suspense } from "react";
 import { FilePreviewPane } from "../file-preview-pane";
 import { useFilePreviewStore } from "@/stores/file-preview";
 
-vi.mock("@/lib/ipc", () => ({ invoke: vi.fn(), open: vi.fn() }));
+vi.mock("@/lib/ipc", () => ({
+  invoke: vi.fn().mockResolvedValue({ isGitRepo: false, branch: null, fileStatus: null, changedFiles: 0 }),
+  open: vi.fn(),
+}));
 vi.mock("shiki/core", () => ({
   createHighlighterCore: vi.fn().mockResolvedValue({
     codeToHtml: vi.fn((code: string) => `<pre><code>${code}</code></pre>`),
@@ -52,7 +55,7 @@ describe("FilePreviewPane", () => {
     });
     renderWithSuspense(<FilePreviewPane />);
     const pane = screen.getByTestId("file-preview-pane");
-    expect(pane.className).toMatch(/basis-1\/2/);
+    expect(pane.className).toMatch(/h-full/);
   });
 
   it("shows loading state when isLoading is true", () => {
@@ -107,7 +110,7 @@ describe("FilePreviewPane", () => {
     expect(state.isOpen).toBe(false);
   });
 
-  it("shows file size in footer", () => {
+  it("shows file info in footer", () => {
     useFilePreviewStore.setState({
       isOpen: true,
       isLoading: false,
@@ -116,6 +119,9 @@ describe("FilePreviewPane", () => {
     });
     renderWithSuspense(<FilePreviewPane />);
     expect(screen.getByText("2.0 KB")).toBeInTheDocument();
+    expect(screen.getByText("1 line")).toBeInTheDocument();
+    expect(screen.getByText("UTF-8")).toBeInTheDocument();
+    expect(screen.getByText("TypeScript")).toBeInTheDocument();
   });
 
   it("renders markdown content for .md files", async () => {

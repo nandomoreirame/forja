@@ -4,6 +4,22 @@ import userEvent from "@testing-library/user-event";
 import { TabBar } from "../tab-bar";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
+vi.mock("@/hooks/use-installed-clis", () => ({
+  useInstalledClis: () => ({
+    installedClis: [
+      {
+        id: "claude",
+        displayName: "Claude Code",
+        binary: "claude",
+        description: "AI-assisted coding with Anthropic Claude",
+        iconColor: "text-brand",
+        icon: "/images/claude.svg",
+      },
+    ],
+    loading: false,
+  }),
+}));
+
 const baseTabs: TerminalTab[] = [
   { id: "tab-1", name: "Claude #1", path: "/a", isRunning: true, sessionType: "claude" },
   { id: "tab-2", name: "Claude #2", path: "/b", isRunning: true, sessionType: "claude" },
@@ -13,12 +29,12 @@ const baseTabs: TerminalTab[] = [
 describe("TabBar", () => {
   const onSelectTab = vi.fn();
   const onCloseTab = vi.fn();
-  const onNewTab = vi.fn();
+  const onSessionTypeSelect = vi.fn();
 
   beforeEach(() => {
     onSelectTab.mockClear();
     onCloseTab.mockClear();
-    onNewTab.mockClear();
+    onSessionTypeSelect.mockClear();
   });
 
   it("renders all tabs", () => {
@@ -28,7 +44,7 @@ describe("TabBar", () => {
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
-        onNewTab={onNewTab}
+        onSessionTypeSelect={onSessionTypeSelect}
       />
     );
 
@@ -44,7 +60,7 @@ describe("TabBar", () => {
         activeTabId="tab-2"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
-        onNewTab={onNewTab}
+        onSessionTypeSelect={onSessionTypeSelect}
       />
     );
 
@@ -62,7 +78,7 @@ describe("TabBar", () => {
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
-        onNewTab={onNewTab}
+        onSessionTypeSelect={onSessionTypeSelect}
       />
     );
 
@@ -78,7 +94,7 @@ describe("TabBar", () => {
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
-        onNewTab={onNewTab}
+        onSessionTypeSelect={onSessionTypeSelect}
       />
     );
 
@@ -87,21 +103,18 @@ describe("TabBar", () => {
     expect(onCloseTab).toHaveBeenCalledWith("tab-2");
   });
 
-  it("calls onNewTab when new tab button is clicked", async () => {
-    const user = userEvent.setup();
+  it("renders new tab dropdown trigger", () => {
     render(
       <TabBar
         tabs={baseTabs}
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
-        onNewTab={onNewTab}
+        onSessionTypeSelect={onSessionTypeSelect}
       />
     );
 
-    const newTabButton = screen.getByLabelText(/new tab/i);
-    await user.click(newTabButton);
-    expect(onNewTab).toHaveBeenCalled();
+    expect(screen.getByLabelText(/new tab/i)).toBeInTheDocument();
   });
 
   it("shows exited indicator for non-running tabs", () => {
@@ -111,7 +124,7 @@ describe("TabBar", () => {
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
-        onNewTab={onNewTab}
+        onSessionTypeSelect={onSessionTypeSelect}
       />
     );
 
@@ -128,7 +141,7 @@ describe("TabBar", () => {
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
-        onNewTab={onNewTab}
+        onSessionTypeSelect={onSessionTypeSelect}
       />
     );
 

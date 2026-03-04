@@ -13,7 +13,6 @@ describe("CreateWorkspaceDialog", () => {
     useAppDialogsStore.setState({
       shortcutsOpen: false,
       aboutOpen: false,
-      newSessionOpen: false,
       createWorkspaceOpen: false,
       createWorkspacePendingPath: null,
     });

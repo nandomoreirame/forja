@@ -3,7 +3,6 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Statusbar } from "../statusbar";
 import * as useSystemMetricsModule from "@/hooks/use-system-metrics";
-import { useFilePreviewStore } from "@/stores/file-preview";
 
 // Mock the useSystemMetrics hook
 vi.mock("@/hooks/use-system-metrics");
@@ -173,38 +172,6 @@ describe("Statusbar with HoverCard", () => {
 
     // Swap should not appear
     expect(screen.queryByText(/1GB/)).not.toBeInTheDocument();
-  });
-
-  it("does not crash when file preview transitions from closed to open", () => {
-    // Start with preview closed
-    act(() => {
-      useFilePreviewStore.setState({
-        isOpen: false,
-        currentFile: null,
-        content: null,
-        isLoading: false,
-        error: null,
-      });
-    });
-
-    render(<Statusbar />);
-
-    // Simulate file being loaded and preview opening
-    // This triggers a re-render of FileInfoSection which previously had
-    // useMemo AFTER an early return, causing "Rendered more hooks" error
-    act(() => {
-      useFilePreviewStore.setState({
-        isOpen: true,
-        currentFile: "/test/file.ts",
-        content: { path: "/test/file.ts", content: "const x = 1;\nconst y = 2;", size: 26 },
-        isLoading: false,
-        error: null,
-      });
-    });
-
-    // Should render file info without crashing
-    expect(screen.getByText("2 lines")).toBeInTheDocument();
-    expect(screen.getByText("TypeScript")).toBeInTheDocument();
   });
 
   it("displays loading state when metrics are null", () => {

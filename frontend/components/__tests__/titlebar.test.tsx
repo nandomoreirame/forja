@@ -21,17 +21,47 @@ vi.mock("@/lib/ipc", () => {
   };
 });
 
-vi.mock("@/stores/file-tree", () => ({
-  APP_NAME: "Forja",
-  useFileTreeStore: () => ({
+vi.mock("@/stores/file-tree", async () => {
+  const { create } = await import("zustand");
+
+  const useFileTreeStore = create(() => ({
     isOpen: false,
     tree: null,
+    trees: {} as Record<string, unknown>,
+    currentPath: null as string | null,
     toggleSidebar: vi.fn(),
     openProject: vi.fn(),
-  }),
-}));
+  }));
+
+  return {
+    APP_NAME: "Forja",
+    useFileTreeStore,
+  };
+});
 
 describe("Titlebar", () => {
+  it("hides sidebar toggle button when no project is loaded", async () => {
+    const { useFileTreeStore } = await import("@/stores/file-tree");
+    (useFileTreeStore as any).setState({ tree: null, trees: {}, currentPath: null });
+
+    render(<Titlebar />);
+
+    expect(screen.queryByRole("button", { name: /sidebar/i })).not.toBeInTheDocument();
+  });
+
+  it("shows sidebar toggle button when a project is loaded", async () => {
+    const { useFileTreeStore } = await import("@/stores/file-tree");
+    (useFileTreeStore as any).setState({
+      tree: { root: { name: "test", path: "/test", isDir: true, children: [] } },
+      trees: {},
+      currentPath: "/test",
+    });
+
+    render(<Titlebar />);
+
+    expect(screen.getByRole("button", { name: /sidebar/i })).toBeInTheDocument();
+  });
+
   it('shows "About" menu item in English', async () => {
     const user = userEvent.setup();
     render(<Titlebar />);
