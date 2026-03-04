@@ -186,6 +186,38 @@ describe("user-settings module", () => {
     expect(result.terminal.fontSize).toBe(18);
   });
 
+  it("loadUserSettings strips session args with shell metacharacters", async () => {
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({
+        sessions: {
+          claude: { args: ["--model", "opus", "; rm -rf /", "--safe"] },
+        },
+      }),
+    );
+
+    const { loadUserSettings } = await import("../user-settings");
+    const result = await loadUserSettings();
+
+    expect(result.sessions.claude.args).toEqual(["--model", "opus", "--safe"]);
+  });
+
+  it("loadUserSettings strips invalid env values from sessions", async () => {
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({
+        sessions: {
+          claude: { env: { SAFE: "value", BAD: 123 } },
+        },
+      }),
+    );
+
+    const { loadUserSettings } = await import("../user-settings");
+    const result = await loadUserSettings();
+
+    expect(result.sessions.claude.env).toEqual({ SAFE: "value" });
+  });
+
   it("saveUserSettings throws on invalid JSON", async () => {
     const { saveUserSettings } = await import("../user-settings");
 

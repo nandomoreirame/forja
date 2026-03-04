@@ -85,6 +85,35 @@ function mergeWithDefaults(
   };
 }
 
+// Shell metacharacters that could enable injection in spawned processes
+const SHELL_META_RE = /[;&|`$(){}[\]<>!\\]/;
+
+function validateSessionArg(arg: unknown): boolean {
+  return typeof arg === "string" && !SHELL_META_RE.test(arg);
+}
+
+function sanitizeSessions(
+  sessions: Record<string, { args?: string[]; env?: Record<string, string> }>,
+): Record<string, { args?: string[]; env?: Record<string, string> }> {
+  const clean: typeof sessions = {};
+  for (const [key, session] of Object.entries(sessions)) {
+    if (typeof key !== "string") continue;
+    const args = Array.isArray(session.args)
+      ? session.args.filter(validateSessionArg)
+      : undefined;
+    const env =
+      session.env && typeof session.env === "object"
+        ? Object.fromEntries(
+            Object.entries(session.env).filter(
+              ([k, v]) => typeof k === "string" && typeof v === "string",
+            ),
+          )
+        : undefined;
+    clean[key] = { ...(args ? { args } : {}), ...(env ? { env } : {}) };
+  }
+  return clean;
+}
+
 function validateSettings(settings: UserSettings): UserSettings {
   return {
     ...settings,
@@ -105,6 +134,7 @@ function validateSettings(settings: UserSettings): UserSettings {
       zoomLevel: clamp(settings.window.zoomLevel, -5, 5),
       opacity: clamp(settings.window.opacity, 0.3, 1.0),
     },
+    sessions: sanitizeSessions(settings.sessions),
   };
 }
 

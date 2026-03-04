@@ -91,7 +91,7 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,
+      sandbox: true,
     },
     icon: path.join(__dirname, "..", "assets", "icons", "icon.png"),
     show: false,

@@ -23,6 +23,26 @@ export interface SpawnOptions {
   extraEnv?: Record<string, string>;
 }
 
+const SAFE_ENV_KEYS = new Set([
+  "PATH", "HOME", "USER", "SHELL", "LANG", "LC_ALL", "LC_CTYPE",
+  "EDITOR", "VISUAL", "PAGER", "XDG_RUNTIME_DIR", "XDG_CONFIG_HOME",
+  "XDG_DATA_HOME", "XDG_CACHE_HOME", "DISPLAY", "WAYLAND_DISPLAY",
+  "DBUS_SESSION_BUS_ADDRESS", "SSH_AUTH_SOCK", "MISE_SHELL",
+]);
+
+function buildSafeEnv(extraEnv?: Record<string, string>): Record<string, string> {
+  const safe: Record<string, string> = {};
+  for (const key of SAFE_ENV_KEYS) {
+    if (process.env[key]) safe[key] = process.env[key]!;
+  }
+  return {
+    ...safe,
+    TERM: "xterm-256color",
+    COLORTERM: "truecolor",
+    ...(extraEnv ?? {}),
+  };
+}
+
 export function spawnPty(opts: SpawnOptions): string {
   const { tabId, path: cwd, sessionType, windowId, sender, extraArgs, extraEnv } = opts;
 
@@ -34,12 +54,7 @@ export function spawnPty(opts: SpawnOptions): string {
     cols: 80,
     rows: 24,
     cwd,
-    env: {
-      ...process.env,
-      TERM: "xterm-256color",
-      COLORTERM: "truecolor",
-      ...(extraEnv ?? {}),
-    },
+    env: buildSafeEnv(extraEnv),
   });
 
   ptyProcess.onData((data: string) => {
