@@ -1,6 +1,5 @@
 /**
- * IPC compatibility layer — mirrors @tauri-apps/api surface so that
- * components only need to change a single import line.
+ * IPC layer for Electron.
  *
  * In Electron: delegates to window.electronAPI (injected by preload.ts).
  * In Vitest (jsdom): returns stub implementations so tests don't crash.
@@ -48,13 +47,13 @@ export function invoke<T = unknown>(command: string, args?: unknown): Promise<T>
   return api.invoke(command, args) as Promise<T>;
 }
 
-export interface TauriEvent<T> {
+export interface IpcEvent<T> {
   payload: T;
 }
 
 export function listen<T = unknown>(
   event: string,
-  callback: (event: TauriEvent<T>) => void
+  callback: (event: IpcEvent<T>) => void
 ): Promise<() => void> {
   const api = getAPI();
   if (!api) return Promise.resolve(() => {});
