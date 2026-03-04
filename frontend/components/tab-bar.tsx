@@ -1,6 +1,6 @@
-import { X } from "lucide-react";
+import { PanelRightClose, X } from "lucide-react";
 import { useSessionStateStore } from "@/stores/session-state";
-import type { TerminalTab } from "@/stores/terminal-tabs";
+import { useTerminalTabsStore, type TerminalTab } from "@/stores/terminal-tabs";
 import type { SessionType } from "@/lib/cli-registry";
 import { CliIcon } from "./cli-icon";
 import { NewSessionDropdown } from "./new-session-dropdown";
@@ -54,17 +54,18 @@ export function TabBar({
               />
               <CliIcon sessionType={tab.sessionType} className="h-3.5 w-3.5" />
               <span>{tab.name}</span>
-              <span
-                role="button"
+              <button
+                type="button"
                 aria-label={`Close ${tab.name}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onCloseTab(tab.id);
                 }}
-                className="flex h-4 w-4 items-center justify-center rounded opacity-0 transition-opacity hover:bg-ctp-surface0 group-hover:opacity-100"
+                tabIndex={isActive ? 0 : -1}
+                className="flex h-4 w-4 items-center justify-center rounded opacity-0 transition-opacity hover:bg-ctp-surface0 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-1 focus-visible:ring-brand"
               >
                 <X className="h-3 w-3" strokeWidth={1.5} />
-              </span>
+              </button>
               {isActive && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand" />
               )}
@@ -73,6 +74,13 @@ export function TabBar({
         })}
       </div>
       <NewSessionDropdown onSessionTypeSelect={onSessionTypeSelect} />
+      <button
+        onClick={() => useTerminalTabsStore.getState().toggleTerminalPane()}
+        className="inline-flex h-9 items-center justify-center px-2 text-ctp-overlay1 transition-colors hover:text-ctp-text"
+        aria-label="Hide terminal"
+      >
+        <PanelRightClose className="h-4 w-4" strokeWidth={1.5} />
+      </button>
     </div>
   );
 }

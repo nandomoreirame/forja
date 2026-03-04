@@ -57,7 +57,7 @@ describe("Statusbar with HoverCard", () => {
     render(<Statusbar />);
 
     // Find CPU metric container and hover over it
-    const cpuMetric = screen.getByText("46%").closest("div");
+    const cpuMetric = screen.getByLabelText("CPU usage details");
     expect(cpuMetric).toBeInTheDocument();
 
     if (cpuMetric) {
@@ -78,7 +78,7 @@ describe("Statusbar with HoverCard", () => {
     render(<Statusbar />);
 
     // Find memory metric container
-    const memoryMetric = screen.getByText("8GB").closest("div");
+    const memoryMetric = screen.getByLabelText("Memory usage details");
     expect(memoryMetric).toBeInTheDocument();
 
     if (memoryMetric) {
@@ -101,7 +101,7 @@ describe("Statusbar with HoverCard", () => {
     render(<Statusbar />);
 
     // Find swap metric container
-    const swapMetric = screen.getByText("1GB").closest("div");
+    const swapMetric = screen.getByLabelText("Swap usage details");
     expect(swapMetric).toBeInTheDocument();
 
     if (swapMetric) {
@@ -122,7 +122,7 @@ describe("Statusbar with HoverCard", () => {
     render(<Statusbar />);
 
     // Find disk metric container
-    const diskMetric = screen.getByText("250GB").closest("div");
+    const diskMetric = screen.getByLabelText("Disk usage details");
     expect(diskMetric).toBeInTheDocument();
 
     if (diskMetric) {
@@ -143,7 +143,7 @@ describe("Statusbar with HoverCard", () => {
     const user = userEvent.setup();
     render(<Statusbar />);
 
-    const cpuMetric = screen.getByText("46%").closest("div");
+    const cpuMetric = screen.getByLabelText("CPU usage details");
 
     if (cpuMetric) {
       await user.hover(cpuMetric);

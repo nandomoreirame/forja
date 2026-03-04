@@ -76,11 +76,11 @@ function GitSection() {
 
     fetchGitInfo();
     const windowLabel = getCurrentWindow().label;
-    invoke("start_watcher", { path: currentPath, windowLabel }).catch(() => {});
+    invoke("start_watcher", { path: currentPath, windowLabel }).catch((err) => console.warn("[statusbar] Watcher IPC failed:", err));
     const interval = setInterval(fetchGitInfo, 30000);
     return () => {
       clearInterval(interval);
-      invoke("stop_watcher", { windowLabel }).catch(() => {});
+      invoke("stop_watcher", { windowLabel }).catch((err) => console.warn("[statusbar] Watcher IPC failed:", err));
     };
   }, [currentPath, fetchGitInfo]);
 
@@ -133,14 +133,18 @@ export function Statusbar() {
       {/* Memory */}
       <HoverCard openDelay={200} closeDelay={100}>
         <HoverCardTrigger asChild>
-          <div className="flex cursor-help items-center gap-1.5">
+          <button
+            type="button"
+            aria-label="Memory usage details"
+            className="flex cursor-help items-center gap-1.5 rounded px-1 focus-visible:ring-1 focus-visible:ring-brand"
+          >
             <MemoryStick className="h-3 w-3" strokeWidth={1.5} />
             <span>{formatGb(current.memory_used)}</span>
             <MiniProgressBar
               used={current.memory_used}
               total={current.memory_total}
             />
-          </div>
+          </button>
         </HoverCardTrigger>
         <HoverCardContent
           side="top"
@@ -179,11 +183,15 @@ export function Statusbar() {
       {/* CPU */}
       <HoverCard openDelay={200} closeDelay={100}>
         <HoverCardTrigger asChild>
-          <div className="flex cursor-help items-center gap-1.5">
+          <button
+            type="button"
+            aria-label="CPU usage details"
+            className="flex cursor-help items-center gap-1.5 rounded px-1 focus-visible:ring-1 focus-visible:ring-brand"
+          >
             <Cpu className="h-3 w-3" strokeWidth={1.5} />
             <span>{formatPercent(current.cpu_usage)}</span>
             <Sparkline data={cpuHistory} />
-          </div>
+          </button>
         </HoverCardTrigger>
         <HoverCardContent
           side="top"
@@ -210,14 +218,18 @@ export function Statusbar() {
         <>
           <HoverCard openDelay={200} closeDelay={100}>
             <HoverCardTrigger asChild>
-              <div className="flex cursor-help items-center gap-1.5">
+              <button
+                type="button"
+                aria-label="Swap usage details"
+                className="flex cursor-help items-center gap-1.5 rounded px-1 focus-visible:ring-1 focus-visible:ring-brand"
+              >
                 <Database className="h-3 w-3" strokeWidth={1.5} />
                 <span>{formatGb(current.swap_used)}</span>
                 <MiniProgressBar
                   used={current.swap_used}
                   total={current.swap_total}
                 />
-              </div>
+              </button>
             </HoverCardTrigger>
             <HoverCardContent
               side="top"
@@ -257,14 +269,18 @@ export function Statusbar() {
       {/* Disk */}
       <HoverCard openDelay={200} closeDelay={100}>
         <HoverCardTrigger asChild>
-          <div className="flex cursor-help items-center gap-1.5">
+          <button
+            type="button"
+            aria-label="Disk usage details"
+            className="flex cursor-help items-center gap-1.5 rounded px-1 focus-visible:ring-1 focus-visible:ring-brand"
+          >
             <HardDrive className="h-3 w-3" strokeWidth={1.5} />
             <span>{formatGb(current.disk_used)}</span>
             <MiniProgressBar
               used={current.disk_used}
               total={current.disk_total}
             />
-          </div>
+          </button>
         </HoverCardTrigger>
         <HoverCardContent
           side="top"

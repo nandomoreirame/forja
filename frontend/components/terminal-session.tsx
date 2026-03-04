@@ -7,7 +7,7 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 
 interface TerminalSessionProps {
   tabId: string;
@@ -16,7 +16,7 @@ interface TerminalSessionProps {
   sessionType?: SessionType;
 }
 
-export function TerminalSession({ tabId, path, isVisible, sessionType = "claude" }: TerminalSessionProps) {
+export const TerminalSession = memo(function TerminalSession({ tabId, path, isVisible, sessionType = "claude" }: TerminalSessionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -140,6 +140,7 @@ export function TerminalSession({ tabId, path, isVisible, sessionType = "claude"
       className={`h-full w-full bg-ctp-base pt-3 pl-4 pb-3 ${!isVisible ? "hidden" : ""}`}
     >
       <div ref={containerRef} className="h-full w-full" />
+      <div role="status" aria-live="polite" className="sr-only" />
     </div>
   );
-}
+});
