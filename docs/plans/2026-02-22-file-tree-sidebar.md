@@ -1023,7 +1023,7 @@ function App() {
             />
             <h1 className="text-3xl font-bold text-zinc-50">Forja</h1>
             <p className="text-sm text-zinc-400">
-              A dedicated desktop client for Claude Code
+              A dedicated desktop client for vibe coders
             </p>
           </div>
 

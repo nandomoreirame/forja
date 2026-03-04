@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is Forja
 
-Forja is a dedicated desktop GUI client for Claude Code, built with Tauri 2 (Rust backend) + React (TypeScript frontend). It transforms the raw terminal experience into a rich visual interface with markdown rendering, syntax-highlighted code blocks, and Git context. It is NOT a generic terminal; it is purpose-built for Claude Code workflows.
+Forja is a dedicated desktop GUI client for Claude Code (and other AI coding CLIs), built with Electron (Node.js backend) + React (TypeScript frontend). It transforms the raw terminal experience into a rich visual interface with markdown rendering, syntax-highlighted code blocks, and Git context. It supports multiple AI CLIs (Claude Code, Gemini CLI, Codex CLI, Cursor Agent) and plain terminal sessions.
 
-**Status:** Pre-development (documentation phase). No code has been written yet.
+**Status:** Active development. Electron migration complete. 400+ tests passing.
 
 ## Tech Stack
 
@@ -15,112 +15,134 @@ Forja is a dedicated desktop GUI client for Claude Code, built with Tauri 2 (Rus
 | Technology | Purpose |
 |-----------|---------|
 | **React 19 + TypeScript** | UI framework |
-| **Tailwind CSS + shadcn/ui** | Styling and components |
+| **Tailwind CSS 4 + shadcn/ui** | Styling and components |
 | **xterm.js** | Terminal emulation (PTY rendering, VT sequences) |
 | **react-markdown + remark-gfm** | Markdown output rendering |
-| **Shiki** | Syntax highlighting (theme: tokyo-night or one-dark-pro) |
+| **Shiki** | Syntax highlighting (theme: Catppuccin Mocha) |
 | **Zustand** | State management |
 | **Lucide React** | Icon system |
 
-### Backend (Rust)
+### Backend (Node.js / Electron)
 
 | Technology | Purpose |
 |-----------|---------|
-| **Tauri 2** | Desktop framework (Rust backend + WebView) |
-| **portable-pty** (crate) | PTY management, spawns `claude` process |
-| **notify** (crate) | File watching (monitors `.git/` for changes) |
-| **serde + toml** (crate) | Config storage (`~/.config/forja/config.toml`) |
-| **git CLI via Command** | Branch info + file status |
+| **Electron** | Desktop framework (Node.js main process + Chromium renderer) |
+| **node-pty** | PTY management, spawns AI CLI processes |
+| **chokidar** | File watching (monitors `.git/` and settings changes) |
+| **electron-store** | Config storage (`~/.config/forja/config.json`) |
+| **systeminformation** | System metrics (CPU, memory, disk, network) |
+| **git CLI via child_process** | Branch info + file status |
 
 ### IPC
 
-Tauri Commands (request/response) + Tauri Events (streaming PTY output in real-time).
+Electron IPC via `contextBridge` + `ipcMain`/`ipcRenderer`. Frontend uses `frontend/lib/ipc.ts` as a unified abstraction layer.
 
-### Explicitly NOT used
+### Testing
 
-Redux, Electron, SQLite, Monaco Editor, Styled Components, GraphQL, Material UI, Chakra UI, Ant Design. See `docs/MVP-SCOPE.md` for rationale.
+| Technology | Purpose |
+|-----------|---------|
+| **Vitest** | Test runner (multi-project: jsdom for frontend, node for electron) |
+| **React Testing Library** | Component testing |
 
 ## Architecture
 
 ```
-[React Frontend]
+[React Frontend (Chromium)]
     |
-    | Tauri IPC (Commands + Events)
+    | Electron IPC (invoke + events)
     |
-[Rust Backend]
-    ├── PTY Manager (portable-pty)
-    │   └── Spawns `claude` process
-    │   └── Streams output → Frontend via Tauri Events
-    ├── File Watcher (notify)
-    │   └── Monitors .git/ for changes
-    │   └── Emits Git events → Frontend
-    ├── Git Reader (git CLI)
-    │   └── Current branch (`git branch --show-current`)
-    │   └── File status (`git status --porcelain`)
-    └── Config Manager (serde/toml)
-        └── Recent projects
-        └── User preferences
+[Node.js Backend (Main Process)]
+    +-- PTY Manager (node-pty)
+    |   +-- Spawns claude / gemini / codex / terminal processes
+    |   +-- Streams output -> Frontend via IPC events
+    +-- File Watcher (chokidar)
+    |   +-- Monitors .git/ for changes
+    |   +-- Watches settings.json for live reload
+    +-- Git Reader (git CLI)
+    |   +-- Branch info (git branch --show-current)
+    |   +-- File status (git status --porcelain)
+    +-- Config Manager (electron-store)
+    |   +-- Recent projects, UI preferences
+    +-- User Settings (~/.config/forja/settings.json)
+    +-- System Metrics (systeminformation)
 ```
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `electron/main.ts` | Entry point, all ipcMain handlers |
+| `electron/preload.ts` | contextBridge for window.electronAPI |
+| `electron/pty.ts` | PTY management with node-pty |
+| `electron/config.ts` | electron-store at ~/.config/forja/config.json |
+| `electron/watcher.ts` | chokidar file watcher (500ms debounce) |
+| `electron/git-info.ts` | Git status/branch reader |
+| `electron/metrics.ts` | systeminformation (2s interval) |
+| `electron/user-settings.ts` | User settings manager |
+| `frontend/lib/ipc.ts` | IPC abstraction layer |
 
 ### Rendering Strategy (Hybrid)
 
 - **xterm.js** handles raw PTY input, VT sequences, and terminal interaction
 - **React components** handle rich output rendering (markdown, code blocks, syntax highlight)
-- **Tauri Events** stream PTY output in real-time from Rust to React
+- **Electron IPC events** stream PTY output in real-time from main process to renderer
 
 ### App Layout
 
 ```
-┌─────────────────────────────────────────────────┐
-│  Titlebar (40px) — menu + title + window btns   │
-├──────┬──────────────────┬───────────────────────┤
-│      │                  │                       │
-│ File │  Claude Code     │  Markdown Preview     │
-│ Tree │  Pane (xterm.js) │  (React renderer)     │
-│ 256px│  ~60% width      │  ~40% width           │
-│      │                  │                       │
-├──────┴──────────────────┴───────────────────────┤
-│  Status Bar (28px) — system metrics             │
-└─────────────────────────────────────────────────┘
++---------------------------------------------------+
+|  Titlebar (40px) - menu + title + window controls  |
++------+--------------------+------------------------+
+|      |                    |                        |
+| File |  Terminal Pane     |  File Preview /        |
+| Tree |  (xterm.js)        |  Settings Editor       |
+| 256px|  ~60% width        |  ~40% width            |
+|      |                    |                        |
++------+--------------------+------------------------+
+|  Status Bar (24px) - git info + system metrics      |
++---------------------------------------------------+
 ```
 
 ### Application Flow
 
 ```
 Home Screen (Project Selector)
-  → User selects project directory
-  → Workspace opens
-      ├── Claude Code Pane (PTY + Enhanced Rendering)
-      ├── Markdown Preview (React renderer)
-      ├── Git Header (branch + modified file count)
-      └── Status Bar
+  -> User selects project directory
+  -> Workspace opens
+      +-- Tab Bar (multi-session management)
+      +-- Terminal Pane (PTY + xterm.js)
+      +-- File Tree Sidebar (directory structure + git status)
+      +-- File Preview Pane (code + markdown rendering)
+      +-- Status Bar (git branch + metrics)
 ```
 
-## MVP Features (P0)
+## Current Features
 
-1. **Project Selector** - Recent projects list + native file picker, persisted in TOML config
-2. **Claude Code Pane** - PTY connected to `claude` process with input/output
-3. **Markdown Rendering** - CommonMark output rendered in real-time (headers, lists, bold, inline code)
-4. **Code Blocks** - Syntax highlight via Shiki, language auto-detection
-5. **Session State** - Visual indicator for "thinking" vs "ready" states
-6. **Git Header** - Current branch + modified file count, auto-updates via file watcher
-7. **Error Handling** - Graceful fallback when `claude` CLI is not installed
-8. **File Tree Sidebar** - Collapsible sidebar with project directory structure, file type icons, toolbar actions, and Ctrl+B toggle
-9. **System Metrics Status Bar** - Real-time CPU, memory, swap, disk, and network metrics with sparklines
-
-### Explicitly Out of MVP Scope
-
-Shell Pane, Session Manager, Context Panel (token usage), Monaco Editor, Windows support, multi-session/tabs, cloud sync, support for other AI agents, light mode. See `docs/MVP-SCOPE.md` for full list and rationale.
+1. **Multi-CLI Support** - Claude Code, Gemini CLI, Codex CLI, Cursor Agent, plain terminal
+2. **Multi-Session Tabs** - Concurrent sessions with tab management (Ctrl+T/W/Tab)
+3. **Project Selector** - Recent projects + native file picker, persisted in JSON config
+4. **File Tree Sidebar** - Directory structure, file type icons, git status indicators, Ctrl+B toggle
+5. **File Preview Pane** - Syntax-highlighted code preview and markdown rendering
+6. **Settings Editor** - In-app JSON editor with syntax highlighting (Ctrl+,)
+7. **Font Settings** - Separate font configuration for app UI, editor/preview, and terminal
+8. **Git Integration** - Branch info, modified files counter, per-file status badges, auto-updates
+9. **Workspaces** - Group projects into named workspaces, open in dedicated windows
+10. **Command Palette** - File navigation (Ctrl+P) and command access (Ctrl+Shift+P)
+11. **Terminal Zoom** - Independent font size control (Ctrl+Alt++/-)
+12. **System Metrics** - CPU, memory, swap, disk, network in status bar
+13. **Session State** - Visual indicator for "thinking" vs "ready" states
+14. **Error Handling** - Graceful fallback when AI CLI is not installed
 
 ## Key Design Decisions
 
-1. **Config is TOML, not SQLite** - `~/.config/forja/config.toml` stores recent projects and preferences
-2. **Git via CLI, not libgit2** - Uses `git branch --show-current` and `git status --porcelain` for simplicity
-3. **No authentication** - Claude Code manages its own auth; Forja doesn't store API keys
-4. **Local-first** - No cloud, no accounts, no telemetry without opt-in
-5. **macOS + Linux only for MVP** - Windows PTY has quirks, deferred to v1.1
-6. **Dark-only in MVP** - No theme toggle; dark mode is the default and only option
-7. **Hybrid rendering** - xterm.js for raw PTY, React components for rich markdown output
+1. **Config is JSON via electron-store** - `~/.config/forja/config.json` stores projects and preferences
+2. **User settings is separate JSON** - `~/.config/forja/settings.json` for fonts, window, sessions
+3. **Git via CLI, not libgit2** - Uses `git branch --show-current` and `git status --porcelain`
+4. **No authentication** - AI CLIs manage their own auth; Forja doesn't store API keys
+5. **Local-first** - No cloud, no accounts, no telemetry without opt-in
+6. **macOS + Linux only for MVP** - Windows deferred
+7. **Dark-only in MVP** - Catppuccin Mocha, no theme toggle
+8. **Hybrid rendering** - xterm.js for raw PTY, React components for rich markdown output
 
 ## Design System
 
@@ -132,23 +154,32 @@ Full design guidelines in `docs/DESIGN-GUIDELINES.md`. Key points:
 
 **Color palette:** Catppuccin Mocha with `ctp-*` Tailwind utility classes. `ctp-base` (#1e1e2e) for backgrounds, `ctp-text` (#cdd6f4) for text, `ctp-surface0` (#313244) for borders/cards, `ctp-overlay1` (#7f849c) for secondary text.
 
-**Fonts:**
+**Fonts (3 groups via user settings):**
 
-- UI: Geist, Inter (fallback: system-ui)
-- Code/Terminal: JetBrains Mono, Fira Code (fallback: Menlo, monospace)
-- Terminal font-size: 13px
+- App UI: Geist Sans, Inter (fallback: system-ui) - default 14px
+- Editor/Preview: JetBrains Mono, Fira Code (fallback: Menlo, monospace) - default 13px
+- Terminal: JetBrains Mono, Fira Code (fallback: Menlo, monospace) - default 14px
 
 **Component sizes:**
 
-- Git Header: 32px height
-- Pane Header: 40px height
+- Titlebar: 40px height
+- Pane Header: 36px height
 - Status Bar: 24px height
 - Buttons (app): `size="sm"` (32-36px)
 - Icons: `h-4 w-4` toolbar, `h-3 w-3` status, `strokeWidth={1.5}`
 
-**Tailwind config:** Extend colors with `brand` (mauve) and `ctp` (full Catppuccin Mocha palette) objects.
+## Build Commands
 
-**Terminal theme:** Custom `ITheme` matching Catppuccin Mocha palette (see `docs/DESIGN-GUIDELINES.md`).
+```bash
+pnpm dev              # concurrently (vite + electron)
+pnpm build:electron   # electron-builder
+pnpm test             # vitest multi-project (jsdom + node)
+```
+
+## Test Strategy
+
+- Frontend tests: jsdom environment, mock `@/lib/ipc`
+- Electron tests: node environment, pool: forks, mock fs/chokidar
 
 ## Platform Targets
 

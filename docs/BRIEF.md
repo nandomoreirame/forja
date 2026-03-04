@@ -16,7 +16,7 @@
 
 ## ✨ Solution (in one sentence)
 
-> Forja is an open source desktop client for Claude Code that delivers enhanced rendering (markdown, diffs, code blocks), project-based sessions, and git integration — all in a dedicated GUI built with Tauri 2 + React.
+> Forja is an open source desktop client for Claude Code that delivers enhanced rendering (markdown, diffs, code blocks), project-based sessions, and git integration — all in a dedicated GUI built with Electron + React.
 
 ---
 
@@ -111,7 +111,7 @@ Open source developer tooling builds reputation and fast organic adoption. The d
 
 | Milestone | Deadline | Status |
 |---|---|---|
-| Setup (Tauri 2 + React + PTY) | Week 1-2 | ⏳ Pending |
+| Setup (Electron + React + PTY) | Week 1-2 | ⏳ Pending |
 | Functional Project Selector | Week 2-3 | ⏳ Pending |
 | Claude Code Pane + Rendering | Week 3-5 | ⏳ Pending |
 | Git Integration | Week 5-6 | ⏳ Pending |
@@ -125,8 +125,7 @@ Open source developer tooling builds reputation and fast organic adoption. The d
 
 | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|
-| Learning curve in Rust/Tauri | High | High | Start with simpler backend (file system), evolve to PTY |
-| Complex PTY management | Medium | High | Use `portable-pty` crate, study Warp examples |
+| Complex PTY management | Medium | High | Use `node-pty` for cross-platform PTY |
 | Dependency on Claude Code CLI (Anthropic changes API) | Low | High | Maintain abstraction layer, follow changelog |
 | Slow community adoption | Medium | Medium | Launch on Product Hunt + Reddit r/ClaudeAI + X on day 1 |
 

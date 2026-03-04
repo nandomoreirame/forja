@@ -189,7 +189,7 @@ As a user, I want to select my project easily to start a Claude Code session wit
 | ID | Requirement | Priority | Notes |
 |---|---|---|---|
 | F1.1 | Display list of recent projects (last 10) | P0 | Persist in local config |
-| F1.2 | "Open Folder" button with native file picker | P0 | Use OS native dialog via Tauri |
+| F1.2 | "Open Folder" button with native file picker | P0 | Use Electron dialog API |
 | F1.3 | Display directory name and full path | P0 | Truncate long path |
 | F1.4 | Favorite projects (pin to top) | P1 | Drag to reorder |
 | F1.5 | Auto-discovery of Git repos in filesystem | P2 | Optional scan |
@@ -220,7 +220,7 @@ Main workspace area. A PTY running `claude` with enhanced rendering — transfor
 
 | ID | Requirement | Priority | Notes |
 |---|---|---|---|
-| F2.1 | PTY connected to `claude` process | P0 | Via Rust `portable-pty` |
+| F2.1 | PTY connected to `claude` process | P0 | Via node-pty |
 | F2.2 | Input field to send messages to Claude | P0 | Enter to send, Shift+Enter for new line |
 | F2.3 | Markdown rendering in output (headers, bold, lists) | P0 | Detect and render in real-time |
 | F2.4 | Code blocks with syntax highlighting | P0 | Use Shiki or Prism |
@@ -313,47 +313,46 @@ Displays Git context of the current project in header or sidebar: active branch 
 | Syntax Highlight | Shiki | Best highlight quality |
 | State | Zustand | Simple, no boilerplate |
 
-### Backend (Rust / Tauri)
+### Backend (Electron / Node.js)
 
 | Layer | Technology | Why |
 |---|---|---|
-| Desktop Framework | Tauri 2 | Rust backend + WebView, small binaries |
-| PTY Management | portable-pty (crate) | Cross-platform PTY |
-| VT Parser | vte (crate) | VT100/ANSI sequence parser |
-| File Watcher | notify (crate) | Cross-platform file watching |
-| Git Info | git2 (crate) or CLI | Bindings for libgit2 |
-| Config Storage | serde + toml | Simple, readable |
-| IPC | Tauri Commands + Events | Frontend ↔ Backend communication |
+| Desktop Framework | Electron | Node.js backend, mature ecosystem |
+| PTY Management | node-pty | Cross-platform PTY, used by VS Code |
+| File Watcher | chokidar | Cross-platform file watching |
+| Git Info | git CLI via child_process | Simple, reliable |
+| Config Storage | electron-store (JSON) | Simple, readable |
+| IPC | Electron IPC (contextBridge) | Frontend ↔ Backend communication |
 
 ### Architecture
 
 ```
 [React Frontend]
     |
-    | Tauri IPC (Commands + Events)
+    | Electron IPC (contextBridge + ipcMain)
     |
-[Rust Backend]
-    ├── PTY Manager (portable-pty)
+[Node.js Backend]
+    ├── PTY Manager (node-pty)
     │   └── Spawns `claude` process
-    │   └── Stream output → Frontend via Events
-    ├── File Watcher (notify)
+    │   └── Stream output → Frontend via IPC events
+    ├── File Watcher (chokidar)
     │   └── Monitors .git/ for changes
     │   └── Emits Git events → Frontend
-    ├── Git Reader (git2)
+    ├── Git Reader (child_process)
     │   └── Current branch
     │   └── File status
-    └── Config Manager (serde/toml)
+    └── Config Manager (electron-store)
         └── Recent projects
         └── User preferences
 ```
 
 **Key Decisions:**
 
-1. **xterm.js for raw terminal** — handle VT sequences in frontend, Rust does PTY
+1. **xterm.js for raw terminal** — handle VT sequences in frontend, Node.js does PTY
 2. **Hybrid rendering** — xterm.js for input/raw mode, React components for rendered output
-3. **Events for streaming** — Tauri Events to stream PTY output in real-time
-4. **Local config** — `~/.config/forja/config.toml` for recent projects and preferences
-5. **Git via CLI** — Use `git` via Command for MVP, migrate to `git2` if needed
+3. **Events for streaming** — Electron IPC events to stream PTY output in real-time
+4. **Local config** — `~/.config/forja/config.json` for recent projects and preferences
+5. **Git via CLI** — Use `git` via child_process for simplicity
 
 ---
 
@@ -408,7 +407,7 @@ User types message → Presses Enter
 
 | Requirement | Target | How to Measure |
 |---|---|---|
-| App startup time | < 2s | Tauri built-in metrics |
+| App startup time | < 2s | Electron performance metrics |
 | Project Selector load | < 200ms | Custom timer |
 | PTY response latency | < 50ms overhead | Benchmark vs direct terminal |
 | Markdown render (long output) | < 100ms | React Profiler |
@@ -417,7 +416,7 @@ User types message → Presses Enter
 ### Security
 
 - [ ] PTY runs with current user permissions (no escalation)
-- [ ] Tauri CSP configured (no eval, inline scripts)
+- [ ] CSP configured (no eval, inline scripts)
 - [ ] Local config doesn't store API keys (Claude Code manages this)
 - [ ] No telemetry without explicit opt-in
 
@@ -432,7 +431,7 @@ User types message → Presses Enter
 
 - [ ] macOS (primary target, Apple Silicon + Intel)
 - [ ] Linux (secondary target)
-- [ ] Windows (future — Tauri supports, but PTY has peculiarities)
+- [ ] Windows (future — PTY has peculiarities on Windows)
 
 ---
 
@@ -446,10 +445,10 @@ User types message → Presses Enter
 
 **Detection:**
 
-```rust
+```typescript
 // Check if claude is available
-Command::new("which").arg("claude").output()
-// or on Windows: where claude
+import { execSync } from 'child_process';
+execSync('which claude'); // or 'where claude' on Windows
 ```
 
 **Error Handling:**
@@ -459,7 +458,7 @@ Command::new("which").arg("claude").output()
 
 ---
 
-### Git CLI / libgit2
+### Git CLI
 
 **Purpose:** Branch information and file status
 
@@ -509,7 +508,7 @@ Command::new("which").arg("claude").output()
 
 **Problem:** `claude` process dies during session
 
-**Solution:** Monitor process exit code via Tauri
+**Solution:** Monitor process exit code via node-pty
 
 **UI Behavior:**
 
@@ -565,7 +564,7 @@ Command::new("which").arg("claude").output()
 
 - [ ] Hybrid rendering (xterm.js + React components): how to detect where output is pure markdown vs raw terminal?
 - [ ] Opt-in telemetry: which tool to use that respects privacy? (Plausible, self-hosted PostHog?)
-- [ ] Automatic app updates: use Tauri updater or leave it to the user?
+- [ ] Automatic app updates: use electron-updater or leave it to the user?
 - [ ] Icon and final name: is "Forja" definitive? (check trademark conflicts)
 
 ---

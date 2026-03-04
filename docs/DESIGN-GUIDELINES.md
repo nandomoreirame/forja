@@ -4,7 +4,7 @@
 
 **Date:** 02/22/2025
 **Version:** 1.0
-**UI Stack:** shadcn/ui + Tailwind CSS + Tauri 2
+**UI Stack:** shadcn/ui + Tailwind CSS + Electron
 
 ---
 
@@ -445,7 +445,7 @@ Status Bar: height 24px, bg-ctp-base, border-t border-ctp-surface0
 Split resizer: width 4px, bg-ctp-surface0, hover: bg-brand
 ```
 
-### Window Chrome (Tauri)
+### Window Chrome (Electron)
 
 - Native decorations: **macOS** — use default decorations (traffic lights)
 - Titlebar background: `bg-ctp-base` (match app)
@@ -786,7 +786,7 @@ import {
 
 The app is **dark-only** in MVP. There is no theme toggle.
 
-**Implementation (Tauri + React):**
+**Implementation (Electron + React):**
 
 ```jsx
 // app/layout.tsx or main.tsx

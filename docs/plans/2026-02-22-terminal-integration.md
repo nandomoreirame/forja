@@ -1197,7 +1197,7 @@ function EmptyState() {
         <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
         <h1 className="text-3xl font-bold text-ctp-text">Forja for Claude Code</h1>
         <p className="text-sm text-ctp-overlay1">
-          A dedicated desktop client for Claude Code
+          A dedicated desktop client for vibe coders
         </p>
       </div>
 

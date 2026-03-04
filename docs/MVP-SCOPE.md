@@ -12,7 +12,7 @@
 
 ### In one sentence, what does the MVP do?
 
-> Open source desktop app (Tauri 2 + React) that opens Claude Code with rendered markdown, syntax-highlighted code blocks, and visible Git context — transforming the raw terminal into a dedicated GUI.
+> Open source desktop app (Electron + React) that opens Claude Code with rendered markdown, syntax-highlighted code blocks, and visible Git context — transforming the raw terminal into a dedicated GUI.
 
 ### What hypothesis are we testing?
 
@@ -83,7 +83,7 @@
 | Monaco Editor in code blocks | High complexity without proportional value; xterm.js + Shiki solve it | v2.0 if there are requests |
 | Support for other AI agents | Exclusive Claude Code focus is Forja's differentiator | Never (out of scope by design) |
 | Cloud synchronization | Local-first is the proposal; cloud adds complexity and cost | v2.0 enterprise (if it gets there) |
-| Windows version in MVP | PTY on Windows has peculiarities; Tauri supports it but requires extra testing | v1.1 if there's demand |
+| Windows version in MVP | PTY on Windows has peculiarities; requires extra testing | v1.1 if there's demand |
 | Authentication/accounts | Claude Code manages its own auth; Forja doesn't need this | Never in current model |
 
 ---
@@ -99,7 +99,6 @@
 
 **Technical Scope Creep:**
 
-- [ ] ~~Pure Rust (no HTML/CSS) in frontend~~ → Learning curve + rich rendering becomes difficult
 - [ ] ~~GraphQL or custom API~~ → No external backend
 - [ ] ~~Database~~ → TOML config is sufficient
 - [ ] ~~Complex CI/CD at start~~ → Basic GitHub Actions works
@@ -111,14 +110,14 @@
 
 ### UI Framework
 
-**Choice:** Tauri 2 + React + TypeScript
+**Choice:** Electron + React + TypeScript
 
-**Justification:** Fernando is proficient in React; Rust is gradual learning in backend (PTY, file system, git) without sacrificing frontend speed.
+**Justification:** Fernando is proficient in React/TypeScript. Electron provides full Node.js backend with node-pty for PTY management, electron-store for config, and chokidar for file watching.
 
 **Don't do:**
 
-- ❌ Pure Rust (egui/iced) in MVP — curve too steep to deliver fast
-- ❌ Electron — bundle too large, Tauri's purpose is precisely to avoid this
+- ❌ Pure native UI (no HTML/CSS) — curve too steep and limits rich rendering
+- ❌ Tauri — migrated to Electron for simpler PTY management and Node.js ecosystem
 
 ---
 
@@ -133,14 +132,14 @@
 
 **Don't do:**
 
-- ❌ Implement custom VT parser in frontend — runs in Rust via `vte` if necessary
+- ❌ Implement custom VT parser in frontend — unnecessary complexity
 - ❌ Try to do everything in xterm.js — limitations for rich rendering
 
 ---
 
 ### Data Persistence
 
-**Choice:** Local TOML config (`~/.config/forja/config.toml`)
+**Choice:** Local JSON config (`~/.config/forja/config.json`) via electron-store
 
 **Persisted data:**
 
@@ -152,13 +151,13 @@
 
 - ❌ SQLite — overkill for this data
 - ❌ Firebase/Supabase — product is local-first
-- ❌ Manual JSON — TOML is more readable and has mature crates
+- ❌ Manual file I/O — electron-store handles JSON persistence
 
 ---
 
 ### Configuration and Build
 
-**Choice:** Tauri 2 with GitHub Actions for CI/CD
+**Choice:** Electron with electron-builder + GitHub Actions for CI/CD
 
 **Releases:** GitHub Releases with binaries for macOS (arm64 + x64) and Linux
 
@@ -256,23 +255,23 @@
 
 | Layer | Technology | Justification |
 |---|---|---|
-| Desktop Framework | Tauri 2 | Small binaries, Rust backend |
+| Desktop Framework | Electron | Node.js backend, mature ecosystem |
 | Frontend Language | TypeScript + React 19 | Familiarity, rich ecosystem |
 | Styling | Tailwind CSS + shadcn/ui | Speed, consistency |
 | Terminal | xterm.js | Mature, PTY rendering |
 | Markdown | react-markdown + remark-gfm | Extensible, lightweight |
 | Syntax Highlight | Shiki | Best quality |
 | State Management | Zustand | Simple, no boilerplate |
-| Backend PTY | portable-pty (Rust crate) | Cross-platform PTY |
-| File Watcher | notify (Rust crate) | Cross-platform |
-| Git | git CLI via Command | Simple for MVP |
-| Config | serde + toml (Rust) | Readable, mature |
+| Backend PTY | node-pty | Cross-platform PTY via Node.js |
+| File Watcher | chokidar | Cross-platform, 500ms debounce |
+| Git | git CLI via child_process | Simple for MVP |
+| Config | electron-store (JSON) | Readable, mature |
 
 ### What NOT to use
 
 - ❌ ~~Redux~~ → Zustand is sufficient
-- ❌ ~~Electron~~ → Tauri is the goal
-- ❌ ~~SQLite~~ → TOML config solves it
+- ❌ ~~Tauri~~ → Migrated to Electron for simpler PTY and Node.js ecosystem
+- ❌ ~~SQLite~~ → JSON config solves it
 - ❌ ~~Monaco Editor~~ → Shiki + xterm.js
 - ❌ ~~Styled Components~~ → Tailwind
 - ❌ ~~GraphQL~~ → No external API
@@ -285,7 +284,7 @@
 
 | Phase | Duration | Deliverables |
 |---|---|---|
-| **Setup** | 1 week | Tauri 2 + React + xterm.js working, basic PTY |
+| **Setup** | 1 week | Electron + React + xterm.js working, basic PTY |
 | **Project Selector** | 1 week | Complete UI, file picker, recent projects |
 | **Claude Code Pane** | 2 weeks | PTY connected, functional input/output |
 | **Markdown + Code Rendering** | 1 week | Complete enhanced rendering |
@@ -298,7 +297,7 @@
 ### Milestones
 
 ```
-Week 1: Setup (Tauri + React + PTY hello world)
+Week 1: Setup (Electron + React + PTY hello world)
 Week 2: Functional Project Selector
 Week 3-4: Claude Code Pane chatting with Claude
 Week 5: Markdown + Syntax Highlight
@@ -348,11 +347,10 @@ The MVP is ready when **ALL** conditions are true:
 
 | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|
-| Rust/Tauri learning curve | 🔴 High | 🔴 High | Start with simple examples, use mature crates, don't reinvent the wheel |
-| Complex PTY management | 🟡 Medium | 🔴 High | `portable-pty` has examples, study how Warp/Zed implement |
+| Complex PTY management | 🟡 Medium | 🔴 High | `node-pty` is mature, used by VS Code and Hyper |
 | Hybrid rendering (xterm + React) | 🟡 Medium | 🟡 Medium | Prototype early in week 1; fallback to pure xterm if necessary |
 | Claude Code CLI changes interface | 🟢 Low | 🔴 High | Monitor changelog, maintain abstraction layer |
-| Slow community adoption | 🟡 Medium | 🟡 Medium | Launch on Product Hunt, r/ClaudeAI, r/rust, X/Twitter on release day |
+| Slow community adoption | 🟡 Medium | 🟡 Medium | Launch on Product Hunt, r/ClaudeAI, X/Twitter on release day |
 | Scope creep during development | 🔴 High | 🟡 Medium | Review this document weekly, say NO |
 
 ---

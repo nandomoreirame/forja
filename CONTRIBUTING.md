@@ -8,14 +8,12 @@ Thank you for your interest in contributing to Forja! This guide will help you g
 |------|---------|---------|
 | **Node.js** | 22+ | [nodejs.org](https://nodejs.org/) |
 | **pnpm** | 9+ | `npm install -g pnpm` |
-| **Rust** | stable | [rustup.rs](https://rustup.rs/) |
-| **Tauri CLI** | 2.x | `pnpm add -g @tauri-apps/cli` |
 
 ### Linux additional dependencies
 
 ```bash
-# Ubuntu/Debian
-sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+# Ubuntu/Debian (for native modules like node-pty)
+sudo apt install build-essential python3
 ```
 
 ### macOS additional dependencies
@@ -31,75 +29,73 @@ xcode-select --install
 git clone https://github.com/nandomoreirame/forja.git
 cd forja
 
-# Install frontend dependencies
+# Install dependencies
 pnpm install
-
-# Verify Rust toolchain
-rustup update stable
 ```
 
 ## Development
 
 ```bash
-# Run the app in development mode (frontend + backend hot reload)
-pnpm tauri dev
-
-# Run frontend only (useful for UI work without Tauri)
+# Run the app in development mode (Vite + Electron with hot reload)
 pnpm dev
+
+# Run frontend only (useful for UI work without Electron)
+pnpm dev:vite
 ```
 
 ## Testing
 
 ```bash
-# Run frontend tests
+# Run all tests (frontend + electron)
 pnpm test
 
-# Run frontend tests in watch mode
-pnpm test:watch
-
-# Run backend tests
-cd backend && cargo test
+# Run tests in watch mode
+pnpm test -- --watch
 
 # Run a specific test file
 pnpm vitest run frontend/lib/__tests__/strip-ansi.test.ts
+
+# Run tests with coverage
+pnpm test:coverage
 ```
 
 ## Code Style
 
 - All code, variables, comments, and commits in **English**
-- Frontend: TypeScript, React 19, Tailwind CSS, shadcn/ui components
-- Backend: Rust, Tauri 2 commands and events
+- Frontend: TypeScript, React 19, Tailwind CSS 4, shadcn/ui components
+- Backend: TypeScript (Electron main process)
 - State management: Zustand stores
-- Testing: Vitest + React Testing Library (frontend), cargo test (backend)
+- Testing: Vitest + React Testing Library (frontend), Vitest with node environment (electron)
 - Icons: Lucide React (`strokeWidth={1.5}`)
 
 ## Project Structure
 
 ```
 forja/
-  backend/          # Rust (Tauri 2) backend
-    src/
-      lib.rs        # Tauri commands and app setup
-      pty.rs        # PTY management (portable-pty)
-      config.rs     # TOML config manager
-      watcher.rs    # File watcher (notify)
-      git_info.rs   # Git status reader
-      file_tree.rs  # Directory tree reader
-      file_reader.rs# File content reader
-      metrics.rs    # System metrics collector
-  frontend/         # React + TypeScript frontend
-    components/     # React components
-    stores/         # Zustand state stores
-    hooks/          # Custom React hooks
-    lib/            # Utility functions
-  docs/             # Documentation
+  electron/           # Electron main process (TypeScript)
+    main.ts           # Entry point, IPC handlers
+    preload.ts        # contextBridge for window.electronAPI
+    pty.ts            # PTY management (node-pty)
+    config.ts         # electron-store config manager
+    watcher.ts        # File watcher (chokidar)
+    git-info.ts       # Git status reader
+    metrics.ts        # System metrics collector
+    user-settings.ts  # User settings manager
+  frontend/           # React + TypeScript frontend
+    components/       # React components
+    stores/           # Zustand state stores
+    hooks/            # Custom React hooks
+    lib/              # Utility functions
+    styles/           # CSS (Tailwind + globals)
+  docs/               # Documentation
+  public/             # Static assets (icons, images)
 ```
 
 ## Pull Request Process
 
 1. Fork the repository and create a feature branch from `develop`
-2. Write tests for new functionality
-3. Ensure all tests pass (`pnpm test` and `cargo test`)
+2. Write tests for new functionality (TDD: Red-Green-Refactor)
+3. Ensure all tests pass (`pnpm test`)
 4. Submit a pull request to `develop`
 
 ## License

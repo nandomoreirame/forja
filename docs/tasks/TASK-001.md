@@ -448,7 +448,7 @@ const handleNewSessionType = useCallback(
 
 ## Notes
 
-- Tauri backend support for `sessionType` parameter should be verified
+- Electron backend support for `sessionType` parameter should be verified
 - Tab name could potentially include session type (e.g., "Claude Code #1" vs "Terminal #1") in a future enhancement
 
 ---

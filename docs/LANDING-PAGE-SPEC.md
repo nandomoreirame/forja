@@ -99,7 +99,7 @@ Convert visitors into users who download Forja and/or star the repository on Git
 
 **Mandatory elements:**
 
-1. **Badge / Label:** Identifier like "Open Source" or "Built with Tauri + Rust"
+1. **Badge / Label:** Identifier like "Open Source" or "Built with Electron + React"
 2. **Headline (H1):** Benefit-focused, short (max 8 words)
 3. **Subheadline:** 1-2 sentences explaining what it is and who it's for
 4. **CTAs:**
@@ -218,7 +218,7 @@ Convert visitors into users who download Forja and/or star the repository on Git
 - Visual: Header with branch + modified files
 - Focus: No need to open another terminal to check status
 
-**(Optional) Feature 4: Built with Tauri + Rust**
+**(Optional) Feature 4: Built with Electron + React**
 
 - Visual: Binary size vs Electron (comparative badge)
 - Focus: Native performance, no packaged Chromium
@@ -304,14 +304,14 @@ Description
 - Forja Logo (left)
 - Links: [GitHub] [Releases] [Docs] [License]
 - Credit: "Made with ♥ by Fernando Moreira"
-- Stack disclosure: "Built with Tauri + React + Rust"
+- Stack disclosure: "Built with Electron + React + TypeScript"
 
 **Layout:**
 
 ```
 [Logo Forja]   GitHub  Releases  Docs  License    Twitter/X
 
-Made by Fernando Moreira · Built with Tauri + React + Rust
+Made by Fernando Moreira · Built with Electron + React + TypeScript
 ```
 
 **Specs:**
