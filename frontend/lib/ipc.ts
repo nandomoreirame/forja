@@ -33,6 +33,7 @@ declare global {
         getVersion: () => Promise<string>;
         getElectronVersion: () => Promise<string>;
         isTilingDesktop: () => Promise<boolean>;
+        isDev: () => Promise<boolean>;
       };
     };
   }
@@ -108,6 +109,12 @@ export function isTilingDesktop(): Promise<boolean> {
   const api = getAPI();
   if (!api) return Promise.resolve(false);
   return api.app.isTilingDesktop();
+}
+
+export function isDev(): Promise<boolean> {
+  const api = getAPI();
+  if (!api) return Promise.resolve(false);
+  return api.app.isDev();
 }
 
 // --- Window ---

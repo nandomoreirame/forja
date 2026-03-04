@@ -1,0 +1,215 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+// Mock electron's app module
+vi.mock("electron", () => ({
+  app: {
+    getAppMetrics: vi.fn(),
+  },
+}));
+
+describe("app-metrics", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe("collectAppMetrics", () => {
+    it("returns the correct shape with aggregated process data", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 5.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 100 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+        {
+          pid: 2,
+          type: "Tab",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 8.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 50 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { collectAppMetrics } = await import("../app-metrics");
+      const result = collectAppMetrics();
+
+      expect(result).toEqual({
+        total_rss: (100 + 50) * 1024 * 1024,
+        heap_used: expect.any(Number),
+        heap_total: expect.any(Number),
+        total_cpu_percent: 13.0,
+        main_cpu_percent: 5.0,
+        renderer_cpu_percent: 8.0,
+        process_count: 2,
+      });
+    });
+
+    it("converts workingSetSize from KB to bytes", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 200 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { collectAppMetrics } = await import("../app-metrics");
+      const result = collectAppMetrics();
+
+      // workingSetSize is in KB, total_rss should be in bytes
+      expect(result.total_rss).toBe(200 * 1024 * 1024);
+    });
+
+    it("separates main (Browser) and renderer (Tab) CPU", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 3.5, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 0, privateBytes: 0, sharedBytes: 0 },
+        },
+        {
+          pid: 2,
+          type: "Tab",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 7.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 0, privateBytes: 0, sharedBytes: 0 },
+        },
+        {
+          pid: 3,
+          type: "Tab",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 2.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 0, privateBytes: 0, sharedBytes: 0 },
+        },
+        {
+          pid: 4,
+          type: "GPU",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 1.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 0, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { collectAppMetrics } = await import("../app-metrics");
+      const result = collectAppMetrics();
+
+      expect(result.main_cpu_percent).toBe(3.5);
+      expect(result.renderer_cpu_percent).toBe(9.0); // 7.0 + 2.0
+      expect(result.total_cpu_percent).toBe(13.5); // 3.5 + 7.0 + 2.0 + 1.0
+      expect(result.process_count).toBe(4);
+    });
+
+    it("returns heap_used and heap_total from process.memoryUsage", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { collectAppMetrics } = await import("../app-metrics");
+      const result = collectAppMetrics();
+
+      // heap values come from process.memoryUsage() - should be positive numbers
+      expect(result.heap_used).toBeGreaterThan(0);
+      expect(result.heap_total).toBeGreaterThan(0);
+      expect(result.heap_used).toBeLessThanOrEqual(result.heap_total);
+    });
+  });
+
+  describe("startAppMetricsLoop / stopAppMetricsLoop", () => {
+    it("sends app-metrics events to all windows at interval", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 2.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 50 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      startAppMetricsLoop(getWindows);
+
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledWith("app-metrics", expect.objectContaining({
+        total_rss: expect.any(Number),
+        process_count: 1,
+      }));
+
+      stopAppMetricsLoop();
+    });
+
+    it("does not send to destroyed windows", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => true };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      startAppMetricsLoop(getWindows);
+      vi.advanceTimersByTime(2000);
+
+      expect(mockSend).not.toHaveBeenCalled();
+
+      stopAppMetricsLoop();
+    });
+
+    it("stopAppMetricsLoop clears the interval", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      startAppMetricsLoop(getWindows);
+      stopAppMetricsLoop();
+
+      vi.advanceTimersByTime(4000);
+      expect(mockSend).not.toHaveBeenCalled();
+    });
+
+    it("does not start a second loop if already running", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      startAppMetricsLoop(getWindows);
+      startAppMetricsLoop(getWindows); // second call should be no-op
+
+      vi.advanceTimersByTime(2000);
+      // Should only send once per tick, not twice
+      expect(mockSend).toHaveBeenCalledTimes(1);
+
+      stopAppMetricsLoop();
+    });
+  });
+});

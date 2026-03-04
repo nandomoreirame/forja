@@ -28,6 +28,7 @@ const lazyImport = <T>(factory: () => Promise<T>) => {
 
 const getWatcher = lazyImport(() => import("./watcher.js"));
 const getMetrics = lazyImport(() => import("./metrics.js"));
+const getAppMetrics = lazyImport(() => import("./app-metrics.js"));
 const getConfig = lazyImport(() => import("./config.js"));
 const getGitInfo = lazyImport(() => import("./git-info.js"));
 const getFileTree = lazyImport(() => import("./file-tree.js"));
@@ -160,6 +161,13 @@ app.whenReady().then(async () => {
     return BrowserWindow.getAllWindows().map((w) => w.webContents);
   });
 
+  if (isDev) {
+    const appMetricsMod = await getAppMetrics();
+    appMetricsMod.startAppMetricsLoop(() => {
+      return BrowserWindow.getAllWindows().map((w) => w.webContents);
+    });
+  }
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -168,6 +176,10 @@ app.whenReady().then(async () => {
 app.on("window-all-closed", async () => {
   const metrics = await getMetrics();
   metrics.stopMetricsLoop();
+  if (isDev) {
+    const appMetricsMod = await getAppMetrics();
+    appMetricsMod.stopAppMetricsLoop();
+  }
   const userSettings = await getUserSettings();
   userSettings.stopSettingsWatcher();
   if (process.platform !== "darwin") app.quit();
@@ -472,3 +484,4 @@ ipcMain.handle("app:getName", () => app.getName());
 ipcMain.handle("app:getVersion", () => app.getVersion());
 ipcMain.handle("app:getElectronVersion", () => process.versions.electron);
 ipcMain.handle("app:is_tiling_desktop", () => isTilingDesktopSession());
+ipcMain.handle("app:isDev", () => isDev);
