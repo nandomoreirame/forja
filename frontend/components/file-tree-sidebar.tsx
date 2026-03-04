@@ -17,6 +17,7 @@ import {
 import { useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { FileIcon } from "./file-icon";
+import { ErrorBoundary } from "./error-boundary";
 import { FileTreeNode } from "./file-tree-node";
 import { GitChangesPane } from "./git-changes-pane";
 import {
@@ -356,22 +357,31 @@ export function FileTreeSidebar() {
         <span>Explorer</span>
       </button>
 
-      {explorerExpanded &&
-        (isMultiTree ? (
-          <MultiTreeView
-            trees={trees}
-            expandedPaths={expandedPaths}
-            workspaceName={activeWorkspaceName}
-            collapseAll={collapseAll}
-          />
-        ) : tree ? (
-          <SingleTreeView
-            tree={tree}
-            expandedPaths={expandedPaths}
-            toggleExpanded={toggleExpanded}
-            collapseAll={collapseAll}
-          />
-        ) : null)}
+      {explorerExpanded && (
+        <ErrorBoundary
+          fallback={
+            <div className="flex-1 flex items-center justify-center p-4 text-xs text-ctp-overlay1">
+              Failed to load file tree.
+            </div>
+          }
+        >
+          {isMultiTree ? (
+            <MultiTreeView
+              trees={trees}
+              expandedPaths={expandedPaths}
+              workspaceName={activeWorkspaceName}
+              collapseAll={collapseAll}
+            />
+          ) : tree ? (
+            <SingleTreeView
+              tree={tree}
+              expandedPaths={expandedPaths}
+              toggleExpanded={toggleExpanded}
+              collapseAll={collapseAll}
+            />
+          ) : null}
+        </ErrorBoundary>
+      )}
 
       {/* Add repository button when workspace is active */}
       {activeWorkspaceId && (

@@ -4,6 +4,7 @@ import { useFilePreviewStore } from "./file-preview";
 import { useGitDiffStore } from "./git-diff";
 
 export const APP_NAME = "Forja";
+export const FILE_TREE_MAX_DEPTH = 8;
 
 export interface FileNode {
   name: string;
@@ -71,7 +72,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
       try {
         const result = await invoke<DirectoryTree>(
           "read_directory_tree_command",
-          { path: projectPath, maxDepth: 8 },
+          { path: projectPath, maxDepth: FILE_TREE_MAX_DEPTH },
         );
         set((state) => ({
           trees: { ...state.trees, [projectPath]: result },

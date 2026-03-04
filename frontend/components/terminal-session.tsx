@@ -44,8 +44,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
 
     try {
       terminal.loadAddon(new WebglAddon());
-    } catch {
-      // WebGL not available, fall back to canvas renderer
+    } catch (err) {
+      console.info("[terminal] WebGL unavailable, using canvas renderer:", err);
     }
 
     terminal.attachCustomKeyEventHandler((event) => {
