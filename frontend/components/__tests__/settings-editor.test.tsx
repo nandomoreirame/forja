@@ -7,13 +7,27 @@ vi.mock("@/lib/ipc", () => ({
   listen: vi.fn().mockResolvedValue(() => {}),
 }));
 
-vi.mock("@/hooks/use-syntax-highlighter", () => ({
-  useSyntaxHighlighter: () => ({
-    isReady: true,
-    hasError: false,
-    highlight: vi.fn().mockResolvedValue('<pre><code><span class="line">highlighted</span></code></pre>'),
-    detectLanguage: vi.fn().mockReturnValue("json"),
-  }),
+vi.mock("monaco-editor", () => {
+  const disposable = { dispose: vi.fn() };
+  const mockModel = { dispose: vi.fn(), getValue: vi.fn(() => ""), setValue: vi.fn() };
+  const mockEditor = {
+    getValue: vi.fn(() => ""), setValue: vi.fn(), dispose: vi.fn(),
+    getModel: vi.fn(() => mockModel),
+    onDidChangeModelContent: vi.fn(() => disposable),
+    onDidDispose: vi.fn(() => disposable),
+    layout: vi.fn(), updateOptions: vi.fn(), focus: vi.fn(),
+    getAction: vi.fn(), addCommand: vi.fn(),
+  };
+  return {
+    editor: { create: vi.fn(() => mockEditor), defineTheme: vi.fn(), setTheme: vi.fn() },
+    Uri: { parse: vi.fn((s: string) => s) },
+    KeyMod: { CtrlCmd: 2048 }, KeyCode: { KeyS: 49 },
+  };
+});
+
+vi.mock("@/lib/monaco-theme", () => ({
+  catppuccinMochaTheme: { base: "vs-dark", inherit: true, rules: [], colors: {} },
+  THEME_NAME: "catppuccin-mocha",
 }));
 
 describe("SettingsEditor", () => {
@@ -30,19 +44,15 @@ describe("SettingsEditor", () => {
     });
   });
 
-  it("renders textarea with editor content from store", async () => {
+  it("renders Monaco editor container", async () => {
     const { SettingsEditor } = await import("../settings-editor");
-    render(<SettingsEditor />);
-
-    const textarea = screen.getByRole("textbox");
-    expect(textarea).toBeInTheDocument();
-    expect(textarea).toHaveValue(JSON.stringify(DEFAULT_SETTINGS, null, 2));
+    const { container } = render(<SettingsEditor />);
+    expect(container.querySelector("[data-testid='monaco-editor-container']")).toBeInTheDocument();
   });
 
   it("renders header with settings.json and Editing badge", async () => {
     const { SettingsEditor } = await import("../settings-editor");
     render(<SettingsEditor />);
-
     expect(screen.getByText("settings.json")).toBeInTheDocument();
     expect(screen.getByText("Editing")).toBeInTheDocument();
   });
@@ -50,10 +60,8 @@ describe("SettingsEditor", () => {
   it("close button calls closeSettingsEditor", async () => {
     const { useUserSettingsStore } = await import("@/stores/user-settings");
     const closeSpy = vi.spyOn(useUserSettingsStore.getState(), "closeSettingsEditor");
-
     const { SettingsEditor } = await import("../settings-editor");
     render(<SettingsEditor />);
-
     fireEvent.click(screen.getByLabelText("Close settings editor"));
     expect(closeSpy).toHaveBeenCalled();
   });
@@ -61,53 +69,24 @@ describe("SettingsEditor", () => {
   it("shows 'Unsaved changes' when dirty", async () => {
     const { useUserSettingsStore } = await import("@/stores/user-settings");
     useUserSettingsStore.setState({ editorDirty: true });
-
     const { SettingsEditor } = await import("../settings-editor");
     render(<SettingsEditor />);
-
     expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
   });
 
   it("shows error message when editorError is set", async () => {
     const { useUserSettingsStore } = await import("@/stores/user-settings");
     useUserSettingsStore.setState({ editorError: "Invalid JSON syntax" });
-
     const { SettingsEditor } = await import("../settings-editor");
     render(<SettingsEditor />);
-
     expect(screen.getByText("Invalid JSON syntax")).toBeInTheDocument();
-  });
-
-  it("Ctrl+S in textarea calls saveEditorContent", async () => {
-    const { useUserSettingsStore } = await import("@/stores/user-settings");
-    useUserSettingsStore.setState({ editorDirty: true });
-    const saveSpy = vi.spyOn(useUserSettingsStore.getState(), "saveEditorContent");
-
-    const { SettingsEditor } = await import("../settings-editor");
-    render(<SettingsEditor />);
-
-    const textarea = screen.getByRole("textbox");
-    fireEvent.keyDown(textarea, { key: "s", ctrlKey: true });
-
-    expect(saveSpy).toHaveBeenCalled();
   });
 
   it("shows 'Saved' when not dirty and no error", async () => {
     const { useUserSettingsStore } = await import("@/stores/user-settings");
     useUserSettingsStore.setState({ editorDirty: false, editorError: null });
-
     const { SettingsEditor } = await import("../settings-editor");
     render(<SettingsEditor />);
-
     expect(screen.getByText("Saved")).toBeInTheDocument();
-  });
-
-  it("renders highlighted code layer with aria-hidden", async () => {
-    const { SettingsEditor } = await import("../settings-editor");
-    render(<SettingsEditor />);
-
-    const hiddenLayer = document.querySelector('[aria-hidden="true"]');
-    expect(hiddenLayer).toBeInTheDocument();
-    expect(hiddenLayer).toHaveClass("code-viewer");
   });
 });

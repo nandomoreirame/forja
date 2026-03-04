@@ -1,16 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 import { Settings, X } from "lucide-react";
+import { MonacoEditor } from "./monaco-editor";
 import { useUserSettingsStore } from "@/stores/user-settings";
-import { useSyntaxHighlighter } from "@/hooks/use-syntax-highlighter";
-import { sanitizeHtml } from "@/lib/sanitize-html";
-
-const EDITOR_FONT = "var(--font-mono)";
-const EDITOR_FONT_SIZE = "var(--editor-font-size)";
-const EDITOR_LINE_HEIGHT = "1.5";
-const EDITOR_PADDING_Y = "1rem";
-const EDITOR_PADDING_X = "1rem";
-// Line number gutter: 4ch width + 1.5ch margin-right (from .code-viewer CSS)
-const GUTTER_WIDTH = "calc(4ch + 1.5ch)";
 
 export function SettingsEditor() {
   const editorContent = useUserSettingsStore((s) => s.editorContent);
@@ -20,50 +11,20 @@ export function SettingsEditor() {
   const closeSettingsEditor = useUserSettingsStore((s) => s.closeSettingsEditor);
   const saveEditorContent = useUserSettingsStore((s) => s.saveEditorContent);
 
-  const { isReady, highlight } = useSyntaxHighlighter();
-  const [highlightedHtml, setHighlightedHtml] = useState<string>("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const highlightRef = useRef<HTMLDivElement>(null);
+  const handleChange = useCallback(
+    (value: string) => {
+      setEditorContent(value);
+    },
+    [setEditorContent]
+  );
 
-  // Sync highlighted code with editor content
-  useEffect(() => {
-    if (!isReady) return;
-    let cancelled = false;
-    highlight(editorContent, "json").then((html) => {
-      if (!cancelled) setHighlightedHtml(html);
-    });
-    return () => { cancelled = true; };
-  }, [editorContent, isReady, highlight]);
-
-  // Sync scroll between textarea and highlighted code
-  const handleScroll = useCallback(() => {
-    if (textareaRef.current && highlightRef.current) {
-      highlightRef.current.scrollTop = textareaRef.current.scrollTop;
-      highlightRef.current.scrollLeft = textareaRef.current.scrollLeft;
-    }
-  }, []);
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-      e.preventDefault();
+  const handleSave = useCallback(
+    (value: string) => {
+      setEditorContent(value);
       saveEditorContent();
-    }
-    // Handle Tab key for indentation
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const textarea = e.currentTarget;
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      const value = textarea.value;
-      const newValue = value.substring(0, start) + "  " + value.substring(end);
-      setEditorContent(newValue);
-      // Restore cursor position after React re-render
-      requestAnimationFrame(() => {
-        textarea.selectionStart = start + 2;
-        textarea.selectionEnd = start + 2;
-      });
-    }
-  };
+    },
+    [setEditorContent, saveEditorContent]
+  );
 
   return (
     <div
@@ -90,44 +51,18 @@ export function SettingsEditor() {
         </button>
       </div>
 
-      {/* Editor with syntax highlight overlay */}
-      <div className="relative flex-1 select-text overflow-hidden">
-        {/* Highlighted code layer (background) */}
-        <div
-          ref={highlightRef}
-          aria-hidden="true"
-          className="code-viewer pointer-events-none absolute inset-0 overflow-hidden"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightedHtml) }}
-          style={{
-            fontFamily: EDITOR_FONT,
-            fontSize: EDITOR_FONT_SIZE,
-            lineHeight: EDITOR_LINE_HEIGHT,
-            padding: `${EDITOR_PADDING_Y} ${EDITOR_PADDING_X}`,
-            whiteSpace: "pre",
-            wordWrap: "normal",
-          }}
-        />
-        {/* Editable textarea layer (foreground, transparent text) */}
-        <textarea
-          ref={textareaRef}
+      {/* Monaco Editor */}
+      <div className="flex-1 overflow-hidden">
+        <MonacoEditor
           value={editorContent}
-          onChange={(e) => setEditorContent(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onScroll={handleScroll}
-          spellCheck={false}
-          aria-label="Settings JSON editor"
-          aria-describedby="settings-status"
-          className="absolute inset-0 h-full w-full resize-none overflow-auto bg-transparent outline-none"
-          style={{
-            fontFamily: EDITOR_FONT,
-            fontSize: EDITOR_FONT_SIZE,
-            lineHeight: EDITOR_LINE_HEIGHT,
-            padding: `${EDITOR_PADDING_Y} ${EDITOR_PADDING_X}`,
-            paddingLeft: `calc(${EDITOR_PADDING_X} + ${GUTTER_WIDTH})`,
-            color: "transparent",
-            caretColor: "var(--color-ctp-text)",
-            whiteSpace: "pre",
-            wordWrap: "normal",
+          language="json"
+          onChange={handleChange}
+          onSave={handleSave}
+          options={{
+            lineNumbers: "on",
+            folding: true,
+            formatOnPaste: true,
+            formatOnType: true,
           }}
         />
       </div>
