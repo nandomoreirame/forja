@@ -16,10 +16,11 @@ const __dirname = path.dirname(__filename);
 import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow } from "./pty.js";
 import { startWatcher, stopWatcher } from "./watcher.js";
 import { startMetricsLoop, stopMetricsLoop } from "./metrics.js";
-import { getRecentProjects, addRecentProject, getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, addProjectToWorkspace, removeProjectFromWorkspace, setActiveWorkspace, getActiveWorkspace } from "./config.js";
-import { getGitInfo } from "./git-info.js";
+import { getRecentProjects, addRecentProject, getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, addProjectToWorkspace, removeProjectFromWorkspace, setActiveWorkspace, getActiveWorkspace, getUiPreferences, saveUiPreferences, type UiPreferences } from "./config.js";
+import { getGitInfo, getGitFileStatuses } from "./git-info.js";
 import { readDirectoryTree } from "./file-tree.js";
 import { readFile } from "./file-reader.js";
+import { loadUserSettings, getUserSettingsPath, getCachedSettings, saveUserSettings, startSettingsWatcher, stopSettingsWatcher } from "./user-settings.js";
 
 const isDev = !app.isPackaged;
 const VITE_DEV_URL = "http://localhost:1420";
@@ -96,9 +97,15 @@ app.whenReady().then(() => {
     });
   }
 
+  loadUserSettings();
+
   createWindow();
 
   startMetricsLoop(() => {
+    return BrowserWindow.getAllWindows().map((w) => w.webContents);
+  });
+
+  startSettingsWatcher(() => {
     return BrowserWindow.getAllWindows().map((w) => w.webContents);
   });
 
@@ -109,6 +116,7 @@ app.whenReady().then(() => {
 
 app.on("window-all-closed", () => {
   stopMetricsLoop();
+  stopSettingsWatcher();
   if (process.platform !== "darwin") app.quit();
 });
 
@@ -184,15 +192,53 @@ ipcMain.handle("get_active_workspace", () => {
   return getActiveWorkspace();
 });
 
+// UI Preferences
+ipcMain.handle("get_ui_preferences", () => getUiPreferences());
+
+ipcMain.handle("save_ui_preferences", (_event, args: Partial<UiPreferences>) => {
+  saveUiPreferences(args);
+});
+
 // Open workspace in a new window
 ipcMain.handle("open_workspace_in_new_window", (_event, args: { workspaceId: string }) => {
   createWindow(undefined, args.workspaceId);
+});
+
+// User settings
+ipcMain.handle("get_user_settings", () => {
+  return loadUserSettings();
+});
+
+ipcMain.handle("open_settings_file", () => {
+  return shell.openPath(getUserSettingsPath());
+});
+
+ipcMain.handle("save_user_settings", (_event, args: { content: string }) => {
+  return saveUserSettings(args.content);
+});
+
+ipcMain.handle("set_window_opacity", (event, args: { opacity: number }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  const clamped = Math.min(Math.max(args.opacity, 0.3), 1.0);
+  win.setOpacity(clamped);
+});
+
+ipcMain.handle("set_zoom_level", (event, args: { level: number }) => {
+  const clamped = Math.min(Math.max(args.level, -5), 5);
+  event.sender.setZoomLevel(clamped);
 });
 
 // PTY operations
 ipcMain.handle("spawn_pty", (event, args: { tabId: string; path: string; sessionType?: string; windowLabel?: string }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) throw new Error("No window found for sender");
+
+  // Inject session settings from user config
+  const sessionType = args.sessionType || "claude";
+  const sessionConfig = getCachedSettings().sessions[sessionType];
+  const extraArgs = sessionConfig?.args;
+  const extraEnv = sessionConfig?.env;
 
   return spawnPty({
     tabId: args.tabId,
@@ -201,6 +247,8 @@ ipcMain.handle("spawn_pty", (event, args: { tabId: string; path: string; session
     windowLabel: args.windowLabel,
     windowId: win.id,
     sender: event.sender,
+    extraArgs,
+    extraEnv,
   });
 });
 
@@ -219,6 +267,10 @@ ipcMain.handle("close_pty", (_event, args: { tabId: string }) => {
 // Git info
 ipcMain.handle("get_git_info_command", (_event, args: { path: string }) => {
   return getGitInfo(args.path);
+});
+
+ipcMain.handle("get_git_file_statuses", (_event, args: { path: string }) => {
+  return getGitFileStatuses(args.path);
 });
 
 // File watcher

@@ -18,10 +18,16 @@ export interface Workspace {
   lastUsedAt: string;  // ISO date string
 }
 
+export interface UiPreferences {
+  sidebarSize: number;  // percentage (0-100)
+  previewSize: number;  // percentage (0-100)
+}
+
 interface ConfigSchema {
   recentProjects: RecentProject[];
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
+  uiPreferences: UiPreferences;
 }
 
 type TypedConfigStore = Store<ConfigSchema> & {
@@ -38,6 +44,7 @@ const store = new Store<ConfigSchema>({
     recentProjects: [],
     workspaces: [],
     activeWorkspaceId: null,
+    uiPreferences: { sidebarSize: 20, previewSize: 0 },
   },
 }) as TypedConfigStore;
 
@@ -180,4 +187,15 @@ export function getActiveWorkspace(): Workspace | null {
 
   const workspaces = store.get("workspaces");
   return workspaces.find((ws) => ws.id === activeId) ?? null;
+}
+
+// ─── UI Preferences ─────────────────────────────────────────────────────────
+
+export function getUiPreferences(): UiPreferences {
+  return store.get("uiPreferences");
+}
+
+export function saveUiPreferences(prefs: Partial<UiPreferences>): void {
+  const current = store.get("uiPreferences");
+  store.set("uiPreferences", { ...current, ...prefs });
 }

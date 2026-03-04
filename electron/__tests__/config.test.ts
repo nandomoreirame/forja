@@ -275,4 +275,41 @@ describe("config module", () => {
       expect(getActiveWorkspace()).toBeNull();
     });
   });
+
+  // ─── UI Preferences tests ──────────────────────────────────────────────────
+
+  describe("uiPreferences", () => {
+    it("returns default ui preferences when none are saved", async () => {
+      const { getUiPreferences } = await import("../config");
+      const prefs = getUiPreferences();
+
+      expect(prefs).toEqual({ sidebarSize: 20, previewSize: 0 });
+    });
+
+    it("saves and retrieves ui preferences", async () => {
+      const { saveUiPreferences, getUiPreferences } = await import("../config");
+      saveUiPreferences({ sidebarSize: 30, previewSize: 40 });
+      const prefs = getUiPreferences();
+
+      expect(prefs).toEqual({ sidebarSize: 30, previewSize: 40 });
+    });
+
+    it("supports partial updates preserving existing values", async () => {
+      const { saveUiPreferences, getUiPreferences } = await import("../config");
+      saveUiPreferences({ sidebarSize: 25 });
+      const prefs = getUiPreferences();
+
+      expect(prefs.sidebarSize).toBe(25);
+      expect(prefs.previewSize).toBe(0); // default preserved
+    });
+
+    it("supports updating only previewSize", async () => {
+      const { saveUiPreferences, getUiPreferences } = await import("../config");
+      saveUiPreferences({ previewSize: 35 });
+      const prefs = getUiPreferences();
+
+      expect(prefs.sidebarSize).toBe(20); // default preserved
+      expect(prefs.previewSize).toBe(35);
+    });
+  });
 });

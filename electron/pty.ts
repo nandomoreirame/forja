@@ -19,13 +19,15 @@ export interface SpawnOptions {
   windowLabel?: string;
   windowId: number;
   sender: WebContents;
+  extraArgs?: string[];
+  extraEnv?: Record<string, string>;
 }
 
 export function spawnPty(opts: SpawnOptions): string {
-  const { tabId, path: cwd, sessionType, windowId, sender } = opts;
+  const { tabId, path: cwd, sessionType, windowId, sender, extraArgs, extraEnv } = opts;
 
   const shell = sessionType === "terminal" ? getUserShell() : (sessionType || "claude");
-  const args: string[] = [];
+  const args: string[] = [...(extraArgs ?? [])];
 
   const ptyProcess = pty.spawn(shell, args, {
     name: "xterm-256color",
@@ -36,6 +38,7 @@ export function spawnPty(opts: SpawnOptions): string {
       ...process.env,
       TERM: "xterm-256color",
       COLORTERM: "truecolor",
+      ...(extraEnv ?? {}),
     },
   });
 
