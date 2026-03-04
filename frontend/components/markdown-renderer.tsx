@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 import { useSyntaxHighlighter } from "@/hooks/use-syntax-highlighter";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 interface MarkdownRendererProps {
   content: string;
@@ -39,7 +40,7 @@ function CodeBlock({
     return (
       <div
         className="code-viewer my-2 overflow-x-auto rounded-md text-sm"
-        dangerouslySetInnerHTML={{ __html: html }}
+        dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "var(--editor-font-size)",

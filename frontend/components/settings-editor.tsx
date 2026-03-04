@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Settings, X } from "lucide-react";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useSyntaxHighlighter } from "@/hooks/use-syntax-highlighter";
+import { sanitizeHtml } from "@/lib/sanitize-html";
 
 const EDITOR_FONT = "var(--font-mono)";
 const EDITOR_FONT_SIZE = "var(--editor-font-size)";
@@ -96,7 +97,7 @@ export function SettingsEditor() {
           ref={highlightRef}
           aria-hidden="true"
           className="code-viewer pointer-events-none absolute inset-0 overflow-hidden"
-          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(highlightedHtml) }}
           style={{
             fontFamily: EDITOR_FONT,
             fontSize: EDITOR_FONT_SIZE,
@@ -130,7 +131,7 @@ export function SettingsEditor() {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between border-t border-ctp-surface0 px-3 py-2">
+      <div className="flex h-9 items-center justify-between border-t border-ctp-surface0 px-3">
         <p className="text-xs text-ctp-overlay1">
           {editorError ? (
             <span className="text-ctp-red">{editorError}</span>

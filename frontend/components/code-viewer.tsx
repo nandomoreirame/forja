@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSyntaxHighlighter } from '@/hooks/use-syntax-highlighter';
+import { sanitizeHtml } from '@/lib/sanitize-html';
 
 interface CodeViewerProps {
   code: string;
@@ -31,7 +32,7 @@ export function CodeViewer({ code, filename }: CodeViewerProps) {
     return (
       <pre
         data-testid="code-viewer-fallback"
-        className="code-viewer overflow-y-auto overflow-x-scroll p-4 text-sm text-ctp-text"
+        className="code-viewer h-full overflow-y-auto overflow-x-scroll p-4 text-sm text-ctp-text"
         style={{
           fontFamily: 'var(--font-mono)',
           fontSize: 'var(--editor-font-size)',
@@ -45,7 +46,7 @@ export function CodeViewer({ code, filename }: CodeViewerProps) {
 
   if (!isReady || !html) {
     return (
-      <div className="flex items-center justify-center p-4">
+      <div className="flex h-full items-center justify-center p-4">
         <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
       </div>
     );
@@ -53,8 +54,8 @@ export function CodeViewer({ code, filename }: CodeViewerProps) {
 
   return (
     <div
-      className="code-viewer overflow-y-auto overflow-x-scroll p-4 text-sm"
-      dangerouslySetInnerHTML={{ __html: html }}
+      className="code-viewer h-full overflow-y-auto overflow-x-scroll p-4 text-sm"
+      dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
       style={{
         fontFamily: 'JetBrains Mono, Fira Code, monospace',
         fontSize: '13px',
