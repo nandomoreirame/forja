@@ -1,4 +1,6 @@
-import { Sparkles, Terminal } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { useInstalledClis } from "@/hooks/use-installed-clis";
+import type { SessionType } from "@/lib/cli-registry";
 import {
   Dialog,
   DialogContent,
@@ -6,11 +8,40 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog";
+import { CliIcon } from "./cli-icon";
 
 interface NewSessionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSessionTypeSelect: (sessionType: "claude-code" | "terminal") => void;
+  onSessionTypeSelect: (sessionType: SessionType) => void;
+}
+
+function SessionButton({
+  label,
+  description,
+  sessionType,
+  onClick,
+}: {
+  label: string;
+  description: string;
+  sessionType: SessionType;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={`${label} session`}
+      className="group flex flex-col items-center gap-3 rounded-lg border border-ctp-surface0 bg-ctp-mantle p-6 transition-all hover:border-brand hover:bg-ctp-surface0"
+    >
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ctp-surface0 transition-colors group-hover:bg-brand/20">
+        <CliIcon sessionType={sessionType} className="h-6 w-6" />
+      </div>
+      <div className="flex flex-col items-center gap-1">
+        <span className="text-sm font-medium text-ctp-text">{label}</span>
+        <span className="text-center text-xs text-ctp-overlay1">{description}</span>
+      </div>
+    </button>
+  );
 }
 
 export function NewSessionDialog({
@@ -18,6 +49,8 @@ export function NewSessionDialog({
   onOpenChange,
   onSessionTypeSelect,
 }: NewSessionDialogProps) {
+  const { installedClis, loading } = useInstalledClis();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -31,45 +64,43 @@ export function NewSessionDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-3 p-5">
-          <button
-            onClick={() => onSessionTypeSelect("claude-code")}
-            aria-label="Claude Code session"
-            className="group flex flex-col items-center gap-3 rounded-lg border border-ctp-surface0 bg-ctp-mantle p-6 transition-all hover:border-brand hover:bg-ctp-surface0"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ctp-surface0 transition-colors group-hover:bg-brand/20">
-              <Sparkles className="h-6 w-6 text-brand" strokeWidth={1.5} />
+        <div className="p-5">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-ctp-overlay1" />
             </div>
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-sm font-medium text-ctp-text">
-                Claude Code
-              </span>
-              <span className="text-center text-xs text-ctp-overlay1">
-                AI-assisted terminal with Claude Code
-              </span>
-            </div>
-          </button>
-
-          <button
-            onClick={() => onSessionTypeSelect("terminal")}
-            aria-label="Terminal session"
-            className="group flex flex-col items-center gap-3 rounded-lg border border-ctp-surface0 bg-ctp-mantle p-6 transition-all hover:border-brand hover:bg-ctp-surface0"
-          >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ctp-surface0 transition-colors group-hover:bg-brand/20">
-              <Terminal
-                className="h-6 w-6 text-ctp-subtext0"
-                strokeWidth={1.5}
+          ) : (
+            <div
+              className={`grid gap-3 ${
+                installedClis.length === 0
+                  ? "grid-cols-1"
+                  : installedClis.length >= 3
+                    ? "grid-cols-3"
+                    : "grid-cols-2"
+              }`}
+            >
+              {installedClis.map((cli) => (
+                <SessionButton
+                  key={cli.id}
+                  label={cli.displayName}
+                  description={cli.description}
+                  sessionType={cli.id}
+                  onClick={() => onSessionTypeSelect(cli.id)}
+                />
+              ))}
+              <SessionButton
+                label="Terminal"
+                description="Standard shell session"
+                sessionType="terminal"
+                onClick={() => onSessionTypeSelect("terminal")}
               />
             </div>
-            <div className="flex flex-col items-center gap-1">
-              <span className="text-sm font-medium text-ctp-text">
-                Terminal
-              </span>
-              <span className="text-center text-xs text-ctp-overlay1">
-                Standard shell session
-              </span>
-            </div>
-          </button>
+          )}
+          {!loading && installedClis.length === 0 && (
+            <p className="mt-3 text-center text-xs text-ctp-overlay0">
+              No AI CLI tools detected. Install claude, gemini, codex, or cursor-agent to use AI sessions.
+            </p>
+          )}
         </div>
       </DialogContent>
     </Dialog>

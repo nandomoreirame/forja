@@ -1,5 +1,6 @@
 import { usePty } from "@/hooks/use-pty";
 import { TERMINAL_OPTIONS } from "@/lib/terminal-theme";
+import type { SessionType } from "@/lib/cli-registry";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
@@ -12,10 +13,10 @@ interface TerminalSessionProps {
   tabId: string;
   path: string;
   isVisible: boolean;
-  sessionType?: "claude-code" | "terminal";
+  sessionType?: SessionType;
 }
 
-export function TerminalSession({ tabId, path, isVisible, sessionType = "claude-code" }: TerminalSessionProps) {
+export function TerminalSession({ tabId, path, isVisible, sessionType = "claude" }: TerminalSessionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);

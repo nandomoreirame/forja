@@ -1,6 +1,7 @@
 import { Plus, X } from "lucide-react";
 import { useSessionStateStore } from "@/stores/session-state";
 import type { TerminalTab } from "@/stores/terminal-tabs";
+import { CliIcon } from "./cli-icon";
 
 interface TabBarProps {
   tabs: TerminalTab[];
@@ -49,6 +50,7 @@ export function TabBar({
                         : "bg-ctp-surface1"
                 }`}
               />
+              <CliIcon sessionType={tab.sessionType} className="h-3.5 w-3.5" />
               <span>{tab.name}</span>
               <span
                 role="button"
