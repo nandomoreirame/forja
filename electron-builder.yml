@@ -1,0 +1,37 @@
+appId: dev.forja.terminal
+productName: Forja
+
+directories:
+  output: release
+  buildResources: assets/icons
+
+files:
+  - dist/**
+  - dist-electron/**
+  - node_modules/**
+
+extraMetadata:
+  main: dist-electron/main.js
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: assets/icons/icon.icns
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+    - target: deb
+      arch:
+        - x64
+  icon: assets/icons/
+  category: Development
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
