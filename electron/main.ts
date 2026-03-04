@@ -71,7 +71,6 @@ function createWindow(projectPath?: string, workspaceId?: string): BrowserWindow
 
   if (isDev) {
     win.loadURL(`${VITE_DEV_URL}${queryString}`);
-    win.webContents.openDevTools({ mode: "detach" });
   } else {
     const indexPath = path.join(__dirname, "..", "dist", "index.html");
     win.loadURL(
