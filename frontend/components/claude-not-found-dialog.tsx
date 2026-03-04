@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "@/lib/ipc";
 import { AlertTriangle, ExternalLink, RefreshCw, Terminal } from "lucide-react";
 import { useCallback, useState } from "react";
 import {
@@ -15,7 +15,7 @@ interface ClaudeNotFoundDialogProps {
 
 async function openExternal(url: string) {
   try {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    const { openUrl } = await import("@/lib/ipc");
     await openUrl(url);
   } catch {
     window.open(url, "_blank");

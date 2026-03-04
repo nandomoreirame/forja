@@ -22,7 +22,7 @@ interface AboutDialogProps {
 
 async function openExternal(url: string) {
   try {
-    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    const { openUrl } = await import("@/lib/ipc");
     await openUrl(url);
   } catch {
     window.open(url, "_blank");
@@ -96,7 +96,7 @@ function InfoRow({ label, value }: InfoRowProps) {
 interface AppInfo {
   name: string;
   version: string;
-  tauriVersion: string;
+  electronVersion: string;
   os: string;
   platform: string;
 }
@@ -174,7 +174,7 @@ function DetailsView({
       <div className="px-5 py-4">
         <div className="divide-y divide-ctp-base/30 overflow-hidden rounded-lg bg-ctp-surface0">
           <InfoRow label="Version" value={appInfo.version} />
-          <InfoRow label="Tauri Version" value={appInfo.tauriVersion || "N/A"} />
+          <InfoRow label="Electron Version" value={appInfo.electronVersion || "N/A"} />
           <InfoRow label="OS" value={appInfo.os || "Unknown"} />
           <InfoRow label="Platform" value={appInfo.platform || "Unknown"} />
         </div>
@@ -213,7 +213,7 @@ function CreditsView({ onBack }: { onBack: () => void }) {
             Built with
           </h3>
           <div className="divide-y divide-ctp-base/30 overflow-hidden rounded-lg bg-ctp-surface0">
-            {["Tauri", "React", "TypeScript", "xterm.js"].map((tech) => (
+            {["Electron", "React", "TypeScript", "xterm.js"].map((tech) => (
               <div
                 key={tech}
                 className="px-4 py-2.5 text-sm text-ctp-subtext0"
@@ -272,7 +272,7 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
   const [appInfo, setAppInfo] = useState<AppInfo>({
     name: "Forja",
     version: "0.1.0",
-    tauriVersion: "",
+    electronVersion: "",
     os: "",
     platform: "",
   });
@@ -280,18 +280,18 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
   useEffect(() => {
     async function loadInfo() {
       try {
-        const { getName, getVersion, getTauriVersion } = await import(
-          "@tauri-apps/api/app"
+        const { getName, getVersion, getElectronVersion } = await import(
+          "@/lib/ipc"
         );
-        const [name, version, tauriVersion] = await Promise.all([
+        const [name, version, electronVersion] = await Promise.all([
           getName(),
           getVersion(),
-          getTauriVersion(),
+          getElectronVersion(),
         ]);
 
         const os = navigator.platform;
         const platform = navigator.userAgent;
-        setAppInfo({ name, version, tauriVersion, os, platform });
+        setAppInfo({ name, version, electronVersion, os, platform });
       } catch {
         setAppInfo((prev) => ({
           ...prev,

@@ -66,7 +66,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   content,
 }: MarkdownRendererProps) {
   const openExternalLink = useCallback((href: string) => {
-    import("@tauri-apps/plugin-opener").then(({ openUrl }) => {
+    import("@/lib/ipc").then(({ openUrl }) => {
       openUrl(href);
     });
   }, []);

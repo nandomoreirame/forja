@@ -3,7 +3,7 @@ import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
-import { type Window, getCurrentWindow } from "@tauri-apps/api/window";
+import { getCurrentWindow } from "@/lib/ipc";
 import {
   Copy,
   FolderOpen,
@@ -28,7 +28,8 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-let _appWindow: Window | null = null;
+type ElectronWindow = ReturnType<typeof getCurrentWindow>;
+let _appWindow: ElectronWindow | null = null;
 function getAppWindow() {
   if (!_appWindow) _appWindow = getCurrentWindow();
   return _appWindow;
@@ -75,11 +76,11 @@ export function Titlebar() {
 
   return (
     <div
-      data-tauri-drag-region
+      style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
       className="relative flex h-10 shrink-0 select-none items-center justify-between px-3"
     >
       {/* Left: menu + sidebar toggle */}
-      <div className="flex items-center">
+      <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
@@ -136,14 +137,13 @@ export function Titlebar() {
       </div>
 
       <span
-        data-tauri-drag-region
         className="pointer-events-none absolute inset-x-0 text-center text-sm font-semibold text-ctp-overlay1"
       >
         {title}
       </span>
 
       {/* Right: window controls */}
-      <div className="flex items-center">
+      <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <button
           onClick={() => getAppWindow().minimize()}
           className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"

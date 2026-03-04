@@ -1,7 +1,27 @@
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { AlertCircle, Anvil, Clock, FolderOpen, PanelLeft, Plus, Search, TerminalSquare } from "lucide-react";
-import { Component, lazy, Suspense, useCallback, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from "react";
+import { invoke, listen } from "@/lib/ipc";
+import { getAllCliBinaries, type SessionType } from "@/lib/cli-registry";
+import {
+  AlertCircle,
+  Anvil,
+  Clock,
+  FolderOpen,
+  Layers,
+  PanelLeft,
+  Plus,
+  Search,
+  TerminalSquare,
+} from "lucide-react";
+import {
+  Component,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ErrorInfo,
+  type ReactNode,
+} from "react";
 import { MOD_KEY } from "./lib/platform";
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
 import { FilePreviewPane } from "./components/file-preview-pane";
@@ -16,6 +36,7 @@ import { useFileTreeStore } from "./stores/file-tree";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useSessionStateStore } from "./stores/session-state";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
+import { useWorkspaceStore } from "./stores/workspace";
 
 // Root error boundary to prevent blank screen on any React crash
 interface AppErrorBoundaryState {
@@ -23,7 +44,10 @@ interface AppErrorBoundaryState {
   error: Error | null;
 }
 
-class AppErrorBoundary extends Component<{ children: ReactNode }, AppErrorBoundaryState> {
+class AppErrorBoundary extends Component<
+  { children: ReactNode },
+  AppErrorBoundaryState
+> {
   constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -34,7 +58,7 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, AppErrorBounda
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Forja app error:', error, errorInfo);
+    console.error("Forja app error:", error, errorInfo);
   }
 
   render() {
@@ -42,9 +66,11 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, AppErrorBounda
       return (
         <div className="flex h-full flex-col items-center justify-center gap-4 bg-ctp-base p-8">
           <AlertCircle className="h-12 w-12 text-ctp-red" strokeWidth={1.5} />
-          <h1 className="text-lg font-semibold text-ctp-text">Something went wrong</h1>
+          <h1 className="text-lg font-semibold text-ctp-text">
+            Something went wrong
+          </h1>
           <p className="max-w-md text-center text-sm text-ctp-overlay1">
-            {this.state.error?.message || 'An unexpected error occurred.'}
+            {this.state.error?.message || "An unexpected error occurred."}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
@@ -61,13 +87,24 @@ class AppErrorBoundary extends Component<{ children: ReactNode }, AppErrorBounda
 
 // Lazy load non-essential components
 const CommandPalette = lazy(() =>
-  import("./components/command-palette").then((m) => ({ default: m.CommandPalette }))
+  import("./components/command-palette").then((m) => ({
+    default: m.CommandPalette,
+  }))
 );
 const NewSessionDialog = lazy(() =>
-  import("./components/new-session-dialog").then((m) => ({ default: m.NewSessionDialog }))
+  import("./components/new-session-dialog").then((m) => ({
+    default: m.NewSessionDialog,
+  }))
 );
 const ClaudeNotFoundDialog = lazy(() =>
-  import("./components/claude-not-found-dialog").then((m) => ({ default: m.ClaudeNotFoundDialog }))
+  import("./components/claude-not-found-dialog").then((m) => ({
+    default: m.ClaudeNotFoundDialog,
+  }))
+);
+const CreateWorkspaceDialog = lazy(() =>
+  import("./components/create-workspace-dialog").then((m) => ({
+    default: m.CreateWorkspaceDialog,
+  }))
 );
 
 interface PtyDataPayload {
@@ -99,9 +136,17 @@ function EmptyState() {
   const mod = MOD_KEY;
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
 
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const openWorkspaceInNewWindow = useWorkspaceStore(
+    (s) => s.openWorkspaceInNewWindow,
+  );
+  const setCreateWorkspaceOpen = useAppDialogsStore(
+    (s) => s.setCreateWorkspaceOpen,
+  );
+
   useEffect(() => {
     invoke<RecentProject[]>("get_recent_projects")
-      .then(setRecentProjects)
+      .then((result) => setRecentProjects(result ?? []))
       .catch(() => {});
   }, []);
 
@@ -188,6 +233,44 @@ function EmptyState() {
           </div>
         </div>
       )}
+
+      {/* Workspaces section */}
+      <div className="flex w-full max-w-sm flex-col gap-2">
+        <div className="flex items-center justify-between px-2">
+          <div className="flex items-center gap-2 text-xs text-ctp-overlay0">
+            <Layers className="h-3 w-3" strokeWidth={1.5} />
+            <span>Workspaces</span>
+          </div>
+          <button
+            onClick={() => setCreateWorkspaceOpen(true)}
+            className="inline-flex h-5 w-5 items-center justify-center rounded text-ctp-overlay0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+            aria-label="Create workspace"
+          >
+            <Plus className="h-3 w-3" strokeWidth={1.5} />
+          </button>
+        </div>
+        {workspaces.length > 0 ? (
+          <div className="flex flex-col gap-0.5">
+            {workspaces.map((workspace) => (
+              <button
+                key={workspace.id}
+                onClick={() => openWorkspaceInNewWindow(workspace.id)}
+                className="group flex flex-col gap-0.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-ctp-mantle"
+              >
+                <span className="text-sm text-ctp-subtext0 group-hover:text-ctp-text">
+                  {workspace.name}
+                </span>
+                <span className="text-xs text-ctp-overlay0">
+                  {workspace.projects.length}{" "}
+                  {workspace.projects.length === 1 ? "project" : "projects"}
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="px-3 text-xs text-ctp-overlay0">No workspaces yet</p>
+        )}
+      </div>
     </div>
   );
 }
@@ -220,6 +303,7 @@ function NoSessionsState({ onOpenDialog }: { onOpenDialog: () => void }) {
 function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const tree = useFileTreeStore((s) => s.tree);
   const currentPath = useFileTreeStore((s) => s.currentPath);
+  const trees = useFileTreeStore((s) => s.trees);
   const tabs = useTerminalTabsStore((s) => s.tabs);
   const activeTabId = useTerminalTabsStore((s) => s.activeTabId);
   const nextTabId = useTerminalTabsStore((s) => s.nextTabId);
@@ -227,7 +311,46 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const removeTab = useTerminalTabsStore((s) => s.removeTab);
   const setActiveTab = useTerminalTabsStore((s) => s.setActiveTab);
   const newSessionOpen = useAppDialogsStore((s) => s.newSessionOpen);
+  const createWorkspaceOpen = useAppDialogsStore((s) => s.createWorkspaceOpen);
   const [claudeNotFound, setClaudeNotFound] = useState(false);
+
+  // Read workspace param from query string (set once on mount)
+  const [workspaceId] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("workspace");
+  });
+
+  // Load workspace data on mount
+  useEffect(() => {
+    useWorkspaceStore.getState().loadWorkspaces();
+  }, []);
+
+  // When workspace param is present, activate it and load projects
+  useEffect(() => {
+    if (!workspaceId) return;
+
+    const load = async () => {
+      await useWorkspaceStore.getState().loadWorkspaces();
+      const workspaces = useWorkspaceStore.getState().workspaces;
+      const workspace = workspaces.find((w) => w.id === workspaceId);
+      if (!workspace) return;
+
+      await useWorkspaceStore.getState().setActiveWorkspace(workspaceId);
+
+      // Load all projects in the workspace
+      const fileTreeState = useFileTreeStore.getState();
+      for (const projectPath of workspace.projects) {
+        await fileTreeState.loadProjectTree(projectPath);
+      }
+
+      // Set the first project as active
+      if (workspace.projects.length > 0) {
+        fileTreeState.openProjectPath(workspace.projects[0]);
+      }
+    };
+
+    load();
+  }, [workspaceId]);
 
   // Auto-open project when launched via query param from a new window
   useEffect(() => {
@@ -236,12 +359,21 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     }
   }, [initialProjectPath, currentPath]);
 
-  // Check if claude CLI is installed when project opens
+  // Check if any AI CLI is installed when project opens
   useEffect(() => {
     if (!currentPath) return;
-    invoke("check_claude_installed").catch(() => {
-      setClaudeNotFound(true);
-    });
+    invoke<Record<string, boolean>>("detect_installed_clis", {
+      binaries: getAllCliBinaries(),
+    })
+      .then((results) => {
+        const anyInstalled = Object.values(results).some(Boolean);
+        if (!anyInstalled) {
+          setClaudeNotFound(true);
+        }
+      })
+      .catch(() => {
+        setClaudeNotFound(true);
+      });
   }, [currentPath]);
 
   // Refs for keyboard handler to avoid recreating listener
@@ -251,13 +383,13 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   activeTabIdRef.current = activeTabId;
 
   const handleNewSessionType = useCallback(
-    (sessionType: "claude-code" | "terminal") => {
+    (sessionType: SessionType) => {
       if (!currentPath) return;
       const tabId = nextTabId();
       addTab(tabId, currentPath, sessionType);
       useAppDialogsStore.getState().setNewSessionOpen(false);
     },
-    [currentPath, nextTabId, addTab]
+    [currentPath, nextTabId, addTab],
   );
 
   const openNewSessionDialog = useCallback(() => {
@@ -365,7 +497,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         const currentTabs = tabsRef.current;
         const currentActive = activeTabIdRef.current;
         if (currentTabs.length > 1 && currentActive) {
-          const currentIndex = currentTabs.findIndex((t) => t.id === currentActive);
+          const currentIndex = currentTabs.findIndex(
+            (t) => t.id === currentActive,
+          );
           const nextIndex = event.shiftKey
             ? (currentIndex - 1 + currentTabs.length) % currentTabs.length
             : (currentIndex + 1) % currentTabs.length;
@@ -378,62 +512,65 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     return () => window.removeEventListener("keydown", handler);
   }, [closeTab]);
 
-  const hasProject = tree && currentPath;
+  const hasProject = (tree && currentPath) || Object.keys(trees).length > 0;
 
   return (
     <AppErrorBoundary>
-    <div className="relative flex h-full flex-col bg-ctp-base">
-      <Titlebar />
-      <div className="flex flex-1 overflow-hidden">
-        <FileTreeSidebar />
-        <div className="flex min-w-0 flex-1 overflow-hidden">
-          <FilePreviewPane />
-          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-            {!hasProject ? (
-              <EmptyState />
-            ) : (
-              <>
-                <TabBar
-                  tabs={tabs}
-                  activeTabId={activeTabId}
-                  onSelectTab={setActiveTab}
-                  onCloseTab={closeTab}
-                  onNewTab={openNewSessionDialog}
-                />
-                {tabs.length === 0 ? (
-                  <NoSessionsState onOpenDialog={openNewSessionDialog} />
-                ) : (
-                  <div className="flex min-h-0 flex-1 overflow-hidden">
-                    <TerminalPane />
-                  </div>
-                )}
-              </>
-            )}
+      <div className="relative flex h-full flex-col bg-ctp-base">
+        <Titlebar />
+        <div className="flex flex-1 overflow-hidden">
+          <FileTreeSidebar />
+          <div className="flex min-w-0 flex-1 overflow-hidden">
+            <FilePreviewPane />
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+              {!hasProject ? (
+                <EmptyState />
+              ) : (
+                <>
+                  <TabBar
+                    tabs={tabs}
+                    activeTabId={activeTabId}
+                    onSelectTab={setActiveTab}
+                    onCloseTab={closeTab}
+                    onNewTab={openNewSessionDialog}
+                  />
+                  {tabs.length === 0 ? (
+                    <NoSessionsState onOpenDialog={openNewSessionDialog} />
+                  ) : (
+                    <div className="flex min-h-0 flex-1 overflow-hidden">
+                      <TerminalPane />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
+        <Statusbar />
+        <Suspense fallback={null}>
+          <CommandPalette />
+        </Suspense>
+        <Suspense fallback={null}>
+          {newSessionOpen && (
+            <NewSessionDialog
+              open={newSessionOpen}
+              onOpenChange={useAppDialogsStore.getState().setNewSessionOpen}
+              onSessionTypeSelect={handleNewSessionType}
+            />
+          )}
+        </Suspense>
+        <Suspense fallback={null}>
+          {claudeNotFound && (
+            <ClaudeNotFoundDialog
+              open={claudeNotFound}
+              onResolved={() => setClaudeNotFound(false)}
+            />
+          )}
+        </Suspense>
+        <Suspense fallback={null}>
+          {createWorkspaceOpen && <CreateWorkspaceDialog />}
+        </Suspense>
       </div>
-      <Statusbar />
-      <Suspense fallback={null}>
-        <CommandPalette />
-      </Suspense>
-      <Suspense fallback={null}>
-        {newSessionOpen && (
-          <NewSessionDialog
-            open={newSessionOpen}
-            onOpenChange={useAppDialogsStore.getState().setNewSessionOpen}
-            onSessionTypeSelect={handleNewSessionType}
-          />
-        )}
-      </Suspense>
-      <Suspense fallback={null}>
-        {claudeNotFound && (
-          <ClaudeNotFoundDialog
-            open={claudeNotFound}
-            onResolved={() => setClaudeNotFound(false)}
-          />
-        )}
-      </Suspense>
-    </div>
     </AppErrorBoundary>
   );
 }

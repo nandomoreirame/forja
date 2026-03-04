@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { invoke, listen, getCurrentWindow } from "@/lib/ipc";
 import { MemoryStick, Cpu, Database, HardDrive, GitBranch, FileText } from "lucide-react";
 import { useSystemMetrics } from "@/hooks/use-system-metrics";
 import { useFilePreviewStore } from "@/stores/file-preview";
