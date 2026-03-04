@@ -8,7 +8,10 @@ const ZOOM_STEP = 2;
 
 describe("useTerminalZoomStore", () => {
   beforeEach(() => {
-    useTerminalZoomStore.setState({ fontSize: DEFAULT_FONT_SIZE });
+    useTerminalZoomStore.setState({
+      baseFontSize: DEFAULT_FONT_SIZE,
+      fontSize: DEFAULT_FONT_SIZE,
+    });
   });
 
   it("starts with default font size of 14", () => {
@@ -72,5 +75,55 @@ describe("useTerminalZoomStore", () => {
 
     const state = useTerminalZoomStore.getState();
     expect(state.fontSize).toBe(DEFAULT_FONT_SIZE - ZOOM_STEP * 2);
+  });
+
+  it("has baseFontSize defaulting to 14", () => {
+    const state = useTerminalZoomStore.getState();
+    expect(state.baseFontSize).toBe(DEFAULT_FONT_SIZE);
+  });
+
+  it("setBaseFontSize changes baseFontSize and fontSize", () => {
+    useTerminalZoomStore.getState().setBaseFontSize(18);
+
+    const state = useTerminalZoomStore.getState();
+    expect(state.baseFontSize).toBe(18);
+    expect(state.fontSize).toBe(18);
+  });
+
+  it("zoomIn after setBaseFontSize uses new base", () => {
+    useTerminalZoomStore.getState().setBaseFontSize(18);
+    useTerminalZoomStore.getState().zoomIn();
+
+    const state = useTerminalZoomStore.getState();
+    expect(state.fontSize).toBe(20);
+  });
+
+  it("resetZoom resets to baseFontSize not hardcoded 14", () => {
+    useTerminalZoomStore.getState().setBaseFontSize(18);
+    useTerminalZoomStore.getState().zoomIn();
+    useTerminalZoomStore.getState().zoomIn();
+    useTerminalZoomStore.getState().resetZoom();
+
+    const state = useTerminalZoomStore.getState();
+    expect(state.fontSize).toBe(18);
+  });
+
+  it("setBaseFontSize clamps to valid range", () => {
+    useTerminalZoomStore.getState().setBaseFontSize(2);
+    expect(useTerminalZoomStore.getState().baseFontSize).toBe(MIN_FONT_SIZE);
+
+    useTerminalZoomStore.getState().setBaseFontSize(100);
+    expect(useTerminalZoomStore.getState().baseFontSize).toBe(MAX_FONT_SIZE);
+  });
+
+  it("has default fontFamily matching terminal default", () => {
+    const state = useTerminalZoomStore.getState();
+    expect(state.fontFamily).toContain("JetBrains Mono");
+  });
+
+  it("setFontFamily updates fontFamily", () => {
+    useTerminalZoomStore.getState().setFontFamily("Custom Font, monospace");
+    const state = useTerminalZoomStore.getState();
+    expect(state.fontFamily).toBe("Custom Font, monospace");
   });
 });

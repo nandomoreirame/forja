@@ -6,7 +6,6 @@ describe("useAppDialogsStore", () => {
     useAppDialogsStore.setState({
       shortcutsOpen: false,
       aboutOpen: false,
-      newSessionOpen: false,
       createWorkspaceOpen: false,
       createWorkspacePendingPath: null,
     });
@@ -16,7 +15,6 @@ describe("useAppDialogsStore", () => {
     const state = useAppDialogsStore.getState();
     expect(state.shortcutsOpen).toBe(false);
     expect(state.aboutOpen).toBe(false);
-    expect(state.newSessionOpen).toBe(false);
     expect(state.createWorkspaceOpen).toBe(false);
     expect(state.createWorkspacePendingPath).toBeNull();
   });
@@ -41,17 +39,6 @@ describe("useAppDialogsStore", () => {
     useAppDialogsStore.getState().setAboutOpen(true);
     useAppDialogsStore.getState().setAboutOpen(false);
     expect(useAppDialogsStore.getState().aboutOpen).toBe(false);
-  });
-
-  it("sets newSessionOpen to true", () => {
-    useAppDialogsStore.getState().setNewSessionOpen(true);
-    expect(useAppDialogsStore.getState().newSessionOpen).toBe(true);
-  });
-
-  it("sets newSessionOpen to false", () => {
-    useAppDialogsStore.getState().setNewSessionOpen(true);
-    useAppDialogsStore.getState().setNewSessionOpen(false);
-    expect(useAppDialogsStore.getState().newSessionOpen).toBe(false);
   });
 
   it("sets createWorkspaceOpen to true", () => {

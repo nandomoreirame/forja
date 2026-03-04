@@ -234,5 +234,56 @@ describe("useWorkspaceStore", () => {
 
       expect(mockInvoke).not.toHaveBeenCalled();
     });
+
+    it("clears existing file trees before loading new workspace projects", async () => {
+      const ws = makeWorkspace({
+        id: "ws-2",
+        projects: ["/project/new"],
+      });
+      useWorkspaceStore.setState({ workspaces: [ws] });
+
+      // Pre-populate file tree store with trees from a previous workspace
+      const mockLoadProjectTree = vi.fn().mockResolvedValue(undefined);
+      const mockOpenProjectPath = vi.fn();
+      useFileTreeStore.setState({
+        trees: {
+          "/project/old-a": { root: { name: "old-a", path: "/project/old-a", isDir: true } },
+          "/project/old-b": { root: { name: "old-b", path: "/project/old-b", isDir: true } },
+        },
+        expandedPaths: { "/project/old-a": true },
+        loadProjectTree: mockLoadProjectTree,
+        openProjectPath: mockOpenProjectPath,
+      });
+
+      mockInvoke.mockResolvedValueOnce(undefined); // set_active_workspace
+
+      await useWorkspaceStore.getState().activateWorkspace("ws-2");
+
+      // After activating new workspace, old trees must be cleared
+      const fileTreeState = useFileTreeStore.getState();
+      expect(fileTreeState.trees).not.toHaveProperty("/project/old-a");
+      expect(fileTreeState.trees).not.toHaveProperty("/project/old-b");
+      expect(fileTreeState.expandedPaths).toEqual({});
+      expect(mockLoadProjectTree).toHaveBeenCalledWith("/project/new");
+    });
+
+    it("does not open project path when workspace has no projects", async () => {
+      const ws = makeWorkspace({ id: "ws-empty", projects: [] });
+      useWorkspaceStore.setState({ workspaces: [ws] });
+
+      const mockLoadProjectTree = vi.fn().mockResolvedValue(undefined);
+      const mockOpenProjectPath = vi.fn();
+      useFileTreeStore.setState({
+        loadProjectTree: mockLoadProjectTree,
+        openProjectPath: mockOpenProjectPath,
+      });
+
+      mockInvoke.mockResolvedValueOnce(undefined); // set_active_workspace
+
+      await useWorkspaceStore.getState().activateWorkspace("ws-empty");
+
+      expect(mockLoadProjectTree).not.toHaveBeenCalled();
+      expect(mockOpenProjectPath).not.toHaveBeenCalled();
+    });
   });
 });
