@@ -211,6 +211,22 @@ async function buildUntrackedPatch(projectPath: string, relativePath: string): P
     .join("\n");
 }
 
+export async function getFileContentAtHead(
+  projectPath: string,
+  relativePath: string
+): Promise<string> {
+  const normalizedPath = normalizeRepoPath(relativePath);
+  try {
+    const { stdout } = await execFileAsync(
+      "git", ["show", `HEAD:${normalizedPath}`],
+      { cwd: projectPath, timeout: 5000, maxBuffer: 10 * 1024 * 1024 }
+    );
+    return stdout;
+  } catch {
+    return "";
+  }
+}
+
 export async function getGitFileDiff(
   projectPath: string,
   relativePath: string,

@@ -33,6 +33,7 @@ const getConfig = lazyImport(() => import("./config.js"));
 const getGitInfo = lazyImport(() => import("./git-info.js"));
 const getFileTree = lazyImport(() => import("./file-tree.js"));
 const getFileReader = lazyImport(() => import("./file-reader.js"));
+const getFileWriter = lazyImport(() => import("./file-writer.js"));
 const getUserSettings = lazyImport(() => import("./user-settings.js"));
 
 const isDev = !app.isPackaged;
@@ -140,7 +141,7 @@ app.whenReady().then(async () => {
         responseHeaders: {
           ...details.responseHeaders,
           "Content-Security-Policy": [
-            "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self';",
+            "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self';",
           ],
         },
       });
@@ -392,6 +393,14 @@ ipcMain.handle(
   },
 );
 
+ipcMain.handle(
+  "get_git_file_content_at_head",
+  async (_event, args: { path: string; relativePath: string }) => {
+    const gitInfo = await getGitInfo();
+    return gitInfo.getFileContentAtHead(args.path, args.relativePath);
+  }
+);
+
 // File watcher
 ipcMain.handle("start_watcher", async (event, args: { path: string }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
@@ -419,6 +428,12 @@ ipcMain.handle("read_file_command", async (_event, args: { path: string; project
   }
   const fileReader = await getFileReader();
   return fileReader.readFile(args.path, args.maxSizeMb ?? 10);
+});
+
+ipcMain.handle("write_file", async (_event, args: { path: string; content: string }) => {
+  const fileWriter = await getFileWriter();
+  await fileWriter.writeFile(args.path, args.content);
+  return { success: true };
 });
 
 // Window controls
