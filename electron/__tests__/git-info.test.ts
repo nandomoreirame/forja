@@ -3,7 +3,7 @@ import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { getGitInfo } from "../git-info";
+import { getGitInfo, getGitChangedFiles, getGitFileDiff } from "../git-info";
 
 let tmpDir: string;
 
@@ -65,5 +65,75 @@ describe("getGitInfo", () => {
     } finally {
       fs.rmSync(nonGitDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("getGitChangedFiles", () => {
+  it("lists changed files with status codes", async () => {
+    fs.writeFileSync(path.join(tmpDir, "README.md"), "# Test");
+    fs.writeFileSync(path.join(tmpDir, "delete-me.txt"), "to delete");
+    execSync("git add .", { cwd: tmpDir });
+    execSync("git commit -m 'init'", { cwd: tmpDir });
+
+    fs.writeFileSync(path.join(tmpDir, "README.md"), "# Updated");
+    fs.writeFileSync(path.join(tmpDir, "new-file.ts"), "export const v = 1;\n");
+    fs.unlinkSync(path.join(tmpDir, "delete-me.txt"));
+
+    const result = await getGitChangedFiles(tmpDir);
+
+    const byPath = new Map(result.map((item) => [item.path, item.status]));
+    expect(byPath.get("README.md")).toBe("M");
+    expect(byPath.get("new-file.ts")).toBe("??");
+    expect(byPath.get("delete-me.txt")).toBe("D");
+  });
+
+  it("returns empty list for non-git directory", async () => {
+    const nonGitDir = fs.mkdtempSync(path.join(os.tmpdir(), "forja-nongit-"));
+    try {
+      const result = await getGitChangedFiles(nonGitDir);
+      expect(result).toEqual([]);
+    } finally {
+      fs.rmSync(nonGitDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("getGitFileDiff", () => {
+  it("returns patch for modified file", async () => {
+    fs.writeFileSync(path.join(tmpDir, "README.md"), "# Test\n");
+    execSync("git add README.md", { cwd: tmpDir });
+    execSync("git commit -m 'init'", { cwd: tmpDir });
+
+    fs.writeFileSync(path.join(tmpDir, "README.md"), "# Test\n\nchanged line\n");
+
+    const result = await getGitFileDiff(tmpDir, "README.md");
+    expect(result.path).toBe("README.md");
+    expect(result.status).toBe("M");
+    expect(result.patch).toContain("@@");
+    expect(result.patch).toContain("+changed line");
+  });
+
+  it("returns full-addition style diff for untracked file", async () => {
+    fs.writeFileSync(path.join(tmpDir, "new-file.ts"), "console.log('x');\n");
+
+    const result = await getGitFileDiff(tmpDir, "new-file.ts");
+    expect(result.path).toBe("new-file.ts");
+    expect(result.status).toBe("??");
+    expect(result.patch).toContain("--- /dev/null");
+    expect(result.patch).toContain("+++ b/new-file.ts");
+    expect(result.patch).toContain("+console.log('x');");
+  });
+
+  it("returns deletion diff for removed file", async () => {
+    fs.writeFileSync(path.join(tmpDir, "remove.ts"), "export const x = 1;\n");
+    execSync("git add remove.ts", { cwd: tmpDir });
+    execSync("git commit -m 'add remove file'", { cwd: tmpDir });
+    fs.unlinkSync(path.join(tmpDir, "remove.ts"));
+
+    const result = await getGitFileDiff(tmpDir, "remove.ts");
+    expect(result.path).toBe("remove.ts");
+    expect(result.status).toBe("D");
+    expect(result.patch).toContain("--- a/remove.ts");
+    expect(result.patch).toContain("+++ /dev/null");
   });
 });

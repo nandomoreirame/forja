@@ -8,30 +8,78 @@ import {
 } from "electron";
 import * as path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
-import { exec } from "child_process";
+import { exec, execFile } from "child_process";
+import { assertPathWithinScope } from "./path-validation.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// PTY must be eager (resolveShellPath used at module scope)
 import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow } from "./pty.js";
-import { startWatcher, stopWatcher } from "./watcher.js";
-import { startMetricsLoop, stopMetricsLoop } from "./metrics.js";
-import { getRecentProjects, addRecentProject, getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, addProjectToWorkspace, removeProjectFromWorkspace, setActiveWorkspace, getActiveWorkspace, getUiPreferences, saveUiPreferences, type UiPreferences } from "./config.js";
-import { getGitInfo, getGitFileStatuses } from "./git-info.js";
-import { readDirectoryTree } from "./file-tree.js";
-import { readFile } from "./file-reader.js";
-import { loadUserSettings, getUserSettingsPath, getCachedSettings, saveUserSettings, startSettingsWatcher, stopSettingsWatcher } from "./user-settings.js";
+
+// Type-only imports for signatures
+import type { UiPreferences } from "./config.js";
+
+// Lazy module loaders (cached after first import)
+const lazyImport = <T>(factory: () => Promise<T>) => {
+  let mod: T | null = null;
+  return async () => mod ?? (mod = await factory());
+};
+
+const getWatcher = lazyImport(() => import("./watcher.js"));
+const getMetrics = lazyImport(() => import("./metrics.js"));
+const getConfig = lazyImport(() => import("./config.js"));
+const getGitInfo = lazyImport(() => import("./git-info.js"));
+const getFileTree = lazyImport(() => import("./file-tree.js"));
+const getFileReader = lazyImport(() => import("./file-reader.js"));
+const getUserSettings = lazyImport(() => import("./user-settings.js"));
 
 const isDev = !app.isPackaged;
 const VITE_DEV_URL = "http://localhost:1420";
 
+function isTilingDesktopSession(): boolean {
+  const desktop = (
+    process.env.XDG_CURRENT_DESKTOP ||
+    process.env.DESKTOP_SESSION ||
+    process.env.XDG_SESSION_DESKTOP ||
+    ""
+  ).toLowerCase();
+  return ["hyprland", "sway", "niri", "i3", "river"].some((wm) =>
+    desktop.includes(wm),
+  );
+}
+
 // Disable forced HiDPI scaling — use system's native scale factor
 app.commandLine.appendSwitch("force-device-scale-factor", "1");
+
+// GPU Acceleration
+app.commandLine.appendSwitch("ignore-gpu-blocklist");
+app.commandLine.appendSwitch("enable-gpu-rasterization");
+app.commandLine.appendSwitch("enable-oop-rasterization");
+app.commandLine.appendSwitch("enable-zero-copy");
+app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
+
+// Linux-specific GPU
+if (process.platform === "linux") {
+  const isWayland = !!process.env.WAYLAND_DISPLAY;
+  if (isWayland) {
+    app.commandLine.appendSwitch("ozone-platform", "wayland");
+    app.commandLine.appendSwitch(
+      "enable-features",
+      "VaapiVideoDecoder,VaapiVideoEncoder,CanvasOopRasterization",
+    );
+  } else {
+    app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
+  }
+}
+
+// V8 GC: larger semi-space reduces minor GC pauses
+app.commandLine.appendSwitch("js-flags", "--max-semi-space-size=64");
 
 // Augment PATH for finding `claude` and other tools
 process.env.PATH = resolveShellPath();
 
-function createWindow(projectPath?: string, workspaceId?: string): BrowserWindow {
+async function createWindow(projectPath?: string, workspaceId?: string): Promise<BrowserWindow> {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
@@ -60,9 +108,10 @@ function createWindow(projectPath?: string, workspaceId?: string): BrowserWindow
     }
   });
 
-  win.on("closed", () => {
+  win.on("closed", async () => {
     closeAllPtysForWindow(win.id);
-    stopWatcher(win.id);
+    const watcher = await getWatcher();
+    watcher.stopWatcher(win.id);
   });
 
   const params = new URLSearchParams();
@@ -83,7 +132,7 @@ function createWindow(projectPath?: string, workspaceId?: string): BrowserWindow
 }
 
 // CSP headers for production
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   if (!isDev) {
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
       callback({
@@ -97,15 +146,17 @@ app.whenReady().then(() => {
     });
   }
 
-  loadUserSettings();
+  const userSettings = await getUserSettings();
+  await userSettings.loadUserSettings();
 
-  createWindow();
+  await createWindow();
 
-  startMetricsLoop(() => {
+  const metrics = await getMetrics();
+  metrics.startMetricsLoop(() => {
     return BrowserWindow.getAllWindows().map((w) => w.webContents);
   });
 
-  startSettingsWatcher(() => {
+  userSettings.startSettingsWatcher(() => {
     return BrowserWindow.getAllWindows().map((w) => w.webContents);
   });
 
@@ -114,18 +165,23 @@ app.whenReady().then(() => {
   });
 });
 
-app.on("window-all-closed", () => {
-  stopMetricsLoop();
-  stopSettingsWatcher();
+app.on("window-all-closed", async () => {
+  const metrics = await getMetrics();
+  metrics.stopMetricsLoop();
+  const userSettings = await getUserSettings();
+  userSettings.stopSettingsWatcher();
   if (process.platform !== "darwin") app.quit();
 });
 
 // ---- IPC Handlers ----
 
+// Regex to validate binary names - only allow safe characters, no shell metacharacters
+const SAFE_BINARY_RE = /^[a-zA-Z0-9._-]+$/;
+
 // Check if `claude` CLI is installed
 ipcMain.handle("check_claude_installed", async () => {
   return new Promise<void>((resolve, reject) => {
-    exec("claude --version", { timeout: 5000 }, (err) => {
+    execFile("claude", ["--version"], { timeout: 5000 }, (err) => {
       if (err) reject(new Error("claude CLI not found"));
       else resolve();
     });
@@ -137,7 +193,12 @@ ipcMain.handle("detect_installed_clis", async (_event, args: { binaries: string[
   const results: Record<string, boolean> = {};
   const checks = args.binaries.map((binary) =>
     new Promise<void>((resolve) => {
-      exec(`which ${binary}`, { timeout: 3000 }, (err) => {
+      if (!SAFE_BINARY_RE.test(binary)) {
+        results[binary] = false;
+        resolve();
+        return;
+      }
+      execFile("which", [binary], { timeout: 3000 }, (err) => {
         results[binary] = !err;
         resolve();
       });
@@ -148,73 +209,92 @@ ipcMain.handle("detect_installed_clis", async (_event, args: { binaries: string[
 });
 
 // Recent projects
-ipcMain.handle("get_recent_projects", () => {
-  return getRecentProjects();
+ipcMain.handle("get_recent_projects", async () => {
+  const config = await getConfig();
+  return config.getRecentProjects();
 });
 
-ipcMain.handle("add_recent_project", (_event, args: { path: string }) => {
-  addRecentProject(args.path);
+ipcMain.handle("add_recent_project", async (_event, args: { path: string }) => {
+  const config = await getConfig();
+  config.addRecentProject(args.path);
 });
 
 // Open project in a new window
-ipcMain.handle("open_project_in_new_window", (_event, args: { path: string }) => {
-  createWindow(args.path);
+ipcMain.handle("open_project_in_new_window", async (_event, args: { path: string }) => {
+  await createWindow(args.path);
 });
 
 // Workspace CRUD
-ipcMain.handle("get_workspaces", () => getWorkspaces());
-
-ipcMain.handle("create_workspace", (_event, args: { name: string; initialProject?: string }) => {
-  return createWorkspace(args.name, args.initialProject);
+ipcMain.handle("get_workspaces", async () => {
+  const config = await getConfig();
+  return config.getWorkspaces();
 });
 
-ipcMain.handle("update_workspace", (_event, args: { id: string; name: string }) => {
-  return updateWorkspace(args.id, { name: args.name });
+ipcMain.handle("create_workspace", async (_event, args: { name: string; initialProject?: string }) => {
+  const config = await getConfig();
+  return config.createWorkspace(args.name, args.initialProject);
 });
 
-ipcMain.handle("delete_workspace", (_event, args: { id: string }) => {
-  return deleteWorkspace(args.id);
+ipcMain.handle("update_workspace", async (_event, args: { id: string; name: string }) => {
+  const config = await getConfig();
+  return config.updateWorkspace(args.id, { name: args.name });
 });
 
-ipcMain.handle("add_project_to_workspace", (_event, args: { workspaceId: string; projectPath: string }) => {
-  return addProjectToWorkspace(args.workspaceId, args.projectPath);
+ipcMain.handle("delete_workspace", async (_event, args: { id: string }) => {
+  const config = await getConfig();
+  return config.deleteWorkspace(args.id);
 });
 
-ipcMain.handle("remove_project_from_workspace", (_event, args: { workspaceId: string; projectPath: string }) => {
-  return removeProjectFromWorkspace(args.workspaceId, args.projectPath);
+ipcMain.handle("add_project_to_workspace", async (_event, args: { workspaceId: string; projectPath: string }) => {
+  const config = await getConfig();
+  return config.addProjectToWorkspace(args.workspaceId, args.projectPath);
 });
 
-ipcMain.handle("set_active_workspace", (_event, args: { id: string | null }) => {
-  setActiveWorkspace(args.id);
+ipcMain.handle("remove_project_from_workspace", async (_event, args: { workspaceId: string; projectPath: string }) => {
+  const config = await getConfig();
+  return config.removeProjectFromWorkspace(args.workspaceId, args.projectPath);
 });
 
-ipcMain.handle("get_active_workspace", () => {
-  return getActiveWorkspace();
+ipcMain.handle("set_active_workspace", async (_event, args: { id: string | null }) => {
+  const config = await getConfig();
+  config.setActiveWorkspace(args.id);
+});
+
+ipcMain.handle("get_active_workspace", async () => {
+  const config = await getConfig();
+  return config.getActiveWorkspace();
 });
 
 // UI Preferences
-ipcMain.handle("get_ui_preferences", () => getUiPreferences());
+ipcMain.handle("get_ui_preferences", async () => {
+  const config = await getConfig();
+  return config.getUiPreferences();
+});
 
-ipcMain.handle("save_ui_preferences", (_event, args: Partial<UiPreferences>) => {
-  saveUiPreferences(args);
+ipcMain.handle("save_ui_preferences", async (_event, args: Partial<UiPreferences>) => {
+  const config = await getConfig();
+  config.saveUiPreferences(args);
 });
 
 // Open workspace in a new window
-ipcMain.handle("open_workspace_in_new_window", (_event, args: { workspaceId: string }) => {
-  createWindow(undefined, args.workspaceId);
+ipcMain.handle("open_workspace_in_new_window", async (_event, args: { workspaceId: string }) => {
+  await createWindow(undefined, args.workspaceId);
 });
 
 // User settings
-ipcMain.handle("get_user_settings", () => {
-  return loadUserSettings();
+ipcMain.handle("get_user_settings", async () => {
+  const userSettings = await getUserSettings();
+  return userSettings.loadUserSettings();
 });
 
-ipcMain.handle("open_settings_file", () => {
-  return shell.openPath(getUserSettingsPath());
+ipcMain.handle("open_settings_file", async () => {
+  const userSettings = await getUserSettings();
+  return shell.openPath(userSettings.getUserSettingsPath());
 });
 
-ipcMain.handle("save_user_settings", (_event, args: { content: string }) => {
-  return saveUserSettings(args.content);
+ipcMain.handle("save_user_settings", async (_event, args: { content: string }) => {
+  const userSettings = await getUserSettings();
+  return userSettings.saveUserSettings(args.content);
 });
 
 ipcMain.handle("set_window_opacity", (event, args: { opacity: number }) => {
@@ -230,13 +310,14 @@ ipcMain.handle("set_zoom_level", (event, args: { level: number }) => {
 });
 
 // PTY operations
-ipcMain.handle("spawn_pty", (event, args: { tabId: string; path: string; sessionType?: string; windowLabel?: string }) => {
+ipcMain.handle("spawn_pty", async (event, args: { tabId: string; path: string; sessionType?: string; windowLabel?: string }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) throw new Error("No window found for sender");
 
   // Inject session settings from user config
+  const userSettings = await getUserSettings();
   const sessionType = args.sessionType || "claude";
-  const sessionConfig = getCachedSettings().sessions[sessionType];
+  const sessionConfig = userSettings.getCachedSettings().sessions[sessionType];
   const extraArgs = sessionConfig?.args;
   const extraEnv = sessionConfig?.env;
 
@@ -265,34 +346,67 @@ ipcMain.handle("close_pty", (_event, args: { tabId: string }) => {
 });
 
 // Git info
-ipcMain.handle("get_git_info_command", (_event, args: { path: string }) => {
-  return getGitInfo(args.path);
+ipcMain.handle("get_git_info_command", async (_event, args: { path: string }) => {
+  const gitInfo = await getGitInfo();
+  return gitInfo.getGitInfo(args.path);
 });
 
-ipcMain.handle("get_git_file_statuses", (_event, args: { path: string }) => {
-  return getGitFileStatuses(args.path);
+ipcMain.handle("get_git_file_statuses", async (_event, args: { path: string }) => {
+  const gitInfo = await getGitInfo();
+  return gitInfo.getGitFileStatuses(args.path);
 });
+
+ipcMain.handle("get_git_changed_files", async (_event, args: { path: string }) => {
+  const gitInfo = await getGitInfo();
+  return gitInfo.getGitChangedFiles(args.path);
+});
+
+ipcMain.handle(
+  "get_git_file_diff",
+  async (
+    _event,
+    args: {
+      path: string;
+      relativePath: string;
+      stage?: "combined" | "staged" | "unstaged";
+      maxBytes?: number;
+    },
+  ) => {
+    const gitInfo = await getGitInfo();
+    return gitInfo.getGitFileDiff(args.path, args.relativePath, {
+      stage: args.stage,
+      maxBytes: args.maxBytes,
+    });
+  },
+);
 
 // File watcher
-ipcMain.handle("start_watcher", (event, args: { path: string }) => {
+ipcMain.handle("start_watcher", async (event, args: { path: string }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
-  startWatcher(win.id, args.path, event.sender);
+  const watcher = await getWatcher();
+  watcher.startWatcher(win.id, args.path, event.sender);
 });
 
-ipcMain.handle("stop_watcher", (event) => {
+ipcMain.handle("stop_watcher", async (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
-  stopWatcher(win.id);
+  const watcher = await getWatcher();
+  watcher.stopWatcher(win.id);
 });
 
 // File system
-ipcMain.handle("read_directory_tree_command", (_event, args: { path: string; maxDepth?: number }) => {
-  return readDirectoryTree(args.path, args.maxDepth ?? 3);
+ipcMain.handle("read_directory_tree_command", async (_event, args: { path: string; maxDepth?: number }) => {
+  const fileTree = await getFileTree();
+  return fileTree.readDirectoryTree(args.path, args.maxDepth ?? 3);
 });
 
-ipcMain.handle("read_file_command", (_event, args: { path: string; maxSizeMb?: number }) => {
-  return readFile(args.path, args.maxSizeMb ?? 10);
+ipcMain.handle("read_file_command", async (_event, args: { path: string; projectPath?: string; maxSizeMb?: number }) => {
+  if (args.projectPath) {
+    assertPathWithinScope(args.projectPath, args.path);
+  }
+  const fileReader = await getFileReader();
+  return fileReader.readFile(args.path, args.maxSizeMb ?? 10);
 });
 
 // Window controls
@@ -339,8 +453,17 @@ ipcMain.handle("dialog:open", async (event, opts: { directory?: boolean; multipl
   return opts.multiple ? result.filePaths : result.filePaths[0];
 });
 
-// Shell
+// Shell – only allow http(s) URLs to prevent javascript:/file: scheme attacks
 ipcMain.handle("shell:openExternal", (_event, url: string) => {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error(`Invalid URL: ${url}`);
+  }
+  if (!["http:", "https:"].includes(parsed.protocol)) {
+    throw new Error(`Blocked URL scheme: ${parsed.protocol}`);
+  }
   return shell.openExternal(url);
 });
 
@@ -348,3 +471,4 @@ ipcMain.handle("shell:openExternal", (_event, url: string) => {
 ipcMain.handle("app:getName", () => app.getName());
 ipcMain.handle("app:getVersion", () => app.getVersion());
 ipcMain.handle("app:getElectronVersion", () => process.versions.electron);
+ipcMain.handle("app:is_tiling_desktop", () => isTilingDesktopSession());
