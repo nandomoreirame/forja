@@ -1,8 +1,12 @@
-import { Component, useMemo, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import { X, FileCode, AlertCircle } from 'lucide-react';
+import { invoke } from '@/lib/ipc';
 import { useFilePreviewStore } from '@/stores/file-preview';
+import { useUserSettingsStore } from '@/stores/user-settings';
+import { GIT_STATUS_LABELS } from '@/lib/git-constants';
 import { CodeViewer } from './code-viewer';
 import { MarkdownRenderer } from './markdown-renderer';
+import { SettingsEditor } from './settings-editor';
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -12,6 +16,61 @@ function formatFileSize(bytes: number): string {
   } else {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
+}
+
+function countLines(content: string): number {
+  let count = 1;
+  for (let i = 0; i < content.length; i++) {
+    if (content[i] === '\n') count++;
+  }
+  return count;
+}
+
+const LANGUAGE_DISPLAY: Record<string, string> = {
+  ts: "TypeScript",
+  tsx: "TypeScript JSX",
+  js: "JavaScript",
+  jsx: "JavaScript JSX",
+  py: "Python",
+  rs: "Rust",
+  go: "Go",
+  rb: "Ruby",
+  java: "Java",
+  cpp: "C++",
+  c: "C",
+  cs: "C#",
+  php: "PHP",
+  swift: "Swift",
+  kt: "Kotlin",
+  scala: "Scala",
+  sh: "Shell",
+  bash: "Bash",
+  md: "Markdown",
+  json: "JSON",
+  yaml: "YAML",
+  yml: "YAML",
+  toml: "TOML",
+  xml: "XML",
+  html: "HTML",
+  css: "CSS",
+  scss: "SCSS",
+  sql: "SQL",
+  graphql: "GraphQL",
+  vue: "Vue",
+  svelte: "Svelte",
+  dockerfile: "Dockerfile",
+};
+
+function getLanguageDisplay(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
+  return LANGUAGE_DISPLAY[ext] || ext.toUpperCase() || "Plain Text";
+}
+
+interface GitInfo {
+  isGitRepo: boolean;
+  branch: string | null;
+  fileStatus: string | null;
+  changedFiles: number;
 }
 
 interface ErrorBoundaryProps {
@@ -43,7 +102,7 @@ class PreviewErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div
           data-testid="file-preview-pane"
-          className="flex h-full basis-1/2 grow-0 shrink-0 flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
+          className="flex h-full w-full flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
         >
           <div className="flex h-9 shrink-0 items-center justify-end border-b border-ctp-surface0 px-3">
             <button
@@ -77,9 +136,30 @@ function FilePreviewPaneContent() {
   const isLoading = useFilePreviewStore((s) => s.isLoading);
   const error = useFilePreviewStore((s) => s.error);
   const closePreview = useFilePreviewStore((s) => s.closePreview);
+  const editorOpen = useUserSettingsStore((s) => s.editorOpen);
+  const [fileGitStatus, setFileGitStatus] = useState<string | null>(null);
 
   const filename = useMemo(() => currentFile?.split('/').pop() || '', [currentFile]);
   const isMarkdown = filename.endsWith('.md');
+  const lines = useMemo(() => (content ? countLines(content.content) : 0), [content]);
+  const language = useMemo(() => getLanguageDisplay(filename), [filename]);
+  const gitStatusEntry = fileGitStatus
+    ? GIT_STATUS_LABELS[fileGitStatus] || { label: fileGitStatus, color: "text-ctp-overlay1" }
+    : null;
+
+  useEffect(() => {
+    if (!currentFile) {
+      setFileGitStatus(null);
+      return;
+    }
+    invoke<GitInfo>("get_git_info_command", { filePath: currentFile })
+      .then((info) => setFileGitStatus(info.fileStatus))
+      .catch(() => setFileGitStatus(null));
+  }, [currentFile]);
+
+  if (editorOpen) {
+    return <SettingsEditor />;
+  }
 
   if (!isOpen) {
     return null;
@@ -88,7 +168,7 @@ function FilePreviewPaneContent() {
   return (
     <div
       data-testid="file-preview-pane"
-      className="flex h-full basis-1/2 grow-0 shrink-0 flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
+      className="flex h-full w-full flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
     >
       {/* Header */}
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
@@ -111,7 +191,7 @@ function FilePreviewPaneContent() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 select-text overflow-auto">
         {isLoading && (
           <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -150,10 +230,20 @@ function FilePreviewPaneContent() {
 
       {/* Footer */}
       {!isLoading && !error && content && (
-        <div className="border-t border-ctp-surface0 px-3 py-2">
-          <p className="text-xs text-ctp-overlay1">
-            {formatFileSize(content.size)}
-          </p>
+        <div className="flex h-7 shrink-0 items-center gap-3 border-t border-ctp-surface0 px-3 font-mono text-[11px] text-ctp-overlay1">
+          <span>{lines} {lines === 1 ? "line" : "lines"}</span>
+          <span className="text-ctp-surface1">|</span>
+          <span>{formatFileSize(content.size)}</span>
+          <span className="text-ctp-surface1">|</span>
+          <span>UTF-8</span>
+          <span className="text-ctp-surface1">|</span>
+          <span className="text-ctp-subtext0">{language}</span>
+          {gitStatusEntry && (
+            <>
+              <span className="text-ctp-surface1">|</span>
+              <span className={gitStatusEntry.color}>{gitStatusEntry.label}</span>
+            </>
+          )}
         </div>
       )}
     </div>

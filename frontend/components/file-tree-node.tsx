@@ -3,6 +3,8 @@ import { ChevronRight } from "lucide-react";
 import { FileIcon } from "./file-icon";
 import { useFileTreeStore, type FileNode } from "@/stores/file-tree";
 import { useFilePreviewStore } from "@/stores/file-preview";
+import { useGitStatusStore } from "@/stores/git-status";
+import { getGitBadgeLetter, getGitStatusColor } from "@/lib/git-constants";
 
 interface FileTreeNodeProps {
   node: FileNode;
@@ -14,7 +16,20 @@ export const FileTreeNode = memo(function FileTreeNode({ node, depth }: FileTree
   const toggleExpanded = useFileTreeStore((s) => s.toggleExpanded);
   const selectFile = useFileTreeStore((s) => s.selectFile);
   const currentFile = useFilePreviewStore((s) => s.currentFile);
+  const projectPath = useFileTreeStore((s) => s.currentPath);
   const isActive = !node.isDir && currentFile === node.path;
+
+  const relativePath = projectPath
+    ? node.path.substring(projectPath.length + 1)
+    : node.path;
+
+  const fileStatus = useGitStatusStore((s) => s.getFileStatus(relativePath));
+  const dirHasChanges = useGitStatusStore((s) =>
+    node.isDir ? s.hasChangedChildren(relativePath) : false,
+  );
+
+  const statusColor = fileStatus ? getGitStatusColor(fileStatus) : null;
+  const badgeLetter = fileStatus ? getGitBadgeLetter(fileStatus) : null;
 
   const handleClick = useCallback(() => {
     if (node.isDir) {
@@ -23,6 +38,12 @@ export const FileTreeNode = memo(function FileTreeNode({ node, depth }: FileTree
       selectFile(node.path);
     }
   }, [node.isDir, node.path, toggleExpanded, selectFile]);
+
+  const nameColor = statusColor
+    ? `${statusColor} group-hover:text-ctp-text`
+    : isActive
+      ? "text-ctp-text"
+      : "text-ctp-subtext0 group-hover:text-ctp-text";
 
   return (
     <button
@@ -50,11 +71,27 @@ export const FileTreeNode = memo(function FileTreeNode({ node, depth }: FileTree
         isOpen={expanded}
       />
 
-      <span className={`truncate text-sm group-hover:text-ctp-text ${
-        isActive ? "text-ctp-text" : "text-ctp-subtext0"
-      }`}>
+      <span className={`truncate text-sm ${nameColor}`}>
         {node.name}
       </span>
+
+      {/* Git status badge for files */}
+      {!node.isDir && badgeLetter && statusColor && (
+        <span
+          className={`ml-auto shrink-0 text-xs font-medium ${statusColor}`}
+          aria-label={`Git status: ${badgeLetter}`}
+        >
+          {badgeLetter}
+        </span>
+      )}
+
+      {/* Yellow dot indicator for directories with changes */}
+      {node.isDir && dirHasChanges && (
+        <span
+          className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-ctp-yellow"
+          aria-label="Directory has changes"
+        />
+      )}
     </button>
   );
 });

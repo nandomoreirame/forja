@@ -1,14 +1,10 @@
-import { invoke, listen } from "@/lib/ipc";
 import { getAllCliBinaries, type SessionType } from "@/lib/cli-registry";
+import { invoke, listen } from "@/lib/ipc";
 import {
   AlertCircle,
   Anvil,
   Clock,
   FolderOpen,
-  Layers,
-  PanelLeft,
-  Plus,
-  Search,
   TerminalSquare,
 } from "lucide-react";
 import {
@@ -20,23 +16,36 @@ import {
   useRef,
   useState,
   type ErrorInfo,
-  type ReactNode,
+  type ReactNode
 } from "react";
-import { MOD_KEY } from "./lib/platform";
-import { FileTreeSidebar } from "./components/file-tree-sidebar";
+import { usePanelRef } from "react-resizable-panels";
 import { FilePreviewPane } from "./components/file-preview-pane";
+import { FileTreeSidebar } from "./components/file-tree-sidebar";
+import { NewSessionDropdown } from "./components/new-session-dropdown";
 import { Statusbar } from "./components/statusbar";
 import { TabBar } from "./components/tab-bar";
 import { TerminalPane } from "./components/terminal-pane";
 import { Titlebar } from "./components/titlebar";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from "./components/ui/resizable";
+import { MOD_KEY } from "./lib/platform";
 import { useAppDialogsStore } from "./stores/app-dialogs";
 import { useCommandPaletteStore } from "./stores/command-palette";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
-import { useTerminalTabsStore } from "./stores/terminal-tabs";
+import { useGitStatusStore } from "./stores/git-status";
 import { useSessionStateStore } from "./stores/session-state";
+import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
+import { useUserSettingsStore } from "./stores/user-settings";
 import { useWorkspaceStore } from "./stores/workspace";
+import {
+  getPanelSizesForLayout,
+  usePanelPreferences,
+} from "./hooks/use-panel-preferences";
 
 // Root error boundary to prevent blank screen on any React crash
 interface AppErrorBoundaryState {
@@ -91,11 +100,6 @@ const CommandPalette = lazy(() =>
     default: m.CommandPalette,
   }))
 );
-const NewSessionDialog = lazy(() =>
-  import("./components/new-session-dialog").then((m) => ({
-    default: m.NewSessionDialog,
-  }))
-);
 const ClaudeNotFoundDialog = lazy(() =>
   import("./components/claude-not-found-dialog").then((m) => ({
     default: m.ClaudeNotFoundDialog,
@@ -132,15 +136,8 @@ interface RecentProject {
 }
 
 function EmptyState() {
-  const { openProject, openProjectPath, toggleSidebar } = useFileTreeStore();
-  const mod = MOD_KEY;
+  const { openProject, openProjectPath } = useFileTreeStore();
   const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
-
-  const workspaces = useWorkspaceStore((s) => s.workspaces);
-  const activateWorkspace = useWorkspaceStore((s) => s.activateWorkspace);
-  const setCreateWorkspaceOpen = useAppDialogsStore(
-    (s) => s.setCreateWorkspaceOpen,
-  );
 
   useEffect(() => {
     invoke<RecentProject[]>("get_recent_projects")
@@ -154,65 +151,16 @@ function EmptyState() {
         <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
         <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
         <p className="text-sm text-ctp-overlay1">
-          A dedicated desktop client for Claude Code
+          A dedicated desktop client for vibe coders
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
-        <button
-          onClick={openProject}
-          className="group flex items-center justify-between gap-8 rounded-md px-4 py-2 text-left transition-colors hover:bg-ctp-mantle"
-        >
-          <span className="flex items-center gap-2 text-sm text-ctp-subtext0 group-hover:text-ctp-text">
-            <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-            Open Project
-          </span>
-          <span className="flex items-center gap-1">
-            <Kbd>{mod}</Kbd>
-            <span className="text-[11px] text-ctp-surface1">+</span>
-            <Kbd>O</Kbd>
-          </span>
-        </button>
-
-        <button
-          onClick={toggleSidebar}
-          className="group flex items-center justify-between gap-8 rounded-md px-4 py-2 text-left transition-colors hover:bg-ctp-mantle"
-        >
-          <span className="flex items-center gap-2 text-sm text-ctp-subtext0 group-hover:text-ctp-text">
-            <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
-            Toggle Sidebar
-          </span>
-          <span className="flex items-center gap-1">
-            <Kbd>{mod}</Kbd>
-            <span className="text-[11px] text-ctp-surface1">+</span>
-            <Kbd>B</Kbd>
-          </span>
-        </button>
-
-        <button
-          onClick={() => useCommandPaletteStore.getState().open("commands")}
-          className="group flex items-center justify-between gap-8 rounded-md px-4 py-2 text-left transition-colors hover:bg-ctp-mantle"
-        >
-          <span className="flex items-center gap-2 text-sm text-ctp-subtext0 group-hover:text-ctp-text">
-            <Search className="h-4 w-4" strokeWidth={1.5} />
-            Command Palette
-          </span>
-          <span className="flex items-center gap-1">
-            <Kbd>{mod}</Kbd>
-            <span className="text-[11px] text-ctp-surface1">+</span>
-            <Kbd>Shift</Kbd>
-            <span className="text-[11px] text-ctp-surface1">+</span>
-            <Kbd>P</Kbd>
-          </span>
-        </button>
-      </div>
-
-      {recentProjects.length > 0 && (
-        <div className="flex w-full max-w-sm flex-col gap-2">
-          <div className="flex items-center gap-2 px-2 text-xs text-ctp-overlay0">
-            <Clock className="h-3 w-3" strokeWidth={1.5} />
-            <span>Recent Projects</span>
-          </div>
+      <div className="flex w-full max-w-sm flex-col gap-2">
+        <div className="flex items-center gap-2 px-2 text-xs text-ctp-overlay0">
+          <Clock className="h-3 w-3" strokeWidth={1.5} />
+          <span>Recent Projects</span>
+        </div>
+        {recentProjects.length > 0 ? (
           <div className="flex flex-col gap-0.5">
             {recentProjects.map((project) => (
               <button
@@ -229,51 +177,28 @@ function EmptyState() {
               </button>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Workspaces section */}
-      <div className="flex w-full max-w-sm flex-col gap-2">
-        <div className="flex items-center justify-between px-2">
-          <div className="flex items-center gap-2 text-xs text-ctp-overlay0">
-            <Layers className="h-3 w-3" strokeWidth={1.5} />
-            <span>Workspaces</span>
-          </div>
-          <button
-            onClick={() => setCreateWorkspaceOpen(true)}
-            className="inline-flex h-5 w-5 items-center justify-center rounded text-ctp-overlay0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-            aria-label="Create workspace"
-          >
-            <Plus className="h-3 w-3" strokeWidth={1.5} />
-          </button>
-        </div>
-        {workspaces.length > 0 ? (
-          <div className="flex flex-col gap-0.5">
-            {workspaces.map((workspace) => (
-              <button
-                key={workspace.id}
-                onClick={() => activateWorkspace(workspace.id)}
-                className="group flex flex-col gap-0.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-ctp-mantle"
-              >
-                <span className="text-sm text-ctp-subtext0 group-hover:text-ctp-text">
-                  {workspace.name}
-                </span>
-                <span className="text-xs text-ctp-overlay0">
-                  {workspace.projects.length}{" "}
-                  {workspace.projects.length === 1 ? "project" : "projects"}
-                </span>
-              </button>
-            ))}
-          </div>
         ) : (
-          <p className="px-3 text-xs text-ctp-overlay0">No workspaces yet</p>
+          <p className="px-3 text-xs text-ctp-overlay0">
+            No recent projects
+          </p>
         )}
+        <button
+          onClick={openProject}
+          className="mx-3 mt-2 flex items-center justify-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
+        >
+          <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
+          Open Project
+        </button>
       </div>
     </div>
   );
 }
 
-function NoSessionsState({ onOpenDialog }: { onOpenDialog: () => void }) {
+function NoSessionsState({
+  onSessionTypeSelect,
+}: {
+  onSessionTypeSelect: (type: SessionType) => void;
+}) {
   const mod = MOD_KEY;
 
   return (
@@ -281,18 +206,14 @@ function NoSessionsState({ onOpenDialog }: { onOpenDialog: () => void }) {
       <TerminalSquare className="h-12 w-12 text-ctp-surface1" strokeWidth={1.5} />
       <div className="flex flex-col items-center gap-2">
         <p className="text-sm text-ctp-overlay1">No active sessions</p>
-        <button
-          onClick={onOpenDialog}
-          className="group mt-2 flex items-center gap-2 rounded-md px-4 py-2 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
-        >
-          <Plus className="h-4 w-4" strokeWidth={1.5} />
-          New Session
-          <span className="ml-2 flex items-center gap-1">
+        <div className="mt-2 flex items-center gap-2">
+          <NewSessionDropdown onSessionTypeSelect={onSessionTypeSelect} />
+          <span className="flex items-center gap-1">
             <Kbd>{mod}</Kbd>
             <span className="text-[11px] text-ctp-surface1">+</span>
             <Kbd>T</Kbd>
           </span>
-        </button>
+        </div>
       </div>
     </div>
   );
@@ -302,15 +223,46 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const tree = useFileTreeStore((s) => s.tree);
   const currentPath = useFileTreeStore((s) => s.currentPath);
   const trees = useFileTreeStore((s) => s.trees);
+  const isSidebarOpen = useFileTreeStore((s) => s.isOpen);
+  const isPreviewOpen = useFilePreviewStore((s) => s.isOpen);
   const tabs = useTerminalTabsStore((s) => s.tabs);
   const activeTabId = useTerminalTabsStore((s) => s.activeTabId);
   const nextTabId = useTerminalTabsStore((s) => s.nextTabId);
   const addTab = useTerminalTabsStore((s) => s.addTab);
   const removeTab = useTerminalTabsStore((s) => s.removeTab);
   const setActiveTab = useTerminalTabsStore((s) => s.setActiveTab);
-  const newSessionOpen = useAppDialogsStore((s) => s.newSessionOpen);
   const createWorkspaceOpen = useAppDialogsStore((s) => s.createWorkspaceOpen);
   const [claudeNotFound, setClaudeNotFound] = useState(false);
+  const sidebarPanelRef = usePanelRef();
+  const previewPanelRef = usePanelRef();
+  const { panelSizes, loaded: panelPrefsLoaded, savePanelSize } =
+    usePanelPreferences();
+  const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
+  const effectivePanelSizes = getPanelSizesForLayout(hasProject, panelSizes);
+
+  // Sync sidebar panel collapse with store
+  useEffect(() => {
+    const panel = sidebarPanelRef.current;
+    if (!panel) return;
+    if (isSidebarOpen && panel.isCollapsed()) panel.expand();
+    else if (!isSidebarOpen && !panel.isCollapsed()) panel.collapse();
+  }, [isSidebarOpen]);
+
+  // Sync preview panel collapse with store
+  useEffect(() => {
+    const panel = previewPanelRef.current;
+    if (!panel) return;
+    if (isPreviewOpen) {
+      const preferredSize =
+        effectivePanelSizes.previewSize > 0
+          ? effectivePanelSizes.previewSize
+          : 35;
+      if (panel.isCollapsed()) panel.expand();
+      panel.resize(preferredSize);
+    } else if (!panel.isCollapsed()) {
+      panel.collapse();
+    }
+  }, [isPreviewOpen, effectivePanelSizes.previewSize]);
 
   // Read workspace param from query string (set once on mount)
   const [workspaceId] = useState(() => {
@@ -350,6 +302,40 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     load();
   }, [workspaceId]);
 
+  // Load user settings on mount and listen for changes
+  useEffect(() => {
+    useUserSettingsStore.getState().loadSettings();
+
+    const unlisten = listen<import("@/lib/settings-types").UserSettings>(
+      "settings:changed",
+      (event) => {
+        useUserSettingsStore.getState().setSettings(event.payload);
+      },
+    );
+
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
+  // Apply settings effects when they change
+  const settings = useUserSettingsStore((s) => s.settings);
+  useEffect(() => {
+    // Apply window opacity
+    invoke("set_window_opacity", { opacity: settings.window.opacity }).catch(() => {});
+    // Apply zoom level
+    invoke("set_zoom_level", { level: settings.window.zoomLevel }).catch(() => {});
+    // Terminal font settings
+    useTerminalZoomStore.getState().setBaseFontSize(settings.terminal.fontSize);
+    useTerminalZoomStore.getState().setFontFamily(settings.terminal.fontFamily);
+    // App (UI) font settings
+    document.documentElement.style.setProperty("--font-sans", settings.app.fontFamily);
+    document.documentElement.style.setProperty("font-size", `${settings.app.fontSize}px`);
+    // Editor/Preview (monospace areas) font settings
+    document.documentElement.style.setProperty("--font-mono", settings.editor.fontFamily);
+    document.documentElement.style.setProperty("--editor-font-size", `${settings.editor.fontSize}px`);
+  }, [settings]);
+
   // Auto-open project when launched via query param from a new window
   useEffect(() => {
     if (initialProjectPath && !currentPath) {
@@ -374,6 +360,28 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       });
   }, [currentPath]);
 
+  // Fetch git file statuses when project changes
+  useEffect(() => {
+    if (!currentPath) {
+      useGitStatusStore.getState().clearStatuses();
+      return;
+    }
+    useGitStatusStore.getState().fetchStatuses(currentPath);
+  }, [currentPath]);
+
+  // Refresh git file statuses on git:changed events
+  useEffect(() => {
+    const unlisten = listen("git:changed", () => {
+      const path = useFileTreeStore.getState().currentPath;
+      if (path) {
+        useGitStatusStore.getState().fetchStatuses(path);
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  }, []);
+
   // Refs for keyboard handler to avoid recreating listener
   const tabsRef = useRef(tabs);
   const activeTabIdRef = useRef(activeTabId);
@@ -385,14 +393,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       if (!currentPath) return;
       const tabId = nextTabId();
       addTab(tabId, currentPath, sessionType);
-      useAppDialogsStore.getState().setNewSessionOpen(false);
     },
     [currentPath, nextTabId, addTab],
   );
-
-  const openNewSessionDialog = useCallback(() => {
-    useAppDialogsStore.getState().setNewSessionOpen(true);
-  }, []);
 
   const closeTab = useCallback(
     async (tabId: string) => {
@@ -433,9 +436,26 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     const handler = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
 
+      if (mod && event.key === "s") {
+        const settingsState = useUserSettingsStore.getState();
+        if (settingsState.editorOpen && settingsState.editorDirty) {
+          event.preventDefault();
+          settingsState.saveEditorContent();
+          return;
+        }
+      }
+      if (mod && event.key === ",") {
+        event.preventDefault();
+        useUserSettingsStore.getState().openSettingsEditor();
+        useFilePreviewStore.getState().openPreview();
+        return;
+      }
       if (mod && event.key === "b") {
         event.preventDefault();
-        useFileTreeStore.getState().toggleSidebar();
+        const { tree: t, trees: tr } = useFileTreeStore.getState();
+        if (t !== null || Object.keys(tr).length > 0) {
+          useFileTreeStore.getState().toggleSidebar();
+        }
         return;
       }
       if (mod && event.key === "o") {
@@ -445,8 +465,11 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       }
       if (mod && event.key === "t") {
         event.preventDefault();
-        if (useFileTreeStore.getState().currentPath) {
-          useAppDialogsStore.getState().setNewSessionOpen(true);
+        const cp = useFileTreeStore.getState().currentPath;
+        if (cp) {
+          const tabStore = useTerminalTabsStore.getState();
+          const id = tabStore.nextTabId();
+          tabStore.addTab(id, cp, "terminal");
         }
         return;
       }
@@ -510,52 +533,116 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     return () => window.removeEventListener("keydown", handler);
   }, [closeTab]);
 
-  const hasProject = (tree && currentPath) || Object.keys(trees).length > 0;
-
   return (
     <AppErrorBoundary>
       <div className="relative flex h-full flex-col bg-ctp-base">
         <Titlebar />
-        <div className="flex flex-1 overflow-hidden">
-          <FileTreeSidebar />
-          <div className="flex min-w-0 flex-1 overflow-hidden">
-            <FilePreviewPane />
+        {panelPrefsLoaded && hasProject ? (
+          <ResizablePanelGroup
+            orientation="horizontal"
+            className="flex-1 overflow-hidden"
+          >
+            <ResizablePanel
+              panelRef={sidebarPanelRef}
+              defaultSize={`${effectivePanelSizes.sidebarSize}%`}
+              minSize="10%"
+              maxSize="40%"
+              collapsible
+              collapsedSize="0%"
+              order={1}
+              onResize={(size) => {
+                const isCollapsed = size.asPercentage === 0;
+                const storeIsOpen = useFileTreeStore.getState().isOpen;
+                if (isCollapsed && storeIsOpen) {
+                  useFileTreeStore.getState().toggleSidebar();
+                } else if (!isCollapsed && !storeIsOpen) {
+                  useFileTreeStore.getState().toggleSidebar();
+                }
+                if (!isCollapsed) {
+                  savePanelSize("sidebarSize", size.asPercentage);
+                }
+              }}
+            >
+              <FileTreeSidebar />
+            </ResizablePanel>
+            <ResizableHandle
+              disabled={!isSidebarOpen}
+              className={isSidebarOpen ? "" : "opacity-0 w-0"}
+            />
+            <ResizablePanel
+              defaultSize={`${100 - effectivePanelSizes.sidebarSize}%`}
+              order={2}
+            >
+              <ResizablePanelGroup orientation="horizontal">
+                <ResizablePanel
+                  panelRef={previewPanelRef}
+                  defaultSize={isPreviewOpen ? `${effectivePanelSizes.previewSize}%` : "0%"}
+                  minSize="20%"
+                  collapsible
+                  collapsedSize="0%"
+                  order={1}
+                  onResize={(size) => {
+                    // Only sync drag-to-collapse; preview opens only via file click
+                    if (
+                      size.asPercentage === 0 &&
+                      useFilePreviewStore.getState().isOpen
+                    ) {
+                      useFilePreviewStore.getState().togglePreview();
+                    }
+                    if (size.asPercentage > 0) {
+                      savePanelSize("previewSize", size.asPercentage);
+                    }
+                  }}
+                >
+                  <FilePreviewPane />
+                </ResizablePanel>
+                <ResizableHandle
+                  disabled={!isPreviewOpen}
+                  className={isPreviewOpen ? "" : "opacity-0 w-0"}
+                />
+                <ResizablePanel
+                  defaultSize={isPreviewOpen ? `${100 - effectivePanelSizes.previewSize}%` : "100%"}
+                  minSize="20%"
+                  order={2}
+                >
+                  <div className="flex h-full min-w-0 flex-col overflow-hidden">
+                    {!hasProject ? (
+                      <EmptyState />
+                    ) : (
+                      <>
+                        <TabBar
+                          tabs={tabs}
+                          activeTabId={activeTabId}
+                          onSelectTab={setActiveTab}
+                          onCloseTab={closeTab}
+                          onSessionTypeSelect={handleNewSessionType}
+                        />
+                        {tabs.length === 0 ? (
+                          <NoSessionsState
+                            onSessionTypeSelect={handleNewSessionType}
+                          />
+                        ) : (
+                          <div className="flex min-h-0 flex-1 overflow-hidden">
+                            <TerminalPane />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        ) : (
+          <div className="flex flex-1 overflow-hidden">
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-              {!hasProject ? (
-                <EmptyState />
-              ) : (
-                <>
-                  <TabBar
-                    tabs={tabs}
-                    activeTabId={activeTabId}
-                    onSelectTab={setActiveTab}
-                    onCloseTab={closeTab}
-                    onNewTab={openNewSessionDialog}
-                  />
-                  {tabs.length === 0 ? (
-                    <NoSessionsState onOpenDialog={openNewSessionDialog} />
-                  ) : (
-                    <div className="flex min-h-0 flex-1 overflow-hidden">
-                      <TerminalPane />
-                    </div>
-                  )}
-                </>
-              )}
+              <EmptyState />
             </div>
           </div>
-        </div>
+        )}
         <Statusbar />
         <Suspense fallback={null}>
           <CommandPalette />
-        </Suspense>
-        <Suspense fallback={null}>
-          {newSessionOpen && (
-            <NewSessionDialog
-              open={newSessionOpen}
-              onOpenChange={useAppDialogsStore.getState().setNewSessionOpen}
-              onSessionTypeSelect={handleNewSessionType}
-            />
-          )}
         </Suspense>
         <Suspense fallback={null}>
           {claudeNotFound && (

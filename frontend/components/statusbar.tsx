@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { invoke, listen, getCurrentWindow } from "@/lib/ipc";
-import { MemoryStick, Cpu, Database, HardDrive, GitBranch, FileText } from "lucide-react";
+import { MemoryStick, Cpu, Database, HardDrive, GitBranch } from "lucide-react";
 import { useSystemMetrics } from "@/hooks/use-system-metrics";
-import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
+import { useUserSettingsStore } from "@/stores/user-settings";
 import { Sparkline } from "./sparkline";
 import {
   HoverCard,
@@ -29,65 +29,6 @@ interface GitInfo {
   fileStatus: string | null;
   changedFiles: number;
 }
-
-const LANGUAGE_DISPLAY: Record<string, string> = {
-  ts: "TypeScript",
-  tsx: "TypeScript JSX",
-  js: "JavaScript",
-  jsx: "JavaScript JSX",
-  py: "Python",
-  rs: "Rust",
-  go: "Go",
-  rb: "Ruby",
-  java: "Java",
-  cpp: "C++",
-  c: "C",
-  cs: "C#",
-  php: "PHP",
-  swift: "Swift",
-  kt: "Kotlin",
-  scala: "Scala",
-  sh: "Shell",
-  bash: "Bash",
-  md: "Markdown",
-  json: "JSON",
-  yaml: "YAML",
-  yml: "YAML",
-  toml: "TOML",
-  xml: "XML",
-  html: "HTML",
-  css: "CSS",
-  scss: "SCSS",
-  sql: "SQL",
-  graphql: "GraphQL",
-  vue: "Vue",
-  svelte: "Svelte",
-  dockerfile: "Dockerfile",
-};
-
-function getLanguageDisplay(filename: string): string {
-  const ext = filename.split(".").pop()?.toLowerCase() || "";
-  return LANGUAGE_DISPLAY[ext] || ext.toUpperCase() || "Plain Text";
-}
-
-function countLines(content: string): number {
-  let count = 1;
-  for (let i = 0; i < content.length; i++) {
-    if (content[i] === '\n') count++;
-  }
-  return count;
-}
-
-const GIT_STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  M: { label: "Modified", color: "text-ctp-yellow" },
-  A: { label: "Added", color: "text-ctp-green" },
-  D: { label: "Deleted", color: "text-ctp-red" },
-  R: { label: "Renamed", color: "text-ctp-blue" },
-  C: { label: "Copied", color: "text-ctp-blue" },
-  "??": { label: "Untracked", color: "text-ctp-overlay0" },
-  AM: { label: "Added", color: "text-ctp-green" },
-  MM: { label: "Modified", color: "text-ctp-yellow" },
-};
 
 function usageColor(ratio: number): string {
   if (ratio > 0.9) return "bg-ctp-red";
@@ -173,72 +114,11 @@ function GitSection() {
   );
 }
 
-function FileInfoSection() {
-  const { isOpen, currentFile, content } = useFilePreviewStore();
-  const [fileStatus, setFileStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!currentFile) {
-      setFileStatus(null);
-      return;
-    }
-
-    invoke<GitInfo>("get_git_info_command", { filePath: currentFile })
-      .then((info) => setFileStatus(info.fileStatus))
-      .catch(() => setFileStatus(null));
-  }, [currentFile]);
-
-  const lines = useMemo(
-    () => (content ? countLines(content.content) : 0),
-    [content],
-  );
-
-  if (!isOpen || !currentFile || !content) {
-    return null;
-  }
-
-  const filename = currentFile.split("/").pop() || "";
-  const language = getLanguageDisplay(filename);
-  const statusEntry = fileStatus
-    ? GIT_STATUS_LABELS[fileStatus] || {
-        label: fileStatus,
-        color: "text-ctp-overlay1",
-      }
-    : null;
-
-  return (
-    <>
-      {/* Line count */}
-      <div className="flex items-center gap-1">
-        <FileText className="h-3 w-3" strokeWidth={1.5} />
-        <span>
-          {lines} {lines === 1 ? "line" : "lines"}
-        </span>
-      </div>
-
-      <span className="text-ctp-surface0">|</span>
-
-      {/* Encoding */}
-      <span>UTF-8</span>
-
-      <span className="text-ctp-surface0">|</span>
-
-      {/* Language */}
-      <span className="text-ctp-subtext0">{language}</span>
-
-      {/* File git status */}
-      {statusEntry && (
-        <>
-          <span className="text-ctp-surface0">|</span>
-          <span className={statusEntry.color}>{statusEntry.label}</span>
-        </>
-      )}
-    </>
-  );
-}
-
 export function Statusbar() {
+  const statusbarVisible = useUserSettingsStore((s) => s.settings.statusbar.visible);
   const { current, cpuHistory } = useSystemMetrics();
+
+  if (!statusbarVisible) return null;
 
   if (!current) {
     return (
@@ -427,8 +307,7 @@ export function Statusbar() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Right side: file info (only when preview open) + git (always visible) */}
-      <FileInfoSection />
+      {/* Right side: git info */}
       <GitSection />
     </div>
   );

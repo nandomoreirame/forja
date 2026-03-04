@@ -2,6 +2,8 @@ import { IS_MAC } from "@/lib/platform";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
+import { useUserSettingsStore } from "@/stores/user-settings";
+import { useFilePreviewStore } from "@/stores/file-preview";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { getCurrentWindow } from "@/lib/ipc";
 import {
@@ -14,6 +16,7 @@ import {
   PanelLeft,
   Plus,
   Search,
+  Settings,
   Square,
   X,
 } from "lucide-react";
@@ -40,7 +43,7 @@ const isMac = IS_MAC;
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
   const { aboutOpen, setAboutOpen, shortcutsOpen, setShortcutsOpen } = useAppDialogsStore();
-  const { isOpen, tree, currentPath, toggleSidebar, openProject } = useFileTreeStore();
+  const { isOpen, tree, trees, currentPath, toggleSidebar, openProject } = useFileTreeStore();
   const { nextTabId, addTab } = useTerminalTabsStore();
   const title = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
 
@@ -113,6 +116,16 @@ export function Titlebar() {
               </span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => {
+              useUserSettingsStore.getState().openSettingsEditor();
+              useFilePreviewStore.getState().openPreview();
+            }}>
+              <Settings className="h-3.5 w-3.5" />
+              Settings
+              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+                {isMac ? "\u2318" : "Ctrl"}+,
+              </span>
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setShortcutsOpen(true)}>
               <Keyboard className="h-3.5 w-3.5" />
               Shortcuts
@@ -127,13 +140,15 @@ export function Titlebar() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <button
-          onClick={toggleSidebar}
-          className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-          aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
-        >
-          <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
-        </button>
+        {(tree !== null || Object.keys(trees).length > 0) && (
+          <button
+            onClick={toggleSidebar}
+            className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+            aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
+          >
+            <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
+          </button>
+        )}
       </div>
 
       <span

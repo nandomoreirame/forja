@@ -111,6 +111,7 @@ export function TerminalSession({ tabId, path, isVisible, sessionType = "claude"
       if (!terminal || !fitAddon) return;
 
       terminal.options.fontSize = state.fontSize;
+      terminal.options.fontFamily = state.fontFamily;
       fitAddon.fit();
       const dims = fitAddon.proposeDimensions();
       if (dims) {

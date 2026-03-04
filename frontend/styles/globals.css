@@ -6,6 +6,7 @@
   --font-sans: "Geist Sans", "Inter", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Menlo",
     monospace;
+  --editor-font-size: 13px;
 
   /* Catppuccin Mocha palette */
   --color-ctp-crust: #11111b;
@@ -137,6 +138,7 @@ body {
   padding: 0;
   height: 100vh;
   width: 100vw;
+  user-select: none;
 }
 
 #root {
@@ -144,21 +146,22 @@ body {
   width: 100%;
 }
 
-/* Custom scrollbar for file tree */
-.file-tree-scroll::-webkit-scrollbar {
+/* Global custom scrollbar (Catppuccin Mocha) */
+::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
-.file-tree-scroll::-webkit-scrollbar-track {
+::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.file-tree-scroll::-webkit-scrollbar-thumb {
+::-webkit-scrollbar-thumb {
   background: var(--border-default);
   border-radius: 4px;
 }
 
-.file-tree-scroll::-webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: var(--border-strong);
 }
 
@@ -297,25 +300,6 @@ body {
   margin: 1rem 0;
 }
 
-/* Code viewer scrollbar */
-.code-viewer::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-.code-viewer::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.code-viewer::-webkit-scrollbar-thumb {
-  background: var(--border-default);
-  border-radius: 4px;
-}
-
-.code-viewer::-webkit-scrollbar-thumb:hover {
-  background: var(--border-strong);
-}
-
 /* Shiki code block overrides */
 .code-viewer pre {
   margin: 0;
@@ -325,7 +309,7 @@ body {
 
 .code-viewer code {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--editor-font-size);
   line-height: 1.5;
   counter-reset: line;
 }

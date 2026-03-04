@@ -7,6 +7,7 @@ import { useWorkspaceStore } from "@/stores/workspace";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import {
   ChevronsDownUp,
+  ChevronDown,
   FolderOpen,
   FolderPlus,
   Plus,
@@ -15,6 +16,15 @@ import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { FileIcon } from "./file-icon";
 import { FileTreeNode } from "./file-tree-node";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
 
 interface FlatNode {
   node: FileNode;
@@ -42,6 +52,7 @@ const OVERSCAN = 15;
 function WorkspaceHeader() {
   const workspaces = useWorkspaceStore((s) => s.workspaces);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const activateWorkspace = useWorkspaceStore((s) => s.activateWorkspace);
   const setCreateWorkspaceOpen = useAppDialogsStore(
     (s) => s.setCreateWorkspaceOpen,
   );
@@ -51,17 +62,46 @@ function WorkspaceHeader() {
   if (!activeWorkspace) return null;
 
   return (
-    <div className="flex h-8 shrink-0 items-center gap-1 border-b border-ctp-surface0 px-3">
-      <span className="flex-1 truncate text-xs font-semibold uppercase tracking-wider text-ctp-overlay1">
-        {activeWorkspace.name}
-      </span>
-      <button
-        onClick={() => setCreateWorkspaceOpen(true)}
-        className="inline-flex h-6 w-6 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-        aria-label="Create new workspace"
-      >
-        <Plus className="h-3 w-3" strokeWidth={1.5} />
-      </button>
+    <div className="shrink-0 border-b border-ctp-surface0 p-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+            aria-label="Workspace switcher"
+          >
+            <FolderOpen className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+            <span className="flex-1 truncate text-left">{activeWorkspace.name}</span>
+            <ChevronDown className="h-3 w-3 shrink-0" strokeWidth={1.5} />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="min-w-48 border-ctp-surface1 bg-ctp-mantle"
+        >
+          <DropdownMenuRadioGroup
+            value={activeWorkspaceId ?? ""}
+            onValueChange={(id) => activateWorkspace(id)}
+          >
+            {workspaces.map((ws) => (
+              <DropdownMenuRadioItem
+                key={ws.id}
+                value={ws.id}
+                className="text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+              >
+                {ws.name}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator className="bg-ctp-surface0" />
+          <DropdownMenuItem
+            onClick={() => setCreateWorkspaceOpen(true)}
+            className="text-xs text-ctp-overlay1 focus:bg-ctp-surface0 focus:text-ctp-text"
+          >
+            <Plus className="h-3 w-3" strokeWidth={1.5} />
+            Create workspace
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
@@ -115,7 +155,7 @@ function SingleTreeView({
       </div>
 
       {/* File tree */}
-      <div ref={scrollRef} className="file-tree-scroll flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div
           className="relative py-1"
           style={{ height: `${virtualizer.getTotalSize()}px` }}
@@ -200,7 +240,7 @@ function MultiTreeView({
       </div>
 
       {/* All project trees in a single scrollable list */}
-      <div ref={scrollRef} className="file-tree-scroll flex-1 overflow-y-auto">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div
           className="relative py-1"
           style={{ height: `${virtualizer.getTotalSize()}px` }}
@@ -242,11 +282,12 @@ export function FileTreeSidebar() {
   const isMultiTree = treeCount > 1;
 
   if (!isOpen) return null;
+  if (!tree && !isMultiTree) return null;
 
   return (
     <div
       data-testid="file-tree-sidebar"
-      className="flex h-full w-80 shrink-0 flex-col border-r border-ctp-surface0 bg-ctp-mantle"
+      className="flex h-full w-full flex-col border-r border-ctp-surface0 bg-ctp-mantle"
     >
       <WorkspaceHeader />
 
@@ -262,28 +303,7 @@ export function FileTreeSidebar() {
           expandedPaths={expandedPaths}
           collapseAll={collapseAll}
         />
-      ) : (
-        <>
-          {/* Header when no tree */}
-          <div className="flex h-9 shrink-0 items-center gap-2 border-b border-ctp-surface0 px-3">
-            <span className="flex-1 text-sm text-ctp-overlay1">Explorer</span>
-          </div>
-
-          {/* Empty state */}
-          <div className="file-tree-scroll flex-1 overflow-y-auto">
-            <div className="flex h-full flex-col items-center justify-center gap-3 px-4">
-              <p className="text-sm text-ctp-overlay1">No project loaded</p>
-              <button
-                onClick={openProject}
-                className="inline-flex items-center gap-2 rounded-md bg-ctp-surface0 px-3 py-1.5 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-surface1 hover:text-ctp-text"
-              >
-                <FolderOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
-                Add project
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+      ) : null}
 
       {/* Add repository button when workspace is active */}
       {activeWorkspaceId && (

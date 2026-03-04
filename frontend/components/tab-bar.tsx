@@ -1,14 +1,16 @@
-import { Plus, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useSessionStateStore } from "@/stores/session-state";
 import type { TerminalTab } from "@/stores/terminal-tabs";
+import type { SessionType } from "@/lib/cli-registry";
 import { CliIcon } from "./cli-icon";
+import { NewSessionDropdown } from "./new-session-dropdown";
 
 interface TabBarProps {
   tabs: TerminalTab[];
   activeTabId: string | null;
   onSelectTab: (id: string) => void;
   onCloseTab: (id: string) => void;
-  onNewTab: () => void;
+  onSessionTypeSelect: (type: SessionType) => void;
 }
 
 export function TabBar({
@@ -16,7 +18,7 @@ export function TabBar({
   activeTabId,
   onSelectTab,
   onCloseTab,
-  onNewTab,
+  onSessionTypeSelect,
 }: TabBarProps) {
   const sessionStates = useSessionStateStore((s) => s.states);
 
@@ -70,13 +72,7 @@ export function TabBar({
           );
         })}
       </div>
-      <button
-        aria-label="New tab"
-        onClick={onNewTab}
-        className="flex h-9 w-9 items-center justify-center text-ctp-overlay1 transition-colors hover:text-ctp-text"
-      >
-        <Plus className="h-4 w-4" strokeWidth={1.5} />
-      </button>
+      <NewSessionDropdown onSessionTypeSelect={onSessionTypeSelect} />
     </div>
   );
 }
