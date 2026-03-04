@@ -34,7 +34,7 @@ export function startWatcher(
     if (session.debounceTimer) clearTimeout(session.debounceTimer);
     session.debounceTimer = setTimeout(() => {
       if (!sender.isDestroyed()) {
-        sender.send("git-changed", { path: projectPath });
+        sender.send("git:changed", { path: projectPath });
       }
     }, DEBOUNCE_MS);
   };
@@ -48,7 +48,7 @@ function stopWatcherByKey(key: string): void {
   const session = watchers.get(key);
   if (session) {
     if (session.debounceTimer) clearTimeout(session.debounceTimer);
-    session.watcher.close().catch(() => {});
+    session.watcher.close().catch((err) => console.warn("[watcher] Close failed:", err));
     watchers.delete(key);
   }
 }
@@ -57,7 +57,7 @@ export function stopWatcher(windowId: number): void {
   for (const [key, session] of watchers) {
     if (key.startsWith(`${windowId}:`)) {
       if (session.debounceTimer) clearTimeout(session.debounceTimer);
-      session.watcher.close().catch(() => {});
+      session.watcher.close().catch((err) => console.warn("[watcher] Close failed:", err));
       watchers.delete(key);
     }
   }
@@ -71,7 +71,7 @@ export function stopProjectWatcher(windowId: number, projectPath: string): void 
 export function stopAllWatchers(): void {
   for (const [key, session] of watchers) {
     if (session.debounceTimer) clearTimeout(session.debounceTimer);
-    session.watcher.close().catch(() => {});
+    session.watcher.close().catch((err) => console.warn("[watcher] Close failed:", err));
     watchers.delete(key);
   }
 }

@@ -47,7 +47,9 @@ export function usePanelPreferences() {
   }, []);
 
   const savePanelSize = useCallback((key: keyof PanelSizes, value: number) => {
-    invoke("save_ui_preferences", { [key]: value }).catch(() => {});
+    invoke("save_ui_preferences", { [key]: value }).catch((err) =>
+      console.warn("[panel-preferences] Save failed:", err),
+    );
   }, []);
 
   return {

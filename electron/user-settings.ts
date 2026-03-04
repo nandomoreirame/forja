@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import { readFile, writeFile, mkdir } from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 import chokidar from "chokidar";
@@ -115,24 +115,23 @@ export function getUserSettingsPath(): string {
   return path.join(os.homedir(), ".config", "forja", "settings.json");
 }
 
-export function loadUserSettings(): UserSettings {
+export async function loadUserSettings(): Promise<UserSettings> {
   const settingsPath = getUserSettingsPath();
 
-  if (!fs.existsSync(settingsPath)) {
-    const dir = path.dirname(settingsPath);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(settingsPath, JSON.stringify(DEFAULT_SETTINGS, null, 2), "utf-8");
-    cachedSettings = { ...DEFAULT_SETTINGS };
-    return cachedSettings;
-  }
-
   try {
-    const raw = fs.readFileSync(settingsPath, "utf-8");
+    const raw = await readFile(settingsPath, "utf-8");
     const parsed = JSON.parse(raw);
     const merged = mergeWithDefaults(parsed);
     cachedSettings = validateSettings(merged);
     return cachedSettings;
-  } catch {
+  } catch (err: unknown) {
+    if (err && typeof err === "object" && "code" in err && (err as { code: string }).code === "ENOENT") {
+      const dir = path.dirname(settingsPath);
+      await mkdir(dir, { recursive: true });
+      await writeFile(settingsPath, JSON.stringify(DEFAULT_SETTINGS, null, 2), "utf-8");
+      cachedSettings = { ...DEFAULT_SETTINGS };
+      return cachedSettings;
+    }
     cachedSettings = { ...DEFAULT_SETTINGS };
     return cachedSettings;
   }
@@ -142,12 +141,12 @@ export function getCachedSettings(): UserSettings {
   return cachedSettings;
 }
 
-export function saveUserSettings(content: string): UserSettings {
+export async function saveUserSettings(content: string): Promise<UserSettings> {
   JSON.parse(content); // validate JSON, throws if invalid
   const settingsPath = getUserSettingsPath();
   const dir = path.dirname(settingsPath);
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(settingsPath, content, "utf-8");
+  await mkdir(dir, { recursive: true });
+  await writeFile(settingsPath, content, "utf-8");
   return loadUserSettings();
 }
 
@@ -162,8 +161,8 @@ export function startSettingsWatcher(
     persistent: true,
   });
 
-  watcher.on("change", () => {
-    const settings = loadUserSettings();
+  watcher.on("change", async () => {
+    const settings = await loadUserSettings();
     const targets = getWebContents();
     for (const wc of targets) {
       wc.send("settings:changed", settings);
@@ -173,7 +172,7 @@ export function startSettingsWatcher(
 
 export function stopSettingsWatcher(): void {
   if (watcher) {
-    watcher.close().catch(() => {});
+    watcher.close().catch((err) => console.warn("[user-settings] Watcher close failed:", err));
     watcher = null;
   }
 }
