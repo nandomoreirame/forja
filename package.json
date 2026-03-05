@@ -2,6 +2,11 @@
   "name": "@forja/app",
   "private": true,
   "version": "1.0.1",
+  "description": "Desktop GUI client for Claude Code and other AI coding CLIs",
+  "author": {
+    "name": "Fernando Moreira",
+    "email": "nandomoreira.me@gmail.com"
+  },
   "type": "module",
   "sideEffects": [
     "**/*.css"

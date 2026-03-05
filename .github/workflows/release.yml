@@ -70,6 +70,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
 
+      - name: Install Python setuptools (needed by node-gyp)
+        if: runner.os == 'macOS'
+        run: pip3 install setuptools
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
