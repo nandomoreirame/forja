@@ -20,8 +20,18 @@ vi.mock("@/lib/ipc", () => {
     getVersion: vi.fn().mockResolvedValue("0.1.0"),
     getElectronVersion: vi.fn().mockResolvedValue("32.0.0"),
     isTilingDesktop: vi.fn().mockResolvedValue(false),
+    listen: vi.fn().mockResolvedValue(() => {}),
   };
 });
+
+vi.mock("@/hooks/use-app-metrics", () => ({
+  useAppMetrics: () => ({
+    current: null,
+    rssHistory: [],
+    cpuHistory: [],
+    historyVersion: 0,
+  }),
+}));
 
 vi.mock("@/stores/file-tree", async () => {
   const { create } = await import("zustand");
