@@ -13,7 +13,6 @@ interface FontSettings {
 }
 
 interface UserSettings {
-  statusbar: { visible: boolean };
   app: FontSettings;
   editor: FontSettings;
   terminal: FontSettings;
@@ -22,7 +21,6 @@ interface UserSettings {
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
-  statusbar: { visible: true },
   app: {
     fontFamily: "Geist Sans, Inter, system-ui, sans-serif",
     fontSize: 14,
@@ -38,7 +36,11 @@ const DEFAULT_SETTINGS: UserSettings = {
     fontSize: 14,
   },
   window: { zoomLevel: 0, opacity: 1.0 },
-  sessions: {},
+  sessions: {
+    claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
+    gemini: { args: ["--yolo"] },
+    codex: { args: ["--full-auto"] },
+  },
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -67,10 +69,6 @@ function mergeWithDefaults(
       : { ...DEFAULT_SETTINGS.terminal };
 
   return {
-    statusbar: {
-      ...DEFAULT_SETTINGS.statusbar,
-      ...(input.statusbar ?? {}),
-    },
     app: {
       ...DEFAULT_SETTINGS.app,
       ...(input.app ?? {}),
@@ -81,7 +79,10 @@ function mergeWithDefaults(
       ...DEFAULT_SETTINGS.window,
       ...(input.window ?? {}),
     },
-    sessions: input.sessions ?? {},
+    sessions: {
+      ...DEFAULT_SETTINGS.sessions,
+      ...(input.sessions ?? {}),
+    },
   };
 }
 

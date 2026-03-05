@@ -121,11 +121,6 @@ export function useKeyboardShortcuts({
         useFilePreviewStore.getState().togglePreview();
         return;
       }
-      if (mod && event.shiftKey && event.key.toLowerCase() === "s") {
-        event.preventDefault();
-        useUserSettingsStore.getState().toggleStatusbar();
-        return;
-      }
       if (mod && event.altKey && (event.key === "=" || event.key === "+")) {
         event.preventDefault();
         useTerminalZoomStore.getState().zoomIn();

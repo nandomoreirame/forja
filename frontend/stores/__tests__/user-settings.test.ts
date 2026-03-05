@@ -61,12 +61,12 @@ describe("useUserSettingsStore", () => {
     const { useUserSettingsStore } = await import("../user-settings");
     const newSettings: UserSettings = {
       ...DEFAULT_SETTINGS,
-      statusbar: { visible: false },
+      app: { ...DEFAULT_SETTINGS.app, fontSize: 18 },
     };
     useUserSettingsStore.getState().setSettings(newSettings);
 
     const state = useUserSettingsStore.getState();
-    expect(state.settings.statusbar.visible).toBe(false);
+    expect(state.settings.app.fontSize).toBe(18);
   });
 
   it("openSettingsFile calls invoke with open_settings_file", async () => {
