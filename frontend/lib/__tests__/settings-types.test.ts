@@ -9,7 +9,6 @@ import {
 describe("DEFAULT_SETTINGS", () => {
   it("has expected default values with 3 font groups", () => {
     expect(DEFAULT_SETTINGS).toEqual({
-      statusbar: { visible: true },
       app: {
         fontFamily: "Geist Sans, Inter, system-ui, sans-serif",
         fontSize: 14,
@@ -25,7 +24,11 @@ describe("DEFAULT_SETTINGS", () => {
         fontSize: 14,
       },
       window: { zoomLevel: 0, opacity: 1.0 },
-      sessions: {},
+      sessions: {
+        claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
+        gemini: { args: ["--yolo"] },
+        codex: { args: ["--full-auto"] },
+      },
     });
   });
 });
@@ -59,13 +62,6 @@ describe("mergeWithDefaults", () => {
     expect(result.terminal.fontFamily).toBe(DEFAULT_SETTINGS.terminal.fontFamily);
   });
 
-  it("deep merges statusbar preserving other top-level fields", () => {
-    const result = mergeWithDefaults({ statusbar: { visible: false } });
-    expect(result.statusbar.visible).toBe(false);
-    expect(result.editor).toEqual(DEFAULT_SETTINGS.editor);
-    expect(result.window).toEqual(DEFAULT_SETTINGS.window);
-  });
-
   it("deep merges window preserving other fields", () => {
     const result = mergeWithDefaults({
       window: { opacity: 0.8 },
@@ -84,9 +80,9 @@ describe("mergeWithDefaults", () => {
   });
 
   it("ignores unknown top-level keys", () => {
-    const input = { unknownKey: "whatever", statusbar: { visible: false } } as unknown as Partial<UserSettings>;
+    const input = { unknownKey: "whatever", app: { fontSize: 16 } } as unknown as Partial<UserSettings>;
     const result = mergeWithDefaults(input);
-    expect(result.statusbar.visible).toBe(false);
+    expect(result.app.fontSize).toBe(16);
     expect((result as Record<string, unknown>).unknownKey).toBeUndefined();
   });
 

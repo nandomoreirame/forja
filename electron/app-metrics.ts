@@ -6,6 +6,8 @@ let appMetricsInterval: ReturnType<typeof setInterval> | null = null;
 
 export interface AppMetrics {
   total_rss: number;
+  main_rss: number;
+  renderer_rss: number;
   heap_used: number;
   heap_total: number;
   total_cpu_percent: number;
@@ -19,24 +21,31 @@ export function collectAppMetrics(): AppMetrics {
   const mem = process.memoryUsage();
 
   let totalRss = 0;
+  let mainRss = 0;
+  let rendererRss = 0;
   let totalCpu = 0;
   let mainCpu = 0;
   let rendererCpu = 0;
 
   for (const pm of processMetrics) {
     // workingSetSize is in KB, convert to bytes
-    totalRss += pm.memory.workingSetSize * 1024;
+    const rssBytes = pm.memory.workingSetSize * 1024;
+    totalRss += rssBytes;
     totalCpu += pm.cpu.percentCPUUsage;
 
     if (pm.type === "Browser") {
       mainCpu += pm.cpu.percentCPUUsage;
+      mainRss += rssBytes;
     } else if (pm.type === "Tab") {
       rendererCpu += pm.cpu.percentCPUUsage;
+      rendererRss += rssBytes;
     }
   }
 
   return {
     total_rss: totalRss,
+    main_rss: mainRss,
+    renderer_rss: rendererRss,
     heap_used: mem.heapUsed,
     heap_total: mem.heapTotal,
     total_cpu_percent: totalCpu,

@@ -14,20 +14,29 @@ interface FilePreviewState {
   content: FileContent | null;
   isLoading: boolean;
   error: string | null;
+  isEditing: boolean;
+  editContent: string | null;
+  editDirty: boolean;
 
   togglePreview: () => void;
   openPreview: () => void;
   closePreview: () => void;
   loadFile: (path: string) => Promise<void>;
   clearError: () => void;
+  setEditing: (editing: boolean) => void;
+  setEditContent: (content: string) => void;
+  saveFile: () => Promise<void>;
 }
 
-export const useFilePreviewStore = create<FilePreviewState>((set) => ({
+export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
   isOpen: false,
   currentFile: null,
   content: null,
   isLoading: false,
   error: null,
+  isEditing: false,
+  editContent: null,
+  editDirty: false,
 
   togglePreview: () => set((state) => ({ isOpen: !state.isOpen })),
 
@@ -39,10 +48,13 @@ export const useFilePreviewStore = create<FilePreviewState>((set) => ({
       currentFile: null,
       content: null,
       error: null,
+      isEditing: false,
+      editContent: null,
+      editDirty: false,
     }),
 
   loadFile: async (path: string) => {
-    set({ isLoading: true, currentFile: path, error: null });
+    set({ isLoading: true, currentFile: path, error: null, isEditing: false, editContent: null, editDirty: false });
 
     try {
       const result = await invoke<FileContent>("read_file_command", {
@@ -73,4 +85,27 @@ export const useFilePreviewStore = create<FilePreviewState>((set) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  setEditing: (editing) =>
+    set((state) => ({
+      isEditing: editing,
+      editContent: editing ? state.content?.content ?? null : null,
+      editDirty: false,
+    })),
+
+  setEditContent: (content) =>
+    set({ editContent: content, editDirty: true }),
+
+  saveFile: async () => {
+    const state = get();
+    const { currentFile, editContent } = state;
+    if (!currentFile || editContent === null) return;
+    await invoke("write_file", { path: currentFile, content: editContent });
+    set((prevState) => ({
+      editDirty: false,
+      content: prevState.content
+        ? { ...prevState.content, content: editContent, size: editContent.length }
+        : null,
+    }));
+  },
 }));

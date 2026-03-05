@@ -46,7 +46,6 @@ describe("user-settings module", () => {
     const { loadUserSettings } = await import("../user-settings");
 
     const result = await loadUserSettings();
-    expect(result.statusbar.visible).toBe(true);
     expect(result.app.fontFamily).toBe("Geist Sans, Inter, system-ui, sans-serif");
     expect(result.app.fontSize).toBe(14);
     expect(result.editor.fontSize).toBe(13);
@@ -55,7 +54,11 @@ describe("user-settings module", () => {
     expect(result.terminal.fontFamily).toContain("JetBrains Mono");
     expect(result.window.zoomLevel).toBe(0);
     expect(result.window.opacity).toBe(1.0);
-    expect(result.sessions).toEqual({});
+    expect(result.sessions).toEqual({
+      claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
+      gemini: { args: ["--yolo"] },
+      codex: { args: ["--full-auto"] },
+    });
   });
 
   it("loadUserSettings creates settings file with defaults when it does not exist", async () => {
@@ -72,7 +75,6 @@ describe("user-settings module", () => {
     expect(fsp.writeFile).toHaveBeenCalled();
     const writtenContent = vi.mocked(fsp.writeFile).mock.calls[0][1] as string;
     const parsed = JSON.parse(writtenContent);
-    expect(parsed.statusbar.visible).toBe(true);
     expect(parsed.app).toBeDefined();
     expect(parsed.terminal).toBeDefined();
   });
@@ -87,7 +89,6 @@ describe("user-settings module", () => {
     const result = await loadUserSettings();
 
     expect(result.terminal.fontSize).toBe(20);
-    expect(result.statusbar.visible).toBe(true); // default preserved
   });
 
   it("loadUserSettings migrates old editor-only format to terminal (backward compat)", async () => {
@@ -131,7 +132,6 @@ describe("user-settings module", () => {
     const { loadUserSettings } = await import("../user-settings");
 
     const result = await loadUserSettings();
-    expect(result.statusbar.visible).toBe(true);
     expect(result.terminal.fontSize).toBe(14);
   });
 

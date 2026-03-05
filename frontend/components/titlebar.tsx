@@ -23,6 +23,7 @@ import {
 import { useEffect, useState } from "react";
 import { AboutDialog } from "./about-dialog";
 import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
+import { ResourceUsagePopover } from "./resource-usage-popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,6 +152,7 @@ export function Titlebar() {
             <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
           </button>
         )}
+
       </div>
 
       <span
@@ -159,8 +161,9 @@ export function Titlebar() {
         {title}
       </span>
 
-      {/* Right: window controls */}
+      {/* Right: resource usage + window controls */}
       <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+        <ResourceUsagePopover />
         {!tilingDesktop && (
           <>
             <button

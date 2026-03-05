@@ -31,6 +31,7 @@ interface FileTreeState {
   openProject: () => Promise<void>;
   openProjectPath: (path: string) => Promise<void>;
   loadProjectTree: (projectPath: string) => Promise<void>;
+  removeProjectTree: (projectPath: string) => void;
   setActiveProjectPath: (path: string) => void;
   setTree: (tree: DirectoryTree | null) => void;
   toggleExpanded: (path: string) => void;
@@ -82,6 +83,55 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
       } catch (error) {
         console.error("Failed to load project tree:", error);
       }
+    },
+
+    removeProjectTree: (projectPath: string) => {
+      const { trees, expandedPaths, activeProjectPath, currentPath } = get();
+
+      // Remove the tree entry
+      const { [projectPath]: _removed, ...remainingTrees } = trees;
+
+      // Remove expanded paths that belong to this project
+      const remainingExpanded: Record<string, boolean> = {};
+      for (const [p, v] of Object.entries(expandedPaths)) {
+        if (!p.startsWith(projectPath)) {
+          remainingExpanded[p] = v;
+        }
+      }
+
+      // If the removed project was active, switch to another
+      const remainingPaths = Object.keys(remainingTrees);
+      const needsSwitch =
+        activeProjectPath === projectPath || currentPath === projectPath;
+
+      if (needsSwitch && remainingPaths.length > 0) {
+        const nextPath = remainingPaths[0];
+        set({
+          trees: remainingTrees,
+          expandedPaths: remainingExpanded,
+          activeProjectPath: nextPath,
+          currentPath: nextPath,
+          tree: remainingTrees[nextPath] ?? null,
+        });
+      } else if (needsSwitch) {
+        set({
+          trees: remainingTrees,
+          expandedPaths: remainingExpanded,
+          activeProjectPath: null,
+          currentPath: null,
+          tree: null,
+        });
+      } else {
+        set({
+          trees: remainingTrees,
+          expandedPaths: remainingExpanded,
+        });
+      }
+
+      // Stop the file watcher for the removed project
+      invoke("stop_watcher", { path: projectPath }).catch((err) =>
+        console.warn("[file-tree] Failed to stop watcher:", err),
+      );
     },
 
     openProject: async () => {

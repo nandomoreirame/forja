@@ -27,7 +27,6 @@ const FilePreviewPane = lazy(() =>
 );
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
 import { NewSessionDropdown } from "./components/new-session-dropdown";
-import { Statusbar } from "./components/statusbar";
 import { TabBar } from "./components/tab-bar";
 import { TerminalPane } from "./components/terminal-pane";
 import { Titlebar } from "./components/titlebar";
@@ -790,7 +789,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
             </div>
           </div>
         )}
-        <Statusbar />
         <Suspense fallback={null}>
           <CommandPalette />
         </Suspense>

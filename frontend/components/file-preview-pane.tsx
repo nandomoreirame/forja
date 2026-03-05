@@ -1,5 +1,5 @@
 import { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
-import { X, FileCode, AlertCircle } from 'lucide-react';
+import { X, FileCode, AlertCircle, Pencil, Eye } from 'lucide-react';
 import { invoke } from '@/lib/ipc';
 import { useFilePreviewStore } from '@/stores/file-preview';
 import { useGitDiffStore } from '@/stores/git-diff';
@@ -10,6 +10,8 @@ import { ImageViewer } from './image-viewer';
 import { MarkdownRenderer } from './markdown-renderer';
 import { SettingsEditor } from './settings-editor';
 import { GitDiffViewer } from './git-diff-viewer';
+import { MonacoEditor } from './monaco-editor';
+import { detectLanguage } from '@/lib/detect-language';
 
 const IMAGE_EXTENSIONS = new Set([
   "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "bmp",
@@ -143,6 +145,12 @@ function FilePreviewPaneContent() {
   const isLoading = useFilePreviewStore((s) => s.isLoading);
   const error = useFilePreviewStore((s) => s.error);
   const closePreview = useFilePreviewStore((s) => s.closePreview);
+  const isEditing = useFilePreviewStore((s) => s.isEditing);
+  const editContent = useFilePreviewStore((s) => s.editContent);
+  const editDirty = useFilePreviewStore((s) => s.editDirty);
+  const setEditing = useFilePreviewStore((s) => s.setEditing);
+  const setEditContent = useFilePreviewStore((s) => s.setEditContent);
+  const saveFile = useFilePreviewStore((s) => s.saveFile);
   const editorOpen = useUserSettingsStore((s) => s.editorOpen);
   const selectedDiff = useGitDiffStore((s) => s.selectedDiff);
   const diffMode = useGitDiffStore((s) => s.diffMode);
@@ -193,9 +201,28 @@ function FilePreviewPaneContent() {
             {displayName}
           </span>
           <span className="inline-flex shrink-0 items-center rounded bg-ctp-surface0 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-ctp-overlay1">
-            {isDiffView ? "Diff" : "Preview"}
+            {isDiffView ? "Diff" : isEditing ? "Editing" : "Preview"}
           </span>
         </div>
+        {!isDiffView && !isImage && !isMarkdown && content && (
+          <button
+            onClick={() => setEditing(!isEditing)}
+            aria-label={isEditing ? "Switch to preview" : "Switch to edit"}
+            className="inline-flex h-7 items-center gap-1 rounded px-2 text-[11px] text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+          >
+            {isEditing ? (
+              <>
+                <Eye className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Preview
+              </>
+            ) : (
+              <>
+                <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Edit
+              </>
+            )}
+          </button>
+        )}
         <button
           onClick={closePreview}
           aria-label="Close preview"
@@ -206,7 +233,7 @@ function FilePreviewPaneContent() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 select-text overflow-hidden">
+      <div className="min-h-0 flex-1 select-text overflow-hidden">
         {isLoading && (
           <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -245,9 +272,20 @@ function FilePreviewPaneContent() {
           isImage ? (
             <ImageViewer content={content.content} filename={filename} />
           ) : isMarkdown ? (
-            <div className="p-4">
+            <div className="h-full overflow-y-auto p-4">
               <MarkdownRenderer content={content.content} />
             </div>
+          ) : isEditing ? (
+            <MonacoEditor
+              value={editContent ?? content.content}
+              language={detectLanguage(currentFile ?? filename)}
+              onChange={(value) => setEditContent(value)}
+              onSave={(value) => {
+                setEditContent(value);
+                saveFile();
+              }}
+              className="h-full w-full"
+            />
           ) : (
             <CodeViewer code={content.content} filename={filename} />
           )
@@ -278,6 +316,12 @@ function FilePreviewPaneContent() {
             <>
               <span className="text-ctp-surface1">|</span>
               <span className={gitStatusEntry.color}>{gitStatusEntry.label}</span>
+            </>
+          )}
+          {editDirty && (
+            <>
+              <span className="text-ctp-surface1">|</span>
+              <span className="text-ctp-yellow">Unsaved</span>
             </>
           )}
         </div>

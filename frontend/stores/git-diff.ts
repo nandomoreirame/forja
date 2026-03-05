@@ -97,13 +97,27 @@ export const useGitDiffStore = create<GitDiffState>((set, get) => ({
       error: null,
     });
     try {
-      const result = await invoke<GitDiffResult>("get_git_file_diff", {
-        path: projectPath,
-        relativePath,
-        stage: "combined",
-      });
+      const [diffResult, originalContent, fileContent] = await Promise.all([
+        invoke<GitDiffResult>("get_git_file_diff", {
+          path: projectPath,
+          relativePath,
+          stage: "combined",
+        }),
+        invoke<string>("get_git_file_content_at_head", {
+          path: projectPath,
+          relativePath,
+        }),
+        invoke<{ content: string }>("read_file_command", {
+          path: `${projectPath}/${relativePath}`,
+          maxSizeMb: 10,
+        }).then((r) => r.content).catch(() => ""),
+      ]);
       set({
-        selectedDiff: result,
+        selectedDiff: {
+          ...diffResult,
+          originalContent,
+          modifiedContent: fileContent,
+        },
         isLoadingDiff: false,
       });
     } catch (error) {

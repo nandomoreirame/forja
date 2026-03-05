@@ -5,17 +5,6 @@ import { MarkdownRenderer } from "../markdown-renderer";
 vi.mock("@/lib/ipc", () => ({
   openUrl: vi.fn(),
 }));
-vi.mock("shiki/core", () => ({
-  createHighlighterCore: vi.fn().mockResolvedValue({
-    codeToHtml: vi.fn(
-      (code: string) => `<pre><code>${code}</code></pre>`
-    ),
-    loadLanguage: vi.fn().mockResolvedValue(undefined),
-  }),
-}));
-vi.mock("shiki/engine/oniguruma", () => ({
-  createOnigurumaEngine: vi.fn().mockReturnValue({}),
-}));
 
 describe("MarkdownRenderer", () => {
   beforeEach(() => {

@@ -1,6 +1,6 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { useSyntaxHighlighter } from '@/hooks/use-syntax-highlighter';
-import { sanitizeHtml } from '@/lib/sanitize-html';
+import { memo } from "react";
+import { MonacoEditor } from "./monaco-editor";
+import { detectLanguage } from "@/lib/detect-language";
 
 interface CodeViewerProps {
   code: string;
@@ -8,59 +8,14 @@ interface CodeViewerProps {
 }
 
 export const CodeViewer = memo(function CodeViewer({ code, filename }: CodeViewerProps) {
-  const { isReady, hasError, highlight, detectLanguage } = useSyntaxHighlighter();
-  const [html, setHtml] = useState<string>('');
-  const prevKeyRef = useRef<string>('');
-
-  const language = useMemo(() => detectLanguage(filename), [detectLanguage, filename]);
-
-  useEffect(() => {
-    if (!isReady) return;
-
-    const key = `${language}:${code}`;
-    if (key === prevKeyRef.current) return;
-    prevKeyRef.current = key;
-
-    let cancelled = false;
-    highlight(code, language).then((result) => {
-      if (!cancelled) setHtml(result);
-    });
-    return () => { cancelled = true; };
-  }, [code, language, isReady, highlight]);
-
-  if (hasError || (isReady && !html && code)) {
-    return (
-      <pre
-        data-testid="code-viewer-fallback"
-        className="code-viewer h-full overflow-y-auto overflow-x-scroll p-4 text-sm text-ctp-text"
-        style={{
-          fontFamily: 'var(--font-mono)',
-          fontSize: 'var(--editor-font-size)',
-          lineHeight: '1.5',
-        }}
-      >
-        <code>{code}</code>
-      </pre>
-    );
-  }
-
-  if (!isReady || !html) {
-    return (
-      <div className="flex h-full items-center justify-center p-4">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-      </div>
-    );
-  }
+  const language = detectLanguage(filename);
 
   return (
-    <div
-      className="code-viewer h-full overflow-y-auto overflow-x-scroll p-4 text-sm"
-      dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
-      style={{
-        fontFamily: 'JetBrains Mono, Fira Code, monospace',
-        fontSize: '13px',
-        lineHeight: '1.5',
-      }}
+    <MonacoEditor
+      value={code}
+      language={language}
+      readOnly
+      className="h-full w-full"
     />
   );
 });

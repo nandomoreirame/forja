@@ -8,14 +8,38 @@ vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn().mockResolvedValue({ isGitRepo: false, branch: null, fileStatus: null, changedFiles: 0 }),
   open: vi.fn(),
 }));
-vi.mock("shiki/core", () => ({
-  createHighlighterCore: vi.fn().mockResolvedValue({
-    codeToHtml: vi.fn((code: string) => `<pre><code>${code}</code></pre>`),
-    loadLanguage: vi.fn().mockResolvedValue(undefined),
-  }),
-}));
-vi.mock("shiki/engine/oniguruma", () => ({
-  createOnigurumaEngine: vi.fn().mockReturnValue({}),
+vi.mock("monaco-editor", () => {
+  const disposable = { dispose: vi.fn() };
+  const mockModel = { dispose: vi.fn(), getValue: vi.fn(() => ""), setValue: vi.fn() };
+  const mockEditor = {
+    getValue: vi.fn(() => ""), setValue: vi.fn(), dispose: vi.fn(),
+    getModel: vi.fn(() => mockModel),
+    onDidChangeModelContent: vi.fn(() => disposable),
+    onDidDispose: vi.fn(() => disposable),
+    layout: vi.fn(), updateOptions: vi.fn(), focus: vi.fn(),
+    getAction: vi.fn(), addCommand: vi.fn(),
+  };
+  const mockDiffEditor = {
+    getOriginalEditor: vi.fn(() => mockEditor),
+    getModifiedEditor: vi.fn(() => mockEditor),
+    dispose: vi.fn(), layout: vi.fn(), updateOptions: vi.fn(), setModel: vi.fn(),
+  };
+  return {
+    editor: {
+      create: vi.fn(() => mockEditor),
+      createDiffEditor: vi.fn(() => mockDiffEditor),
+      createModel: vi.fn((content: string) => ({
+        ...mockModel, getValue: vi.fn(() => content),
+      })),
+      defineTheme: vi.fn(), setTheme: vi.fn(),
+    },
+    Uri: { parse: vi.fn((s: string) => s) },
+    KeyMod: { CtrlCmd: 2048 }, KeyCode: { KeyS: 49 },
+  };
+});
+vi.mock("@/lib/monaco-theme", () => ({
+  catppuccinMochaTheme: { base: "vs-dark", inherit: true, rules: [], colors: {} },
+  THEME_NAME: "catppuccin-mocha",
 }));
 vi.mock("react-markdown", () => ({
   default: ({ children }: { children: string }) => (
@@ -38,6 +62,9 @@ describe("FilePreviewPane", () => {
       content: null,
       isLoading: false,
       error: null,
+      isEditing: false,
+      editContent: null,
+      editDirty: false,
     });
   });
 

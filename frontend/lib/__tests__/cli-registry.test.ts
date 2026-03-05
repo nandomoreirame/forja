@@ -42,8 +42,8 @@ describe("CLI_REGISTRY", () => {
       expect(CLI_REGISTRY.claude.id).toBe("claude");
     });
 
-    it("has an icon path starting with /images/", () => {
-      expect(CLI_REGISTRY.claude.icon).toMatch(/^\/images\//);
+    it("has an icon path starting with ./images/", () => {
+      expect(CLI_REGISTRY.claude.icon).toMatch(/^\.\/images\//);
     });
   });
 
@@ -70,8 +70,8 @@ describe("CLI_REGISTRY", () => {
       expect(CLI_REGISTRY.gemini.id).toBe("gemini");
     });
 
-    it("has an icon path starting with /images/", () => {
-      expect(CLI_REGISTRY.gemini.icon).toMatch(/^\/images\//);
+    it("has an icon path starting with ./images/", () => {
+      expect(CLI_REGISTRY.gemini.icon).toMatch(/^\.\/images\//);
     });
   });
 
@@ -98,8 +98,8 @@ describe("CLI_REGISTRY", () => {
       expect(CLI_REGISTRY.codex.id).toBe("codex");
     });
 
-    it("has an icon path starting with /images/", () => {
-      expect(CLI_REGISTRY.codex.icon).toMatch(/^\/images\//);
+    it("has an icon path starting with ./images/", () => {
+      expect(CLI_REGISTRY.codex.icon).toMatch(/^\.\/images\//);
     });
   });
 
@@ -126,15 +126,15 @@ describe("CLI_REGISTRY", () => {
       expect(CLI_REGISTRY["cursor-agent"].id).toBe("cursor-agent");
     });
 
-    it("has an icon path starting with /images/", () => {
-      expect(CLI_REGISTRY["cursor-agent"].icon).toMatch(/^\/images\//);
+    it("has an icon path starting with ./images/", () => {
+      expect(CLI_REGISTRY["cursor-agent"].icon).toMatch(/^\.\/images\//);
     });
   });
 
-  it("every CLI entry has an icon path starting with /images/", () => {
+  it("every CLI entry has an icon path starting with ./images/", () => {
     const ids = Object.keys(CLI_REGISTRY) as CliId[];
     ids.forEach((id) => {
-      expect(CLI_REGISTRY[id].icon).toMatch(/^\/images\//);
+      expect(CLI_REGISTRY[id].icon).toMatch(/^\.\/images\//);
     });
   });
 });
@@ -271,11 +271,11 @@ describe("TERMINAL_ICON", () => {
   });
 
   it("is the terminal SVG path", () => {
-    expect(TERMINAL_ICON).toBe("/images/terminal.svg");
+    expect(TERMINAL_ICON).toBe("./images/terminal.svg");
   });
 
-  it("starts with /images/", () => {
-    expect(TERMINAL_ICON).toMatch(/^\/images\//);
+  it("starts with ./images/", () => {
+    expect(TERMINAL_ICON).toMatch(/^\.\/images\//);
   });
 });
 

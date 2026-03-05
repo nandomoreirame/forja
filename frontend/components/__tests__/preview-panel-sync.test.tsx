@@ -27,7 +27,6 @@ vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn().mockImplementation((channel: string) => {
     if (channel === "get_user_settings")
       return Promise.resolve({
-        statusbar: { visible: true },
         app: { fontFamily: "sans-serif", fontSize: 14 },
         editor: { fontFamily: "monospace", fontSize: 13 },
         terminal: { fontFamily: "monospace", fontSize: 14 },
@@ -69,9 +68,6 @@ vi.mock("../file-tree-sidebar", () => ({
 }));
 vi.mock("../file-preview-pane", () => ({
   FilePreviewPane: () => <div data-testid="file-preview-pane" />,
-}));
-vi.mock("../statusbar", () => ({
-  Statusbar: () => <div data-testid="statusbar" />,
 }));
 vi.mock("../titlebar", () => ({
   Titlebar: () => <div data-testid="titlebar" />,

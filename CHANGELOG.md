@@ -69,5 +69,18 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Allow WASM execution in CSP for syntax highlighting.
 - Set vite base to relative path for production build.---
 
+## [1.2.0] - 2026-03-05
+### Added
+- Add removeProjectTree action to file tree store.
+- Add context menu to file tree nodes.
+- Add resource usage popover in titlebar.
+- Add file operations module (rename and delete).
+- Add MonacoEditor and MonacoDiffEditor wrappers.
+- Add Monaco workers, Catppuccin theme, and language detection.
+- Add Monaco CSP, file writer, and git content at HEAD.
+
+### Fixed
+- Use relative paths for CLI icons and fix UI details.---
+
 ## [Unreleased]
 

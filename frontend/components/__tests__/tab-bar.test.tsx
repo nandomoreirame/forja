@@ -13,7 +13,7 @@ vi.mock("@/hooks/use-installed-clis", () => ({
         binary: "claude",
         description: "AI-assisted coding with Anthropic Claude",
         iconColor: "text-brand",
-        icon: "/images/claude.svg",
+        icon: "./images/claude.svg",
       },
     ],
     loading: false,

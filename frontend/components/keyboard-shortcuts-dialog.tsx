@@ -31,7 +31,6 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
       { label: "Toggle File Preview", keys: [mod, "E"] },
       { label: "Keyboard Shortcuts", keys: [mod, "?"] },
       { label: "Toggle Terminal", keys: [mod, "J"] },
-      { label: "Toggle Statusbar", keys: [mod, "Shift", "S"] },
       { label: "Open Settings", keys: [mod, ","] },
     ],
   },
