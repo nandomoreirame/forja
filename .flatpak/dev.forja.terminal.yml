@@ -18,9 +18,10 @@ modules:
     build-commands:
       - ar x forja.deb
       - tar xf data.tar.*
-      - install -Dm755 usr/bin/forja /app/bin/forja
+      - cp -a opt/Forja /app/forja
+      - ln -s /app/forja/@forjaapp /app/bin/forja
       - cp -r usr/share/icons /app/share/icons || true
-      - install -Dm644 /app/share/icons/hicolor/128x128/apps/forja.png
+      - install -Dm644 /app/share/icons/hicolor/128x128/apps/@forjaapp.png
         /app/share/icons/hicolor/128x128/apps/dev.forja.terminal.png || true
       - install -Dm644 dev.forja.terminal.metainfo.xml
         /app/share/metainfo/dev.forja.terminal.metainfo.xml
