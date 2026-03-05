@@ -19,6 +19,7 @@ modules:
       - ar x forja.deb
       - tar xf data.tar.*
       - cp -a opt/Forja /app/forja
+      - mkdir -p /app/bin
       - ln -s /app/forja/@forjaapp /app/bin/forja
       - cp -r usr/share/icons /app/share/icons || true
       - install -Dm644 /app/share/icons/hicolor/128x128/apps/@forjaapp.png
