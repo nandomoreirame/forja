@@ -46,29 +46,30 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           DEB_NAME="forja_${VERSION}_amd64.deb"
+          ASSET_ID=$(curl -s \
+            -H "Authorization: token $GH_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.version.outputs.tag }}" \
+            | jq -r ".assets[] | select(.name == \"$DEB_NAME\") | .id")
+
+          echo "Asset ID: $ASSET_ID"
           curl -sL \
             -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/octet-stream" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/assets/$(
-              curl -s \
-                -H "Authorization: token $GH_TOKEN" \
-                "https://api.github.com/repos/${{ github.repository }}/releases/tags/${{ steps.version.outputs.tag }}" \
-                | jq -r ".assets[] | select(.name == \"$DEB_NAME\") | .id"
-            )" \
-            -o "$DEB_NAME"
-          echo "deb_path=$DEB_NAME" >> "$GITHUB_ENV"
+            "https://api.github.com/repos/${{ github.repository }}/releases/assets/$ASSET_ID" \
+            -o ".flatpak/forja.deb"
 
-      - name: Update Flatpak manifest with real URL and SHA256
+          echo "Downloaded .deb ($(wc -c < .flatpak/forja.deb) bytes)"
+          sha256sum .flatpak/forja.deb
+
+      - name: Update Flatpak manifest to use local .deb
         run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          SHA256=$(sha256sum "$deb_path" | cut -d' ' -f1)
-          REPO="${{ github.repository }}"
-          DEB_URL="https://github.com/${REPO}/releases/download/${{ steps.version.outputs.tag }}/forja_${VERSION}_amd64.deb"
-
           sed -i \
-            -e "s|url: .*forja.*\.deb|url: ${DEB_URL}|" \
-            -e "s|sha256: .*|sha256: ${SHA256}|" \
+            -e '/url: .*forja.*\.deb/d' \
+            -e 's|sha256: .*|path: forja.deb|' \
             .flatpak/dev.forja.terminal.yml
+
+          echo "=== Updated manifest ==="
+          cat .flatpak/dev.forja.terminal.yml
 
       - name: Build Flatpak
         uses: flatpak/flatpak-github-actions/flatpak-builder@v6
