@@ -10,7 +10,7 @@ export interface CliDefinition {
   icon: string;
 }
 
-export const TERMINAL_ICON = "/images/terminal.svg";
+export const TERMINAL_ICON = "./images/terminal.svg";
 
 export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
   claude: {
@@ -19,7 +19,7 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     binary: "claude",
     description: "AI-assisted coding with Anthropic Claude",
     iconColor: "text-brand",
-    icon: "/images/claude.svg",
+    icon: "./images/claude.svg",
   },
   gemini: {
     id: "gemini",
@@ -27,7 +27,7 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     binary: "gemini",
     description: "AI-assisted coding with Google Gemini",
     iconColor: "text-ctp-blue",
-    icon: "/images/gemini.svg",
+    icon: "./images/gemini.svg",
   },
   codex: {
     id: "codex",
@@ -35,7 +35,7 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     binary: "codex",
     description: "AI-assisted coding with OpenAI Codex",
     iconColor: "text-ctp-green",
-    icon: "/images/openai.svg",
+    icon: "./images/openai.svg",
   },
   "cursor-agent": {
     id: "cursor-agent",
@@ -43,7 +43,7 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     binary: "cursor-agent",
     description: "AI-assisted coding with Cursor",
     iconColor: "text-ctp-peach",
-    icon: "/images/cursor.svg",
+    icon: "./images/cursor.svg",
   },
 };
 

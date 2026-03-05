@@ -233,7 +233,7 @@ function FilePreviewPaneContent() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 select-text overflow-hidden">
+      <div className="min-h-0 flex-1 select-text overflow-hidden">
         {isLoading && (
           <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-3">
@@ -272,7 +272,7 @@ function FilePreviewPaneContent() {
           isImage ? (
             <ImageViewer content={content.content} filename={filename} />
           ) : isMarkdown ? (
-            <div className="p-4">
+            <div className="h-full overflow-y-auto p-4">
               <MarkdownRenderer content={content.content} />
             </div>
           ) : isEditing ? (
