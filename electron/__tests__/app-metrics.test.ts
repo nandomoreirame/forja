@@ -48,6 +48,8 @@ describe("app-metrics", () => {
         total_cpu_percent: 13.0,
         main_cpu_percent: 5.0,
         renderer_cpu_percent: 8.0,
+        main_rss: 100 * 1024 * 1024,
+        renderer_rss: 50 * 1024 * 1024,
         process_count: 2,
       });
     });
@@ -69,6 +71,47 @@ describe("app-metrics", () => {
 
       // workingSetSize is in KB, total_rss should be in bytes
       expect(result.total_rss).toBe(200 * 1024 * 1024);
+    });
+
+    it("accumulates per-process RSS for main and renderer", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 80 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+        {
+          pid: 2,
+          type: "Tab",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 120 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+        {
+          pid: 3,
+          type: "Tab",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 30 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+        {
+          pid: 4,
+          type: "GPU",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 50 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { collectAppMetrics } = await import("../app-metrics");
+      const result = collectAppMetrics();
+
+      expect(result.main_rss).toBe(80 * 1024 * 1024);
+      expect(result.renderer_rss).toBe((120 + 30) * 1024 * 1024);
+      expect(result.total_rss).toBe((80 + 120 + 30 + 50) * 1024 * 1024);
     });
 
     it("separates main (Browser) and renderer (Tab) CPU", async () => {

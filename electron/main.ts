@@ -27,13 +27,13 @@ const lazyImport = <T>(factory: () => Promise<T>) => {
 };
 
 const getWatcher = lazyImport(() => import("./watcher.js"));
-const getMetrics = lazyImport(() => import("./metrics.js"));
 const getAppMetrics = lazyImport(() => import("./app-metrics.js"));
 const getConfig = lazyImport(() => import("./config.js"));
 const getGitInfo = lazyImport(() => import("./git-info.js"));
 const getFileTree = lazyImport(() => import("./file-tree.js"));
 const getFileReader = lazyImport(() => import("./file-reader.js"));
 const getFileWriter = lazyImport(() => import("./file-writer.js"));
+const getFileOperations = lazyImport(() => import("./file-operations.js"));
 const getUserSettings = lazyImport(() => import("./user-settings.js"));
 
 const isDev = !app.isPackaged;
@@ -153,21 +153,14 @@ app.whenReady().then(async () => {
 
   await createWindow();
 
-  const metrics = await getMetrics();
-  metrics.startMetricsLoop(() => {
-    return BrowserWindow.getAllWindows().map((w) => w.webContents);
-  });
-
   userSettings.startSettingsWatcher(() => {
     return BrowserWindow.getAllWindows().map((w) => w.webContents);
   });
 
-  if (isDev) {
-    const appMetricsMod = await getAppMetrics();
-    appMetricsMod.startAppMetricsLoop(() => {
-      return BrowserWindow.getAllWindows().map((w) => w.webContents);
-    });
-  }
+  const appMetricsMod = await getAppMetrics();
+  appMetricsMod.startAppMetricsLoop(() => {
+    return BrowserWindow.getAllWindows().map((w) => w.webContents);
+  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -175,12 +168,8 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", async () => {
-  const metrics = await getMetrics();
-  metrics.stopMetricsLoop();
-  if (isDev) {
-    const appMetricsMod = await getAppMetrics();
-    appMetricsMod.stopAppMetricsLoop();
-  }
+  const appMetricsMod = await getAppMetrics();
+  appMetricsMod.stopAppMetricsLoop();
   const userSettings = await getUserSettings();
   userSettings.stopSettingsWatcher();
   if (process.platform !== "darwin") app.quit();
@@ -435,6 +424,31 @@ ipcMain.handle("write_file", async (_event, args: { path: string; content: strin
   await fileWriter.writeFile(args.path, args.content);
   return { success: true };
 });
+
+// File operations: rename and delete
+ipcMain.handle(
+  "rename_file_or_dir",
+  async (
+    _event,
+    args: { projectPath: string; oldPath: string; newPath: string }
+  ) => {
+    const fileOps = await getFileOperations();
+    await fileOps.renameFileOrDir(args.projectPath, args.oldPath, args.newPath);
+    return { success: true };
+  }
+);
+
+ipcMain.handle(
+  "delete_file_or_dir",
+  async (
+    _event,
+    args: { projectPath: string; targetPath: string }
+  ) => {
+    const fileOps = await getFileOperations();
+    await fileOps.deleteFileOrDir(args.projectPath, args.targetPath);
+    return { success: true };
+  }
+);
 
 // Window controls
 ipcMain.handle("window:minimize", (event) => {

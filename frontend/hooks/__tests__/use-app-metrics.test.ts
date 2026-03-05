@@ -32,6 +32,8 @@ describe("useAppMetrics", () => {
 
     const mockMetrics = {
       total_rss: 150 * 1024 * 1024,
+      main_rss: 60 * 1024 * 1024,
+      renderer_rss: 90 * 1024 * 1024,
       heap_used: 98 * 1024 * 1024,
       heap_total: 128 * 1024 * 1024,
       total_cpu_percent: 12.5,
@@ -54,6 +56,8 @@ describe("useAppMetrics", () => {
     const { result } = renderHook(() => useAppMetrics());
 
     const base = {
+      main_rss: 0,
+      renderer_rss: 0,
       heap_used: 0,
       heap_total: 0,
       main_cpu_percent: 0,
@@ -77,6 +81,8 @@ describe("useAppMetrics", () => {
     const { result } = renderHook(() => useAppMetrics());
 
     const base = {
+      main_rss: 0,
+      renderer_rss: 0,
       heap_used: 0,
       heap_total: 0,
       main_cpu_percent: 0,

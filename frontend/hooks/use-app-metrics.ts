@@ -3,6 +3,8 @@ import { listen } from "@/lib/ipc";
 
 export interface AppMetrics {
   total_rss: number;
+  main_rss: number;
+  renderer_rss: number;
   heap_used: number;
   heap_total: number;
   total_cpu_percent: number;
