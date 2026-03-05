@@ -4,7 +4,7 @@ This file provides guidance for AI coding agents operating in this repository.
 
 ## What is Forja
 
-Forja is a desktop GUI client for Claude Code and other AI coding CLIs, built with Electron + React + TypeScript. It features a hybrid rendering approach with xterm.js for terminal emulation and React for rich markdown/code output.
+Forja is a desktop GUI client for Vibe Coders and other AI coding CLIs, built with Electron + React + TypeScript. It features a hybrid rendering approach with xterm.js for terminal emulation and React for rich markdown/code output.
 
 **Status:** Active development. Electron migration complete. 400+ tests passing.
 
@@ -262,7 +262,7 @@ vi.mock("@/lib/ipc", () => ({
 
 ## Design System
 
-Full design guidelines in `docs/DESIGN-GUIDELINES.md`. Key points:
+Full design guidelines in `docs/design/DESIGN-GUIDELINES.md`. Key points:
 
 **Theme:** Catppuccin Mocha (dark mode). Catppuccin Latte (light mode, planned).
 
@@ -297,7 +297,7 @@ Full design guidelines in `docs/DESIGN-GUIDELINES.md`. Key points:
 
 ## Related Documentation
 
-- `docs/BRIEF.md` - Executive summary, personas, business model
-- `docs/PRD.md` - Full product requirements, user stories, technical spec
-- `docs/MVP-SCOPE.md` - What's in/out of MVP, timeline, stack decisions
-- `docs/DESIGN-GUIDELINES.md` - Complete design system (colors, typography, spacing, components)
+- `docs/specs/BRIEF.md` - Executive summary, personas, business model
+- `docs/specs/PRD.md` - Full product requirements, user stories, technical spec
+- `docs/specs/MVP-SCOPE.md` - What's in/out of MVP, timeline, stack decisions
+- `docs/design/DESIGN-GUIDELINES.md` - Complete design system (colors, typography, spacing, components)
