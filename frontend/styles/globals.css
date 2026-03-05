@@ -300,17 +300,42 @@ body {
   margin: 1rem 0;
 }
 
-/* Global focus-visible for keyboard navigation (WCAG 2.4.7) */
+/* Remove focus outlines/shadows on all interactive elements */
+button,
+[role="button"],
+a,
+input,
+textarea,
+select,
+[tabindex] {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+button:focus,
 button:focus-visible,
+button:active,
+[role="button"]:focus,
 [role="button"]:focus-visible,
+[role="button"]:active,
+a:focus,
 a:focus-visible,
+a:active,
+input:focus,
 input:focus-visible,
+input:active,
+textarea:focus,
 textarea:focus-visible,
+textarea:active,
+select:focus,
 select:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: 2px;
-  border-radius: 2px;
+select:active,
+[tabindex]:focus,
+[tabindex]:focus-visible,
+[tabindex]:active {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
 }
 
 /* Shiki code block overrides */
