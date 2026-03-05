@@ -21,3 +21,6 @@ Thumbs.db
 *.swp
 *.swo
 
+# Release build files
+/release
+/.superset
