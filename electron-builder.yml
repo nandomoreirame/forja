@@ -33,7 +33,7 @@ linux:
   category: Development
 
 deb:
-  artifactName: "${productName}_${version}_${arch}.${ext}"
+  artifactName: "forja_${version}_${arch}.${ext}"
 
 nsis:
   oneClick: false
