@@ -1,11 +1,29 @@
-import { memo, useCallback } from "react";
-import { ChevronRight } from "lucide-react";
+import { memo, useCallback, useRef, useState, useEffect } from "react";
+import { ChevronRight, Pencil, Trash2, FolderMinus } from "lucide-react";
 import { FileIcon } from "./file-icon";
 import { useFileTreeStore, type FileNode } from "@/stores/file-tree";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useGitStatusStore } from "@/stores/git-status";
 import { useGitDiffStore } from "@/stores/git-diff";
+import { useWorkspaceStore } from "@/stores/workspace";
 import { getGitBadgeLetter, getGitStatusColor } from "@/lib/git-constants";
+import { invoke } from "@/lib/ipc";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "./ui/context-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog";
+import { Button } from "./ui/button";
 
 interface FileTreeNodeProps {
   node: FileNode;
@@ -44,13 +62,114 @@ export const FileTreeNode = memo(function FileTreeNode({
   const statusColor = fileStatus ? getGitStatusColor(fileStatus) : null;
   const badgeLetter = fileStatus ? getGitBadgeLetter(fileStatus) : null;
 
+  // Workspace state for "Remove from workspace"
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const removeProject = useWorkspaceStore((s) => s.removeProject);
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
+  const isInMultiProjectWorkspace = Boolean(
+    activeWorkspace && activeWorkspace.projects.length > 1
+  );
+
+  // Rename inline state
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(node.name);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+
+  // Delete confirmation dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Focus rename input when it appears
+  useEffect(() => {
+    if (renaming && renameInputRef.current) {
+      renameInputRef.current.focus();
+      renameInputRef.current.select();
+    }
+  }, [renaming]);
+
   const handleClick = useCallback(() => {
+    if (renaming) return;
     if (node.isDir) {
       toggleExpanded(node.path);
     } else {
       selectFile(node.path);
     }
-  }, [node.isDir, node.path, toggleExpanded, selectFile]);
+  }, [node.isDir, node.path, toggleExpanded, selectFile, renaming]);
+
+  const handleRenameStart = useCallback(() => {
+    setRenameValue(node.name);
+    setRenaming(true);
+  }, [node.name]);
+
+  const handleRenameCommit = useCallback(async () => {
+    const trimmed = renameValue.trim();
+    if (!trimmed || trimmed === node.name || !effectiveProjectPath) {
+      setRenaming(false);
+      return;
+    }
+
+    const parentDir = node.path.substring(0, node.path.lastIndexOf("/"));
+    const newPath = `${parentDir}/${trimmed}`;
+
+    try {
+      await invoke("rename_file_or_dir", {
+        projectPath: effectiveProjectPath,
+        oldPath: node.path,
+        newPath,
+      });
+      // Reload tree after rename
+      const { loadProjectTree } = useFileTreeStore.getState();
+      await loadProjectTree(effectiveProjectPath);
+    } catch (err) {
+      console.error("[file-tree] Rename failed:", err);
+    } finally {
+      setRenaming(false);
+    }
+  }, [renameValue, node.name, node.path, effectiveProjectPath]);
+
+  const handleRenameKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        handleRenameCommit();
+      } else if (e.key === "Escape") {
+        setRenaming(false);
+      }
+    },
+    [handleRenameCommit]
+  );
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!effectiveProjectPath) return;
+    setIsDeleting(true);
+    try {
+      await invoke("delete_file_or_dir", {
+        projectPath: effectiveProjectPath,
+        targetPath: node.path,
+      });
+      // Reload tree after delete
+      const { loadProjectTree } = useFileTreeStore.getState();
+      await loadProjectTree(effectiveProjectPath);
+    } catch (err) {
+      console.error("[file-tree] Delete failed:", err);
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+    }
+  }, [node.path, effectiveProjectPath]);
+
+  const removeProjectTree = useFileTreeStore((s) => s.removeProjectTree);
+
+  const handleRemoveFromWorkspace = useCallback(async () => {
+    if (!activeWorkspaceId || !effectiveProjectPath) return;
+    try {
+      await removeProject(activeWorkspaceId, effectiveProjectPath);
+      removeProjectTree(effectiveProjectPath);
+    } catch (err) {
+      console.error("[file-tree] Remove from workspace failed:", err);
+    }
+  }, [activeWorkspaceId, effectiveProjectPath, removeProject, removeProjectTree]);
 
   const nameColor = statusColor
     ? `${statusColor} group-hover:text-ctp-text`
@@ -59,7 +178,7 @@ export const FileTreeNode = memo(function FileTreeNode({
       : "text-ctp-subtext0 group-hover:text-ctp-text";
   const ignoredOpacity = node.ignored ? "opacity-50" : "";
 
-  return (
+  const nodeButton = (
     <button
       type="button"
       className={`flex w-full items-center gap-1.5 px-2 py-1 text-left transition-colors duration-100 hover:bg-ctp-surface0 group ${
@@ -87,9 +206,22 @@ export const FileTreeNode = memo(function FileTreeNode({
         isOpen={expanded}
       />
 
-      <span className={`truncate text-sm ${nameColor}`}>
-        {node.name}
-      </span>
+      {renaming ? (
+        <input
+          ref={renameInputRef}
+          type="text"
+          className="min-w-0 flex-1 rounded bg-ctp-surface1 px-1 py-0 text-sm text-ctp-text outline-none ring-1 ring-ctp-mauve"
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          onKeyDown={handleRenameKeyDown}
+          onBlur={handleRenameCommit}
+          onClick={(e) => e.stopPropagation()}
+        />
+      ) : (
+        <span className={`truncate text-sm ${nameColor}`}>
+          {node.name}
+        </span>
+      )}
 
       {isProjectRoot && projectCounters && projectCounters.total > 0 && (
         <span
@@ -118,5 +250,82 @@ export const FileTreeNode = memo(function FileTreeNode({
         />
       )}
     </button>
+  );
+
+  return (
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          {nodeButton}
+        </ContextMenuTrigger>
+        <ContextMenuContent className="min-w-44 border-ctp-surface1 bg-ctp-mantle">
+          <ContextMenuItem
+            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+            onSelect={handleRenameStart}
+          >
+            <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Rename
+          </ContextMenuItem>
+
+          <ContextMenuItem
+            className="gap-2 text-xs text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
+            onSelect={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Delete
+          </ContextMenuItem>
+
+          {/* Remove from workspace: shown only for project root in multi-project workspace */}
+          {isProjectRoot && isInMultiProjectWorkspace && (
+            <>
+              <ContextMenuSeparator className="bg-ctp-surface0" />
+              <ContextMenuItem
+                className="gap-2 text-xs text-ctp-overlay1 focus:bg-ctp-surface0 focus:text-ctp-text"
+                onSelect={handleRemoveFromWorkspace}
+              >
+                <FolderMinus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Remove from workspace
+              </ContextMenuItem>
+            </>
+          )}
+        </ContextMenuContent>
+      </ContextMenu>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="border-ctp-surface1 bg-ctp-mantle sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-ctp-text">
+              Delete {node.isDir ? "folder" : "file"}
+            </DialogTitle>
+            <DialogDescription className="text-ctp-subtext0">
+              Are you sure you want to delete{" "}
+              <span className="font-medium text-ctp-text">{node.name}</span>?
+              {node.isDir && " This will delete all contents recursively."}
+              {" "}This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeleteDialogOpen(false)}
+              className="border-ctp-surface1 text-ctp-subtext0 hover:bg-ctp-surface0 hover:text-ctp-text"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-ctp-red text-ctp-base hover:bg-ctp-red/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 });
