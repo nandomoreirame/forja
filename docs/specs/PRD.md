@@ -174,45 +174,51 @@ Terminal interface is hostile for those who didn't grow up with it. Raw markdown
 
 ## ⚙️ Features & Requirements
 
-### Feature 1: Project Selector
+### Feature 1: Project Sidebar
 
 **Description:**
-Forja's initial screen that allows the user to select, open, and manage projects. It's the application's entry point.
+A narrow left sidebar that lists all open projects with visual identifiers (letter icons or favicons). Works like VS Code/Cursor project switcher: click a project icon to switch context, "+" button to add new projects.
 
 **Priority:** 🔴 P0 (Must)
 
 **User Story:**
-As a user, I want to select my project easily to start a Claude Code session without friction.
+As a user, I want to switch between my projects quickly using a visual sidebar, similar to VS Code.
 
 **Functional Requirements:**
 
 | ID | Requirement | Priority | Notes |
 |---|---|---|---|
-| F1.1 | Display list of recent projects (last 10) | P0 | Persist in local config |
-| F1.2 | "Open Folder" button with native file picker | P0 | Use Electron dialog API |
-| F1.3 | Display directory name and full path | P0 | Truncate long path |
-| F1.4 | Favorite projects (pin to top) | P1 | Drag to reorder |
-| F1.5 | Auto-discovery of Git repos in filesystem | P2 | Optional scan |
+| F1.1 | Display list of open projects as letter icons | P0 | First letter of project name, colored |
+| F1.2 | "+" button to add a project via native file picker | P0 | Use Electron dialog API |
+| F1.3 | Clicking a project icon switches the active project | P0 | Shows sessions only for that project |
+| F1.4 | Detect favicon/logo in `public/` or `assets/` directories | P1 | Falls back to letter icon if not found |
+| F1.5 | Tooltip showing project name and path on hover | P0 | |
+| F1.6 | Visual indicator for the currently active project | P0 | Brand color border/highlight |
+| F1.7 | Right-click context menu (Remove project, Open in Finder) | P1 | |
+| F1.8 | Persist open projects between app restarts | P0 | Via electron-store |
 
 **Acceptance Criteria:**
 
-- [ ] Recent projects load in < 200ms
+- [ ] Project icons load in < 100ms
+- [ ] Switching projects changes the file tree and sessions in < 300ms
 - [ ] File picker opens in < 500ms
-- [ ] Project selection starts session in < 2s
-- [ ] Persists between app restarts
+- [ ] Project list persists between app restarts
+- [ ] Letter icon is visually distinct per project (deterministic color from name)
 
 **UI/UX Requirements:**
 
-- Layout: Grid of cards with project name + icon + path
-- Empty state: "No recent projects. Open a folder to get started."
-- Responsive to window resize
+- Layout: Narrow vertical strip (~48px wide) on the far left, before the file tree sidebar
+- Icons: 36px squares with rounded corners, letter centered, background from a palette based on project name hash
+- Empty state: Only "+" button visible when no projects
+- Active state: Brand-colored left border (2px) on active project icon
+- Tooltip: Show project name + path on hover after 500ms delay
 
 ---
 
 ### Feature 2: Claude Code Pane
 
 **Description:**
-Main workspace area. A PTY running `claude` with enhanced rendering — transforms raw output into rendered markdown, code blocks with syntax highlighting, and interactive interface.
+Main project area. A PTY running `claude` with enhanced rendering — transforms raw output into rendered markdown, code blocks with syntax highlighting, and interactive interface.
 
 **Priority:** 🔴 P0 (Must)
 
@@ -363,10 +369,10 @@ Displays Git context of the current project in header or sidebar: active branch 
 **Happy Path:**
 
 ```
-App opens → Project Selector
-  → User clicks recent project (or "Open Folder")
+App opens → Project Sidebar shown
+  → User clicks project icon (or "+" to add new project)
   → File picker (if new project)
-  → Workspace opens with Claude Code Pane active
+  → Project opens with Claude Code Pane active
   → PTY spawns `claude` in selected directory
   → Git header shows branch + modified files
   → Input enabled, Claude ready
@@ -480,7 +486,7 @@ execSync('which claude'); // or 'where claude' on Windows
 
 **Problem:** User opens Forja without having Claude Code installed
 
-**Solution:** Detect when opening workspace, before spawning PTY
+**Solution:** Detect when opening a project, before spawning PTY
 
 **UI Behavior:**
 

@@ -1,12 +1,14 @@
 # Plano: Forja - Workspaces, Agentes, Modos Planner/Coder
 
+> **STATUS UPDATE (2026-03-08):** A Fase 1 deste plano (Workspace Enhancement / rename Project → Repository) foi **substituída** por `docs/plans/2026-03-08-project-sidebar.md`, que implementa um modelo mais simples de **Project Sidebar** em vez de workspaces. As Fases 2-4 (modos Planner/Coder, Agentes, Multi-agent panes) permanecem válidas e não foram afetadas.
+
 > **Destino:** Salvar este plano em `/home/nandomoreira/dev/projects/forja/docs/plans/workspaces-agents-planner-coder.md`
 
 ## Context
 
-O Forja e um desktop client (Electron + React) para AI coding CLIs. Atualmente funciona como um terminal turbinado com tabs, file tree e git integration. O objetivo e transformar o Forja em uma plataforma mais completa com:
+O Forja e um desktop client (Electron + React) para AI coding CLIs. Atualmente funciona como um terminal turbinado com tabs, file tree, project sidebar e git integration. O objetivo e transformar o Forja em uma plataforma mais completa com:
 
-1. **Workspaces/Repositories** - renomear "Projects" para "Repository", melhorar gestao
+1. ~~**Workspaces/Repositories** - renomear "Projects" para "Repository", melhorar gestao~~ **Substituido** — ver `docs/plans/2026-03-08-project-sidebar.md`
 2. **Modo Planner** - chat rico com IA (como Claude Projects/Gemini Gems) com contexto de arquivos
 3. **Modo Coder** - manter experiencia atual de terminal PTY
 4. **Agentes** - personas configuraveis (Planner) e workflows automatizados (Coder)
