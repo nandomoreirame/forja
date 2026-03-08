@@ -2,12 +2,18 @@ import * as os from "os";
 import * as path from "path";
 import * as pty from "node-pty";
 import type { IPty } from "node-pty";
-import type { WebContents } from "electron";
+import { BrowserWindow, type WebContents } from "electron";
+import { RingBuffer } from "./ring-buffer.js";
+import { showSessionEndNotification } from "./pty-notifications.js";
+
+const PTY_BUFFER_MAX_BYTES = 2 * 1024 * 1024; // 2MB
 
 interface PtySession {
   process: IPty;
   tabId: string;
   windowId: number;
+  projectPath: string;
+  buffer: RingBuffer;
 }
 
 const sessions = new Map<string, PtySession>();
@@ -46,8 +52,20 @@ function buildSafeEnv(extraEnv?: Record<string, string>): Record<string, string>
 export function spawnPty(opts: SpawnOptions): string {
   const { tabId, path: cwd, sessionType, windowId, sender, extraArgs, extraEnv } = opts;
 
-  const shell = sessionType === "terminal" ? getUserShell() : (sessionType || "claude");
-  const args: string[] = [...(extraArgs ?? [])];
+  let shell: string;
+  let args: string[];
+
+  if (sessionType === "terminal") {
+    shell = getUserShell();
+    args = [...(extraArgs ?? [])];
+  } else if (sessionType === "gh-copilot") {
+    // gh copilot is a gh extension: `gh copilot [args...]`
+    shell = "gh";
+    args = ["copilot", ...(extraArgs ?? [])];
+  } else {
+    shell = sessionType || "claude";
+    args = [...(extraArgs ?? [])];
+  }
 
   const ptyProcess = pty.spawn(shell, args, {
     name: "xterm-256color",
@@ -57,7 +75,16 @@ export function spawnPty(opts: SpawnOptions): string {
     env: buildSafeEnv(extraEnv),
   });
 
+  const session: PtySession = {
+    process: ptyProcess,
+    tabId,
+    windowId,
+    projectPath: cwd,
+    buffer: new RingBuffer(PTY_BUFFER_MAX_BYTES),
+  };
+
   ptyProcess.onData((data: string) => {
+    session.buffer.write(data); // accumulate in buffer
     if (!sender.isDestroyed()) {
       sender.send("pty:data", { tab_id: tabId, data });
     }
@@ -67,10 +94,40 @@ export function spawnPty(opts: SpawnOptions): string {
     sessions.delete(tabId);
     if (!sender.isDestroyed()) {
       sender.send("pty:exit", { tab_id: tabId, code: exitCode });
+
+      // Send session state change to frontend (for sidebar indicators)
+      sender.send("pty:session-state-changed", {
+        sessionId: tabId,
+        projectPath: cwd,
+        state: "exited",
+        exitCode,
+      });
     }
+
+    // Fire native notification (only if window not focused)
+    const mainWindow = BrowserWindow.getAllWindows()[0] ?? null;
+    showSessionEndNotification(
+      {
+        projectPath: cwd,
+        sessionType: sessionType ?? "terminal",
+        exitCode,
+      },
+      mainWindow,
+    );
   });
 
-  sessions.set(tabId, { process: ptyProcess, tabId, windowId });
+  sessions.set(tabId, session);
+
+  // After spawning, emit running state
+  if (!sender.isDestroyed()) {
+    sender.send("pty:session-state-changed", {
+      sessionId: tabId,
+      projectPath: cwd,
+      state: "running",
+      exitCode: null,
+    });
+  }
+
   return tabId;
 }
 
@@ -111,6 +168,11 @@ export function closeAllPtysForWindow(windowId: number): void {
       sessions.delete(tabId);
     }
   }
+}
+
+export function getSessionBuffer(tabId: string): string | null {
+  const session = sessions.get(tabId);
+  return session?.buffer.read() ?? null;
 }
 
 function getUserShell(): string {
