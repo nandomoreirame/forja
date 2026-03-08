@@ -1,8 +1,10 @@
 import { useEffect, type RefObject } from "react";
+import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useGitDiffStore } from "@/stores/git-diff";
+import { useProjectsStore } from "@/stores/projects";
 import { useTerminalTabsStore, type TerminalTab } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
@@ -32,8 +34,7 @@ export function useKeyboardShortcuts({
       }
       if (mod && event.key === ",") {
         event.preventDefault();
-        useUserSettingsStore.getState().openSettingsEditor();
-        useFilePreviewStore.getState().openPreview();
+        useAppDialogsStore.getState().setSettingsOpen(true);
         return;
       }
       if (mod && event.key === "b") {
@@ -134,6 +135,16 @@ export function useKeyboardShortcuts({
       if (mod && event.altKey && event.key === "0") {
         event.preventDefault();
         useTerminalZoomStore.getState().resetZoom();
+        return;
+      }
+      // Alt+1..9: switch projects by position
+      if (event.altKey && !mod && !event.shiftKey && event.key >= "1" && event.key <= "9") {
+        event.preventDefault();
+        const index = parseInt(event.key, 10) - 1;
+        const { projects, switchToProject: swp } = useProjectsStore.getState();
+        if (index < projects.length) {
+          swp(projects[index].path);
+        }
         return;
       }
       // Ctrl+Tab / Ctrl+Shift+Tab: cycle tabs

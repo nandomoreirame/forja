@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@/lib/ipc";
-import { CLI_REGISTRY, getAllCliBinaries, type CliDefinition } from "@/lib/cli-registry";
+import { CLI_REGISTRY, getAllCliIds, type CliDefinition } from "@/lib/cli-registry";
 
 export function useInstalledClis() {
   const [installedClis, setInstalledClis] = useState<CliDefinition[]>([]);
@@ -10,16 +10,14 @@ export function useInstalledClis() {
     let cancelled = false;
 
     invoke<Record<string, boolean>>("detect_installed_clis", {
-      binaries: getAllCliBinaries(),
+      cliIds: getAllCliIds(),
     })
       .then((results) => {
         if (cancelled) return;
-        const installed = Object.entries(results)
-          .filter(([, isInstalled]) => isInstalled)
-          .map(([binary]) => {
-            const entry = Object.values(CLI_REGISTRY).find((cli) => cli.binary === binary);
-            return entry!;
-          })
+        // Use getAllCliIds() order (canonical display order) instead of Object.entries
+        const installed = getAllCliIds()
+          .filter((cliId) => results[cliId])
+          .map((cliId) => CLI_REGISTRY[cliId])
           .filter(Boolean);
         setInstalledClis(installed);
       })
