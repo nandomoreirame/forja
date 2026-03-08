@@ -40,6 +40,8 @@ const DEFAULT_SETTINGS: UserSettings = {
     claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
     gemini: { args: ["--yolo"] },
     codex: { args: ["--full-auto"] },
+    opencode: {},
+    "gh-copilot": {},
   },
 };
 

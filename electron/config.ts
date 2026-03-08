@@ -68,6 +68,12 @@ export function addRecentProject(projectPath: string): void {
   store.set("recentProjects", updated);
 }
 
+export function removeRecentProject(projectPath: string): void {
+  const existing = store.get("recentProjects");
+  const filtered = existing.filter((p) => p.path !== projectPath);
+  store.set("recentProjects", filtered);
+}
+
 // ─── Workspaces ──────────────────────────────────────────────────────────────
 
 export function getWorkspaces(): Workspace[] {

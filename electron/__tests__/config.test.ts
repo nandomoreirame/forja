@@ -89,6 +89,27 @@ describe("config module", () => {
     expect(() => new Date(projects[0].last_opened)).not.toThrow();
   });
 
+  it("removes a recent project", async () => {
+    const { addRecentProject, removeRecentProject, getRecentProjects } = await import("../config");
+    addRecentProject("/home/user/project-a");
+    addRecentProject("/home/user/project-b");
+
+    removeRecentProject("/home/user/project-a");
+
+    const projects = getRecentProjects();
+    expect(projects).toHaveLength(1);
+    expect(projects[0].path).toBe("/home/user/project-b");
+  });
+
+  it("removeRecentProject is a no-op for unknown path", async () => {
+    const { addRecentProject, removeRecentProject, getRecentProjects } = await import("../config");
+    addRecentProject("/home/user/project-a");
+
+    removeRecentProject("/home/user/non-existent");
+
+    expect(getRecentProjects()).toHaveLength(1);
+  });
+
   // ─── Workspace CRUD tests ─────────────────────────────────────────────────
 
   describe("workspaces", () => {
