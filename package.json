@@ -2,15 +2,13 @@
   "name": "@forja/app",
   "private": true,
   "version": "1.2.0",
-  "description": "Desktop GUI client for Claude Code and other AI coding CLIs",
+  "description": "Desktop GUI client for Vibe Coders and other AI coding CLIs",
   "author": {
     "name": "Fernando Moreira",
     "email": "nandomoreira.me@gmail.com"
   },
   "type": "module",
-  "sideEffects": [
-    "**/*.css"
-  ],
+  "sideEffects": ["**/*.css"],
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "concurrently \"pnpm dev:vite\" \"pnpm dev:electron\"",
