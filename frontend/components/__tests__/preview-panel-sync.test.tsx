@@ -87,10 +87,8 @@ vi.mock("../command-palette", () => ({
 vi.mock("../claude-not-found-dialog", () => ({
   ClaudeNotFoundDialog: () => null,
 }));
-vi.mock("../create-workspace-dialog", () => ({
-  CreateWorkspaceDialog: () => null,
-}));
 vi.mock("@/lib/cli-registry", () => ({
+  getAllCliIds: () => [],
   getAllCliBinaries: () => [],
 }));
 
