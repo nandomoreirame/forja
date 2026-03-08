@@ -137,6 +137,17 @@ function SettingItem({ category, label, description, children }: SettingItemProp
   );
 }
 
+function SectionHeader({ title, icon }: { title: string; icon: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 pb-3">
+      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-ctp-surface0">
+        {icon}
+      </div>
+      <h3 className="text-sm font-semibold text-ctp-text">{title}</h3>
+    </div>
+  );
+}
+
 // ─── Inputs ──────────────────────────────────────────────────────────────────
 
 const inputClass =
