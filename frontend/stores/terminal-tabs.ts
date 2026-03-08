@@ -1,5 +1,5 @@
 import { getCurrentWindow } from "@/lib/ipc";
-import { getSessionDisplayName, type SessionType } from "@/lib/cli-registry";
+import { computeTabDisplayNames, getSessionDisplayName, type SessionType } from "@/lib/cli-registry";
 import { create } from "zustand";
 
 const RENDERER_INSTANCE_ID = `${Date.now().toString(36)}-${Math.random()
@@ -19,6 +19,7 @@ interface TerminalTabsState {
   activeTabId: string | null;
   counter: number;
   isTerminalPaneOpen: boolean;
+  activeTabIdByProject: Record<string, string>;
 
   nextTabId: () => string;
   addTab: (id: string, path: string, sessionType?: SessionType) => void;
@@ -26,6 +27,14 @@ interface TerminalTabsState {
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
   toggleTerminalPane: () => void;
+  /** Returns a map of tabId -> computed display name based on current open tabs. */
+  getTabDisplayNames: () => Record<string, string>;
+  /** Returns tabs belonging to a specific project path. */
+  getTabsForProject: (projectPath: string) => TerminalTab[];
+  /** Saves current activeTabId for the given project path. */
+  saveActiveTabForProject: (projectPath: string) => void;
+  /** Restores activeTabId for the given project path (falls back to first tab or null). */
+  restoreActiveTabForProject: (projectPath: string) => void;
 }
 
 export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
@@ -33,6 +42,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   activeTabId: null,
   counter: 0,
   isTerminalPaneOpen: true,
+  activeTabIdByProject: {},
 
   nextTabId: () => {
     const newCounter = get().counter + 1;
@@ -42,10 +52,9 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   },
 
   addTab: (id: string, path: string, sessionType: SessionType = 'claude') => {
-    const currentCounter = get().counter;
     const tab: TerminalTab = {
       id,
-      name: getSessionDisplayName(sessionType, currentCounter),
+      name: getSessionDisplayName(sessionType),
       path,
       isRunning: true,
       sessionType,
@@ -88,6 +97,35 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
       ),
     })),
 
+  getTabDisplayNames: () => computeTabDisplayNames(get().tabs),
+
   toggleTerminalPane: () =>
     set((state) => ({ isTerminalPaneOpen: !state.isTerminalPaneOpen })),
+
+  getTabsForProject: (projectPath: string) => {
+    return get().tabs.filter((t) => t.path === projectPath);
+  },
+
+  saveActiveTabForProject: (projectPath: string) => {
+    const { activeTabId, activeTabIdByProject } = get();
+    if (activeTabId) {
+      set({
+        activeTabIdByProject: { ...activeTabIdByProject, [projectPath]: activeTabId },
+      });
+    }
+  },
+
+  restoreActiveTabForProject: (projectPath: string) => {
+    const { activeTabIdByProject, tabs } = get();
+    const savedId = activeTabIdByProject[projectPath];
+    const projectTabs = tabs.filter((t) => t.path === projectPath);
+
+    if (savedId && projectTabs.some((t) => t.id === savedId)) {
+      set({ activeTabId: savedId });
+    } else if (projectTabs.length > 0) {
+      set({ activeTabId: projectTabs[0].id });
+    } else {
+      set({ activeTabId: null });
+    }
+  },
 }));

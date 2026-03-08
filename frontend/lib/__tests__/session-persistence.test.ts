@@ -64,5 +64,23 @@ describe("session-persistence", () => {
       },
     });
   });
+
+  it("preserves activeProjectPath from old snapshot with activeWorkspaceId", () => {
+    // Simulate old format with workspaceId
+    window.localStorage.setItem(
+      "forja:session:v1",
+      JSON.stringify({
+        activeWorkspaceId: "old-ws",
+        activeProjectPath: "/home/user/proj",
+        preview: { isOpen: false, currentFile: null },
+        terminal: { isPaneOpen: true, activeTabIndex: 0, tabs: [] },
+      }),
+    );
+
+    const restored = loadPersistedSessionState();
+    expect(restored?.activeProjectPath).toBe("/home/user/proj");
+    // workspaceId is still read but will be ignored by App.tsx
+    expect(restored?.activeWorkspaceId).toBe("old-ws");
+  });
 });
 

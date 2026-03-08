@@ -38,7 +38,7 @@ describe("useTerminalTabsStore", () => {
     expect(state.tabs).toHaveLength(1);
     expect(state.tabs[0]).toEqual({
       id: tabId,
-      name: "Claude Code #1",
+      name: "Claude Code",
       path: "/test/path",
       isRunning: true,
       sessionType: "claude",
@@ -46,16 +46,17 @@ describe("useTerminalTabsStore", () => {
     expect(state.activeTabId).toBe(tabId);
   });
 
-  it("auto-increments tab names", () => {
+  it("stores base name (no counter) — display names are computed dynamically", () => {
     createTab("/path/a");
     createTab("/path/b");
     createTab("/path/c");
 
     const state = useTerminalTabsStore.getState();
+    // The stored name is always the base name — no static counter
     expect(state.tabs.map((t) => t.name)).toEqual([
-      "Claude Code #1",
-      "Claude Code #2",
-      "Claude Code #3",
+      "Claude Code",
+      "Claude Code",
+      "Claude Code",
     ]);
   });
 
@@ -127,7 +128,7 @@ describe("useTerminalTabsStore", () => {
 
     const state = useTerminalTabsStore.getState();
     expect(state.tabs[0].sessionType).toBe("claude");
-    expect(state.tabs[0].name).toBe("Claude Code #1");
+    expect(state.tabs[0].name).toBe("Claude Code");
   });
 
   it("adds tab with sessionType 'terminal'", () => {
@@ -135,7 +136,7 @@ describe("useTerminalTabsStore", () => {
 
     const state = useTerminalTabsStore.getState();
     expect(state.tabs[0].sessionType).toBe("terminal");
-    expect(state.tabs[0].name).toBe("Terminal #1");
+    expect(state.tabs[0].name).toBe("Terminal");
   });
 
   it("adds tab with sessionType 'gemini'", () => {
@@ -143,7 +144,7 @@ describe("useTerminalTabsStore", () => {
 
     const state = useTerminalTabsStore.getState();
     expect(state.tabs[0].sessionType).toBe("gemini");
-    expect(state.tabs[0].name).toBe("Gemini CLI #1");
+    expect(state.tabs[0].name).toBe("Gemini CLI");
   });
 
   it("defaults to 'claude' when sessionType is not provided", () => {
@@ -153,14 +154,189 @@ describe("useTerminalTabsStore", () => {
     expect(state.tabs[0].sessionType).toBe("claude");
   });
 
-  it("creates tabs with mixed session types and correct names", () => {
+  it("creates tabs with mixed session types storing base names", () => {
     createTab("/path/a", "claude");
     createTab("/path/b", "gemini");
     createTab("/path/c", "terminal");
 
     const state = useTerminalTabsStore.getState();
-    expect(state.tabs[0].name).toBe("Claude Code #1");
-    expect(state.tabs[1].name).toBe("Gemini CLI #2");
-    expect(state.tabs[2].name).toBe("Terminal #3");
+    // Stored names are base names (no counters)
+    expect(state.tabs[0].name).toBe("Claude Code");
+    expect(state.tabs[1].name).toBe("Gemini CLI");
+    expect(state.tabs[2].name).toBe("Terminal");
+  });
+
+  describe("getTabDisplayNames", () => {
+    it("returns empty object when no tabs", () => {
+      const names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names).toEqual({});
+    });
+
+    it("single tab of each type — no numbers shown", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "gemini");
+      const id3 = createTab("/c", "terminal");
+
+      const names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names[id1]).toBe("Claude Code");
+      expect(names[id2]).toBe("Gemini CLI");
+      expect(names[id3]).toBe("Terminal");
+    });
+
+    it("two claude tabs get per-type sequential numbers", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "claude");
+
+      const names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names[id1]).toBe("Claude Code #1");
+      expect(names[id2]).toBe("Claude Code #2");
+    });
+
+    it("mixed types: two claude, one gemini — only claude gets numbers", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "gemini");
+      const id3 = createTab("/c", "claude");
+
+      const names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names[id1]).toBe("Claude Code #1");
+      expect(names[id2]).toBe("Gemini CLI");
+      expect(names[id3]).toBe("Claude Code #2");
+    });
+
+    it("counter resets after tabs are removed — based on current open tabs only", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "claude");
+
+      // Both show numbers when there are 2
+      let names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names[id1]).toBe("Claude Code #1");
+      expect(names[id2]).toBe("Claude Code #2");
+
+      // Remove first tab — remaining tab shows no number
+      useTerminalTabsStore.getState().removeTab(id1);
+      names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names[id2]).toBe("Claude Code");
+    });
+
+    it("numbers restart from 1 for new tabs after clearing", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "claude");
+
+      // Remove both
+      useTerminalTabsStore.getState().removeTab(id1);
+      useTerminalTabsStore.getState().removeTab(id2);
+
+      // Open two new ones — counter starts at 1 again
+      const id3 = createTab("/c", "claude");
+      const id4 = createTab("/d", "claude");
+
+      const names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names[id3]).toBe("Claude Code #1");
+      expect(names[id4]).toBe("Claude Code #2");
+    });
+  });
+
+  describe("per-project tab isolation", () => {
+    it("getTabsForProject returns only tabs matching the given path", () => {
+      createTab("/project-a", "claude");
+      createTab("/project-b", "terminal");
+      createTab("/project-a", "gemini");
+
+      const tabsA = useTerminalTabsStore.getState().getTabsForProject("/project-a");
+      const tabsB = useTerminalTabsStore.getState().getTabsForProject("/project-b");
+
+      expect(tabsA).toHaveLength(2);
+      expect(tabsA.every((t) => t.path === "/project-a")).toBe(true);
+      expect(tabsB).toHaveLength(1);
+      expect(tabsB[0].path).toBe("/project-b");
+    });
+
+    it("getTabsForProject returns empty array for unknown project", () => {
+      createTab("/project-a", "claude");
+
+      const tabs = useTerminalTabsStore.getState().getTabsForProject("/unknown");
+      expect(tabs).toHaveLength(0);
+    });
+
+    it("remembers active tab per project when switching", () => {
+      const idA1 = createTab("/project-a", "claude");
+      const idA2 = createTab("/project-a", "terminal");
+      const idB1 = createTab("/project-b", "claude");
+
+      // Active tab is idB1 (last added)
+      // Set active to idA1 for project A
+      useTerminalTabsStore.getState().setActiveTab(idA1);
+      useTerminalTabsStore.getState().saveActiveTabForProject("/project-a");
+
+      // Switch to project B
+      useTerminalTabsStore.getState().setActiveTab(idB1);
+      useTerminalTabsStore.getState().saveActiveTabForProject("/project-b");
+
+      // Restore project A
+      useTerminalTabsStore.getState().restoreActiveTabForProject("/project-a");
+      expect(useTerminalTabsStore.getState().activeTabId).toBe(idA1);
+
+      // Restore project B
+      useTerminalTabsStore.getState().restoreActiveTabForProject("/project-b");
+      expect(useTerminalTabsStore.getState().activeTabId).toBe(idB1);
+    });
+
+    it("restoreActiveTabForProject falls back to first tab if saved tab was removed", () => {
+      const idA1 = createTab("/project-a", "claude");
+      const idA2 = createTab("/project-a", "terminal");
+
+      // Save idA1 as active for project-a
+      useTerminalTabsStore.getState().setActiveTab(idA1);
+      useTerminalTabsStore.getState().saveActiveTabForProject("/project-a");
+
+      // Remove idA1
+      useTerminalTabsStore.getState().removeTab(idA1);
+
+      // Restore should fall back to idA2
+      useTerminalTabsStore.getState().restoreActiveTabForProject("/project-a");
+      expect(useTerminalTabsStore.getState().activeTabId).toBe(idA2);
+    });
+
+    it("restoreActiveTabForProject sets null if project has no tabs", () => {
+      createTab("/project-a", "claude");
+
+      useTerminalTabsStore.getState().restoreActiveTabForProject("/project-b");
+      expect(useTerminalTabsStore.getState().activeTabId).toBeNull();
+    });
+
+    it("markTabExited keeps all tabs in the list", () => {
+      const idA1 = createTab("/project-a", "claude");
+      const idA2 = createTab("/project-a", "terminal");
+
+      useTerminalTabsStore.getState().markTabExited(idA1);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs).toHaveLength(2);
+      expect(state.tabs[0].isRunning).toBe(false);
+      expect(state.tabs[1].isRunning).toBe(true);
+    });
+
+    it("exited tabs persist across project switches", () => {
+      const idA1 = createTab("/project-a", "claude");
+      createTab("/project-b", "terminal");
+
+      // Mark A's tab as exited (simulating pty:exit)
+      useTerminalTabsStore.getState().markTabExited(idA1);
+
+      // Save and switch away from A
+      useTerminalTabsStore.getState().setActiveTab(idA1);
+      useTerminalTabsStore.getState().saveActiveTabForProject("/project-a");
+
+      // Switch to B
+      useTerminalTabsStore.getState().restoreActiveTabForProject("/project-b");
+
+      // Switch back to A — exited tab should still be there
+      useTerminalTabsStore.getState().restoreActiveTabForProject("/project-a");
+
+      expect(useTerminalTabsStore.getState().activeTabId).toBe(idA1);
+      const tabA = useTerminalTabsStore.getState().tabs.find((t) => t.id === idA1);
+      expect(tabA).toBeDefined();
+      expect(tabA!.isRunning).toBe(false);
+    });
   });
 });
