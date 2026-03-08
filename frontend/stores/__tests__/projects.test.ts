@@ -1,0 +1,246 @@
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { useProjectsStore } from "../projects";
+
+vi.mock("@/lib/ipc", () => ({
+  invoke: vi.fn(),
+  listen: vi.fn(() => Promise.resolve(() => {})),
+}));
+
+vi.mock("@/stores/file-tree", () => ({
+  useFileTreeStore: {
+    getState: vi.fn(() => ({
+      openProjectPath: vi.fn(),
+    })),
+  },
+}));
+
+import { invoke } from "@/lib/ipc";
+import { useFileTreeStore } from "@/stores/file-tree";
+
+describe("useProjectsStore", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useProjectsStore.setState({
+      projects: [],
+      activeProjectPath: null,
+      loading: false,
+    });
+  });
+
+  it("loads projects from IPC", async () => {
+    vi.mocked(invoke).mockResolvedValueOnce([
+      { path: "/home/user/my-app", name: "my-app", last_opened: "2026-01-01" },
+    ]);
+
+    await useProjectsStore.getState().loadProjects();
+
+    expect(useProjectsStore.getState().projects).toHaveLength(1);
+    expect(useProjectsStore.getState().projects[0].path).toBe("/home/user/my-app");
+  });
+
+  it("sets active project", () => {
+    useProjectsStore.setState({
+      projects: [{ path: "/home/user/my-app", name: "my-app", lastOpened: "2026-01-01" }],
+    });
+
+    useProjectsStore.getState().setActiveProject("/home/user/my-app");
+
+    expect(useProjectsStore.getState().activeProjectPath).toBe("/home/user/my-app");
+  });
+
+  it("generates letter icon from project name", () => {
+    const icon = useProjectsStore.getState().getProjectInitial("my-app");
+    expect(icon).toBe("M");
+  });
+
+  it("generates deterministic color from project name", () => {
+    const color1 = useProjectsStore.getState().getProjectColor("my-app");
+    const color2 = useProjectsStore.getState().getProjectColor("my-app");
+    expect(color1).toBe(color2);
+    expect(color1).toMatch(/^#[0-9a-fA-F]{6}$/);
+  });
+
+  it("adds a new project", async () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    await useProjectsStore.getState().addProject("/home/user/new-project");
+
+    expect(invoke).toHaveBeenCalledWith("add_recent_project", { path: "/home/user/new-project" });
+  });
+
+  it("removes a project from the list and persists to disk", () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    useProjectsStore.setState({
+      projects: [
+        { path: "/a", name: "a", lastOpened: "" },
+        { path: "/b", name: "b", lastOpened: "" },
+      ],
+      activeProjectPath: "/a",
+    });
+
+    useProjectsStore.getState().removeProject("/a");
+
+    const { projects, activeProjectPath } = useProjectsStore.getState();
+    expect(projects).toHaveLength(1);
+    expect(activeProjectPath).toBe("/b");
+    expect(invoke).toHaveBeenCalledWith("remove_recent_project", { path: "/a" });
+  });
+
+  it("switches to project and loads file tree", async () => {
+    const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useFileTreeStore.getState).mockReturnValue({
+      openProjectPath: mockOpenProjectPath,
+    } as never);
+
+    useProjectsStore.setState({
+      projects: [{ path: "/home/user/my-app", name: "my-app", lastOpened: "" }],
+    });
+
+    await useProjectsStore.getState().switchToProject("/home/user/my-app");
+
+    expect(useProjectsStore.getState().activeProjectPath).toBe("/home/user/my-app");
+    expect(mockOpenProjectPath).toHaveBeenCalledWith("/home/user/my-app");
+  });
+
+  it("loads project icon via IPC", async () => {
+    vi.mocked(invoke).mockImplementation(async (channel) => {
+      if (channel === "detect_project_icon") return "file:///home/user/my-app/public/favicon.svg";
+      return null;
+    });
+
+    useProjectsStore.setState({
+      projects: [{ path: "/home/user/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+    });
+
+    await useProjectsStore.getState().loadProjectIcon("/home/user/my-app");
+
+    const project = useProjectsStore.getState().projects.find((p) => p.path === "/home/user/my-app");
+    expect(project?.iconPath).toBe("file:///home/user/my-app/public/favicon.svg");
+  });
+
+  it("sets iconPath to null when no icon found", async () => {
+    vi.mocked(invoke).mockResolvedValue(null);
+
+    useProjectsStore.setState({
+      projects: [{ path: "/home/user/no-icon", name: "no-icon", lastOpened: "", iconPath: undefined }],
+    });
+
+    await useProjectsStore.getState().loadProjectIcon("/home/user/no-icon");
+
+    const project = useProjectsStore.getState().projects.find((p) => p.path === "/home/user/no-icon");
+    expect(project?.iconPath).toBeNull();
+  });
+
+  it("updates session state for a project to 'running'", () => {
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+      sessionStates: {},
+      unreadProjects: new Set<string>(),
+    });
+
+    useProjectsStore.getState().setProjectSessionState("/a/my-app", "running");
+
+    const state = useProjectsStore.getState().sessionStates["/a/my-app"];
+    expect(state).toBe("running");
+  });
+
+  it("updates session state to 'exited' and marks as unread", () => {
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+      activeProjectPath: "/b/other",
+      sessionStates: { "/a/my-app": "running" },
+      unreadProjects: new Set<string>(),
+    });
+
+    useProjectsStore.getState().setProjectSessionState("/a/my-app", "exited");
+
+    const state = useProjectsStore.getState().sessionStates["/a/my-app"];
+    const unread = useProjectsStore.getState().unreadProjects;
+    expect(state).toBe("exited");
+    expect(unread.has("/a/my-app")).toBe(true);
+  });
+
+  it("does not mark active project as unread when exited", () => {
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+      activeProjectPath: "/a/my-app",
+      sessionStates: { "/a/my-app": "running" },
+      unreadProjects: new Set<string>(),
+    });
+
+    useProjectsStore.getState().setProjectSessionState("/a/my-app", "exited");
+
+    const unread = useProjectsStore.getState().unreadProjects;
+    expect(unread.has("/a/my-app")).toBe(false);
+  });
+
+  it("clears unread flag when switching to a project", async () => {
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+      unreadProjects: new Set(["/a/my-app"]),
+      sessionStates: {},
+    });
+
+    await useProjectsStore.getState().switchToProject("/a/my-app");
+
+    const unread = useProjectsStore.getState().unreadProjects;
+    expect(unread.has("/a/my-app")).toBe(false);
+  });
+
+  it("updates project name via updateProject", () => {
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+    });
+
+    useProjectsStore.getState().updateProject("/a/my-app", { name: "renamed-app" });
+
+    const project = useProjectsStore.getState().projects.find((p) => p.path === "/a/my-app");
+    expect(project?.name).toBe("renamed-app");
+  });
+
+  it("updates project iconPath via updateProject", () => {
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+    });
+
+    useProjectsStore.getState().updateProject("/a/my-app", { iconPath: "/icons/custom.svg" });
+
+    const project = useProjectsStore.getState().projects.find((p) => p.path === "/a/my-app");
+    expect(project?.iconPath).toBe("/icons/custom.svg");
+  });
+
+  it("does nothing when updateProject targets non-existent path", () => {
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+    });
+
+    useProjectsStore.getState().updateProject("/non-existent", { name: "nope" });
+
+    expect(useProjectsStore.getState().projects).toHaveLength(1);
+    expect(useProjectsStore.getState().projects[0].name).toBe("my-app");
+  });
+
+  it("loads icons for all projects after loadProjects", async () => {
+    vi.mocked(invoke).mockImplementation(async (channel) => {
+      if (channel === "get_recent_projects") {
+        return [
+          { path: "/a/app1", name: "app1", last_opened: "2026-01-01" },
+          { path: "/b/app2", name: "app2", last_opened: "2026-01-02" },
+        ];
+      }
+      if (channel === "detect_project_icon") return null;
+      return null;
+    });
+
+    await useProjectsStore.getState().loadProjects();
+
+    // loadProjectIcon should have been triggered for each project
+    const detectCalls = vi.mocked(invoke).mock.calls.filter(
+      (call) => call[0] === "detect_project_icon"
+    );
+    expect(detectCalls).toHaveLength(2);
+    expect(detectCalls[0][1]).toEqual({ path: "/a/app1" });
+    expect(detectCalls[1][1]).toEqual({ path: "/b/app2" });
+  });
+});
