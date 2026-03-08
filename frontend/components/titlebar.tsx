@@ -2,8 +2,6 @@ import { IS_MAC } from "@/lib/platform";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
-import { useUserSettingsStore } from "@/stores/user-settings";
-import { useFilePreviewStore } from "@/stores/file-preview";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { getCurrentWindow, isTilingDesktop } from "@/lib/ipc";
 import {
@@ -23,6 +21,7 @@ import {
 import { useEffect, useState } from "react";
 import { AboutDialog } from "./about-dialog";
 import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
+import { SettingsDialog } from "./settings-dialog";
 import { ResourceUsagePopover } from "./resource-usage-popover";
 import {
   DropdownMenu,
@@ -44,7 +43,7 @@ const isMac = IS_MAC;
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
   const [tilingDesktop, setTilingDesktop] = useState(false);
-  const { aboutOpen, setAboutOpen, shortcutsOpen, setShortcutsOpen } = useAppDialogsStore();
+  const { aboutOpen, setAboutOpen, shortcutsOpen, setShortcutsOpen, settingsOpen, setSettingsOpen } = useAppDialogsStore();
   const { isOpen, tree, trees, currentPath, toggleSidebar, openProject } = useFileTreeStore();
   const { nextTabId, addTab } = useTerminalTabsStore();
   const title = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
@@ -83,19 +82,20 @@ export function Titlebar() {
   return (
     <div
       style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
-      className="relative flex h-10 shrink-0 select-none items-center justify-between px-3"
+      className="relative flex h-10 shrink-0 select-none items-center justify-between pr-3"
     >
       {/* Left: menu + sidebar toggle */}
       <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-              aria-label="Menu"
-            >
-              <Menu className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </DropdownMenuTrigger>
+        <div className="flex w-12 shrink-0 items-center justify-center">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                aria-label="Menu"
+              >
+                <Menu className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="min-w-52 border-none">
             <DropdownMenuItem onClick={createNewTab} disabled={!currentPath}>
               <Plus className="h-3.5 w-3.5" />
@@ -119,10 +119,7 @@ export function Titlebar() {
               </span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {
-              useUserSettingsStore.getState().openSettingsEditor();
-              useFilePreviewStore.getState().openPreview();
-            }}>
+            <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
               <Settings className="h-3.5 w-3.5" />
               Settings
               <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
@@ -141,7 +138,8 @@ export function Titlebar() {
               About
             </DropdownMenuItem>
           </DropdownMenuContent>
-        </DropdownMenu>
+          </DropdownMenu>
+        </div>
 
         {(tree !== null || Object.keys(trees).length > 0) && (
           <button
@@ -200,6 +198,7 @@ export function Titlebar() {
       </div>
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   );
 }

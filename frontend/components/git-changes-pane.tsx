@@ -37,7 +37,7 @@ export function GitChangesPane({ projectPaths }: GitChangesPaneProps) {
   }
 
   return (
-    <div data-testid="git-changes-pane" className="shrink-0 border-b border-ctp-surface0">
+    <div data-testid="git-changes-pane" className="shrink-0 border-t border-ctp-surface0">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}

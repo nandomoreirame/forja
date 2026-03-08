@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { PanelRightClose, X } from "lucide-react";
 import { useSessionStateStore } from "@/stores/session-state";
 import { useTerminalTabsStore, type TerminalTab } from "@/stores/terminal-tabs";
-import type { SessionType } from "@/lib/cli-registry";
+import { computeTabDisplayNames, type SessionType } from "@/lib/cli-registry";
 import { CliIcon } from "./cli-icon";
 import { NewSessionDropdown } from "./new-session-dropdown";
 
@@ -22,6 +22,7 @@ export function TabBar({
   onSessionTypeSelect,
 }: TabBarProps) {
   const sessionStates = useSessionStateStore((s) => s.states);
+  const displayNames = computeTabDisplayNames(tabs);
 
   const handleTabKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -44,6 +45,7 @@ export function TabBar({
         {tabs.map((tab, index) => {
           const isActive = tab.id === activeTabId;
           const sessionState = sessionStates[tab.id] ?? "idle";
+          const displayName = displayNames[tab.id] ?? tab.name;
           return (
             <button
               key={tab.id}
@@ -73,10 +75,10 @@ export function TabBar({
                 }`}
               />
               <CliIcon sessionType={tab.sessionType} className="h-3.5 w-3.5" />
-              <span>{tab.name}</span>
+              <span>{displayName}</span>
               <button
                 type="button"
-                aria-label={`Close ${tab.name}`}
+                aria-label={`Close ${displayName}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onCloseTab(tab.id);
