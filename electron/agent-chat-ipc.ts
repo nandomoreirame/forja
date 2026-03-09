@@ -1,3 +1,5 @@
+import * as path from "path";
+import * as os from "os";
 import {
   spawnChatSession,
   sendChatMessage,
@@ -10,7 +12,7 @@ type IpcHandler = (event: unknown, args: unknown) => Promise<unknown>;
 interface SpawnArgs {
   sessionId: string;
   cliId: "claude" | "codex" | "gemini" | "cursor-agent";
-  projectPath: string;
+  projectPath?: string;
 }
 
 interface SendArgs {
@@ -34,6 +36,8 @@ async function handleSpawn(event: unknown, args: unknown): Promise<unknown> {
   const { sessionId, cliId, projectPath } = args as SpawnArgs;
   const sender = (event as { sender?: { send: (ch: string, data: unknown) => void } })?.sender;
 
+  const effectiveCwd = projectPath || path.join(os.homedir(), ".config", "forja");
+
   const onEvent = (streamEvent: StreamEvent) => {
     sender?.send("chat:event", { sessionId, event: streamEvent });
   };
@@ -42,7 +46,7 @@ async function handleSpawn(event: unknown, args: unknown): Promise<unknown> {
     sender?.send("chat:exit", { sessionId, code });
   };
 
-  const session = spawnChatSession(sessionId, cliId, projectPath, onEvent, onExit);
+  const session = spawnChatSession(sessionId, cliId, effectiveCwd, onEvent, onExit);
   if (!session) throw new Error(`Failed to spawn ${cliId} chat session`);
 
   return { sessionId };
