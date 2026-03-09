@@ -11,7 +11,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useProjectsStore, type Project } from "@/stores/projects";
 import { useFileTreeStore } from "@/stores/file-tree";
-import { open } from "@/lib/ipc";
+import { invoke, open } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { useAgentChatStore } from "@/stores/agent-chat";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
@@ -234,7 +234,8 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
       ],
     });
     if (typeof result === "string") {
-      setEditIconPath(result);
+      const dataUrl = await invoke<string | null>("read_icon_as_data_url", { path: result });
+      setEditIconPath(dataUrl ?? result);
     }
   }, []);
 
