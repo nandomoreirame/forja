@@ -232,11 +232,22 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const sidebarPanelRef = usePanelRef();
   const previewPanelRef = usePanelRef();
   const terminalPanelRef = usePanelRef();
-  const { panelSizes, loaded: panelPrefsLoaded, savePanelSize } =
+  const { panelSizes, sidebarOpen: persistedSidebarOpen, loaded: panelPrefsLoaded, savePanelSize, saveSidebarOpen } =
     usePanelPreferences();
   const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
   const effectivePanelSizes = getPanelSizesForLayout(hasProject, panelSizes);
+
+  // Sync persisted sidebarOpen preference into the file tree store on load
+  const sidebarSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!panelPrefsLoaded || sidebarSyncedRef.current) return;
+    sidebarSyncedRef.current = true;
+    const store = useFileTreeStore.getState();
+    if (store.isOpen !== persistedSidebarOpen) {
+      store.toggleSidebar();
+    }
+  }, [panelPrefsLoaded, persistedSidebarOpen]);
 
   // Sync sidebar panel collapse with store
   useEffect(() => {
@@ -255,10 +266,12 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     const ftStore = useFileTreeStore.getState();
     if (isChatOpen && ftStore.isOpen) {
       ftStore.toggleSidebar();
+      saveSidebarOpen(false);
     } else if (!isChatOpen && !ftStore.isOpen) {
       ftStore.toggleSidebar();
+      saveSidebarOpen(true);
     }
-  }, [isChatOpen]);
+  }, [isChatOpen, saveSidebarOpen]);
 
   // Sync preview + terminal panel sizes together
   // Both effects need to know about each other's state to calculate correct sizes
@@ -621,8 +634,10 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                 const storeIsOpen = useFileTreeStore.getState().isOpen;
                 if (isCollapsed && storeIsOpen) {
                   useFileTreeStore.getState().toggleSidebar();
+                  saveSidebarOpen(false);
                 } else if (!isCollapsed && !storeIsOpen) {
                   useFileTreeStore.getState().toggleSidebar();
+                  saveSidebarOpen(true);
                 }
                 if (!isCollapsed) {
                   savePanelSize("sidebarSize", size.asPercentage);

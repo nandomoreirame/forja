@@ -85,7 +85,6 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     await get().loadProjectTree(projectPath);
     const updatedTrees = get().trees;
     set({
-      isOpen: true,
       currentPath: projectPath,
       activeProjectPath: projectPath,
       tree: updatedTrees[projectPath] ?? null,
