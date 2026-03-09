@@ -127,6 +127,16 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     set({ activeProjectPath: projectPath });
     get().markProjectAsRead(projectPath);
 
+    // Save/restore file preview per project
+    if (previousPath !== projectPath) {
+      const { useFilePreviewStore } = await import("./file-preview");
+      const previewStore = useFilePreviewStore.getState();
+      if (previousPath) {
+        previewStore.savePreviewForProject(previousPath);
+      }
+      previewStore.restorePreviewForProject(projectPath);
+    }
+
     // Save/restore terminal tabs per project
     const { useTerminalTabsStore } = await import("./terminal-tabs");
     const tabsStore = useTerminalTabsStore.getState();

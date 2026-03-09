@@ -17,6 +17,7 @@ interface FilePreviewState {
   isEditing: boolean;
   editContent: string | null;
   editDirty: boolean;
+  previewByProject: Record<string, { currentFile: string; content: FileContent | null } | null>;
 
   togglePreview: () => void;
   openPreview: () => void;
@@ -26,6 +27,8 @@ interface FilePreviewState {
   setEditing: (editing: boolean) => void;
   setEditContent: (content: string) => void;
   saveFile: () => Promise<void>;
+  savePreviewForProject: (projectPath: string) => void;
+  restorePreviewForProject: (projectPath: string) => void;
 }
 
 export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
@@ -37,6 +40,7 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
   isEditing: false,
   editContent: null,
   editDirty: false,
+  previewByProject: {},
 
   togglePreview: () => set((state) => ({ isOpen: !state.isOpen })),
 
@@ -107,5 +111,50 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
         ? { ...prevState.content, content: editContent, size: editContent.length }
         : null,
     }));
+  },
+
+  savePreviewForProject: (projectPath: string) => {
+    const { isOpen, currentFile, content, previewByProject } = get();
+    if (isOpen && currentFile) {
+      set({
+        previewByProject: {
+          ...previewByProject,
+          [projectPath]: { currentFile, content },
+        },
+      });
+    } else {
+      set({
+        previewByProject: {
+          ...previewByProject,
+          [projectPath]: null,
+        },
+      });
+    }
+  },
+
+  restorePreviewForProject: (projectPath: string) => {
+    const { previewByProject } = get();
+    const saved = previewByProject[projectPath];
+    if (saved) {
+      set({
+        isOpen: true,
+        currentFile: saved.currentFile,
+        content: saved.content,
+        error: null,
+        isEditing: false,
+        editContent: null,
+        editDirty: false,
+      });
+    } else {
+      set({
+        isOpen: false,
+        currentFile: null,
+        content: null,
+        error: null,
+        isEditing: false,
+        editContent: null,
+        editDirty: false,
+      });
+    }
   },
 }));
