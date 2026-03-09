@@ -373,6 +373,86 @@ describe("config module", () => {
     });
   });
 
+  // ─── updateRecentProject tests ─────────────────────────────────────────────
+
+  describe("updateRecentProject", () => {
+    it("updates name for an existing project", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      updateRecentProject("/home/user/my-app", { name: "renamed-app" });
+
+      const projects = getRecentProjects();
+      expect(projects[0].name).toBe("renamed-app");
+    });
+
+    it("sets icon_path for an existing project", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      updateRecentProject("/home/user/my-app", { icon_path: "/icons/custom.svg" });
+
+      const projects = getRecentProjects();
+      expect(projects[0].icon_path).toBe("/icons/custom.svg");
+    });
+
+    it("clears icon_path with null", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+      updateRecentProject("/home/user/my-app", { icon_path: "/icons/custom.svg" });
+
+      updateRecentProject("/home/user/my-app", { icon_path: null });
+
+      const projects = getRecentProjects();
+      expect(projects[0].icon_path).toBeNull();
+    });
+
+    it("is a no-op for unknown path", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      updateRecentProject("/home/user/non-existent", { name: "nope" });
+
+      const projects = getRecentProjects();
+      expect(projects).toHaveLength(1);
+      expect(projects[0].name).toBe("my-app");
+    });
+
+    it("updates both name and icon_path at once", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      updateRecentProject("/home/user/my-app", {
+        name: "new-name",
+        icon_path: "/icons/new.png",
+      });
+
+      const projects = getRecentProjects();
+      expect(projects[0].name).toBe("new-name");
+      expect(projects[0].icon_path).toBe("/icons/new.png");
+    });
+  });
+
+  // ─── addRecentProject preserves icon_path ─────────────────────────────────
+
+  it("addRecentProject preserves existing icon_path on re-add", async () => {
+    const { addRecentProject, updateRecentProject, getRecentProjects } =
+      await import("../config");
+    addRecentProject("/home/user/my-app");
+    updateRecentProject("/home/user/my-app", { icon_path: "/icons/custom.svg" });
+
+    // Re-add the same project (e.g., user opens it again)
+    addRecentProject("/home/user/my-app");
+
+    const projects = getRecentProjects();
+    expect(projects[0].icon_path).toBe("/icons/custom.svg");
+  });
+
   // ─── UI Preferences tests ──────────────────────────────────────────────────
 
   describe("uiPreferences", () => {
