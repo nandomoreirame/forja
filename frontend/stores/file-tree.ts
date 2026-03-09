@@ -4,7 +4,7 @@ import { useFilePreviewStore } from "./file-preview";
 import { useGitDiffStore } from "./git-diff";
 
 export const APP_NAME = "Forja";
-export const FILE_TREE_MAX_DEPTH = 8;
+export const FILE_TREE_MAX_DEPTH = 2;
 
 export interface FileNode {
   name: string;
@@ -19,6 +19,44 @@ export interface DirectoryTree {
   root: FileNode;
 }
 
+/**
+ * Recursively walks the tree to find the node matching `dirPath`,
+ * replaces its `children` with `newChildren`, and returns a new tree
+ * (immutable update). If the node is not found, returns the original
+ * root unchanged and logs a warning.
+ */
+export function mergeSubtree(
+  root: FileNode,
+  dirPath: string,
+  newChildren: FileNode[],
+): FileNode {
+  if (root.path === dirPath) {
+    return { ...root, children: newChildren };
+  }
+
+  if (!root.children) {
+    return root;
+  }
+
+  let merged = false;
+  const updatedChildren = root.children.map((child) => {
+    if (!child.isDir) return child;
+
+    // Prune branches that can't contain the target path
+    if (!dirPath.startsWith(child.path)) return child;
+
+    const updated = mergeSubtree(child, dirPath, newChildren);
+    if (updated !== child) merged = true;
+    return updated;
+  });
+
+  if (!merged) {
+    return root;
+  }
+
+  return { ...root, children: updatedChildren };
+}
+
 interface FileTreeState {
   isOpen: boolean;
   currentPath: string | null;
@@ -31,6 +69,7 @@ interface FileTreeState {
   openProject: () => Promise<void>;
   openProjectPath: (path: string) => Promise<void>;
   loadProjectTree: (projectPath: string) => Promise<void>;
+  loadSubdirectory: (dirPath: string, projectPath: string) => Promise<void>;
   removeProjectTree: (projectPath: string) => void;
   setActiveProjectPath: (path: string) => void;
   setTree: (tree: DirectoryTree | null) => void;
@@ -82,6 +121,52 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
         }));
       } catch (error) {
         console.error("Failed to load project tree:", error);
+      }
+    },
+
+    loadSubdirectory: async (dirPath: string, projectPath: string) => {
+      const { trees, activeProjectPath } = get();
+      const existingTree = trees[projectPath];
+
+      if (!existingTree) {
+        console.warn(
+          `[file-tree] loadSubdirectory: no tree loaded for project "${projectPath}"`,
+        );
+        return;
+      }
+
+      try {
+        const result = await invoke<DirectoryTree>(
+          "read_directory_tree_command",
+          { path: dirPath, maxDepth: 1 },
+        );
+
+        const newChildren = result.root.children ?? [];
+        const updatedRoot = mergeSubtree(existingTree.root, dirPath, newChildren);
+
+        if (updatedRoot === existingTree.root) {
+          // Node not found in tree — mergeSubtree returned unchanged root
+          console.warn(
+            `[file-tree] loadSubdirectory: directory "${dirPath}" not found in tree for project "${projectPath}"`,
+          );
+          return;
+        }
+
+        const updatedTree: DirectoryTree = { root: updatedRoot };
+
+        set((state) => {
+          const newTrees = { ...state.trees, [projectPath]: updatedTree };
+          const isActive = activeProjectPath === projectPath;
+          return {
+            trees: newTrees,
+            ...(isActive ? { tree: updatedTree } : {}),
+          };
+        });
+      } catch (error) {
+        console.error(
+          `[file-tree] Failed to load subdirectory "${dirPath}":`,
+          error,
+        );
       }
     },
 
