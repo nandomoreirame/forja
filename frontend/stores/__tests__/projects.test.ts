@@ -273,6 +273,75 @@ describe("useProjectsStore", () => {
     expect(useProjectsStore.getState().projects[0].name).toBe("my-app");
   });
 
+  it("updateProject persists name change via IPC", () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+    });
+
+    useProjectsStore.getState().updateProject("/a/my-app", { name: "new-name" });
+
+    expect(invoke).toHaveBeenCalledWith("update_recent_project", {
+      path: "/a/my-app",
+      name: "new-name",
+      icon_path: undefined,
+    });
+  });
+
+  it("updateProject persists iconPath change via IPC", () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    useProjectsStore.setState({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+    });
+
+    useProjectsStore.getState().updateProject("/a/my-app", { iconPath: "/icons/custom.svg" });
+
+    expect(invoke).toHaveBeenCalledWith("update_recent_project", {
+      path: "/a/my-app",
+      name: undefined,
+      icon_path: "/icons/custom.svg",
+    });
+  });
+
+  it("loadProjects maps icon_path from backend to iconPath", async () => {
+    vi.mocked(invoke).mockImplementation(async (channel) => {
+      if (channel === "get_recent_projects") {
+        return [
+          { path: "/a/app1", name: "app1", last_opened: "2026-01-01", icon_path: "/icons/saved.svg" },
+        ];
+      }
+      if (channel === "detect_project_icon") return null;
+      return null;
+    });
+
+    await useProjectsStore.getState().loadProjects();
+
+    const project = useProjectsStore.getState().projects[0];
+    expect(project.iconPath).toBe("/icons/saved.svg");
+  });
+
+  it("loadProjects skips auto-detect for projects with persisted icon_path", async () => {
+    vi.mocked(invoke).mockImplementation(async (channel) => {
+      if (channel === "get_recent_projects") {
+        return [
+          { path: "/a/app1", name: "app1", last_opened: "2026-01-01", icon_path: "/icons/saved.svg" },
+        ];
+      }
+      if (channel === "detect_project_icon") return "/auto/detected.png";
+      return null;
+    });
+
+    await useProjectsStore.getState().loadProjects();
+
+    // Should NOT call detect_project_icon for projects with persisted icon
+    const detectCalls = vi.mocked(invoke).mock.calls.filter(
+      (call) => call[0] === "detect_project_icon"
+    );
+    expect(detectCalls).toHaveLength(0);
+  });
+
   it("loads icons for all projects after loadProjects", async () => {
     vi.mocked(invoke).mockImplementation(async (channel) => {
       if (channel === "get_recent_projects") {
