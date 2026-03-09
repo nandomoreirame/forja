@@ -6,6 +6,11 @@ vi.mock("../agent-chat.js", () => ({
   closeChatSession: vi.fn(),
 }));
 
+vi.mock("os", () => ({
+  default: { homedir: vi.fn(() => "/home/testuser") },
+  homedir: vi.fn(() => "/home/testuser"),
+}));
+
 import * as agentChat from "../agent-chat.js";
 import { createChatHandlers } from "../agent-chat-ipc.js";
 
@@ -43,6 +48,50 @@ describe("agent-chat-ipc", () => {
     );
     expect(result).toEqual({ sessionId: "s1" });
     expect(mockSpawn).toHaveBeenCalled();
+  });
+
+  it("chat:spawn uses ~/.config/forja/ as CWD when projectPath not provided", async () => {
+    mockSpawn.mockReturnValue({
+      id: "s1",
+      process: {} as never,
+      cliId: "claude",
+      projectPath: "/home/testuser/.config/forja",
+    });
+
+    await handlers["chat:spawn"](
+      { sender: { send: vi.fn() } },
+      { sessionId: "s1", cliId: "claude" }
+    );
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      "s1",
+      "claude",
+      "/home/testuser/.config/forja",
+      expect.any(Function),
+      expect.any(Function)
+    );
+  });
+
+  it("chat:spawn uses provided projectPath as CWD when given", async () => {
+    mockSpawn.mockReturnValue({
+      id: "s1",
+      process: {} as never,
+      cliId: "claude",
+      projectPath: "/myproject",
+    });
+
+    await handlers["chat:spawn"](
+      { sender: { send: vi.fn() } },
+      { sessionId: "s1", cliId: "claude", projectPath: "/myproject" }
+    );
+
+    expect(mockSpawn).toHaveBeenCalledWith(
+      "s1",
+      "claude",
+      "/myproject",
+      expect.any(Function),
+      expect.any(Function)
+    );
   });
 
   it("chat:spawn throws on failure", async () => {
