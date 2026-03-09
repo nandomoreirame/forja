@@ -82,5 +82,42 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Fixed
 - Use relative paths for CLI icons and fix UI details.---
 
+## [1.3.0] - 2026-03-08
+### Added
+- Add per-project file preview save/restore.
+- Add get_settings_path IPC handler.
+- Add Context section to settings and switch UI labels to English.
+- Make projectPath optional with fallback to ~/.config/forja.
+- Add Import dropdown to context hub settings UI.
+- Add importItem to context hub with IPC handler.
+- Persist project name and icon edits to config.json.
+- Add icon_path to RecentProject and updateRecentProject.
+- Add 10 commands to command palette with grouped layout.
+- Add drag-and-drop project reorder in sidebar.
+- Persist sidebar open/close state across sessions.
+- Add sidebar persistence and project reorder to config.
+- Update App layout with chat panel and project sidebar.
+- Add project sidebar, settings dialog, and context sync status.
+- Add chat panel with slash command menu.
+- Add agent chat hook and update CLI/PTY hooks.
+- Add agent chat, context hub, and projects stores.
+- Add slash commands, chat context, and PTY dispatcher libs.
+- Update config, settings, and register new IPC handlers.
+- Add agent chat backend with IPC handlers.
+- Add context synchronization system.
+- Add project icon resolver.
+- Add ring buffer, PTY notifications, and CLI detector.
+- Add CLI icons and app favicon.
+
+### Changed
+- Wire cache and focus callback into main process.
+- Add LRU file content cache.
+- Add conditional metrics polling and CLI detection cache.
+- Add shallow tree loading with on-demand subdirectory fetch.
+- Add IPC call deduplication and git status TTL cache.
+
+### Fixed
+- Open settings.json via file preview instead of custom editor.---
+
 ## [Unreleased]
 
