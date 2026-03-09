@@ -12,24 +12,23 @@ const mockInvoke = vi.mocked(invoke);
 describe("useContextHubStore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset store state
     useContextHubStore.setState({
       status: null,
       syncSummary: null,
+      items: [],
+      currentItem: null,
       loading: false,
       error: null,
     });
   });
 
   describe("initHub", () => {
-    it("calls context:init IPC with project path", async () => {
+    it("calls context:init IPC without projectPath", async () => {
       mockInvoke.mockResolvedValue(undefined);
 
-      await useContextHubStore.getState().initHub("/project");
+      await useContextHubStore.getState().initHub();
 
-      expect(mockInvoke).toHaveBeenCalledWith("context:init", {
-        projectPath: "/project",
-      });
+      expect(mockInvoke).toHaveBeenCalledWith("context:init", {});
     });
 
     it("sets loading state during init", async () => {
@@ -37,7 +36,7 @@ describe("useContextHubStore", () => {
       const pending = new Promise<void>((r) => { resolvePromise = r; });
       mockInvoke.mockReturnValue(pending);
 
-      const promise = useContextHubStore.getState().initHub("/project");
+      const promise = useContextHubStore.getState().initHub();
       expect(useContextHubStore.getState().loading).toBe(true);
 
       resolvePromise!();
@@ -48,7 +47,7 @@ describe("useContextHubStore", () => {
     it("sets error on failure", async () => {
       mockInvoke.mockRejectedValue(new Error("init failed"));
 
-      await useContextHubStore.getState().initHub("/project");
+      await useContextHubStore.getState().initHub();
 
       expect(useContextHubStore.getState().error).toBe("init failed");
       expect(useContextHubStore.getState().loading).toBe(false);
@@ -64,11 +63,9 @@ describe("useContextHubStore", () => {
       };
       mockInvoke.mockResolvedValue(status);
 
-      await useContextHubStore.getState().loadStatus("/project");
+      await useContextHubStore.getState().loadStatus();
 
-      expect(mockInvoke).toHaveBeenCalledWith("context:status", {
-        projectPath: "/project",
-      });
+      expect(mockInvoke).toHaveBeenCalledWith("context:status", {});
       expect(useContextHubStore.getState().status).toEqual(status);
     });
   });
@@ -82,24 +79,21 @@ describe("useContextHubStore", () => {
       };
       mockInvoke.mockResolvedValue(summary);
 
-      await useContextHubStore.getState().syncOut("/project");
+      await useContextHubStore.getState().syncOut();
 
-      expect(mockInvoke).toHaveBeenCalledWith("context:sync_out", {
-        projectPath: "/project",
-      });
+      expect(mockInvoke).toHaveBeenCalledWith("context:sync_out", {});
       expect(useContextHubStore.getState().syncSummary).toEqual(summary);
     });
 
     it("passes strategy and toolIds options", async () => {
       mockInvoke.mockResolvedValue({ timestamp: "", direction: "outbound", results: [] });
 
-      await useContextHubStore.getState().syncOut("/project", {
+      await useContextHubStore.getState().syncOut({
         strategy: "overwrite",
         toolIds: ["claude"],
       });
 
       expect(mockInvoke).toHaveBeenCalledWith("context:sync_out", {
-        projectPath: "/project",
         strategy: "overwrite",
         toolIds: ["claude"],
       });
@@ -115,37 +109,33 @@ describe("useContextHubStore", () => {
       };
       mockInvoke.mockResolvedValue(summary);
 
-      await useContextHubStore.getState().syncIn("/project");
+      await useContextHubStore.getState().syncIn();
 
-      expect(mockInvoke).toHaveBeenCalledWith("context:sync_in", {
-        projectPath: "/project",
-      });
+      expect(mockInvoke).toHaveBeenCalledWith("context:sync_in", {});
       expect(useContextHubStore.getState().syncSummary).toEqual(summary);
     });
   });
 
   describe("createSkill", () => {
     it("calls context:create_skill and returns path", async () => {
-      mockInvoke.mockResolvedValue("/project/.forja/context/skills/tdd/SKILL.md");
+      mockInvoke.mockResolvedValue("/home/user/.config/forja/context/skills/tdd/SKILL.md");
 
-      const result = await useContextHubStore.getState().createSkill("/project", "tdd");
+      const result = await useContextHubStore.getState().createSkill("tdd");
 
       expect(mockInvoke).toHaveBeenCalledWith("context:create_skill", {
-        projectPath: "/project",
         slug: "tdd",
       });
-      expect(result).toBe("/project/.forja/context/skills/tdd/SKILL.md");
+      expect(result).toBe("/home/user/.config/forja/context/skills/tdd/SKILL.md");
     });
 
     it("passes content option when provided", async () => {
-      mockInvoke.mockResolvedValue("/project/.forja/context/skills/tdd/SKILL.md");
+      mockInvoke.mockResolvedValue("/home/user/.config/forja/context/skills/tdd/SKILL.md");
 
-      await useContextHubStore.getState().createSkill("/project", "tdd", {
+      await useContextHubStore.getState().createSkill("tdd", {
         content: "---\nname: tdd\n---\n",
       });
 
       expect(mockInvoke).toHaveBeenCalledWith("context:create_skill", {
-        projectPath: "/project",
         slug: "tdd",
         content: "---\nname: tdd\n---\n",
       });
@@ -154,25 +144,146 @@ describe("useContextHubStore", () => {
 
   describe("createAgent", () => {
     it("calls context:create_agent and returns path", async () => {
-      mockInvoke.mockResolvedValue("/project/.forja/context/agents/code-reviewer.md");
+      mockInvoke.mockResolvedValue("/home/user/.config/forja/context/agents/code-reviewer.md");
 
-      const result = await useContextHubStore.getState().createAgent("/project", "code-reviewer");
+      const result = await useContextHubStore.getState().createAgent("code-reviewer");
 
       expect(mockInvoke).toHaveBeenCalledWith("context:create_agent", {
-        projectPath: "/project",
         slug: "code-reviewer",
       });
-      expect(result).toBe("/project/.forja/context/agents/code-reviewer.md");
+      expect(result).toBe("/home/user/.config/forja/context/agents/code-reviewer.md");
+    });
+  });
+
+  describe("listItems", () => {
+    it("fetches all items and stores in state", async () => {
+      const items = [
+        { type: "skill", slug: "tdd", path: "/p/skills/tdd/SKILL.md", fingerprint: "abc", lastSyncAt: null },
+        { type: "agent", slug: "reviewer", path: "/p/agents/reviewer.md", fingerprint: "def", lastSyncAt: null },
+      ];
+      mockInvoke.mockResolvedValue(items);
+
+      await useContextHubStore.getState().listItems();
+
+      expect(mockInvoke).toHaveBeenCalledWith("context:list_items", {});
+      expect(useContextHubStore.getState().items).toEqual(items);
+    });
+
+    it("filters by type when provided", async () => {
+      mockInvoke.mockResolvedValue([]);
+
+      await useContextHubStore.getState().listItems("skill");
+
+      expect(mockInvoke).toHaveBeenCalledWith("context:list_items", { type: "skill" });
+    });
+
+    it("sets error on failure", async () => {
+      mockInvoke.mockRejectedValue(new Error("list failed"));
+
+      await useContextHubStore.getState().listItems();
+
+      expect(useContextHubStore.getState().error).toBe("list failed");
+    });
+  });
+
+  describe("readItem", () => {
+    it("reads item content and stores as currentItem", async () => {
+      mockInvoke.mockResolvedValue("# TDD Skill\nContent here");
+
+      await useContextHubStore.getState().readItem("skill", "tdd");
+
+      expect(mockInvoke).toHaveBeenCalledWith("context:read_item", {
+        type: "skill",
+        slug: "tdd",
+      });
+      expect(useContextHubStore.getState().currentItem).toEqual({
+        type: "skill",
+        slug: "tdd",
+        content: "# TDD Skill\nContent here",
+      });
+    });
+
+    it("sets error on failure", async () => {
+      mockInvoke.mockRejectedValue(new Error("not found"));
+
+      await useContextHubStore.getState().readItem("skill", "missing");
+
+      expect(useContextHubStore.getState().error).toBe("not found");
+      expect(useContextHubStore.getState().currentItem).toBeNull();
+    });
+  });
+
+  describe("writeItem", () => {
+    it("writes item content via IPC", async () => {
+      mockInvoke.mockResolvedValue("/path/to/file.md");
+
+      await useContextHubStore.getState().writeItem("skill", "tdd", "# Updated");
+
+      expect(mockInvoke).toHaveBeenCalledWith("context:write_item", {
+        type: "skill",
+        slug: "tdd",
+        content: "# Updated",
+      });
+    });
+
+    it("sets error on failure", async () => {
+      mockInvoke.mockRejectedValue(new Error("write failed"));
+
+      await useContextHubStore.getState().writeItem("skill", "tdd", "content");
+
+      expect(useContextHubStore.getState().error).toBe("write failed");
+    });
+  });
+
+  describe("deleteItem", () => {
+    it("deletes item via IPC", async () => {
+      mockInvoke.mockResolvedValue(undefined);
+
+      await useContextHubStore.getState().deleteItem("skill", "tdd");
+
+      expect(mockInvoke).toHaveBeenCalledWith("context:delete_item", {
+        type: "skill",
+        slug: "tdd",
+      });
+    });
+
+    it("sets error on failure", async () => {
+      mockInvoke.mockRejectedValue(new Error("delete failed"));
+
+      await useContextHubStore.getState().deleteItem("skill", "tdd");
+
+      expect(useContextHubStore.getState().error).toBe("delete failed");
+    });
+  });
+
+  describe("importItem", () => {
+    it("calls context:import_item IPC with type and filePath", async () => {
+      mockInvoke.mockResolvedValue("/path/to/result.md");
+
+      await useContextHubStore.getState().importItem("doc", "/tmp/guide.md");
+
+      expect(mockInvoke).toHaveBeenCalledWith("context:import_item", {
+        type: "doc",
+        filePath: "/tmp/guide.md",
+      });
+    });
+
+    it("sets error on failure", async () => {
+      mockInvoke.mockRejectedValue(new Error("import failed"));
+
+      await useContextHubStore.getState().importItem("doc", "/bad/path.md");
+
+      expect(useContextHubStore.getState().error).toBe("import failed");
+      expect(useContextHubStore.getState().loading).toBe(false);
     });
   });
 
   describe("error handling", () => {
     it("clears previous error on successful operation", async () => {
-      // Set an existing error
       useContextHubStore.setState({ error: "previous error" });
 
       mockInvoke.mockResolvedValue(undefined);
-      await useContextHubStore.getState().initHub("/project");
+      await useContextHubStore.getState().initHub();
 
       expect(useContextHubStore.getState().error).toBeNull();
     });
