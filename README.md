@@ -1,6 +1,6 @@
 # Forja
 
-A dedicated GUI client for Claude Code (and other AI coding CLIs), built with Electron + React. Not just another terminal: it's the forge where code is shaped with artificial intelligence.
+A dedicated GUI client for Vibe Coders (and other AI coding CLIs), built with Electron + React. Not just another terminal: it's the forge where code is shaped with artificial intelligence.
 
 ## Screenshot
 
@@ -108,7 +108,7 @@ Home Screen (Project Selector)
 
 ## What Makes Forja Different
 
-- **AI CLI-first** - Not a generic terminal with AI; it's a dedicated GUI for Claude Code and other AI coding CLIs
+- **AI CLI-first** - Not a generic terminal with AI; it's a dedicated GUI for Vibe Coders and other AI coding CLIs
 - **Multi-CLI** - Supports Claude Code, Gemini CLI, Codex CLI, Cursor Agent, and plain terminal in a unified interface
 - **Enhanced Rendering** - Markdown rendered as HTML, code blocks with syntax highlight via Shiki
 - **Project-based** - Each session is isolated per project with automatic context
@@ -122,7 +122,7 @@ Home Screen (Project Selector)
 
 **Fonts:** Geist Sans (UI), JetBrains Mono (code/terminal)
 
-Full design guidelines in `docs/DESIGN-GUIDELINES.md`.
+Full design guidelines in `docs/design/DESIGN-GUIDELINES.md`.
 
 ## Installation
 
@@ -165,11 +165,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 
 | Document | Description |
 |----------|-------------|
-| [Brief](docs/BRIEF.md) | Executive summary, personas, business model |
-| [PRD](docs/PRD.md) | Full product requirements, user stories, technical spec |
-| [MVP Scope](docs/MVP-SCOPE.md) | What's in/out of MVP, timeline, stack decisions |
-| [Design Guidelines](docs/DESIGN-GUIDELINES.md) | Complete design system (colors, typography, components) |
-| [Landing Page Spec](docs/LANDING-PAGE-SPEC.md) | Landing page structure and design tokens |
+| [Brief](docs/specs/BRIEF.md) | Executive summary, personas, business model |
+| [PRD](docs/specs/PRD.md) | Full product requirements, user stories, technical spec |
+| [MVP Scope](docs/specs/MVP-SCOPE.md) | What's in/out of MVP, timeline, stack decisions |
+| [Design Guidelines](docs/design/DESIGN-GUIDELINES.md) | Complete design system (colors, typography, components) |
+| [Landing Page Spec](docs/design/LANDING-PAGE-SPEC.md) | Landing page structure and design tokens |
 
 ## License
 

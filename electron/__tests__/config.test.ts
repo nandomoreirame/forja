@@ -89,6 +89,27 @@ describe("config module", () => {
     expect(() => new Date(projects[0].last_opened)).not.toThrow();
   });
 
+  it("removes a recent project", async () => {
+    const { addRecentProject, removeRecentProject, getRecentProjects } = await import("../config");
+    addRecentProject("/home/user/project-a");
+    addRecentProject("/home/user/project-b");
+
+    removeRecentProject("/home/user/project-a");
+
+    const projects = getRecentProjects();
+    expect(projects).toHaveLength(1);
+    expect(projects[0].path).toBe("/home/user/project-b");
+  });
+
+  it("removeRecentProject is a no-op for unknown path", async () => {
+    const { addRecentProject, removeRecentProject, getRecentProjects } = await import("../config");
+    addRecentProject("/home/user/project-a");
+
+    removeRecentProject("/home/user/non-existent");
+
+    expect(getRecentProjects()).toHaveLength(1);
+  });
+
   // ─── Workspace CRUD tests ─────────────────────────────────────────────────
 
   describe("workspaces", () => {
@@ -276,6 +297,162 @@ describe("config module", () => {
     });
   });
 
+  // ─── Reorder Recent Projects tests ─────────────────────────────────────────
+
+  describe("reorderRecentProjects", () => {
+    it("reorders projects by path array", async () => {
+      const { addRecentProject, reorderRecentProjects, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/project-a");
+      addRecentProject("/home/user/project-b");
+      addRecentProject("/home/user/project-c");
+
+      reorderRecentProjects([
+        "/home/user/project-a",
+        "/home/user/project-c",
+        "/home/user/project-b",
+      ]);
+
+      const projects = getRecentProjects();
+      expect(projects.map((p) => p.path)).toEqual([
+        "/home/user/project-a",
+        "/home/user/project-c",
+        "/home/user/project-b",
+      ]);
+    });
+
+    it("appends projects not in the order array at the end", async () => {
+      const { addRecentProject, reorderRecentProjects, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/project-a");
+      addRecentProject("/home/user/project-b");
+      addRecentProject("/home/user/project-c");
+
+      // Only specify order for two projects; project-b should be appended
+      reorderRecentProjects(["/home/user/project-a", "/home/user/project-c"]);
+
+      const projects = getRecentProjects();
+      expect(projects.map((p) => p.path)).toEqual([
+        "/home/user/project-a",
+        "/home/user/project-c",
+        "/home/user/project-b",
+      ]);
+    });
+
+    it("ignores unknown paths in the order array", async () => {
+      const { addRecentProject, reorderRecentProjects, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/project-a");
+      addRecentProject("/home/user/project-b");
+
+      reorderRecentProjects([
+        "/home/user/non-existent",
+        "/home/user/project-b",
+        "/home/user/project-a",
+      ]);
+
+      const projects = getRecentProjects();
+      expect(projects.map((p) => p.path)).toEqual([
+        "/home/user/project-b",
+        "/home/user/project-a",
+      ]);
+    });
+
+    it("preserves all fields (name, last_opened) after reorder", async () => {
+      const { addRecentProject, reorderRecentProjects, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/project-a");
+      addRecentProject("/home/user/project-b");
+
+      reorderRecentProjects(["/home/user/project-a", "/home/user/project-b"]);
+
+      const projects = getRecentProjects();
+      expect(projects[0].name).toBe("project-a");
+      expect(projects[0].last_opened).toBeDefined();
+      expect(projects[1].name).toBe("project-b");
+    });
+  });
+
+  // ─── updateRecentProject tests ─────────────────────────────────────────────
+
+  describe("updateRecentProject", () => {
+    it("updates name for an existing project", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      updateRecentProject("/home/user/my-app", { name: "renamed-app" });
+
+      const projects = getRecentProjects();
+      expect(projects[0].name).toBe("renamed-app");
+    });
+
+    it("sets icon_path for an existing project", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      updateRecentProject("/home/user/my-app", { icon_path: "/icons/custom.svg" });
+
+      const projects = getRecentProjects();
+      expect(projects[0].icon_path).toBe("/icons/custom.svg");
+    });
+
+    it("clears icon_path with null", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+      updateRecentProject("/home/user/my-app", { icon_path: "/icons/custom.svg" });
+
+      updateRecentProject("/home/user/my-app", { icon_path: null });
+
+      const projects = getRecentProjects();
+      expect(projects[0].icon_path).toBeNull();
+    });
+
+    it("is a no-op for unknown path", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      updateRecentProject("/home/user/non-existent", { name: "nope" });
+
+      const projects = getRecentProjects();
+      expect(projects).toHaveLength(1);
+      expect(projects[0].name).toBe("my-app");
+    });
+
+    it("updates both name and icon_path at once", async () => {
+      const { addRecentProject, updateRecentProject, getRecentProjects } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      updateRecentProject("/home/user/my-app", {
+        name: "new-name",
+        icon_path: "/icons/new.png",
+      });
+
+      const projects = getRecentProjects();
+      expect(projects[0].name).toBe("new-name");
+      expect(projects[0].icon_path).toBe("/icons/new.png");
+    });
+  });
+
+  // ─── addRecentProject preserves icon_path ─────────────────────────────────
+
+  it("addRecentProject preserves existing icon_path on re-add", async () => {
+    const { addRecentProject, updateRecentProject, getRecentProjects } =
+      await import("../config");
+    addRecentProject("/home/user/my-app");
+    updateRecentProject("/home/user/my-app", { icon_path: "/icons/custom.svg" });
+
+    // Re-add the same project (e.g., user opens it again)
+    addRecentProject("/home/user/my-app");
+
+    const projects = getRecentProjects();
+    expect(projects[0].icon_path).toBe("/icons/custom.svg");
+  });
+
   // ─── UI Preferences tests ──────────────────────────────────────────────────
 
   describe("uiPreferences", () => {
@@ -283,7 +460,7 @@ describe("config module", () => {
       const { getUiPreferences } = await import("../config");
       const prefs = getUiPreferences();
 
-      expect(prefs).toEqual({ sidebarSize: 20, previewSize: 0 });
+      expect(prefs).toEqual({ sidebarSize: 20, previewSize: 0, sidebarOpen: true });
     });
 
     it("saves and retrieves ui preferences", async () => {
@@ -291,7 +468,7 @@ describe("config module", () => {
       saveUiPreferences({ sidebarSize: 30, previewSize: 40 });
       const prefs = getUiPreferences();
 
-      expect(prefs).toEqual({ sidebarSize: 30, previewSize: 40 });
+      expect(prefs).toEqual({ sidebarSize: 30, previewSize: 40, sidebarOpen: true });
     });
 
     it("supports partial updates preserving existing values", async () => {
@@ -310,6 +487,22 @@ describe("config module", () => {
 
       expect(prefs.sidebarSize).toBe(20); // default preserved
       expect(prefs.previewSize).toBe(35);
+    });
+
+    it("returns sidebarOpen true by default", async () => {
+      const { getUiPreferences } = await import("../config");
+      const prefs = getUiPreferences();
+
+      expect(prefs.sidebarOpen).toBe(true);
+    });
+
+    it("saves and retrieves sidebarOpen", async () => {
+      const { saveUiPreferences, getUiPreferences } = await import("../config");
+      saveUiPreferences({ sidebarOpen: false });
+      const prefs = getUiPreferences();
+
+      expect(prefs.sidebarOpen).toBe(false);
+      expect(prefs.sidebarSize).toBe(20); // other defaults preserved
     });
   });
 });

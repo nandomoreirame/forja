@@ -26,6 +26,8 @@ describe("useInstalledClis", () => {
       gemini: false,
       codex: true,
       "cursor-agent": false,
+      opencode: false,
+      "gh-copilot": false,
     });
 
     const { result } = renderHook(() => useInstalledClis());
@@ -36,6 +38,27 @@ describe("useInstalledClis", () => {
 
     expect(result.current.installedClis).toHaveLength(2);
     expect(result.current.installedClis.map((c) => c.id)).toEqual(["claude", "codex"]);
+  });
+
+  it("returns opencode and gh-copilot when installed", async () => {
+    mockInvoke.mockResolvedValue({
+      claude: false,
+      gemini: false,
+      codex: false,
+      "cursor-agent": false,
+      opencode: true,
+      "gh-copilot": true,
+    });
+
+    const { result } = renderHook(() => useInstalledClis());
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.installedClis).toHaveLength(2);
+    expect(result.current.installedClis.map((c) => c.id)).toContain("opencode");
+    expect(result.current.installedClis.map((c) => c.id)).toContain("gh-copilot");
   });
 
   it("returns empty list on error", async () => {
@@ -50,13 +73,13 @@ describe("useInstalledClis", () => {
     expect(result.current.installedClis).toEqual([]);
   });
 
-  it("calls detect_installed_clis with all binary names", async () => {
+  it("calls detect_installed_clis with all CLI IDs", async () => {
     mockInvoke.mockResolvedValue({});
 
     renderHook(() => useInstalledClis());
 
     expect(mockInvoke).toHaveBeenCalledWith("detect_installed_clis", {
-      binaries: ["claude", "gemini", "codex", "cursor-agent"],
+      cliIds: ["claude", "codex", "gemini", "cursor-agent", "opencode", "gh-copilot"],
     });
   });
 });

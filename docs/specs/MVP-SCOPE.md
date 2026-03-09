@@ -30,7 +30,8 @@
 
 | Feature | Description | Done Criteria |
 |---|---|---|
-| Project Selector | Initial screen with recent projects and native file picker | User selects folder and session starts in < 2s |
+| Project Sidebar | Left sidebar with project icons (letter-based), "+" button to add, click to switch | User switches projects in < 1s |
+| Project Selector | Dialog with recent projects and native file picker | User selects folder and session starts in < 2s |
 | Claude Code Pane | PTY connected to `claude` process with input/output | User can chat with Claude normally |
 | Markdown Rendering | Claude output rendered (headers, lists, bold) | CommonMark markdown rendered without FOUC |
 | Code Blocks | Syntax highlight by language in code blocks | > 90% of common languages identified correctly |
@@ -38,7 +39,7 @@
 | Git Header | Current branch + modified files counter | Updates in < 1s after filesystem changes |
 | Error Handling | Graceful fallback if `claude` is not installed | Modal with installation instructions, no crash |
 
-**Total P0 features:** 7
+**Total P0 features:** 8
 **Time estimate:** 6-8 weeks
 
 ---
@@ -53,6 +54,7 @@
 | Session history | Persist conversation history between sessions | PTY resets anyway; Claude Code doesn't preserve native context |
 | Keyboard shortcuts | Cmd+K for new session, Cmd+, for settings | Nice to have for power users |
 | Settings panel | Basic settings (theme, font, size) | Reasonable defaults are sufficient in MVP |
+| Project favicon/logo | Auto-detect or show letter icon for project | Nice to have; letter icons work well for MVP |
 
 **When to add:** v1.1, after alpha community feedback.
 
@@ -67,7 +69,7 @@
 | Diff viewer | Visualize diffs of changed files | If git integration gains traction |
 | Auto-updater | Automatic app updates | After stable v1.0 |
 | Themes | Light mode, custom themes | Low priority (dark mode is default) |
-| Multi-session | Open multiple projects in tabs | High complexity, uncertain need |
+| Multi-session per project | Open multiple sessions tabs within a project | Useful for power users |
 
 ---
 
@@ -85,6 +87,7 @@
 | Cloud synchronization | Local-first is the proposal; cloud adds complexity and cost | v2.0 enterprise (if it gets there) |
 | Windows version in MVP | PTY on Windows has peculiarities; requires extra testing | v1.1 if there's demand |
 | Authentication/accounts | Claude Code manages its own auth; Forja doesn't need this | Never in current model |
+| Workspace groups | Projects are independent; grouping adds complexity without clear value for MVP | v1.1 if users request it |
 
 ---
 
@@ -93,7 +96,7 @@
 **Feature Scope Creep:**
 
 - [ ] ~~"I'll add an integrated terminal too"~~ → Increases scope by 3x
-- [ ] ~~"It would be nice to have tabs for multiple projects"~~ → Unnecessary state complexity in MVP
+- [ ] ~~"It would be nice to group projects in workspaces"~~ → Unnecessary state complexity; sidebar already solves project switching
 - [ ] ~~"I can show visual diff of files"~~ → P2, not P0
 - [ ] ~~"I'll implement history search"~~ → There's no persistent history in MVP
 
@@ -203,16 +206,17 @@
 
 ```
 1. User downloads and opens Forja
-2. Project Selector appears (empty — no recent projects)
-3. Clicks "Open Folder"
+2. Empty state with Project Selector appears (no projects in sidebar)
+3. Clicks "+" button in project sidebar
 4. OS native file picker opens
 5. Selects project directory
-6. Workspace opens with active Claude Code Pane
-7. PTY spawns `claude` in directory
-8. Git header displays branch + status
-9. User types first message
-10. Claude responds with rendered markdown
-11. 🎉 Success
+6. Project appears in sidebar with letter icon
+7. Project opens with active Claude Code Pane
+8. PTY spawns `claude` in directory
+9. Git header displays branch + status
+10. User types first message
+11. Claude responds with rendered markdown
+12. Success
 ```
 
 **Success criteria:** 70% of new users complete this flow.
@@ -223,9 +227,9 @@
 
 ```
 1. User opens Forja
-2. Recent project appears in Project Selector
-3. Clicks on project
-4. Workspace opens immediately
+2. Project sidebar shows previous projects with letter icons
+3. Clicks on project icon in sidebar
+4. Project opens immediately with sessions from that project
 5. New Claude Code session started
 6. User is working in < 5 seconds
 ```
@@ -237,7 +241,7 @@
 ### Flow 3: Claude not installed
 
 ```
-1. User opens workspace
+1. User opens a project
 2. Forja detects that `claude` is not in PATH
 3. Modal: "Claude Code CLI not found"
 4. Installation instructions + link to docs

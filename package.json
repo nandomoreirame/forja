@@ -1,8 +1,8 @@
 {
   "name": "@forja/app",
   "private": true,
-  "version": "1.2.0",
-  "description": "Desktop GUI client for Claude Code and other AI coding CLIs",
+  "version": "1.3.0",
+  "description": "Desktop GUI client for Vibe Coders and other AI coding CLIs",
   "author": {
     "name": "Fernando Moreira",
     "email": "nandomoreira.me@gmail.com"
@@ -26,6 +26,8 @@
     "analyze": "ANALYZE=true vite build"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
     "@fontsource-variable/jetbrains-mono": "^5.0.0",
     "@fontsource/geist-sans": "^5.0.0",
     "@tanstack/react-virtual": "^3.13.18",

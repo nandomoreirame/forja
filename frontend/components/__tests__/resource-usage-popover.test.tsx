@@ -30,7 +30,7 @@ describe("ResourceUsagePopover", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("renders the trigger button with formatted memory", async () => {
+  it("renders the trigger button with formatted CPU and memory", async () => {
     mockUseAppMetrics.mockReturnValue({
       current: {
         total_rss: 966.5 * 1024 * 1024,
@@ -51,6 +51,7 @@ describe("ResourceUsagePopover", () => {
     const { ResourceUsagePopover } = await import("../resource-usage-popover");
     render(<ResourceUsagePopover />);
 
+    expect(screen.getByText("12.5%")).toBeInTheDocument();
     expect(screen.getByText("966.5 MB")).toBeInTheDocument();
   });
 

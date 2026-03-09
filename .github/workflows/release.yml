@@ -41,7 +41,7 @@ jobs:
             |----------|-------------|------|
             | macOS | Apple Silicon (arm64) | `Forja-${{ steps.version.outputs.version }}-arm64.dmg` |
             | macOS | Intel (x64) | `Forja-${{ steps.version.outputs.version }}.dmg` |
-            | Linux | x64 (.deb) | `Forja_${{ steps.version.outputs.version }}_amd64.deb` |
+            | Linux | x64 (.deb) | `forja_${{ steps.version.outputs.version }}_amd64.deb` |
             | Linux | x64 (.AppImage) | `Forja-${{ steps.version.outputs.version }}.AppImage` |
 
             > **macOS note:** This app is not notarized. Right-click > Open to bypass Gatekeeper on first launch.
@@ -72,7 +72,7 @@ jobs:
 
       - name: Install Python setuptools (needed by node-gyp)
         if: runner.os == 'macOS'
-        run: pip3 install setuptools
+        run: brew install python-setuptools
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

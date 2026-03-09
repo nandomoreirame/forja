@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { TerminalSession } from "../terminal-session";
 
@@ -37,6 +37,17 @@ vi.mock("@xterm/addon-web-links", () => ({
   },
 }));
 
+// Track WebglAddon instances for virtualization tests
+const webglInstances: Array<{ dispose: ReturnType<typeof vi.fn> }> = [];
+vi.mock("@xterm/addon-webgl", () => ({
+  WebglAddon: class MockWebglAddon {
+    dispose = vi.fn();
+    constructor() {
+      webglInstances.push(this);
+    }
+  },
+}));
+
 vi.mock("@xterm/xterm/css/xterm.css", () => ({}));
 
 const mockPtyWrite = vi.fn().mockResolvedValue(undefined);
@@ -63,6 +74,7 @@ vi.mock("@/hooks/use-pty", () => ({
 
 describe("TerminalSession", () => {
   beforeEach(() => {
+    vi.useFakeTimers();
     mockOpen.mockClear();
     mockWrite.mockClear();
     mockDispose.mockClear();
@@ -71,6 +83,11 @@ describe("TerminalSession", () => {
     mockPtyWrite.mockClear();
     mockResize.mockClear();
     mockClose.mockClear();
+    webglInstances.length = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("renders with correct aria-label including tab name", () => {
@@ -103,5 +120,91 @@ describe("TerminalSession", () => {
     unmount();
     expect(mockClose).toHaveBeenCalled();
     expect(mockDispose).toHaveBeenCalled();
+  });
+
+  describe("WebGL virtualization", () => {
+    it("loads WebglAddon on mount", () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      expect(webglInstances).toHaveLength(1);
+    });
+
+    it("disposes WebglAddon after 30s when hidden", () => {
+      const { rerender } = render(
+        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
+      );
+      expect(webglInstances).toHaveLength(1);
+      const webgl = webglInstances[0];
+
+      // Hide the terminal
+      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
+
+      // Not yet disposed before 30s
+      expect(webgl.dispose).not.toHaveBeenCalled();
+
+      // Advance 30s
+      vi.advanceTimersByTime(30_000);
+
+      expect(webgl.dispose).toHaveBeenCalledOnce();
+    });
+
+    it("cancels WebGL disposal if terminal becomes visible before 30s", () => {
+      const { rerender } = render(
+        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
+      );
+      const webgl = webglInstances[0];
+
+      // Hide
+      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
+
+      // Advance 15s (before timer fires)
+      vi.advanceTimersByTime(15_000);
+
+      // Show again — should cancel the timer
+      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      // Advance past original 30s
+      vi.advanceTimersByTime(30_000);
+
+      // WebGL should NOT have been disposed
+      expect(webgl.dispose).not.toHaveBeenCalled();
+    });
+
+    it("recreates WebglAddon when terminal becomes visible after disposal", () => {
+      const { rerender } = render(
+        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
+      );
+      expect(webglInstances).toHaveLength(1);
+
+      // Hide and wait for disposal
+      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
+      vi.advanceTimersByTime(30_000);
+      expect(webglInstances[0].dispose).toHaveBeenCalledOnce();
+
+      // Show again — should create a new WebglAddon
+      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      expect(webglInstances).toHaveLength(2);
+    });
+
+    it("clears virtualization timer on unmount", () => {
+      const { unmount, rerender } = render(
+        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
+      );
+      const webgl = webglInstances[0];
+
+      // Hide to start timer
+      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
+
+      // Unmount before timer fires
+      unmount();
+
+      // Advance past 30s — should not throw or call dispose on webgl
+      // (terminal.dispose is called on unmount, but webglAddon timer should be cleared)
+      vi.advanceTimersByTime(30_000);
+
+      // The webgl dispose may or may not be called by terminal.dispose(),
+      // but the timer-based disposal itself should be cleared
+      // We verify no extra calls beyond what unmount cleanup does
+      expect(webgl.dispose).not.toHaveBeenCalled();
+    });
   });
 });

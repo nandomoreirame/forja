@@ -16,7 +16,7 @@
 
 ## ✨ Solution (in one sentence)
 
-> Forja is an open source desktop client for Claude Code that delivers enhanced rendering (markdown, diffs, code blocks), project-based sessions, and git integration — all in a dedicated GUI built with Electron + React.
+> Forja is an open source desktop client for Vibe Coders that delivers enhanced rendering (markdown, diffs, code blocks), project-organized sessions, and git integration — all in a dedicated GUI built with Electron + React.
 
 ---
 
@@ -41,7 +41,7 @@ Have a single, visual, and organized environment to interact with Claude Code �
 
 - ✅ **Claude Code-first** — not a generic terminal with AI, it's a GUI 100% dedicated to Claude Code workflow
 - ✅ **Real enhanced rendering** — markdown rendered as HTML, code blocks with syntax highlight, visual diffs
-- ✅ **Project-based sessions** — isolated context per project, without losing history
+- ✅ **Project sidebar** — switch projects from a visual sidebar with icons, isolated sessions per project
 - ✅ **Open source from day 1** — community as competitive advantage
 
 ### Vs Current Alternatives
@@ -93,10 +93,11 @@ Open source developer tooling builds reputation and fast organic adoption. The d
 
 ### ✅ What's IN the MVP
 
-- [x] Project Selector (recent projects + browse filesystem)
+- [x] Project Sidebar (visual switcher with letter icons + "+" button to add projects)
 - [x] Claude Code Pane (PTY with rendered markdown and code blocks)
 - [x] Markdown Preview of Claude's output
 - [x] Basic Git Integration (current branch + modified files in header)
+- [x] Per-project sessions (sessions are scoped to the active project)
 
 ### ❌ What's NOT IN the MVP
 
@@ -104,6 +105,7 @@ Open source developer tooling builds reputation and fast organic adoption. The d
 - ❌ Complete Session Manager — v1.1
 - ❌ Context Panel (token usage, history) — v1.1
 - ❌ Monaco Editor in code blocks — xterm.js solves for MVP
+- ❌ Multi-project workspaces — replaced by the project sidebar model
 
 ---
 

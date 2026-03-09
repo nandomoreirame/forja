@@ -16,10 +16,14 @@ interface TerminalSessionProps {
   sessionType?: SessionType;
 }
 
+const WEBGL_DISPOSE_DELAY_MS = 30_000;
+
 export const TerminalSession = memo(function TerminalSession({ tabId, path, isVisible, sessionType = "claude" }: TerminalSessionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
+  const webglAddonRef = useRef<WebglAddon | null>(null);
+  const webglTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { spawn, write, resize, close } = usePty({
     tabId,
@@ -43,7 +47,9 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     terminal.open(containerRef.current);
 
     try {
-      terminal.loadAddon(new WebglAddon());
+      const webgl = new WebglAddon();
+      terminal.loadAddon(webgl);
+      webglAddonRef.current = webgl;
     } catch (err) {
       console.info("[terminal] WebGL unavailable, using canvas renderer:", err);
     }
@@ -96,6 +102,10 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       aborted = true;
       cancelAnimationFrame(rafId);
       clearTimeout(resizeTimeout);
+      if (webglTimerRef.current) {
+        clearTimeout(webglTimerRef.current);
+        webglTimerRef.current = null;
+      }
       resizeObserver.disconnect();
       dataDisposable.dispose();
       close();
@@ -120,16 +130,47 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Re-fit when becoming visible
+  // WebGL virtualization: dispose addon after 30s hidden, recreate when visible
   useEffect(() => {
-    if (isVisible && fitAddonRef.current) {
-      requestAnimationFrame(() => {
-        fitAddonRef.current?.fit();
-        const dims = fitAddonRef.current?.proposeDimensions();
-        if (dims) {
-          resize(dims.rows, dims.cols);
+    const terminal = terminalRef.current;
+
+    if (isVisible) {
+      // Cancel pending disposal
+      if (webglTimerRef.current) {
+        clearTimeout(webglTimerRef.current);
+        webglTimerRef.current = null;
+      }
+
+      // Recreate WebGL if it was disposed
+      if (!webglAddonRef.current && terminal) {
+        try {
+          const webgl = new WebglAddon();
+          terminal.loadAddon(webgl);
+          webglAddonRef.current = webgl;
+        } catch {
+          // Canvas2D fallback is fine
         }
-      });
+      }
+
+      // Re-fit
+      if (fitAddonRef.current) {
+        requestAnimationFrame(() => {
+          fitAddonRef.current?.fit();
+          const dims = fitAddonRef.current?.proposeDimensions();
+          if (dims) {
+            resize(dims.rows, dims.cols);
+          }
+        });
+      }
+    } else {
+      // Schedule WebGL disposal after delay
+      if (webglAddonRef.current && !webglTimerRef.current) {
+        webglTimerRef.current = setTimeout(() => {
+          webglAddonRef.current?.dispose();
+          webglAddonRef.current = null;
+          webglTimerRef.current = null;
+        }, WEBGL_DISPOSE_DELAY_MS);
+      }
     }
   }, [isVisible]); // eslint-disable-line react-hooks/exhaustive-deps
 

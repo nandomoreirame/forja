@@ -32,6 +32,9 @@ linux:
   icon: assets/icons/
   category: Development
 
+deb:
+  artifactName: "forja_${version}_${arch}.${ext}"
+
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true

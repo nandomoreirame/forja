@@ -255,4 +255,127 @@ describe("app-metrics", () => {
       stopAppMetricsLoop();
     });
   });
+
+  describe("startAppMetricsLoop with isAnyWindowFocused callback", () => {
+    it("skips metrics collection when isAnyWindowFocused returns false", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+      const isAnyWindowFocused = vi.fn().mockReturnValue(false);
+
+      startAppMetricsLoop(getWindows, isAnyWindowFocused);
+      vi.advanceTimersByTime(2000);
+
+      // collectAppMetrics calls app.getAppMetrics internally — it must NOT be called
+      expect(app.getAppMetrics).not.toHaveBeenCalled();
+      expect(mockSend).not.toHaveBeenCalled();
+
+      stopAppMetricsLoop();
+    });
+
+    it("collects and sends metrics when isAnyWindowFocused returns true", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 2.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 50 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+      const isAnyWindowFocused = vi.fn().mockReturnValue(true);
+
+      startAppMetricsLoop(getWindows, isAnyWindowFocused);
+      vi.advanceTimersByTime(2000);
+
+      expect(app.getAppMetrics).toHaveBeenCalled();
+      expect(mockSend).toHaveBeenCalledWith("app-metrics", expect.objectContaining({
+        process_count: 1,
+      }));
+
+      stopAppMetricsLoop();
+    });
+
+    it("collects metrics when isAnyWindowFocused is not provided (backwards compatible)", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 1.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 10 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      // No isAnyWindowFocused provided — should behave as before
+      startAppMetricsLoop(getWindows);
+      vi.advanceTimersByTime(2000);
+
+      expect(app.getAppMetrics).toHaveBeenCalled();
+      expect(mockSend).toHaveBeenCalledWith("app-metrics", expect.objectContaining({
+        process_count: 1,
+      }));
+
+      stopAppMetricsLoop();
+    });
+
+    it("resumes collecting when window regains focus", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 1.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 10 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      let focused = false;
+      const isAnyWindowFocused = vi.fn().mockImplementation(() => focused);
+
+      startAppMetricsLoop(getWindows, isAnyWindowFocused);
+
+      // First tick: window not focused — skip
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).not.toHaveBeenCalled();
+
+      // Window gains focus
+      focused = true;
+
+      // Second tick: window focused — collect and send
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      expect(mockSend).toHaveBeenCalledWith("app-metrics", expect.objectContaining({
+        process_count: 1,
+      }));
+
+      stopAppMetricsLoop();
+    });
+  });
 });

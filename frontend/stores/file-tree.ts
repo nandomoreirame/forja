@@ -4,7 +4,7 @@ import { useFilePreviewStore } from "./file-preview";
 import { useGitDiffStore } from "./git-diff";
 
 export const APP_NAME = "Forja";
-export const FILE_TREE_MAX_DEPTH = 8;
+export const FILE_TREE_MAX_DEPTH = 2;
 
 export interface FileNode {
   name: string;
@@ -19,6 +19,44 @@ export interface DirectoryTree {
   root: FileNode;
 }
 
+/**
+ * Recursively walks the tree to find the node matching `dirPath`,
+ * replaces its `children` with `newChildren`, and returns a new tree
+ * (immutable update). If the node is not found, returns the original
+ * root unchanged and logs a warning.
+ */
+export function mergeSubtree(
+  root: FileNode,
+  dirPath: string,
+  newChildren: FileNode[],
+): FileNode {
+  if (root.path === dirPath) {
+    return { ...root, children: newChildren };
+  }
+
+  if (!root.children) {
+    return root;
+  }
+
+  let merged = false;
+  const updatedChildren = root.children.map((child) => {
+    if (!child.isDir) return child;
+
+    // Prune branches that can't contain the target path
+    if (!dirPath.startsWith(child.path)) return child;
+
+    const updated = mergeSubtree(child, dirPath, newChildren);
+    if (updated !== child) merged = true;
+    return updated;
+  });
+
+  if (!merged) {
+    return root;
+  }
+
+  return { ...root, children: updatedChildren };
+}
+
 interface FileTreeState {
   isOpen: boolean;
   currentPath: string | null;
@@ -31,6 +69,7 @@ interface FileTreeState {
   openProject: () => Promise<void>;
   openProjectPath: (path: string) => Promise<void>;
   loadProjectTree: (projectPath: string) => Promise<void>;
+  loadSubdirectory: (dirPath: string, projectPath: string) => Promise<void>;
   removeProjectTree: (projectPath: string) => void;
   setActiveProjectPath: (path: string) => void;
   setTree: (tree: DirectoryTree | null) => void;
@@ -46,7 +85,6 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     await get().loadProjectTree(projectPath);
     const updatedTrees = get().trees;
     set({
-      isOpen: true,
       currentPath: projectPath,
       activeProjectPath: projectPath,
       tree: updatedTrees[projectPath] ?? null,
@@ -82,6 +120,52 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
         }));
       } catch (error) {
         console.error("Failed to load project tree:", error);
+      }
+    },
+
+    loadSubdirectory: async (dirPath: string, projectPath: string) => {
+      const { trees, activeProjectPath } = get();
+      const existingTree = trees[projectPath];
+
+      if (!existingTree) {
+        console.warn(
+          `[file-tree] loadSubdirectory: no tree loaded for project "${projectPath}"`,
+        );
+        return;
+      }
+
+      try {
+        const result = await invoke<DirectoryTree>(
+          "read_directory_tree_command",
+          { path: dirPath, maxDepth: 1 },
+        );
+
+        const newChildren = result.root.children ?? [];
+        const updatedRoot = mergeSubtree(existingTree.root, dirPath, newChildren);
+
+        if (updatedRoot === existingTree.root) {
+          // Node not found in tree — mergeSubtree returned unchanged root
+          console.warn(
+            `[file-tree] loadSubdirectory: directory "${dirPath}" not found in tree for project "${projectPath}"`,
+          );
+          return;
+        }
+
+        const updatedTree: DirectoryTree = { root: updatedRoot };
+
+        set((state) => {
+          const newTrees = { ...state.trees, [projectPath]: updatedTree };
+          const isActive = activeProjectPath === projectPath;
+          return {
+            trees: newTrees,
+            ...(isActive ? { tree: updatedTree } : {}),
+          };
+        });
+      } catch (error) {
+        console.error(
+          `[file-tree] Failed to load subdirectory "${dirPath}":`,
+          error,
+        );
       }
     },
 
@@ -144,37 +228,11 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
 
         if (!selected) return;
 
-        const workspaceStore = await import("./workspace").then(
-          (m) => m.useWorkspaceStore,
-        );
-        const activeWsId = workspaceStore.getState().activeWorkspaceId;
-
-        if (activeWsId) {
-          // Add to current workspace
-          await workspaceStore.getState().addProject(activeWsId, selected);
-          await activateProject(selected);
-          return;
-        }
-
-        // If a project is already open, create a workspace grouping both
-        const { currentPath: current, trees: existingTrees } = get();
-        if (current) {
-          const baseName = current.split("/").pop() ?? "Workspace";
-          const ws = await workspaceStore
-            .getState()
-            .createWorkspace(baseName, current);
-          await workspaceStore.getState().addProject(ws.id, selected);
-          await workspaceStore.getState().setActiveWorkspace(ws.id);
-          // Ensure existing project tree is also in trees map
-          if (!existingTrees[current]) {
-            await get().loadProjectTree(current);
-          }
-          await activateProject(selected);
-          return;
-        }
-
-        set({ expandedPaths: {}, trees: {} });
         await activateProject(selected);
+
+        // Notify projects store so sidebar updates
+        const { useProjectsStore } = await import("./projects");
+        await useProjectsStore.getState().addProject(selected);
       } catch (error) {
         console.error("Failed to load project directory:", error);
       }
@@ -182,34 +240,6 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
 
     openProjectPath: async (path: string) => {
       try {
-        const workspaceStore = await import("./workspace").then(
-          (m) => m.useWorkspaceStore,
-        );
-        const activeWsId = workspaceStore.getState().activeWorkspaceId;
-
-        if (activeWsId) {
-          await workspaceStore.getState().addProject(activeWsId, path);
-          await activateProject(path);
-          return;
-        }
-
-        // If a project is already open, create a workspace grouping both
-        const { currentPath: current, trees: existingTrees } = get();
-        if (current) {
-          const baseName = current.split("/").pop() ?? "Workspace";
-          const ws = await workspaceStore
-            .getState()
-            .createWorkspace(baseName, current);
-          await workspaceStore.getState().addProject(ws.id, path);
-          await workspaceStore.getState().setActiveWorkspace(ws.id);
-          if (!existingTrees[current]) {
-            await get().loadProjectTree(current);
-          }
-          await activateProject(path);
-          return;
-        }
-
-        set({ expandedPaths: {}, trees: {} });
         await activateProject(path);
       } catch (error) {
         console.error("Failed to load project directory:", error);

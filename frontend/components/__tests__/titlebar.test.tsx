@@ -56,9 +56,7 @@ describe("Titlebar", () => {
     useAppDialogsStore.setState({
       aboutOpen: false,
       shortcutsOpen: false,
-      claudeNotFoundOpen: false,
-      createWorkspaceOpen: false,
-      pendingProjectPath: null,
+      settingsOpen: false,
     });
   });
 

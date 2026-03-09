@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FileTreeSidebar } from "../file-tree-sidebar";
-import { useWorkspaceStore } from "@/stores/workspace";
-import { useAppDialogsStore } from "@/stores/app-dialogs";
 
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
@@ -12,19 +10,7 @@ vi.mock("@/lib/ipc", () => ({
 
 describe("FileTreeSidebar", () => {
   beforeEach(() => {
-    useWorkspaceStore.setState({
-      workspaces: [],
-      activeWorkspaceId: null,
-      loading: false,
-    });
-    useAppDialogsStore.setState({
-      shortcutsOpen: false,
-      aboutOpen: false,
-      createWorkspaceOpen: false,
-      createWorkspacePendingPath: null,
-      createWorkspaceEditId: null,
-      createWorkspaceInitialName: null,
-    });
+    vi.clearAllMocks();
   });
 
   it("renders nothing when closed", async () => {
@@ -89,7 +75,7 @@ describe("FileTreeSidebar", () => {
     expect(screen.getByText("my-project")).toBeInTheDocument();
   });
 
-  it("allows collapsing the single project root directory", async () => {
+  it("allows collapsing all folders via collapse-all button", async () => {
     const user = userEvent.setup();
     const { useFileTreeStore } = await import("@/stores/file-tree");
     useFileTreeStore.setState({
@@ -110,132 +96,31 @@ describe("FileTreeSidebar", () => {
     });
 
     render(<FileTreeSidebar />);
-    const toggleButton = screen.getByRole("button", { name: "Collapse my-project" });
-    await user.click(toggleButton);
-    expect(screen.getByRole("button", { name: "Expand my-project" })).toBeInTheDocument();
-  });
-});
-
-const stubTree = {
-  root: { name: "stub", path: "/stub", isDir: true, children: [] },
-};
-
-describe("WorkspaceHeader dropdown", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+    const collapseButton = screen.getByRole("button", { name: "Collapse all folders" });
+    await user.click(collapseButton);
+    expect(useFileTreeStore.getState().expandedPaths).toEqual({});
   });
 
-  it("renders active workspace name as dropdown trigger", async () => {
+  it("renders only active tree when multiple trees are cached", async () => {
     const { useFileTreeStore } = await import("@/stores/file-tree");
-    useFileTreeStore.setState({ isOpen: true, tree: stubTree });
-    useWorkspaceStore.setState({
-      workspaces: [
-        { id: "ws-1", name: "My Workspace", projects: [], createdAt: "", lastUsedAt: "" },
-      ],
-      activeWorkspaceId: "ws-1",
+    const activeTree = {
+      root: { name: "project-a", path: "/path/to/project-a", isDir: true, children: [] },
+    };
+    useFileTreeStore.setState({
+      isOpen: true,
+      tree: activeTree,
+      trees: {
+        "/path/to/project-a": activeTree,
+        "/path/to/project-b": {
+          root: { name: "project-b", path: "/path/to/project-b", isDir: true, children: [] },
+        },
+      },
+      expandedPaths: { "/path/to/project-a": true },
     });
 
     render(<FileTreeSidebar />);
 
-    const trigger = screen.getByRole("button", { name: /workspace switcher/i });
-    expect(trigger).toBeInTheDocument();
-    expect(trigger.textContent).toContain("My Workspace");
-  });
-
-  it("shows chevron icon on workspace trigger", async () => {
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    useFileTreeStore.setState({ isOpen: true, tree: stubTree });
-    useWorkspaceStore.setState({
-      workspaces: [
-        { id: "ws-1", name: "Dev", projects: [], createdAt: "", lastUsedAt: "" },
-      ],
-      activeWorkspaceId: "ws-1",
-    });
-
-    render(<FileTreeSidebar />);
-
-    const trigger = screen.getByRole("button", { name: /workspace switcher/i });
-    expect(trigger.querySelector("svg")).toBeTruthy();
-  });
-
-  it("opens dropdown with workspace list on click", async () => {
-    const user = userEvent.setup();
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    useFileTreeStore.setState({ isOpen: true, tree: stubTree });
-    useWorkspaceStore.setState({
-      workspaces: [
-        { id: "ws-1", name: "Workspace A", projects: [], createdAt: "", lastUsedAt: "" },
-        { id: "ws-2", name: "Workspace B", projects: ["/p1"], createdAt: "", lastUsedAt: "" },
-      ],
-      activeWorkspaceId: "ws-1",
-    });
-
-    render(<FileTreeSidebar />);
-
-    const trigger = screen.getByRole("button", { name: /workspace switcher/i });
-    await user.click(trigger);
-
-    const itemA = await screen.findByRole("menuitemradio", { name: /Workspace A/i });
-    const itemB = await screen.findByRole("menuitemradio", { name: /Workspace B/i });
-    expect(itemA).toBeInTheDocument();
-    expect(itemB).toBeInTheDocument();
-  });
-
-  it("shows check mark on active workspace in dropdown", async () => {
-    const user = userEvent.setup();
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    useFileTreeStore.setState({ isOpen: true, tree: stubTree });
-    useWorkspaceStore.setState({
-      workspaces: [
-        { id: "ws-1", name: "Active WS", projects: [], createdAt: "", lastUsedAt: "" },
-        { id: "ws-2", name: "Other WS", projects: [], createdAt: "", lastUsedAt: "" },
-      ],
-      activeWorkspaceId: "ws-1",
-    });
-
-    render(<FileTreeSidebar />);
-
-    await user.click(screen.getByRole("button", { name: /workspace switcher/i }));
-
-    const activeItem = await screen.findByRole("menuitemradio", { name: /Active WS/i });
-    expect(activeItem).toHaveAttribute("data-state", "checked");
-  });
-
-  it("shows create workspace option in dropdown", async () => {
-    const user = userEvent.setup();
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    useFileTreeStore.setState({ isOpen: true, tree: stubTree });
-    useWorkspaceStore.setState({
-      workspaces: [
-        { id: "ws-1", name: "WS", projects: [], createdAt: "", lastUsedAt: "" },
-      ],
-      activeWorkspaceId: "ws-1",
-    });
-
-    render(<FileTreeSidebar />);
-
-    await user.click(screen.getByRole("button", { name: /workspace switcher/i }));
-
-    expect(await screen.findByText("Create workspace")).toBeInTheDocument();
-  });
-
-  it("opens workspace modal in rename mode from pencil button", async () => {
-    const user = userEvent.setup();
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    useFileTreeStore.setState({ isOpen: true, tree: stubTree });
-    useWorkspaceStore.setState({
-      workspaces: [
-        { id: "ws-1", name: "Workspace A", projects: [], createdAt: "", lastUsedAt: "" },
-      ],
-      activeWorkspaceId: "ws-1",
-    });
-
-    render(<FileTreeSidebar />);
-    await user.click(screen.getByRole("button", { name: /rename workspace/i }));
-
-    const dialogs = useAppDialogsStore.getState();
-    expect(dialogs.createWorkspaceOpen).toBe(true);
-    expect(dialogs.createWorkspaceEditId).toBe("ws-1");
-    expect(dialogs.createWorkspaceInitialName).toBe("Workspace A");
+    expect(screen.getByText("project-a")).toBeInTheDocument();
+    expect(screen.queryByText("project-b")).not.toBeInTheDocument();
   });
 });

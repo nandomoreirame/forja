@@ -15,8 +15,10 @@ export function ResourceUsagePopover() {
           className="inline-flex h-8 items-center gap-1.5 rounded px-2 font-mono text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
           aria-label="Resource usage"
         >
+          <Cpu className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <span>{`${current.total_cpu_percent.toFixed(1)}%`}</span>
           <MemoryStick className="h-3.5 w-3.5" strokeWidth={1.5} />
-          {formatBytes(current.total_rss)}
+          <span>{formatBytes(current.total_rss)}</span>
         </button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 border-none p-3">

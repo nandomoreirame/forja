@@ -20,12 +20,6 @@ vi.mock("@/hooks/use-installed-clis", () => ({
   }),
 }));
 
-const baseTabs: TerminalTab[] = [
-  { id: "tab-1", name: "Claude #1", path: "/a", isRunning: true, sessionType: "claude" },
-  { id: "tab-2", name: "Claude #2", path: "/b", isRunning: true, sessionType: "claude" },
-  { id: "tab-3", name: "Claude #3", path: "/c", isRunning: false, sessionType: "claude" },
-];
-
 describe("TabBar", () => {
   const onSelectTab = vi.fn();
   const onCloseTab = vi.fn();
@@ -37,26 +31,120 @@ describe("TabBar", () => {
     onSessionTypeSelect.mockClear();
   });
 
-  it("renders all tabs", () => {
-    render(
-      <TabBar
-        tabs={baseTabs}
-        activeTabId="tab-1"
-        onSelectTab={onSelectTab}
-        onCloseTab={onCloseTab}
-        onSessionTypeSelect={onSessionTypeSelect}
-      />
-    );
+  describe("dynamic display names — single type tabs", () => {
+    it("single tab shows name without number", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+        />
+      );
 
-    expect(screen.getByText("Claude #1")).toBeInTheDocument();
-    expect(screen.getByText("Claude #2")).toBeInTheDocument();
-    expect(screen.getByText("Claude #3")).toBeInTheDocument();
+      expect(screen.getByText("Claude Code")).toBeInTheDocument();
+      // Should NOT show #1 for a single tab
+      expect(screen.queryByText("Claude Code #1")).not.toBeInTheDocument();
+    });
+
+    it("one tab of each type: all show without numbers", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+        { id: "tab-2", name: "Gemini CLI", path: "/b", isRunning: true, sessionType: "gemini" },
+        { id: "tab-3", name: "Terminal", path: "/c", isRunning: true, sessionType: "terminal" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+        />
+      );
+
+      expect(screen.getByText("Claude Code")).toBeInTheDocument();
+      expect(screen.getByText("Gemini CLI")).toBeInTheDocument();
+      expect(screen.getByText("Terminal")).toBeInTheDocument();
+    });
+  });
+
+  describe("dynamic display names — multiple tabs of same type", () => {
+    it("two claude tabs get per-type #1 and #2", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+        { id: "tab-2", name: "Claude Code", path: "/b", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+        />
+      );
+
+      expect(screen.getByText("Claude Code #1")).toBeInTheDocument();
+      expect(screen.getByText("Claude Code #2")).toBeInTheDocument();
+    });
+
+    it("three terminal tabs get #1, #2, #3", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Terminal", path: "/a", isRunning: true, sessionType: "terminal" },
+        { id: "tab-2", name: "Terminal", path: "/b", isRunning: true, sessionType: "terminal" },
+        { id: "tab-3", name: "Terminal", path: "/c", isRunning: false, sessionType: "terminal" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+        />
+      );
+
+      expect(screen.getByText("Terminal #1")).toBeInTheDocument();
+      expect(screen.getByText("Terminal #2")).toBeInTheDocument();
+      expect(screen.getByText("Terminal #3")).toBeInTheDocument();
+    });
+
+    it("mixed: two claude, one gemini — only claude gets numbers", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+        { id: "tab-2", name: "Gemini CLI", path: "/b", isRunning: true, sessionType: "gemini" },
+        { id: "tab-3", name: "Claude Code", path: "/c", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+        />
+      );
+
+      expect(screen.getByText("Claude Code #1")).toBeInTheDocument();
+      expect(screen.getByText("Gemini CLI")).toBeInTheDocument();
+      expect(screen.getByText("Claude Code #2")).toBeInTheDocument();
+    });
   });
 
   it("highlights active tab with aria-selected", () => {
+    const tabs: TerminalTab[] = [
+      { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      { id: "tab-2", name: "Claude Code", path: "/b", isRunning: true, sessionType: "claude" },
+      { id: "tab-3", name: "Claude Code", path: "/c", isRunning: false, sessionType: "claude" },
+    ];
     render(
       <TabBar
-        tabs={baseTabs}
+        tabs={tabs}
         activeTabId="tab-2"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
@@ -64,17 +152,21 @@ describe("TabBar", () => {
       />
     );
 
-    const tabs = screen.getAllByRole("tab");
-    expect(tabs[0]).toHaveAttribute("aria-selected", "false");
-    expect(tabs[1]).toHaveAttribute("aria-selected", "true");
-    expect(tabs[2]).toHaveAttribute("aria-selected", "false");
+    const tabButtons = screen.getAllByRole("tab");
+    expect(tabButtons[0]).toHaveAttribute("aria-selected", "false");
+    expect(tabButtons[1]).toHaveAttribute("aria-selected", "true");
+    expect(tabButtons[2]).toHaveAttribute("aria-selected", "false");
   });
 
   it("calls onSelectTab when a tab is clicked", async () => {
     const user = userEvent.setup();
+    const tabs: TerminalTab[] = [
+      { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      { id: "tab-2", name: "Claude Code", path: "/b", isRunning: true, sessionType: "claude" },
+    ];
     render(
       <TabBar
-        tabs={baseTabs}
+        tabs={tabs}
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
@@ -82,15 +174,19 @@ describe("TabBar", () => {
       />
     );
 
-    await user.click(screen.getByText("Claude #2"));
+    await user.click(screen.getByText("Claude Code #2"));
     expect(onSelectTab).toHaveBeenCalledWith("tab-2");
   });
 
   it("calls onCloseTab when close button is clicked", async () => {
     const user = userEvent.setup();
+    const tabs: TerminalTab[] = [
+      { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      { id: "tab-2", name: "Claude Code", path: "/b", isRunning: true, sessionType: "claude" },
+    ];
     render(
       <TabBar
-        tabs={baseTabs}
+        tabs={tabs}
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
@@ -104,9 +200,12 @@ describe("TabBar", () => {
   });
 
   it("renders new tab dropdown trigger", () => {
+    const tabs: TerminalTab[] = [
+      { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+    ];
     render(
       <TabBar
-        tabs={baseTabs}
+        tabs={tabs}
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
@@ -118,9 +217,14 @@ describe("TabBar", () => {
   });
 
   it("shows exited indicator for non-running tabs", () => {
+    const tabs: TerminalTab[] = [
+      { id: "tab-1", name: "Terminal", path: "/a", isRunning: true, sessionType: "terminal" },
+      { id: "tab-2", name: "Terminal", path: "/b", isRunning: true, sessionType: "terminal" },
+      { id: "tab-3", name: "Terminal", path: "/c", isRunning: false, sessionType: "terminal" },
+    ];
     render(
       <TabBar
-        tabs={baseTabs}
+        tabs={tabs}
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}
@@ -128,16 +232,21 @@ describe("TabBar", () => {
       />
     );
 
-    const tabs = screen.getAllByRole("tab");
+    const tabButtons = screen.getAllByRole("tab");
     // tab-3 is not running, should have italic/dimmed style
-    expect(tabs[2]).toHaveClass("italic");
-    expect(tabs[2]).toHaveClass("opacity-60");
+    expect(tabButtons[2]).toHaveClass("italic");
+    expect(tabButtons[2]).toHaveClass("opacity-60");
   });
 
   it("has proper ARIA roles (tablist and tab)", () => {
+    const tabs: TerminalTab[] = [
+      { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      { id: "tab-2", name: "Gemini CLI", path: "/b", isRunning: true, sessionType: "gemini" },
+      { id: "tab-3", name: "Terminal", path: "/c", isRunning: false, sessionType: "terminal" },
+    ];
     render(
       <TabBar
-        tabs={baseTabs}
+        tabs={tabs}
         activeTabId="tab-1"
         onSelectTab={onSelectTab}
         onCloseTab={onCloseTab}

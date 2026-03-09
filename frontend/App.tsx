@@ -1,11 +1,10 @@
-import { getAllCliBinaries, type SessionType } from "@/lib/cli-registry";
+import { getAllCliIds, type SessionType } from "@/lib/cli-registry";
 import { invoke, listen } from "@/lib/ipc";
 import {
   AlertCircle,
   Anvil,
-  Clock,
-  FolderOpen,
   PanelRight,
+  Plus,
   TerminalSquare,
 } from "lucide-react";
 import {
@@ -14,6 +13,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ErrorInfo,
@@ -27,6 +27,7 @@ const FilePreviewPane = lazy(() =>
 );
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
 import { NewSessionDropdown } from "./components/new-session-dropdown";
+import { ProjectSidebar } from "./components/project-sidebar";
 import { TabBar } from "./components/tab-bar";
 import { TerminalPane } from "./components/terminal-pane";
 import { Titlebar } from "./components/titlebar";
@@ -36,12 +37,12 @@ import {
   ResizablePanelGroup,
 } from "./components/ui/resizable";
 import { MOD_KEY } from "./lib/platform";
+import { ptyDispatcher } from "./lib/pty-dispatcher";
 import {
   loadPersistedSessionState,
   savePersistedSessionState,
 } from "./lib/session-persistence";
 import { useShallow } from "zustand/react/shallow";
-import { useAppDialogsStore } from "./stores/app-dialogs";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
 import { useGitStatusStore } from "./stores/git-status";
@@ -50,7 +51,8 @@ import { useSessionStateStore } from "./stores/session-state";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
 import { useUserSettingsStore } from "./stores/user-settings";
-import { useWorkspaceStore } from "./stores/workspace";
+import { useProjectsStore } from "./stores/projects";
+import { useAgentChatStore } from "./stores/agent-chat";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
 import {
   getPanelSizesForLayout,
@@ -110,26 +112,16 @@ const CommandPalette = lazy(() =>
     default: m.CommandPalette,
   }))
 );
+const ChatPanel = lazy(() =>
+  import("./components/chat-panel").then((m) => ({
+    default: m.ChatPanel,
+  }))
+);
 const ClaudeNotFoundDialog = lazy(() =>
   import("./components/claude-not-found-dialog").then((m) => ({
     default: m.ClaudeNotFoundDialog,
   }))
 );
-const CreateWorkspaceDialog = lazy(() =>
-  import("./components/create-workspace-dialog").then((m) => ({
-    default: m.CreateWorkspaceDialog,
-  }))
-);
-
-interface PtyDataPayload {
-  tab_id: string;
-  data: string;
-}
-
-interface PtyExitPayload {
-  tab_id: string;
-  code: number;
-}
 
 interface GitChangedPayload {
   path: string;
@@ -143,24 +135,11 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface RecentProject {
-  path: string;
-  name: string;
-  last_opened: string;
-}
-
 function EmptyState() {
-  const { openProject, openProjectPath } = useFileTreeStore();
-  const [recentProjects, setRecentProjects] = useState<RecentProject[]>([]);
-
-  useEffect(() => {
-    invoke<RecentProject[]>("get_recent_projects")
-      .then((result) => setRecentProjects(result ?? []))
-      .catch((err) => console.warn("[App] IPC call failed:", err));
-  }, []);
+  const openProject = useFileTreeStore((s) => s.openProject);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-10">
+    <div className="flex flex-1 flex-col items-center justify-center gap-8">
       <div className="flex flex-col items-center gap-4">
         <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
         <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
@@ -168,40 +147,16 @@ function EmptyState() {
           A dedicated desktop client for vibe coders
         </p>
       </div>
-
-      <div className="flex w-full max-w-sm flex-col gap-2">
-        <div className="flex items-center gap-2 px-2 text-xs text-ctp-overlay0">
-          <Clock className="h-3 w-3" strokeWidth={1.5} />
-          <span>Recent Projects</span>
-        </div>
-        {recentProjects.length > 0 ? (
-          <div className="flex flex-col gap-0.5">
-            {recentProjects.map((project) => (
-              <button
-                key={project.path}
-                onClick={() => openProjectPath(project.path)}
-                className="group flex flex-col gap-0.5 rounded-md px-3 py-2 text-left transition-colors hover:bg-ctp-mantle"
-              >
-                <span className="text-sm text-ctp-subtext0 group-hover:text-ctp-text">
-                  {project.name}
-                </span>
-                <span className="truncate text-xs text-ctp-overlay0">
-                  {project.path}
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p className="px-3 text-xs text-ctp-overlay0">
-            No recent projects
-          </p>
-        )}
+      <div className="flex flex-col items-center gap-3">
+        <p className="text-sm text-ctp-overlay1">
+          Click <kbd className="rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-xs">+</kbd> in the sidebar to add a project.
+        </p>
         <button
           onClick={openProject}
-          className="mx-3 mt-2 flex items-center justify-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
+          className="flex items-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
         >
-          <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-          Open Project
+          <Plus className="h-4 w-4" strokeWidth={1.5} />
+          Add Project
         </button>
       </div>
     </div>
@@ -263,17 +218,36 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       setActiveTab: s.setActiveTab,
     })),
   );
-  const createWorkspaceOpen = useAppDialogsStore((s) => s.createWorkspaceOpen);
-  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  // Filter tabs to only show the ones belonging to the active project
+  const projectTabs = useMemo(
+    () => (currentPath ? tabs.filter((t) => t.path === currentPath) : tabs),
+    [tabs, currentPath],
+  );
+  const projectActiveTabId = projectTabs.some((t) => t.id === activeTabId)
+    ? activeTabId
+    : projectTabs[0]?.id ?? null;
+
   const [claudeNotFound, setClaudeNotFound] = useState(false);
   const [sessionRestoreDone, setSessionRestoreDone] = useState(false);
   const sidebarPanelRef = usePanelRef();
   const previewPanelRef = usePanelRef();
   const terminalPanelRef = usePanelRef();
-  const { panelSizes, loaded: panelPrefsLoaded, savePanelSize } =
+  const { panelSizes, sidebarOpen: persistedSidebarOpen, loaded: panelPrefsLoaded, savePanelSize, saveSidebarOpen } =
     usePanelPreferences();
+  const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
   const effectivePanelSizes = getPanelSizesForLayout(hasProject, panelSizes);
+
+  // Sync persisted sidebarOpen preference into the file tree store on load
+  const sidebarSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!panelPrefsLoaded || sidebarSyncedRef.current) return;
+    sidebarSyncedRef.current = true;
+    const store = useFileTreeStore.getState();
+    if (store.isOpen !== persistedSidebarOpen) {
+      store.toggleSidebar();
+    }
+  }, [panelPrefsLoaded, persistedSidebarOpen]);
 
   // Sync sidebar panel collapse with store
   useEffect(() => {
@@ -282,6 +256,22 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     if (isSidebarOpen && panel.isCollapsed()) panel.expand();
     else if (!isSidebarOpen && !panel.isCollapsed()) panel.collapse();
   }, [isSidebarOpen]);
+
+  // Toggle file tree sidebar when chat panel opens/closes
+  const prevChatOpenRef = useRef(isChatOpen);
+  useEffect(() => {
+    const prev = prevChatOpenRef.current;
+    prevChatOpenRef.current = isChatOpen;
+    if (prev === isChatOpen) return;
+    const ftStore = useFileTreeStore.getState();
+    if (isChatOpen && ftStore.isOpen) {
+      ftStore.toggleSidebar();
+      saveSidebarOpen(false);
+    } else if (!isChatOpen && !ftStore.isOpen) {
+      ftStore.toggleSidebar();
+      saveSidebarOpen(true);
+    }
+  }, [isChatOpen, saveSidebarOpen]);
 
   // Sync preview + terminal panel sizes together
   // Both effects need to know about each other's state to calculate correct sizes
@@ -315,47 +305,14 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     }
   }, [isTerminalPaneOpen, isPreviewOpen, savedPreviewSize]);
 
-  // Read workspace param from query string (set once on mount)
-  const [workspaceId] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("workspace");
-  });
-
-  // Load workspace data on mount
+  // Load projects on mount for ProjectSidebar
   useEffect(() => {
-    useWorkspaceStore.getState().loadWorkspaces();
+    useProjectsStore.getState().loadProjects();
   }, []);
-
-  // When workspace param is present, activate it and load projects
-  useEffect(() => {
-    if (!workspaceId) return;
-
-    const load = async () => {
-      await useWorkspaceStore.getState().loadWorkspaces();
-      const workspaces = useWorkspaceStore.getState().workspaces;
-      const workspace = workspaces.find((w) => w.id === workspaceId);
-      if (!workspace) return;
-
-      await useWorkspaceStore.getState().setActiveWorkspace(workspaceId);
-
-      // Load all projects in the workspace
-      const fileTreeState = useFileTreeStore.getState();
-      for (const projectPath of workspace.projects) {
-        await fileTreeState.loadProjectTree(projectPath);
-      }
-
-      // Set the first project as active
-      if (workspace.projects.length > 0) {
-        fileTreeState.openProjectPath(workspace.projects[0]);
-      }
-    };
-
-    load();
-  }, [workspaceId]);
 
   // Restore previous user session when opening app without explicit route params
   useEffect(() => {
-    if (workspaceId || initialProjectPath) {
+    if (initialProjectPath) {
       setSessionRestoreDone(true);
       return;
     }
@@ -369,39 +326,17 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         return;
       }
 
-      const workspaceStore = useWorkspaceStore.getState();
       const previewStore = useFilePreviewStore.getState();
       const tabsStore = useTerminalTabsStore.getState();
 
-      // 1) Restore workspace/project
-      await workspaceStore.loadWorkspaces();
-      let restoredProjectPath: string | null = null;
-
-      if (snapshot.activeWorkspaceId) {
-        await workspaceStore.activateWorkspace(snapshot.activeWorkspaceId);
-        const treeState = useFileTreeStore.getState();
-        const currentAfterWorkspace = treeState.currentPath;
-        if (currentAfterWorkspace) {
-          restoredProjectPath = currentAfterWorkspace;
-        } else if (snapshot.activeProjectPath) {
-          // Workspace restoration can fail if workspace was deleted/invalid.
-          await treeState.openProjectPath(snapshot.activeProjectPath);
-          restoredProjectPath = snapshot.activeProjectPath;
-        }
-      } else if (snapshot.activeProjectPath) {
-        await useFileTreeStore.getState().openProjectPath(snapshot.activeProjectPath);
-        restoredProjectPath = snapshot.activeProjectPath;
-      }
-
+      // 1) Restore project
       if (snapshot.activeProjectPath) {
-        const latestTreeState = useFileTreeStore.getState();
-        if (latestTreeState.trees[snapshot.activeProjectPath]) {
-          latestTreeState.setActiveProjectPath(snapshot.activeProjectPath);
-          restoredProjectPath = snapshot.activeProjectPath;
-        }
+        await useFileTreeStore.getState().openProjectPath(snapshot.activeProjectPath);
+        // Also register in projects store
+        await useProjectsStore.getState().addProject(snapshot.activeProjectPath);
       }
 
-      const effectiveProjectPath = restoredProjectPath ?? useFileTreeStore.getState().currentPath;
+      const effectiveProjectPath = useFileTreeStore.getState().currentPath;
 
       // 2) Restore preview file
       if (snapshot.preview.isOpen && snapshot.preview.currentFile && effectiveProjectPath) {
@@ -443,7 +378,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, initialProjectPath]);
+  }, [initialProjectPath]);
 
   // Load user settings on mount and listen for changes
   useEffect(() => {
@@ -491,7 +426,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     if (!currentPath) return;
     const idleId = requestIdleCallback(() => {
       invoke<Record<string, boolean>>("detect_installed_clis", {
-        binaries: getAllCliBinaries(),
+        cliIds: getAllCliIds(),
       })
         .then((results) => {
           const anyInstalled = Object.values(results).some(Boolean);
@@ -586,34 +521,59 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     [removeTab],
   );
 
-  // Track session state from PTY output
+  // Centralized PTY event dispatcher — single IPC listener routes to all sessions via Map O(1)
   useEffect(() => {
-    const unlisten = listen<PtyDataPayload>("pty:data", (event) => {
-      useSessionStateStore.getState().onData(event.payload.tab_id);
+    // Global data handler: track session activity
+    ptyDispatcher.onGlobalData((tabId) => {
+      useSessionStateStore.getState().onData(tabId);
     });
+
+    // Single IPC listener for pty:data
+    const unlistenData = listen<{ tab_id: string; data: string }>("pty:data", (event) => {
+      ptyDispatcher.handleData(event.payload);
+    });
+
+    // Single IPC listener for pty:exit
+    const unlistenExit = listen<{ tab_id: string; code: number }>("pty:exit", (event) => {
+      ptyDispatcher.handleExit(event.payload);
+      // Mark tab as exited (keep visible so user can see output)
+      useSessionStateStore.getState().onExit(event.payload.tab_id);
+      useTerminalTabsStore.getState().markTabExited(event.payload.tab_id);
+    });
+
+    // Session state changes (sidebar spinner/badge indicators)
+    const unlistenState = listen<{
+      sessionId: string;
+      projectPath: string;
+      state: "running" | "exited" | "idle";
+      exitCode: number | null;
+    }>("pty:session-state-changed", (event) => {
+      const { projectPath, state } = event.payload;
+      if (state === "exited") {
+        const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
+        const anyRunning = projectTabs.some((t) => t.isRunning);
+        useProjectsStore.getState().setProjectSessionState(
+          projectPath,
+          anyRunning ? "running" : "exited",
+        );
+      } else {
+        useProjectsStore.getState().setProjectSessionState(projectPath, state);
+      }
+    });
+
     return () => {
-      unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
+      unlistenData.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
+      unlistenExit.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
+      unlistenState.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
-
-  // Auto-close tab when Claude session exits
-  useEffect(() => {
-    const unlisten = listen<PtyExitPayload>("pty:exit", (event) => {
-      const { tab_id } = event.payload;
-      useSessionStateStore.getState().onExit(tab_id);
-      removeTab(tab_id);
-    });
-    return () => {
-      unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
-    };
-  }, [removeTab]);
 
   // Persist session snapshot across renderer reloads
   useEffect(() => {
     if (!sessionRestoreDone) return;
     const activeTabIndex = tabs.findIndex((tab) => tab.id === activeTabId);
     savePersistedSessionState({
-      activeWorkspaceId,
+      activeWorkspaceId: null, // deprecated, keep for backward compat
       activeProjectPath: currentPath,
       preview: {
         isOpen: isPreviewOpen,
@@ -630,7 +590,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     });
   }, [
     sessionRestoreDone,
-    activeWorkspaceId,
     currentPath,
     isPreviewOpen,
     previewCurrentFile,
@@ -644,9 +603,20 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
 
   return (
     <AppErrorBoundary>
-      <div className="relative flex h-full flex-col bg-ctp-base">
+      <div className="relative flex h-full flex-col bg-ctp-mantle">
         <Titlebar />
-        {panelPrefsLoaded && hasProject ? (
+        {panelPrefsLoaded && (
+          <div className="flex flex-1 overflow-hidden">
+            <ProjectSidebar
+              onOpenProject={() => useFileTreeStore.getState().openProject()}
+            />
+            {isChatOpen && (
+              <Suspense fallback={null}>
+                <ChatPanel projectPath={currentPath} />
+              </Suspense>
+            )}
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-tl-xl border-l border-t border-ctp-surface0 bg-ctp-base">
+            {hasProject ? (
           <ResizablePanelGroup
             orientation="horizontal"
             className="flex-1 overflow-hidden"
@@ -664,8 +634,10 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                 const storeIsOpen = useFileTreeStore.getState().isOpen;
                 if (isCollapsed && storeIsOpen) {
                   useFileTreeStore.getState().toggleSidebar();
+                  saveSidebarOpen(false);
                 } else if (!isCollapsed && !storeIsOpen) {
                   useFileTreeStore.getState().toggleSidebar();
+                  saveSidebarOpen(true);
                 }
                 if (!isCollapsed) {
                   savePanelSize("sidebarSize", size.asPercentage);
@@ -738,21 +710,20 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                         ) : (
                           <>
                             <TabBar
-                              tabs={tabs}
-                              activeTabId={activeTabId}
+                              tabs={projectTabs}
+                              activeTabId={projectActiveTabId}
                               onSelectTab={setActiveTab}
                               onCloseTab={closeTab}
                               onSessionTypeSelect={handleNewSessionType}
                             />
-                            {tabs.length === 0 ? (
+                            {projectTabs.length === 0 && (
                               <NoSessionsState
                                 onSessionTypeSelect={handleNewSessionType}
                               />
-                            ) : (
-                              <div className="flex min-h-0 flex-1 overflow-hidden">
-                                <TerminalPane />
-                              </div>
                             )}
+                            <div className={`flex min-h-0 flex-1 overflow-hidden ${projectTabs.length === 0 ? "hidden" : ""}`}>
+                              <TerminalPane projectPath={currentPath} />
+                            </div>
                           </>
                         )}
                       </div>
@@ -782,10 +753,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
-        ) : (
-          <div className="flex flex-1 overflow-hidden">
-            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            ) : (
               <EmptyState />
+            )}
             </div>
           </div>
         )}
@@ -799,9 +769,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               onResolved={() => setClaudeNotFound(false)}
             />
           )}
-        </Suspense>
-        <Suspense fallback={null}>
-          {createWorkspaceOpen && <CreateWorkspaceDialog />}
         </Suspense>
       </div>
     </AppErrorBoundary>

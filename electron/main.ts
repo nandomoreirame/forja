@@ -7,15 +7,16 @@ import {
   shell,
 } from "electron";
 import * as path from "path";
+import * as os from "os";
 import { fileURLToPath, pathToFileURL } from "url";
-import { exec, execFile } from "child_process";
+import { execFile } from "child_process";
 import { assertPathWithinScope } from "./path-validation.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // PTY must be eager (resolveShellPath used at module scope)
-import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow } from "./pty.js";
+import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow, getSessionBuffer } from "./pty.js";
 
 // Type-only imports for signatures
 import type { UiPreferences } from "./config.js";
@@ -26,6 +27,7 @@ const lazyImport = <T>(factory: () => Promise<T>) => {
   return async () => mod ?? (mod = await factory());
 };
 
+const getCliDetector = lazyImport(() => import("./cli-detector.js"));
 const getWatcher = lazyImport(() => import("./watcher.js"));
 const getAppMetrics = lazyImport(() => import("./app-metrics.js"));
 const getConfig = lazyImport(() => import("./config.js"));
@@ -33,8 +35,12 @@ const getGitInfo = lazyImport(() => import("./git-info.js"));
 const getFileTree = lazyImport(() => import("./file-tree.js"));
 const getFileReader = lazyImport(() => import("./file-reader.js"));
 const getFileWriter = lazyImport(() => import("./file-writer.js"));
+const getFileCache = lazyImport(() => import("./file-cache.js"));
 const getFileOperations = lazyImport(() => import("./file-operations.js"));
 const getUserSettings = lazyImport(() => import("./user-settings.js"));
+const getProjectIcon = lazyImport(() => import("./project-icon.js"));
+const getContextIpc = lazyImport(() => import("./context/context-ipc.js"));
+const getAgentChatIpc = lazyImport(() => import("./agent-chat-ipc.js"));
 
 const isDev = !app.isPackaged;
 const VITE_DEV_URL = "http://localhost:1420";
@@ -51,8 +57,7 @@ function isTilingDesktopSession(): boolean {
   );
 }
 
-// Disable forced HiDPI scaling — use system's native scale factor
-app.commandLine.appendSwitch("force-device-scale-factor", "1");
+// Let the system handle DPI scaling natively (supports fractional scaling on Wayland)
 
 // GPU Acceleration
 app.commandLine.appendSwitch("ignore-gpu-blocklist");
@@ -158,9 +163,10 @@ app.whenReady().then(async () => {
   });
 
   const appMetricsMod = await getAppMetrics();
-  appMetricsMod.startAppMetricsLoop(() => {
-    return BrowserWindow.getAllWindows().map((w) => w.webContents);
-  });
+  appMetricsMod.startAppMetricsLoop(
+    () => BrowserWindow.getAllWindows().map((w) => w.webContents),
+    () => BrowserWindow.getAllWindows().some((w) => w.isFocused()),
+  );
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -177,9 +183,6 @@ app.on("window-all-closed", async () => {
 
 // ---- IPC Handlers ----
 
-// Regex to validate binary names - only allow safe characters, no shell metacharacters
-const SAFE_BINARY_RE = /^[a-zA-Z0-9._-]+$/;
-
 // Check if `claude` CLI is installed
 ipcMain.handle("check_claude_installed", async () => {
   return new Promise<void>((resolve, reject) => {
@@ -190,24 +193,22 @@ ipcMain.handle("check_claude_installed", async () => {
   });
 });
 
-// Batch check which CLI binaries are installed
-ipcMain.handle("detect_installed_clis", async (_event, args: { binaries: string[] }) => {
-  const results: Record<string, boolean> = {};
-  const checks = args.binaries.map((binary) =>
-    new Promise<void>((resolve) => {
-      if (!SAFE_BINARY_RE.test(binary)) {
-        results[binary] = false;
-        resolve();
-        return;
-      }
-      execFile("which", [binary], { timeout: 3000 }, (err) => {
-        results[binary] = !err;
-        resolve();
-      });
-    })
-  );
-  await Promise.all(checks);
-  return results;
+// Batch check which CLI IDs are installed (handles special cases like gh-copilot)
+ipcMain.handle("detect_installed_clis", async (_event, args: { cliIds: string[] }) => {
+  const cliDetector = await getCliDetector();
+  return cliDetector.detectInstalledClis(args.cliIds);
+});
+
+// Project icon detection
+ipcMain.handle("detect_project_icon", async (_event, args: { path: string }) => {
+  const projectIcon = await getProjectIcon();
+  return projectIcon.detectProjectIcon(args.path);
+});
+
+// Read a specific icon file as a base64 data URL
+ipcMain.handle("read_icon_as_data_url", async (_event, args: { path: string }) => {
+  const projectIcon = await getProjectIcon();
+  return projectIcon.readIconAsDataUrl(args.path);
 });
 
 // Recent projects
@@ -219,6 +220,28 @@ ipcMain.handle("get_recent_projects", async () => {
 ipcMain.handle("add_recent_project", async (_event, args: { path: string }) => {
   const config = await getConfig();
   config.addRecentProject(args.path);
+});
+
+ipcMain.handle("remove_recent_project", async (_event, args: { path: string }) => {
+  const config = await getConfig();
+  config.removeRecentProject(args.path);
+});
+
+ipcMain.handle("reorder_recent_projects", async (_event, args: { paths: string[] }) => {
+  const config = await getConfig();
+  config.reorderRecentProjects(args.paths);
+});
+
+ipcMain.handle("update_recent_project", async (_event, args: {
+  path: string;
+  name?: string;
+  icon_path?: string | null;
+}) => {
+  const config = await getConfig();
+  config.updateRecentProject(args.path, {
+    name: args.name,
+    icon_path: args.icon_path,
+  });
 });
 
 // Open project in a new window
@@ -289,6 +312,11 @@ ipcMain.handle("get_user_settings", async () => {
   return userSettings.loadUserSettings();
 });
 
+ipcMain.handle("get_settings_path", async () => {
+  const userSettings = await getUserSettings();
+  return userSettings.getUserSettingsPath();
+});
+
 ipcMain.handle("open_settings_file", async () => {
   const userSettings = await getUserSettings();
   return shell.openPath(userSettings.getUserSettingsPath());
@@ -345,6 +373,10 @@ ipcMain.handle("resize_pty", (_event, args: { tabId: string; rows: number; cols:
 
 ipcMain.handle("close_pty", (_event, args: { tabId: string }) => {
   closePty(args.tabId);
+});
+
+ipcMain.handle("pty:get-buffer", (_event, args: { tabId: string }) => {
+  return getSessionBuffer(args.tabId);
 });
 
 // Git info
@@ -415,13 +447,24 @@ ipcMain.handle("read_file_command", async (_event, args: { path: string; project
   if (args.projectPath) {
     assertPathWithinScope(args.projectPath, args.path);
   }
+  const fileCacheMod = await getFileCache();
+  const cached = fileCacheMod.getFileFromCache(args.path);
+  if (cached) {
+    return { path: args.path, content: cached.content, size: cached.size };
+  }
   const fileReader = await getFileReader();
-  return fileReader.readFile(args.path, args.maxSizeMb ?? 10);
+  const result = await fileReader.readFile(args.path, args.maxSizeMb ?? 10);
+  if (!result.encoding) {
+    fileCacheMod.putFileInCache(args.path, result.content);
+  }
+  return result;
 });
 
 ipcMain.handle("write_file", async (_event, args: { path: string; content: string }) => {
   const fileWriter = await getFileWriter();
   await fileWriter.writeFile(args.path, args.content);
+  const fileCacheMod = await getFileCache();
+  fileCacheMod.invalidateFileCache(args.path);
   return { success: true };
 });
 
@@ -477,7 +520,7 @@ ipcMain.handle("window:getLabel", (event) => {
 });
 
 // Dialog
-ipcMain.handle("dialog:open", async (event, opts: { directory?: boolean; multiple?: boolean; title?: string }) => {
+ipcMain.handle("dialog:open", async (event, opts: { directory?: boolean; multiple?: boolean; title?: string; filters?: { name: string; extensions: string[] }[] }) => {
   const win = BrowserWindow.fromWebContents(event.sender) ?? undefined;
   const properties: Electron.OpenDialogOptions["properties"] = [];
 
@@ -488,6 +531,7 @@ ipcMain.handle("dialog:open", async (event, opts: { directory?: boolean; multipl
   const result = await dialog.showOpenDialog(win!, {
     title: opts.title,
     properties,
+    filters: opts.filters,
   });
 
   if (result.canceled || result.filePaths.length === 0) return null;
@@ -514,3 +558,20 @@ ipcMain.handle("app:getVersion", () => app.getVersion());
 ipcMain.handle("app:getElectronVersion", () => process.versions.electron);
 ipcMain.handle("app:is_tiling_desktop", () => isTilingDesktopSession());
 ipcMain.handle("app:isDev", () => isDev);
+ipcMain.handle("app:getForjaConfigPath", () =>
+  path.join(os.homedir(), ".config", "forja")
+);
+
+// Context Hub
+getContextIpc().then(({ createContextHandlers }) => {
+  for (const [channel, handler] of createContextHandlers()) {
+    ipcMain.handle(channel, handler);
+  }
+}).catch((err) => console.error("[main] Failed to load context-ipc:", err));
+
+// Agent Chat
+getAgentChatIpc().then(({ createChatHandlers }) => {
+  for (const [channel, handler] of createChatHandlers()) {
+    ipcMain.handle(channel, handler);
+  }
+}).catch((err) => console.error("[main] Failed to load agent-chat-ipc:", err));

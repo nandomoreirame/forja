@@ -55,10 +55,15 @@ export function collectAppMetrics(): AppMetrics {
   };
 }
 
-export function startAppMetricsLoop(getWindows: () => WebContents[]): void {
+export function startAppMetricsLoop(
+  getWindows: () => WebContents[],
+  isAnyWindowFocused?: () => boolean,
+): void {
   if (appMetricsInterval) return;
 
   appMetricsInterval = setInterval(() => {
+    if (isAnyWindowFocused && !isAnyWindowFocused()) return;
+
     const metrics = collectAppMetrics();
     const windows = getWindows();
     for (const win of windows) {

@@ -1,15 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { invoke, listen, getCurrentWindow } from "@/lib/ipc";
-
-interface PtyDataPayload {
-  tab_id: string;
-  data: string;
-}
-
-interface PtyExitPayload {
-  tab_id: string;
-  code: number;
-}
+import { invoke, getCurrentWindow } from "@/lib/ipc";
+import { ptyDispatcher } from "@/lib/pty-dispatcher";
 
 interface UsePtyOptions {
   tabId: string;
@@ -28,22 +19,21 @@ export function usePty(options: UsePtyOptions) {
   tabIdRef.current = options.tabId;
 
   useEffect(() => {
-    const unlistenData = listen<PtyDataPayload>("pty:data", (event) => {
-      if (event.payload.tab_id === tabIdRef.current) {
-        onDataRef.current?.(event.payload.data);
-      }
+    const tabId = tabIdRef.current;
+
+    // Register with centralized dispatcher — O(1) routing, no per-session IPC listener
+    ptyDispatcher.registerData(tabId, (data) => {
+      onDataRef.current?.(data);
     });
 
-    const unlistenExit = listen<PtyExitPayload>("pty:exit", (event) => {
-      if (event.payload.tab_id === tabIdRef.current) {
-        setIsRunning(false);
-        onExitRef.current?.(event.payload.code);
-      }
+    ptyDispatcher.registerExit(tabId, (code) => {
+      setIsRunning(false);
+      onExitRef.current?.(code);
     });
 
     return () => {
-      unlistenData.then((fn) => fn());
-      unlistenExit.then((fn) => fn());
+      ptyDispatcher.unregisterData(tabId);
+      ptyDispatcher.unregisterExit(tabId);
     };
   }, []);
 

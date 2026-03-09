@@ -1,28 +1,55 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { usePty } from "../use-pty";
+import { ptyDispatcher } from "@/lib/pty-dispatcher";
 
 const mockInvoke = vi.fn();
-const mockListen = vi.fn();
-let listenCallbacks: Record<string, (event: { payload: unknown }) => void> = {};
 
 vi.mock("@/lib/ipc", () => ({
   invoke: (...args: unknown[]) => mockInvoke(...args),
-  listen: (event: string, callback: (event: { payload: unknown }) => void) => {
-    listenCallbacks[event] = callback;
-    mockListen(event, callback);
-    return Promise.resolve(() => {
-      delete listenCallbacks[event];
-    });
-  },
   getCurrentWindow: () => ({ label: "main" }),
 }));
+
+vi.mock("@/lib/pty-dispatcher", () => {
+  const dataHandlers = new Map<string, (data: string) => void>();
+  const exitHandlers = new Map<string, (code: number) => void>();
+  return {
+    ptyDispatcher: {
+      registerData: vi.fn((tabId: string, handler: (data: string) => void) => {
+        dataHandlers.set(tabId, handler);
+      }),
+      unregisterData: vi.fn((tabId: string) => {
+        dataHandlers.delete(tabId);
+      }),
+      registerExit: vi.fn((tabId: string, handler: (code: number) => void) => {
+        exitHandlers.set(tabId, handler);
+      }),
+      unregisterExit: vi.fn((tabId: string) => {
+        exitHandlers.delete(tabId);
+      }),
+      // Test helpers to simulate dispatching
+      _simulateData: (tabId: string, data: string) => {
+        dataHandlers.get(tabId)?.(data);
+      },
+      _simulateExit: (tabId: string, code: number) => {
+        exitHandlers.get(tabId)?.(code);
+      },
+    },
+  };
+});
+
+const mockDispatcher = vi.mocked(ptyDispatcher) as typeof ptyDispatcher & {
+  _simulateData: (tabId: string, data: string) => void;
+  _simulateExit: (tabId: string, code: number) => void;
+};
 
 describe("usePty", () => {
   beforeEach(() => {
     mockInvoke.mockClear();
-    mockListen.mockClear();
-    listenCallbacks = {};
+    vi.mocked(ptyDispatcher.registerData).mockClear();
+    vi.mocked(ptyDispatcher.unregisterData).mockClear();
+    vi.mocked(ptyDispatcher.registerExit).mockClear();
+    vi.mocked(ptyDispatcher.unregisterExit).mockClear();
     mockInvoke.mockResolvedValue(undefined);
   });
 
@@ -71,37 +98,46 @@ describe("usePty", () => {
     expect(result.current.isRunning).toBe(false);
   });
 
-  it("sets up pty:data and pty:exit listeners on mount", () => {
+  it("registers with ptyDispatcher on mount", () => {
     renderHook(() => usePty({ tabId: "tab-1" }));
 
-    expect(mockListen).toHaveBeenCalledWith("pty:data", expect.any(Function));
-    expect(mockListen).toHaveBeenCalledWith("pty:exit", expect.any(Function));
+    expect(ptyDispatcher.registerData).toHaveBeenCalledWith("tab-1", expect.any(Function));
+    expect(ptyDispatcher.registerExit).toHaveBeenCalledWith("tab-1", expect.any(Function));
   });
 
-  it("calls onData callback only for matching tab_id", () => {
+  it("unregisters from ptyDispatcher on unmount", () => {
+    const { unmount } = renderHook(() => usePty({ tabId: "tab-1" }));
+
+    unmount();
+
+    expect(ptyDispatcher.unregisterData).toHaveBeenCalledWith("tab-1");
+    expect(ptyDispatcher.unregisterExit).toHaveBeenCalledWith("tab-1");
+  });
+
+  it("calls onData callback when dispatcher routes data to this tab", () => {
     const onData = vi.fn();
     renderHook(() => usePty({ tabId: "tab-1", onData }));
 
-    // Matching tab_id
     act(() => {
-      listenCallbacks["pty:data"]?.({
-        payload: { tab_id: "tab-1", data: "hello" },
-      });
+      mockDispatcher._simulateData("tab-1", "hello");
     });
+
     expect(onData).toHaveBeenCalledWith("hello");
+  });
 
-    onData.mockClear();
+  it("does not receive data for other tabs (dispatcher handles routing)", () => {
+    const onData = vi.fn();
+    renderHook(() => usePty({ tabId: "tab-1", onData }));
 
-    // Non-matching tab_id should be ignored
     act(() => {
-      listenCallbacks["pty:data"]?.({
-        payload: { tab_id: "tab-2", data: "world" },
-      });
+      // Simulate data for a different tab — dispatcher won't route it here
+      mockDispatcher._simulateData("tab-2", "world");
     });
+
     expect(onData).not.toHaveBeenCalled();
   });
 
-  it("calls onExit and sets isRunning false only for matching tab_id", async () => {
+  it("calls onExit and sets isRunning false on exit", async () => {
     const onExit = vi.fn();
     const { result } = renderHook(() => usePty({ tabId: "tab-1", onExit }));
 
@@ -112,21 +148,11 @@ describe("usePty", () => {
     });
     expect(result.current.isRunning).toBe(true);
 
-    // Non-matching tab_id - should NOT set isRunning to false
+    // Simulate exit via dispatcher
     act(() => {
-      listenCallbacks["pty:exit"]?.({
-        payload: { tab_id: "tab-2", code: 0 },
-      });
+      mockDispatcher._simulateExit("tab-1", 0);
     });
-    expect(result.current.isRunning).toBe(true);
-    expect(onExit).not.toHaveBeenCalled();
 
-    // Matching tab_id
-    act(() => {
-      listenCallbacks["pty:exit"]?.({
-        payload: { tab_id: "tab-1", code: 0 },
-      });
-    });
     expect(result.current.isRunning).toBe(false);
     expect(onExit).toHaveBeenCalledWith(0);
   });

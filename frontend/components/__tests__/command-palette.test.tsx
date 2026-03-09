@@ -62,6 +62,54 @@ vi.mock("@/stores/app-dialogs", () => ({
   }),
 }));
 
+vi.mock("@/stores/user-settings", () => ({
+  useUserSettingsStore: Object.assign(() => ({}), {
+    getState: () => ({
+      openSettingsEditor: vi.fn(),
+    }),
+  }),
+}));
+
+vi.mock("@/stores/agent-chat", () => ({
+  useAgentChatStore: Object.assign(() => ({}), {
+    getState: () => ({
+      togglePanel: vi.fn(),
+    }),
+  }),
+}));
+
+vi.mock("@/stores/terminal-zoom", () => ({
+  useTerminalZoomStore: Object.assign(() => ({}), {
+    getState: () => ({
+      zoomIn: vi.fn(),
+      zoomOut: vi.fn(),
+      resetZoom: vi.fn(),
+    }),
+  }),
+}));
+
+vi.mock("@/stores/git-diff", () => ({
+  useGitDiffStore: Object.assign(() => ({}), {
+    getState: () => ({
+      changedFilesByProject: {},
+      selectedProjectPath: null,
+      selectedPath: null,
+      fetchChangedFiles: vi.fn(),
+      selectChangedFile: vi.fn(),
+      diffMode: "split",
+      setDiffMode: vi.fn(),
+    }),
+  }),
+}));
+
+vi.mock("@/stores/git-status", () => ({
+  useGitStatusStore: Object.assign(() => ({}), {
+    getState: () => ({
+      forceFetchStatuses: vi.fn(),
+    }),
+  }),
+}));
+
 describe("CommandPalette", () => {
   beforeEach(() => {
     useCommandPaletteStore.setState({ isOpen: false, mode: "files" });
@@ -90,12 +138,42 @@ describe("CommandPalette", () => {
     useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
     render(<CommandPalette />);
 
+    // Session group
     expect(screen.getByText("New Session")).toBeInTheDocument();
-    expect(screen.getByText("Open Project")).toBeInTheDocument();
+    expect(screen.getByText("Add Project")).toBeInTheDocument();
+
+    // Panels & View group
     expect(screen.getByText("Toggle Sidebar")).toBeInTheDocument();
     expect(screen.getByText("Toggle File Preview")).toBeInTheDocument();
+    expect(screen.getByText("Toggle Terminal")).toBeInTheDocument();
+    expect(screen.getByText("Toggle Chat Panel")).toBeInTheDocument();
+    expect(screen.getByText("Collapse All Folders")).toBeInTheDocument();
+
+    // Terminal group
+    expect(screen.getByText("Zoom In")).toBeInTheDocument();
+    expect(screen.getByText("Zoom Out")).toBeInTheDocument();
+    expect(screen.getByText("Reset Zoom")).toBeInTheDocument();
+
+    // Git group
+    expect(screen.getByText("View Git Changes")).toBeInTheDocument();
+    expect(screen.getByText("Toggle Diff Mode")).toBeInTheDocument();
+    expect(screen.getByText("Refresh Git Status")).toBeInTheDocument();
+
+    // Settings & Help group
+    expect(screen.getByText("Open Settings")).toBeInTheDocument();
     expect(screen.getByText("Keyboard Shortcuts")).toBeInTheDocument();
     expect(screen.getByText("About")).toBeInTheDocument();
+  });
+
+  it("renders command groups with headings", () => {
+    useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+    render(<CommandPalette />);
+
+    expect(screen.getByText("Session")).toBeInTheDocument();
+    expect(screen.getByText("Panels & View")).toBeInTheDocument();
+    expect(screen.getByText("Terminal")).toBeInTheDocument();
+    expect(screen.getByText("Git")).toBeInTheDocument();
+    expect(screen.getByText("Settings & Help")).toBeInTheDocument();
   });
 
   it("lists flattened files when tree is available in files mode", () => {
