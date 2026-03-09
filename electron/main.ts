@@ -34,6 +34,7 @@ const getGitInfo = lazyImport(() => import("./git-info.js"));
 const getFileTree = lazyImport(() => import("./file-tree.js"));
 const getFileReader = lazyImport(() => import("./file-reader.js"));
 const getFileWriter = lazyImport(() => import("./file-writer.js"));
+const getFileCache = lazyImport(() => import("./file-cache.js"));
 const getFileOperations = lazyImport(() => import("./file-operations.js"));
 const getUserSettings = lazyImport(() => import("./user-settings.js"));
 const getProjectIcon = lazyImport(() => import("./project-icon.js"));
@@ -161,9 +162,10 @@ app.whenReady().then(async () => {
   });
 
   const appMetricsMod = await getAppMetrics();
-  appMetricsMod.startAppMetricsLoop(() => {
-    return BrowserWindow.getAllWindows().map((w) => w.webContents);
-  });
+  appMetricsMod.startAppMetricsLoop(
+    () => BrowserWindow.getAllWindows().map((w) => w.webContents),
+    () => BrowserWindow.getAllWindows().some((w) => w.isFocused()),
+  );
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -422,13 +424,24 @@ ipcMain.handle("read_file_command", async (_event, args: { path: string; project
   if (args.projectPath) {
     assertPathWithinScope(args.projectPath, args.path);
   }
+  const fileCacheMod = await getFileCache();
+  const cached = fileCacheMod.getFileFromCache(args.path);
+  if (cached) {
+    return { path: args.path, content: cached.content, size: cached.size };
+  }
   const fileReader = await getFileReader();
-  return fileReader.readFile(args.path, args.maxSizeMb ?? 10);
+  const result = await fileReader.readFile(args.path, args.maxSizeMb ?? 10);
+  if (!result.encoding) {
+    fileCacheMod.putFileInCache(args.path, result.content);
+  }
+  return result;
 });
 
 ipcMain.handle("write_file", async (_event, args: { path: string; content: string }) => {
   const fileWriter = await getFileWriter();
   await fileWriter.writeFile(args.path, args.content);
+  const fileCacheMod = await getFileCache();
+  fileCacheMod.invalidateFileCache(args.path);
   return { success: true };
 });
 
