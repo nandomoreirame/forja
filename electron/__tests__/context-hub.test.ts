@@ -5,6 +5,13 @@ vi.mock("fs/promises", () => ({
   readFile: vi.fn(),
   writeFile: vi.fn(),
   access: vi.fn(),
+  unlink: vi.fn(),
+  rm: vi.fn(),
+}));
+
+vi.mock("os", () => ({
+  default: { homedir: vi.fn(() => "/home/testuser") },
+  homedir: vi.fn(() => "/home/testuser"),
 }));
 
 import * as fs from "fs/promises";
@@ -13,6 +20,10 @@ const mockMkdir = vi.mocked(fs.mkdir);
 const mockReadFile = vi.mocked(fs.readFile);
 const mockWriteFile = vi.mocked(fs.writeFile);
 const mockAccess = vi.mocked(fs.access);
+const mockUnlink = vi.mocked(fs.unlink);
+const mockRm = vi.mocked(fs.rm);
+
+const HUB_ROOT = "/home/testuser/.config/forja/context";
 
 describe("ContextHub", () => {
   beforeEach(() => {
@@ -20,22 +31,28 @@ describe("ContextHub", () => {
     vi.clearAllMocks();
   });
 
+  describe("getContextHubRoot", () => {
+    it("returns ~/.config/forja/context", async () => {
+      const { getContextHubRoot } = await import("../context/context-hub.js");
+      expect(getContextHubRoot()).toBe(HUB_ROOT);
+    });
+  });
+
   describe("ensureContextHub", () => {
-    it("creates .forja/context/ directory structure (docs, agents, skills, plans)", async () => {
+    it("creates global context directory structure (docs, agents, skills, plans)", async () => {
       mockMkdir.mockResolvedValue(undefined);
-      // Index does not exist yet
       mockAccess.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
       mockWriteFile.mockResolvedValue(undefined);
 
       const { ensureContextHub } = await import("../context/context-hub.js");
-      await ensureContextHub("/home/user/project");
+      await ensureContextHub();
 
       const mkdirCalls = mockMkdir.mock.calls.map((c) => c[0] as string);
 
-      expect(mkdirCalls.some((p) => p.endsWith(".forja/context/docs"))).toBe(true);
-      expect(mkdirCalls.some((p) => p.endsWith(".forja/context/agents"))).toBe(true);
-      expect(mkdirCalls.some((p) => p.endsWith(".forja/context/skills"))).toBe(true);
-      expect(mkdirCalls.some((p) => p.endsWith(".forja/context/plans"))).toBe(true);
+      expect(mkdirCalls.some((p) => p === `${HUB_ROOT}/docs`)).toBe(true);
+      expect(mkdirCalls.some((p) => p === `${HUB_ROOT}/agents`)).toBe(true);
+      expect(mkdirCalls.some((p) => p === `${HUB_ROOT}/skills`)).toBe(true);
+      expect(mkdirCalls.some((p) => p === `${HUB_ROOT}/plans`)).toBe(true);
     });
 
     it("creates .index.json if not present", async () => {
@@ -44,7 +61,7 @@ describe("ContextHub", () => {
       mockWriteFile.mockResolvedValue(undefined);
 
       const { ensureContextHub } = await import("../context/context-hub.js");
-      await ensureContextHub("/home/user/project");
+      await ensureContextHub();
 
       const writeFileCalls = mockWriteFile.mock.calls;
       const indexWriteCall = writeFileCalls.find((c) =>
@@ -58,11 +75,10 @@ describe("ContextHub", () => {
 
     it("does NOT overwrite existing .index.json", async () => {
       mockMkdir.mockResolvedValue(undefined);
-      // Index already exists
       mockAccess.mockResolvedValue(undefined);
 
       const { ensureContextHub } = await import("../context/context-hub.js");
-      await ensureContextHub("/home/user/project");
+      await ensureContextHub();
 
       const writeFileCalls = mockWriteFile.mock.calls;
       const indexWriteCall = writeFileCalls.find((c) =>
@@ -76,13 +92,12 @@ describe("ContextHub", () => {
     it("creates skills/<slug>/SKILL.md with frontmatter template", async () => {
       mockMkdir.mockResolvedValue(undefined);
       mockWriteFile.mockResolvedValue(undefined);
-      // readFile for index returns empty index
       mockReadFile.mockResolvedValue(
         JSON.stringify({ version: 1, items: [], updatedAt: new Date().toISOString() })
       );
 
       const { createSkill } = await import("../context/context-hub.js");
-      const filePath = await createSkill("/home/user/project", "my-skill");
+      const filePath = await createSkill("my-skill");
 
       expect(filePath).toContain("skills/my-skill/SKILL.md");
 
@@ -104,7 +119,7 @@ describe("ContextHub", () => {
       );
 
       const { createSkill } = await import("../context/context-hub.js");
-      await createSkill("/home/user/project", "my-skill");
+      await createSkill("my-skill");
 
       const indexWriteCall = mockWriteFile.mock.calls.find((c) =>
         (c[0] as string).endsWith(".index.json")
@@ -128,7 +143,7 @@ describe("ContextHub", () => {
       );
 
       const { createSkill } = await import("../context/context-hub.js");
-      await expect(createSkill("/home/user/project", "my-skill")).rejects.toThrow(
+      await expect(createSkill("my-skill")).rejects.toThrow(
         /already exists/
       );
     });
@@ -143,7 +158,7 @@ describe("ContextHub", () => {
       );
 
       const { createAgent } = await import("../context/context-hub.js");
-      const filePath = await createAgent("/home/user/project", "my-agent");
+      const filePath = await createAgent("my-agent");
 
       expect(filePath).toContain("agents/my-agent.md");
 
@@ -165,7 +180,7 @@ describe("ContextHub", () => {
       );
 
       const { createAgent } = await import("../context/context-hub.js");
-      await createAgent("/home/user/project", "my-agent");
+      await createAgent("my-agent");
 
       const indexWriteCall = mockWriteFile.mock.calls.find((c) =>
         (c[0] as string).endsWith(".index.json")
@@ -189,7 +204,7 @@ describe("ContextHub", () => {
       );
 
       const { createAgent } = await import("../context/context-hub.js");
-      await expect(createAgent("/home/user/project", "my-agent")).rejects.toThrow(
+      await expect(createAgent("my-agent")).rejects.toThrow(
         /already exists/
       );
     });
@@ -205,7 +220,7 @@ describe("ContextHub", () => {
       mockReadFile.mockResolvedValue(JSON.stringify(mockIndex));
 
       const { readIndex } = await import("../context/context-hub.js");
-      const result = await readIndex("/home/user/project");
+      const result = await readIndex();
 
       expect(result.version).toBe(1);
       expect(result.items).toHaveLength(1);
@@ -216,7 +231,7 @@ describe("ContextHub", () => {
       mockReadFile.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
 
       const { readIndex } = await import("../context/context-hub.js");
-      const result = await readIndex("/home/user/project");
+      const result = await readIndex();
 
       expect(result.version).toBe(1);
       expect(result.items).toEqual([]);
@@ -234,7 +249,7 @@ describe("ContextHub", () => {
       mockWriteFile.mockResolvedValue(undefined);
 
       const { updateIndex } = await import("../context/context-hub.js");
-      await updateIndex("/home/user/project", {
+      await updateIndex({
         type: "skill",
         slug: "new-skill",
         path: "skills/new-skill/SKILL.md",
@@ -267,7 +282,7 @@ describe("ContextHub", () => {
       mockWriteFile.mockResolvedValue(undefined);
 
       const { updateIndex } = await import("../context/context-hub.js");
-      await updateIndex("/home/user/project", {
+      await updateIndex({
         type: "skill",
         slug: "my-skill",
         path: "skills/my-skill/SKILL.md",
@@ -291,7 +306,7 @@ describe("ContextHub", () => {
       mockWriteFile.mockResolvedValue(undefined);
 
       const { updateIndex } = await import("../context/context-hub.js");
-      await updateIndex("/home/user/project", {
+      await updateIndex({
         type: "doc",
         slug: "readme",
         path: "docs/readme.md",
@@ -337,7 +352,7 @@ describe("ContextHub", () => {
       mockReadFile.mockResolvedValue(JSON.stringify(mockIndex));
 
       const { getContextStatus } = await import("../context/context-hub.js");
-      const status = await getContextStatus("/home/user/project");
+      const status = await getContextStatus();
 
       expect(status.initialized).toBe(true);
       expect(status.counts.skill).toBe(2);
@@ -355,9 +370,193 @@ describe("ContextHub", () => {
       mockReadFile.mockResolvedValue(JSON.stringify(mockIndex));
 
       const { getContextStatus } = await import("../context/context-hub.js");
-      const status = await getContextStatus("/home/user/project");
+      const status = await getContextStatus();
 
       expect(status.lastUpdated).toBe("2026-01-15T10:30:00Z");
+    });
+  });
+
+  describe("listItems", () => {
+    it("returns all items from index", async () => {
+      const mockIndex = {
+        version: 1,
+        items: [
+          { type: "skill", slug: "tdd", path: "skills/tdd/SKILL.md", fingerprint: "sha256:a", updatedAt: "2026-01-01T00:00:00Z" },
+          { type: "agent", slug: "reviewer", path: "agents/reviewer.md", fingerprint: "sha256:b", updatedAt: "2026-01-01T00:00:00Z" },
+        ],
+        updatedAt: "2026-01-01T00:00:00Z",
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(mockIndex));
+
+      const { listItems } = await import("../context/context-hub.js");
+      const items = await listItems();
+      expect(items).toHaveLength(2);
+    });
+
+    it("filters by type when provided", async () => {
+      const mockIndex = {
+        version: 1,
+        items: [
+          { type: "skill", slug: "tdd", path: "skills/tdd/SKILL.md", fingerprint: "sha256:a", updatedAt: "2026-01-01T00:00:00Z" },
+          { type: "agent", slug: "reviewer", path: "agents/reviewer.md", fingerprint: "sha256:b", updatedAt: "2026-01-01T00:00:00Z" },
+          { type: "skill", slug: "debug", path: "skills/debug/SKILL.md", fingerprint: "sha256:c", updatedAt: "2026-01-01T00:00:00Z" },
+        ],
+        updatedAt: "2026-01-01T00:00:00Z",
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(mockIndex));
+
+      const { listItems } = await import("../context/context-hub.js");
+      const items = await listItems("skill");
+      expect(items).toHaveLength(2);
+      expect(items.every((i: { type: string }) => i.type === "skill")).toBe(true);
+    });
+
+    it("returns empty array when index has no items", async () => {
+      mockReadFile.mockResolvedValue(JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }));
+
+      const { listItems } = await import("../context/context-hub.js");
+      const items = await listItems();
+      expect(items).toEqual([]);
+    });
+  });
+
+  describe("readItem", () => {
+    it("reads file content by type and slug", async () => {
+      const mockIndex = {
+        version: 1,
+        items: [{ type: "skill", slug: "tdd", path: "skills/tdd/SKILL.md", fingerprint: "sha256:a", updatedAt: "2026-01-01T00:00:00Z" }],
+        updatedAt: "2026-01-01T00:00:00Z",
+      };
+      mockReadFile.mockImplementation(async (p) => {
+        const s = String(p);
+        if (s.includes(".index.json")) return JSON.stringify(mockIndex) as unknown as Buffer;
+        return "# TDD Skill\nContent here" as unknown as Buffer;
+      });
+
+      const { readItem } = await import("../context/context-hub.js");
+      const content = await readItem("skill", "tdd");
+      expect(content).toBe("# TDD Skill\nContent here");
+    });
+
+    it("throws when item not found in index", async () => {
+      mockReadFile.mockResolvedValue(JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }));
+
+      const { readItem } = await import("../context/context-hub.js");
+      await expect(readItem("skill", "nonexistent")).rejects.toThrow(/not found/);
+    });
+  });
+
+  describe("writeItem", () => {
+    it("writes skill file to skills/<slug>/SKILL.md", async () => {
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+      mockReadFile.mockResolvedValue(JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }));
+
+      const { writeItem } = await import("../context/context-hub.js");
+      const filePath = await writeItem("skill", "tdd", "# TDD\nContent");
+      expect(filePath).toContain("skills/tdd/SKILL.md");
+
+      const skillWrite = mockWriteFile.mock.calls.find((c) => (c[0] as string).includes("SKILL.md"));
+      expect(skillWrite).toBeDefined();
+      expect(skillWrite![1]).toBe("# TDD\nContent");
+    });
+
+    it("writes agent file to agents/<slug>.md", async () => {
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+      mockReadFile.mockResolvedValue(JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }));
+
+      const { writeItem } = await import("../context/context-hub.js");
+      const filePath = await writeItem("agent", "reviewer", "# Reviewer");
+      expect(filePath).toContain("agents/reviewer.md");
+    });
+
+    it("writes doc file to docs/<slug>.md", async () => {
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+      mockReadFile.mockResolvedValue(JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }));
+
+      const { writeItem } = await import("../context/context-hub.js");
+      const filePath = await writeItem("doc", "readme", "# README");
+      expect(filePath).toContain("docs/readme.md");
+    });
+
+    it("updates index after writing", async () => {
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+      mockReadFile.mockResolvedValue(JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }));
+
+      const { writeItem } = await import("../context/context-hub.js");
+      await writeItem("skill", "tdd", "# TDD");
+
+      const indexWrite = mockWriteFile.mock.calls.find((c) => (c[0] as string).includes(".index.json"));
+      expect(indexWrite).toBeDefined();
+      const indexContent = JSON.parse(indexWrite![1] as string);
+      expect(indexContent.items.some((i: { slug: string }) => i.slug === "tdd")).toBe(true);
+    });
+  });
+
+  describe("deleteItem", () => {
+    it("removes file from disk", async () => {
+      const mockIndex = {
+        version: 1,
+        items: [{ type: "agent", slug: "reviewer", path: "agents/reviewer.md", fingerprint: "sha256:a", updatedAt: "2026-01-01T00:00:00Z" }],
+        updatedAt: "2026-01-01T00:00:00Z",
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(mockIndex));
+      mockUnlink.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const { deleteItem } = await import("../context/context-hub.js");
+      await deleteItem("agent", "reviewer");
+
+      expect(mockUnlink).toHaveBeenCalledWith(expect.stringContaining("agents/reviewer.md"));
+    });
+
+    it("removes entry from index", async () => {
+      const mockIndex = {
+        version: 1,
+        items: [
+          { type: "agent", slug: "reviewer", path: "agents/reviewer.md", fingerprint: "sha256:a", updatedAt: "2026-01-01T00:00:00Z" },
+          { type: "skill", slug: "tdd", path: "skills/tdd/SKILL.md", fingerprint: "sha256:b", updatedAt: "2026-01-01T00:00:00Z" },
+        ],
+        updatedAt: "2026-01-01T00:00:00Z",
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(mockIndex));
+      mockUnlink.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const { deleteItem } = await import("../context/context-hub.js");
+      await deleteItem("agent", "reviewer");
+
+      const indexWrite = mockWriteFile.mock.calls.find((c) => (c[0] as string).includes(".index.json"));
+      expect(indexWrite).toBeDefined();
+      const indexContent = JSON.parse(indexWrite![1] as string);
+      expect(indexContent.items).toHaveLength(1);
+      expect(indexContent.items[0].slug).toBe("tdd");
+    });
+
+    it("removes entire skill directory", async () => {
+      const mockIndex = {
+        version: 1,
+        items: [{ type: "skill", slug: "tdd", path: "skills/tdd/SKILL.md", fingerprint: "sha256:a", updatedAt: "2026-01-01T00:00:00Z" }],
+        updatedAt: "2026-01-01T00:00:00Z",
+      };
+      mockReadFile.mockResolvedValue(JSON.stringify(mockIndex));
+      mockRm.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const { deleteItem } = await import("../context/context-hub.js");
+      await deleteItem("skill", "tdd");
+
+      expect(mockRm).toHaveBeenCalledWith(expect.stringContaining("skills/tdd"), { recursive: true });
+    });
+
+    it("throws when item not found", async () => {
+      mockReadFile.mockResolvedValue(JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }));
+
+      const { deleteItem } = await import("../context/context-hub.js");
+      await expect(deleteItem("skill", "nonexistent")).rejects.toThrow(/not found/);
     });
   });
 });

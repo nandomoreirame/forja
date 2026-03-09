@@ -28,8 +28,8 @@ const mockReaddir = vi.mocked(fs.readdir);
 const mockAppendFile = vi.mocked(fs.appendFile);
 const mockStat = vi.mocked(fs.stat);
 
-const PROJECT_PATH = "/home/user/project";
 const HOME = "/home/user";
+const HUB_ROOT = `${HOME}/.config/forja/context`;
 
 function makeIndexJson(items: Array<{ type: string; slug: string; path: string }>) {
   return JSON.stringify({
@@ -95,7 +95,7 @@ describe("context-sync-in", () => {
       mockStat.mockResolvedValue(makeStat(false) as Awaited<ReturnType<typeof fs.stat>>);
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["claude"],
         components: ["agents"],
       });
@@ -105,7 +105,7 @@ describe("context-sync-in", () => {
       );
       expect(result).toBeDefined();
       expect(result?.action).toBe("created");
-      expect(result?.path).toContain(".forja/context/agents/code-reviewer.md");
+      expect(result?.path).toContain(`${HUB_ROOT}/agents/code-reviewer.md`);
     });
 
     it("imports skills from codex config dir into hub", async () => {
@@ -132,7 +132,7 @@ describe("context-sync-in", () => {
       });
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["codex"],
         components: ["skills"],
       });
@@ -142,7 +142,7 @@ describe("context-sync-in", () => {
       );
       expect(result).toBeDefined();
       expect(result?.action).toBe("created");
-      expect(result?.path).toContain(".forja/context/skills/tdd");
+      expect(result?.path).toContain(`${HUB_ROOT}/skills/tdd`);
     });
 
     it("skips import when hub already has item with default strategy=skip", async () => {
@@ -169,7 +169,7 @@ describe("context-sync-in", () => {
       mockStat.mockResolvedValue(makeStat(false) as Awaited<ReturnType<typeof fs.stat>>);
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["claude"],
         components: ["agents"],
       });
@@ -205,7 +205,7 @@ describe("context-sync-in", () => {
       mockStat.mockResolvedValue(makeStat(false) as Awaited<ReturnType<typeof fs.stat>>);
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["claude"],
         components: ["agents"],
         strategy: "overwrite",
@@ -242,7 +242,7 @@ describe("context-sync-in", () => {
       mockStat.mockResolvedValue(makeStat(false) as Awaited<ReturnType<typeof fs.stat>>);
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["claude"],
         components: ["agents"],
         strategy: "rename",
@@ -260,7 +260,7 @@ describe("context-sync-in", () => {
       setupReadFile(indexJson, "");
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["windsurf", "aider"],
         components: ["agents"],
       });
@@ -281,7 +281,7 @@ describe("context-sync-in", () => {
       mockReaddir.mockResolvedValue([] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      await syncInbound(PROJECT_PATH, { toolIds: ["claude"], components: ["agents"] });
+      await syncInbound({ toolIds: ["claude"], components: ["agents"] });
 
       const appendCalls = mockAppendFile.mock.calls;
       const logCall = appendCalls.find((c) => (c[0] as string).includes(".sync-log.jsonl"));
@@ -299,7 +299,7 @@ describe("context-sync-in", () => {
       mockReaddir.mockResolvedValue([] as unknown as Awaited<ReturnType<typeof fs.readdir>>);
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["claude"],
         components: ["agents"],
       });
@@ -323,7 +323,7 @@ describe("context-sync-in", () => {
       mockStat.mockResolvedValue(makeStat(false) as Awaited<ReturnType<typeof fs.stat>>);
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["claude"],
         components: ["docs"],
       });
@@ -357,7 +357,7 @@ describe("context-sync-in", () => {
       mockStat.mockResolvedValue(makeStat(false) as Awaited<ReturnType<typeof fs.stat>>);
 
       const { syncInbound } = await import("../context/context-sync-in.js");
-      const summary = await syncInbound(PROJECT_PATH, {
+      const summary = await syncInbound({
         toolIds: ["cursor-agent"],
         components: ["docs"],
       });

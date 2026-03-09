@@ -2,7 +2,7 @@
  * Context Sync Outbound Service
  *
  * Exports (syncs) docs, agents, and skills FROM the context hub
- * AT <project>/.forja/context/ TO each installed AI CLI's config directory.
+ * AT ~/.config/forja/context/ TO each installed AI CLI's config directory.
  */
 
 import * as fs from "fs/promises";
@@ -14,14 +14,13 @@ import {
   getToolById,
   resolveExportTarget,
 } from "./tool-registry.js";
-import { readIndex } from "./context-hub.js";
+import { readIndex, getContextHubRoot } from "./context-hub.js";
 import type { HubComponentType } from "./context-hub.js";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const CONTEXT_DIR = ".forja/context";
 const SYNC_LOG = ".sync-log.jsonl";
 
 // Map hub singular types to plural component types used by the tool registry
@@ -48,20 +47,19 @@ export interface SyncOutboundOptions {
 /**
  * Exports all hub components to the config directories of each installed AI CLI.
  *
- * @param projectPath  Absolute path to the project root.
  * @param options      Optional filters and merge strategy.
  * @returns            A SyncSummary describing every action taken.
  */
 export async function syncOutbound(
-  projectPath: string,
   options: SyncOutboundOptions = {}
 ): Promise<SyncSummary> {
   const { strategy = "skip", toolIds, components } = options;
   const home = os.homedir();
+  const hubRoot = getContextHubRoot();
   const results: SyncResult[] = [];
 
   // Read the canonical index from the context hub
-  const index = await readIndex(projectPath);
+  const index = await readIndex();
 
   // Determine which tools to export to
   const targetToolIds = toolIds ?? getAllToolIds();
@@ -93,7 +91,7 @@ export async function syncOutbound(
 
       if (component === "docs") {
         const docResults = await exportDocs(
-          projectPath,
+          hubRoot,
           tool,
           targetDir,
           items,
@@ -103,8 +101,7 @@ export async function syncOutbound(
       } else if (component === "agents") {
         for (const item of items) {
           const sourcePath = path.join(
-            projectPath,
-            CONTEXT_DIR,
+            hubRoot,
             "agents",
             `${item.slug}.md`
           );
@@ -121,8 +118,7 @@ export async function syncOutbound(
       } else if (component === "skills") {
         for (const item of items) {
           const sourceDir = path.join(
-            projectPath,
-            CONTEXT_DIR,
+            hubRoot,
             "skills",
             item.slug
           );
@@ -147,7 +143,7 @@ export async function syncOutbound(
   };
 
   // Append a single JSON line to the sync log for audit purposes
-  await appendSyncLog(projectPath, summary);
+  await appendSyncLog(summary);
 
   return summary;
 }
@@ -165,7 +161,7 @@ export async function syncOutbound(
  *   individually.
  */
 async function exportDocs(
-  projectPath: string,
+  hubRoot: string,
   tool: ReturnType<typeof getToolById> & object,
   targetDir: string,
   items: Array<{ slug: string; path: string }>,
@@ -181,7 +177,7 @@ async function exportDocs(
     // Collect content from all doc files
     const sections: string[] = [];
     for (const item of items) {
-      const sourcePath = path.join(projectPath, CONTEXT_DIR, "docs", `${item.slug}.md`);
+      const sourcePath = path.join(hubRoot, "docs", `${item.slug}.md`);
       try {
         const content = await fs.readFile(sourcePath, "utf-8");
         sections.push(content);
@@ -197,7 +193,7 @@ async function exportDocs(
     // Directory mode: copy each doc file individually
     await fs.mkdir(targetDir, { recursive: true });
     for (const item of items) {
-      const sourcePath = path.join(projectPath, CONTEXT_DIR, "docs", `${item.slug}.md`);
+      const sourcePath = path.join(hubRoot, "docs", `${item.slug}.md`);
       const targetPath = path.join(targetDir, `${item.slug}.md`);
       const result = await copyWithStrategy(
         sourcePath,
@@ -332,14 +328,13 @@ async function copyDirWithStrategy(
 }
 
 /**
- * Appends a JSON line (JSONL) entry to the project's sync log file at
- * <project>/.forja/context/.sync-log.jsonl.
+ * Appends a JSON line (JSONL) entry to the sync log file at
+ * ~/.config/forja/context/.sync-log.jsonl.
  */
 async function appendSyncLog(
-  projectPath: string,
   summary: SyncSummary
 ): Promise<void> {
-  const logPath = path.join(projectPath, CONTEXT_DIR, SYNC_LOG);
+  const logPath = path.join(getContextHubRoot(), SYNC_LOG);
   const line = JSON.stringify(summary) + "\n";
   await fs.appendFile(logPath, line, "utf-8");
 }

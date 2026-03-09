@@ -2,7 +2,7 @@
  * Context Sync Inbound Service
  *
  * Imports (syncs) docs, agents, and skills FROM each installed AI CLI's
- * config directory INTO the context hub at <project>/.forja/context/.
+ * config directory INTO the context hub at ~/.config/forja/context/.
  */
 
 import * as fs from "fs/promises";
@@ -14,14 +14,13 @@ import {
   getToolById,
   resolveExportTarget,
 } from "./tool-registry.js";
-import { readIndex, updateIndex, computeFingerprint } from "./context-hub.js";
+import { readIndex, updateIndex, getContextHubRoot } from "./context-hub.js";
 import type { HubComponentType } from "./context-hub.js";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const CONTEXT_DIR = ".forja/context";
 const SYNC_LOG = ".sync-log.jsonl";
 
 // Map plural component names to singular hub types
@@ -47,22 +46,21 @@ export interface SyncInboundOptions {
 
 /**
  * Imports components from installed AI CLI config directories into the
- * canonical context hub at <project>/.forja/context/.
+ * canonical context hub at ~/.config/forja/context/.
  *
- * @param projectPath  Absolute path to the project root.
  * @param options      Optional filters and merge strategy.
  * @returns            A SyncSummary describing every action taken.
  */
 export async function syncInbound(
-  projectPath: string,
   options: SyncInboundOptions = {}
 ): Promise<SyncSummary> {
   const { strategy = "skip", toolIds, components } = options;
   const home = os.homedir();
+  const hubRoot = getContextHubRoot();
   const results: SyncResult[] = [];
 
   // Read the current canonical index
-  const index = await readIndex(projectPath);
+  const index = await readIndex();
 
   const targetToolIds = toolIds ?? getAllToolIds();
   const targetComponents: ContextComponentType[] =
@@ -85,7 +83,7 @@ export async function syncInbound(
 
       if (component === "docs") {
         const docResults = await importDocs(
-          projectPath,
+          hubRoot,
           tool,
           sourceDir,
           index,
@@ -95,7 +93,7 @@ export async function syncInbound(
         results.push(...docResults);
       } else if (component === "agents") {
         const agentResults = await importAgents(
-          projectPath,
+          hubRoot,
           sourceDir,
           toolId,
           component,
@@ -106,7 +104,7 @@ export async function syncInbound(
         results.push(...agentResults);
       } else if (component === "skills") {
         const skillResults = await importSkills(
-          projectPath,
+          hubRoot,
           sourceDir,
           toolId,
           component,
@@ -125,7 +123,7 @@ export async function syncInbound(
     results,
   };
 
-  await appendSyncLog(projectPath, summary);
+  await appendSyncLog(summary);
 
   return summary;
 }
@@ -147,7 +145,7 @@ interface IndexLike {
  *   separate doc.
  */
 async function importDocs(
-  projectPath: string,
+  hubRoot: string,
   tool: NonNullable<ReturnType<typeof getToolById>>,
   sourceDir: string,
   index: IndexLike,
@@ -163,7 +161,7 @@ async function importDocs(
     if (!(await fileExists(sourcePath))) return results;
 
     const slug = tool.id;
-    const hubPath = path.join(projectPath, CONTEXT_DIR, "docs", `${slug}.md`);
+    const hubPath = path.join(hubRoot, "docs", `${slug}.md`);
     const existing = index.items.find((i) => i.type === hubType && i.slug === slug);
 
     const result = await importFile(
@@ -179,7 +177,7 @@ async function importDocs(
     if (result.action === "created" || result.action === "overwritten" || result.action === "renamed") {
       const content = await safeReadFile(sourcePath);
       if (content !== null) {
-        await updateIndex(projectPath, {
+        await updateIndex({
           type: hubType,
           slug,
           path: `docs/${slug}.md`,
@@ -198,7 +196,7 @@ async function importDocs(
 
       const slug = path.basename(entry, ".md");
       const sourcePath = path.join(sourceDir, entry);
-      const hubPath = path.join(projectPath, CONTEXT_DIR, "docs", `${slug}.md`);
+      const hubPath = path.join(hubRoot, "docs", `${slug}.md`);
       const existing = index.items.find((i) => i.type === hubType && i.slug === slug);
 
       const result = await importFile(
@@ -214,7 +212,7 @@ async function importDocs(
       if (result.action === "created" || result.action === "overwritten" || result.action === "renamed") {
         const content = await safeReadFile(sourcePath);
         if (content !== null) {
-          await updateIndex(projectPath, {
+          await updateIndex({
             type: hubType,
             slug,
             path: `docs/${slug}.md`,
@@ -233,7 +231,7 @@ async function importDocs(
  * Imports agent .md files from a CLI tool directory into the hub.
  */
 async function importAgents(
-  projectPath: string,
+  hubRoot: string,
   sourceDir: string,
   toolId: string,
   component: ContextComponentType,
@@ -251,7 +249,7 @@ async function importAgents(
 
     const slug = path.basename(entry, ".md");
     const sourcePath = path.join(sourceDir, entry);
-    const hubPath = path.join(projectPath, CONTEXT_DIR, "agents", `${slug}.md`);
+    const hubPath = path.join(hubRoot, "agents", `${slug}.md`);
     const existing = index.items.find((i) => i.type === hubType && i.slug === slug);
 
     const result = await importFile(
@@ -267,7 +265,7 @@ async function importAgents(
     if (result.action === "created" || result.action === "overwritten" || result.action === "renamed") {
       const content = await safeReadFile(sourcePath);
       if (content !== null) {
-        await updateIndex(projectPath, {
+        await updateIndex({
           type: hubType,
           slug,
           path: `agents/${slug}.md`,
@@ -285,7 +283,7 @@ async function importAgents(
  * Imports skill directories from a CLI tool directory into the hub.
  */
 async function importSkills(
-  projectPath: string,
+  hubRoot: string,
   sourceDir: string,
   toolId: string,
   component: ContextComponentType,
@@ -304,7 +302,7 @@ async function importSkills(
     if (!stat || !stat.isDirectory()) continue;
 
     const slug = entry;
-    const hubSkillDir = path.join(projectPath, CONTEXT_DIR, "skills", slug);
+    const hubSkillDir = path.join(hubRoot, "skills", slug);
     const existing = index.items.find((i) => i.type === hubType && i.slug === slug);
 
     const result = await importDir(
@@ -322,7 +320,7 @@ async function importSkills(
       const skillFile = path.join(entryPath, "SKILL.md");
       const content = await safeReadFile(skillFile);
       if (content !== null) {
-        await updateIndex(projectPath, {
+        await updateIndex({
           type: hubType,
           slug,
           path: `skills/${slug}/SKILL.md`,
@@ -418,13 +416,12 @@ async function importDir(
 }
 
 /**
- * Appends a JSON line to the project's sync log.
+ * Appends a JSON line to the sync log.
  */
 async function appendSyncLog(
-  projectPath: string,
   summary: SyncSummary
 ): Promise<void> {
-  const logPath = path.join(projectPath, CONTEXT_DIR, SYNC_LOG);
+  const logPath = path.join(getContextHubRoot(), SYNC_LOG);
   const line = JSON.stringify(summary) + "\n";
   await fs.appendFile(logPath, line, "utf-8");
 }

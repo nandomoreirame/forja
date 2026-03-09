@@ -1,9 +1,11 @@
 /**
  * Context Watch Sync Service
  *
- * Watches the canonical .forja/context/ directory and installed CLI tool
- * directories for file changes, setting pendingSyncOut/pendingSyncIn flags
- * with debounce to avoid loops.
+ * Watches the canonical ~/.config/forja/context/ directory and installed CLI
+ * tool directories for file changes, setting pendingSyncOut/pendingSyncIn
+ * flags with debounce to avoid loops.
+ *
+ * Operates as a global singleton — one watcher instance for the entire app.
  */
 
 import chokidar from "chokidar";
@@ -11,6 +13,7 @@ import type { FSWatcher } from "chokidar";
 import * as os from "os";
 import * as path from "path";
 import { getAllToolIds, getToolById } from "./tool-registry.js";
+import { getContextHubRoot } from "./context-hub.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -28,13 +31,12 @@ interface WatchSession {
 }
 
 // ---------------------------------------------------------------------------
-// State
+// State (singleton)
 // ---------------------------------------------------------------------------
 
-const sessions = new Map<string, WatchSession>();
-const syncStates = new Map<string, SyncState>();
+let session: WatchSession | null = null;
+let syncState: SyncState = { pendingSyncOut: false, pendingSyncIn: false };
 
-const CONTEXT_DIR = ".forja/context";
 const DEBOUNCE_MS = 800;
 
 // ---------------------------------------------------------------------------
@@ -42,15 +44,15 @@ const DEBOUNCE_MS = 800;
 // ---------------------------------------------------------------------------
 
 /**
- * Starts watching the project's context hub directory and all detected CLI
+ * Starts watching the global context hub directory and all detected CLI
  * tool directories for file changes.
  */
-export function startContextWatcher(projectPath: string): void {
-  // Stop existing watcher for this project
-  stopContextWatcher(projectPath);
+export function startContextWatcher(callback?: () => void): void {
+  // Stop existing watcher
+  stopContextWatcher();
 
   const home = os.homedir();
-  const hubPath = path.join(projectPath, CONTEXT_DIR);
+  const hubPath = getContextHubRoot();
   const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
   // Watch hub directory
@@ -65,7 +67,8 @@ export function startContextWatcher(projectPath: string): void {
     timers.set(
       "hub",
       setTimeout(() => {
-        ensureState(projectPath).pendingSyncOut = true;
+        syncState.pendingSyncOut = true;
+        callback?.();
       }, DEBOUNCE_MS)
     );
   };
@@ -100,7 +103,8 @@ export function startContextWatcher(projectPath: string): void {
         timers.set(
           key,
           setTimeout(() => {
-            ensureState(projectPath).pendingSyncIn = true;
+            syncState.pendingSyncIn = true;
+            callback?.();
           }, DEBOUNCE_MS)
         );
       };
@@ -113,14 +117,13 @@ export function startContextWatcher(projectPath: string): void {
     }
   }
 
-  sessions.set(projectPath, { hubWatcher, cliWatchers, debounceTimers: timers });
+  session = { hubWatcher, cliWatchers, debounceTimers: timers };
 }
 
 /**
- * Stops all watchers for a project and cleans up timers.
+ * Stops all watchers and cleans up timers.
  */
-export function stopContextWatcher(projectPath: string): void {
-  const session = sessions.get(projectPath);
+export function stopContextWatcher(): void {
   if (!session) return;
 
   // Clear debounce timers
@@ -134,36 +137,19 @@ export function stopContextWatcher(projectPath: string): void {
     w.close().catch(() => {});
   }
 
-  sessions.delete(projectPath);
+  session = null;
 }
 
 /**
- * Returns the current sync state for a project.
+ * Returns the current sync state.
  */
-export function getContextSyncState(projectPath: string): SyncState {
-  return { ...ensureState(projectPath) };
+export function getContextSyncState(): SyncState {
+  return { ...syncState };
 }
 
 /**
- * Resets both sync flags for a project (e.g. after sync completes).
+ * Resets both sync flags (e.g. after sync completes).
  */
-export function resetSyncFlags(projectPath?: string): void {
-  if (projectPath) {
-    syncStates.set(projectPath, { pendingSyncOut: false, pendingSyncIn: false });
-  } else {
-    syncStates.clear();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Internal
-// ---------------------------------------------------------------------------
-
-function ensureState(projectPath: string): SyncState {
-  let state = syncStates.get(projectPath);
-  if (!state) {
-    state = { pendingSyncOut: false, pendingSyncIn: false };
-    syncStates.set(projectPath, state);
-  }
-  return state;
+export function resetSyncFlags(): void {
+  syncState = { pendingSyncOut: false, pendingSyncIn: false };
 }

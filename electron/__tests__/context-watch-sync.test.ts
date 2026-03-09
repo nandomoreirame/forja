@@ -30,6 +30,8 @@ import {
   resetSyncFlags,
 } from "../context/context-watch-sync.js";
 
+const HUB_ROOT = "/home/user/.config/forja/context";
+
 describe("context-watch-sync", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -38,28 +40,27 @@ describe("context-watch-sync", () => {
   });
 
   afterEach(() => {
-    stopContextWatcher("/project");
+    stopContextWatcher();
     vi.useRealTimers();
   });
 
-  it("starts watching .forja/context directory", () => {
-    startContextWatcher("/project");
+  it("starts watching global ~/.config/forja/context directory", () => {
+    startContextWatcher();
 
     expect(mockWatch).toHaveBeenCalled();
     const firstCallPath = mockWatch.mock.calls[0][0];
-    // Should watch the context directory
-    expect(firstCallPath).toContain(".forja/context");
+    expect(firstCallPath).toBe(HUB_ROOT);
   });
 
   it("starts watching CLI tool directories", () => {
-    startContextWatcher("/project");
+    startContextWatcher();
 
     // Multiple watch calls: one for hub, plus CLI tool dirs
     expect(mockWatch.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
   it("registers change event handlers on watchers", () => {
-    startContextWatcher("/project");
+    startContextWatcher();
 
     // Should register 'change', 'add', 'unlink' events
     const eventNames = mockWatcherOn.mock.calls.map((c) => c[0] as string);
@@ -68,25 +69,24 @@ describe("context-watch-sync", () => {
   });
 
   it("sets pendingSyncOut when hub file changes", () => {
-    startContextWatcher("/project");
+    startContextWatcher();
 
     // Find the 'change' callback for the hub watcher
-    // The hub watcher is the first watch call
     const hubChangeCallbacks = mockWatcherOn.mock.calls
       .filter((c) => c[0] === "change");
 
     // Trigger a change in hub
     if (hubChangeCallbacks.length > 0) {
-      hubChangeCallbacks[0][1]("/project/.forja/context/skills/tdd/SKILL.md");
+      hubChangeCallbacks[0][1](`${HUB_ROOT}/skills/tdd/SKILL.md`);
       vi.advanceTimersByTime(1000);
     }
 
-    const state = getContextSyncState("/project");
+    const state = getContextSyncState();
     expect(state.pendingSyncOut).toBe(true);
   });
 
   it("sets pendingSyncIn when CLI tool file changes", () => {
-    startContextWatcher("/project");
+    startContextWatcher();
 
     // Find change callbacks — CLI watcher comes after hub watcher
     const changeCallbacks = mockWatcherOn.mock.calls
@@ -98,25 +98,25 @@ describe("context-watch-sync", () => {
       vi.advanceTimersByTime(1000);
     }
 
-    const state = getContextSyncState("/project");
+    const state = getContextSyncState();
     expect(state.pendingSyncIn).toBe(true);
   });
 
   it("stops watchers and cleans up", () => {
-    startContextWatcher("/project");
-    stopContextWatcher("/project");
+    startContextWatcher();
+    stopContextWatcher();
 
     expect(mockWatcherClose).toHaveBeenCalled();
   });
 
   it("returns clean state after reset", () => {
-    const state = getContextSyncState("/project");
+    const state = getContextSyncState();
     expect(state.pendingSyncOut).toBe(false);
     expect(state.pendingSyncIn).toBe(false);
   });
 
   it("debounces rapid changes", () => {
-    startContextWatcher("/project");
+    startContextWatcher();
 
     const hubChangeCallbacks = mockWatcherOn.mock.calls
       .filter((c) => c[0] === "change");
@@ -128,13 +128,13 @@ describe("context-watch-sync", () => {
       hubChangeCallbacks[0][1]("file3.md");
 
       // Before debounce completes
-      const stateBefore = getContextSyncState("/project");
+      const stateBefore = getContextSyncState();
       // Flags may not be set yet due to debounce
       expect(stateBefore.pendingSyncOut).toBe(false);
 
       // After debounce
       vi.advanceTimersByTime(1000);
-      const stateAfter = getContextSyncState("/project");
+      const stateAfter = getContextSyncState();
       expect(stateAfter.pendingSyncOut).toBe(true);
     }
   });

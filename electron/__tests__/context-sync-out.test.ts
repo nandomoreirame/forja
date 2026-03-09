@@ -23,12 +23,11 @@ const mockMkdir = vi.mocked(fs.mkdir);
 const mockReadFile = vi.mocked(fs.readFile);
 const mockWriteFile = vi.mocked(fs.writeFile);
 const mockAccess = vi.mocked(fs.access);
-const mockReaddir = vi.mocked(fs.readdir);
 const mockAppendFile = vi.mocked(fs.appendFile);
 const mockCp = vi.mocked(fs.cp);
 
-const PROJECT_PATH = "/home/user/project";
 const HOME = "/home/user";
+const HUB_ROOT = `${HOME}/.config/forja/context`;
 
 function makeIndex(items: Array<{ type: string; slug: string; path: string }>) {
   return JSON.stringify({
@@ -54,7 +53,6 @@ describe("context-sync-out", () => {
     mockCp.mockResolvedValue(undefined);
     // Default: target file does NOT exist
     mockAccess.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
-    mockReaddir.mockResolvedValue([]);
   });
 
   describe("syncOutbound", () => {
@@ -70,7 +68,7 @@ describe("context-sync-out", () => {
       mockReadFile.mockResolvedValue("---\nname: code-reviewer\n---\n# Code Reviewer\n");
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, { toolIds: ["claude"], components: ["agents"] });
+      const summary = await syncOutbound({ toolIds: ["claude"], components: ["agents"] });
 
       // Should have at least one result for claude agents
       const claudeResult = summary.results.find(
@@ -87,7 +85,7 @@ describe("context-sync-out", () => {
       );
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         toolIds: ["claude", "codex"],
         components: ["skills"],
       });
@@ -116,7 +114,7 @@ describe("context-sync-out", () => {
       mockAccess.mockResolvedValue(undefined);
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         toolIds: ["claude"],
         components: ["agents"],
         // strategy defaults to "skip"
@@ -140,7 +138,7 @@ describe("context-sync-out", () => {
       mockAccess.mockResolvedValue(undefined);
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         toolIds: ["claude"],
         components: ["agents"],
         strategy: "overwrite",
@@ -157,7 +155,7 @@ describe("context-sync-out", () => {
       );
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         // Export agents to all tools — codex and windsurf don't support agents
         toolIds: ["claude", "codex", "windsurf"],
         components: ["agents"],
@@ -183,7 +181,7 @@ describe("context-sync-out", () => {
       mockReadFile.mockResolvedValue("# README\nThis is the readme.\n");
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         toolIds: ["claude"],
         components: ["docs"],
       });
@@ -204,7 +202,7 @@ describe("context-sync-out", () => {
       mockReadFile.mockResolvedValue("# README\nThis is the readme.\n");
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         toolIds: ["cursor-agent"],
         components: ["docs"],
       });
@@ -223,7 +221,7 @@ describe("context-sync-out", () => {
       );
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      await syncOutbound(PROJECT_PATH, { toolIds: ["claude"], components: ["agents"] });
+      await syncOutbound({ toolIds: ["claude"], components: ["agents"] });
 
       // Append file should have been called with the sync log path
       const appendCalls = mockAppendFile.mock.calls;
@@ -247,7 +245,7 @@ describe("context-sync-out", () => {
       );
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         toolIds: ["claude"],
         components: ["agents", "skills"],
       });
@@ -265,7 +263,7 @@ describe("context-sync-out", () => {
       );
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         toolIds: ["claude"],
         components: ["agents"],
       });
@@ -285,7 +283,7 @@ describe("context-sync-out", () => {
       );
 
       const { syncOutbound } = await import("../context/context-sync-out.js");
-      const summary = await syncOutbound(PROJECT_PATH, {
+      const summary = await syncOutbound({
         toolIds: ["claude"],
         components: ["agents"], // only agents
       });
