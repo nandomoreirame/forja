@@ -312,6 +312,11 @@ ipcMain.handle("get_user_settings", async () => {
   return userSettings.loadUserSettings();
 });
 
+ipcMain.handle("get_settings_path", async () => {
+  const userSettings = await getUserSettings();
+  return userSettings.getUserSettingsPath();
+});
+
 ipcMain.handle("open_settings_file", async () => {
   const userSettings = await getUserSettings();
   return shell.openPath(userSettings.getUserSettingsPath());
