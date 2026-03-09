@@ -47,6 +47,7 @@ function createMockStore(overrides = {}) {
     addProject: vi.fn(),
     removeProject: vi.fn(),
     updateProject: vi.fn(),
+    reorderProjects: vi.fn(),
     setActiveProject: vi.fn(),
     switchToProject: vi.fn(),
     getProjectInitial: (n: string) => (n[0] ?? "?").toUpperCase(),
@@ -267,6 +268,42 @@ describe("ProjectSidebar", () => {
     const chatBtn = screen.getByLabelText("Chat");
     fireEvent.click(chatBtn);
     expect(mockTogglePanel).toHaveBeenCalledOnce();
+  });
+
+  it("renders projects in correct order after reorder store call", () => {
+    const mockReorderProjects = vi.fn();
+    mockUseProjectsStore.mockReturnValue(createMockStore({
+      projects: [
+        { path: "/c/third", name: "third", lastOpened: "", iconPath: null },
+        { path: "/a/first", name: "first", lastOpened: "", iconPath: null },
+        { path: "/b/second", name: "second", lastOpened: "", iconPath: null },
+      ],
+      activeProjectPath: "/c/third",
+      reorderProjects: mockReorderProjects,
+    }));
+
+    render(<ProjectSidebar onOpenProject={vi.fn()} />);
+
+    const buttons = screen.getAllByRole("button", { name: /Switch to project/ });
+    expect(buttons).toHaveLength(3);
+    expect(buttons[0]).toHaveAttribute("aria-label", "Switch to project: third");
+    expect(buttons[1]).toHaveAttribute("aria-label", "Switch to project: first");
+    expect(buttons[2]).toHaveAttribute("aria-label", "Switch to project: second");
+  });
+
+  it("project icons have draggable attributes for DnD", () => {
+    mockUseProjectsStore.mockReturnValue(createMockStore({
+      projects: [
+        { path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null },
+      ],
+      activeProjectPath: "/a/my-app",
+    }));
+
+    render(<ProjectSidebar onOpenProject={vi.fn()} />);
+
+    const btn = screen.getByLabelText("Switch to project: my-app");
+    const draggableParent = btn.closest("[data-testid='sortable-project']");
+    expect(draggableParent).toBeTruthy();
   });
 
   it("calls open dialog when Browse is clicked", async () => {

@@ -188,6 +188,58 @@ describe("useProjectsStore", () => {
     expect(unread.has("/a/my-app")).toBe(false);
   });
 
+  it("reorderProjects moves project from index 0 to index 2", () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    useProjectsStore.setState({
+      projects: [
+        { path: "/a", name: "a", lastOpened: "", iconPath: null },
+        { path: "/b", name: "b", lastOpened: "", iconPath: null },
+        { path: "/c", name: "c", lastOpened: "", iconPath: null },
+      ],
+    });
+
+    useProjectsStore.getState().reorderProjects(0, 2);
+
+    const paths = useProjectsStore.getState().projects.map((p) => p.path);
+    expect(paths).toEqual(["/b", "/c", "/a"]);
+  });
+
+  it("reorderProjects calls IPC with correct path order", () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    useProjectsStore.setState({
+      projects: [
+        { path: "/a", name: "a", lastOpened: "", iconPath: null },
+        { path: "/b", name: "b", lastOpened: "", iconPath: null },
+        { path: "/c", name: "c", lastOpened: "", iconPath: null },
+      ],
+    });
+
+    useProjectsStore.getState().reorderProjects(2, 0);
+
+    expect(invoke).toHaveBeenCalledWith("reorder_recent_projects", {
+      paths: ["/c", "/a", "/b"],
+    });
+  });
+
+  it("reorderProjects with same index is no-op", () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    useProjectsStore.setState({
+      projects: [
+        { path: "/a", name: "a", lastOpened: "", iconPath: null },
+        { path: "/b", name: "b", lastOpened: "", iconPath: null },
+      ],
+    });
+
+    useProjectsStore.getState().reorderProjects(1, 1);
+
+    expect(invoke).not.toHaveBeenCalled();
+    const paths = useProjectsStore.getState().projects.map((p) => p.path);
+    expect(paths).toEqual(["/a", "/b"]);
+  });
+
   it("updates project name via updateProject", () => {
     useProjectsStore.setState({
       projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],

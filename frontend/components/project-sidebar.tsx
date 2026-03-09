@@ -8,7 +8,23 @@ import {
   Settings,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensors,
+  useSensor,
+  type DragEndEvent,
+  type Modifier,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { useProjectsStore, type Project } from "@/stores/projects";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { invoke, open } from "@/lib/ipc";
@@ -159,6 +175,44 @@ function ProjectIcon({
   );
 }
 
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({
+  ...transform,
+  x: 0,
+});
+
+interface SortableProjectIconProps extends ProjectIconProps {
+  id: string;
+}
+
+function SortableProjectIcon({ id, ...props }: SortableProjectIconProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id });
+
+  const style: React.CSSProperties = {
+    transform: transform
+      ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
+      : undefined,
+    transition,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      data-testid="sortable-project"
+      {...attributes}
+      {...listeners}
+    >
+      <ProjectIcon {...props} />
+    </div>
+  );
+}
+
 interface ProjectSidebarProps {
   onOpenProject: () => void;
 }
@@ -175,6 +229,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
     unreadProjects,
     removeProject,
     updateProject,
+    reorderProjects,
   } = store;
 
   const toggleChat = useAgentChatStore((s) => s.togglePanel);
@@ -243,6 +298,26 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
     setRemovingProject(project);
   }, []);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor)
+  );
+
+  const projectIds = useMemo(() => projects.map((p) => p.path), [projects]);
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+      const oldIndex = projects.findIndex((p) => p.path === active.id);
+      const newIndex = projects.findIndex((p) => p.path === over.id);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        reorderProjects(oldIndex, newIndex);
+      }
+    },
+    [projects, reorderProjects]
+  );
+
   const handleRemoveConfirm = useCallback(() => {
     if (!removingProject) return;
     removeProject(removingProject.path);
@@ -256,21 +331,34 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
         data-testid="project-sidebar"
         className="flex h-full w-12 shrink-0 flex-col items-center gap-1.5 bg-ctp-mantle py-2"
       >
-        {projects.map((project, index) => (
-          <ProjectIcon
-            key={project.path}
-            project={project}
-            isActive={project.path === activeProjectPath}
-            onSelect={handleSelect}
-            onEditRequest={handleEditRequest}
-            onRemoveRequest={handleRemoveRequest}
-            initial={getProjectInitial(project.name)}
-            color={getProjectColor(project.name)}
-            sessionState={sessionStates?.[project.path]}
-            isUnread={unreadProjects?.has(project.path)}
-            shortcutIndex={altPressed && index < 9 ? index + 1 : null}
-          />
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={projectIds}
+            strategy={verticalListSortingStrategy}
+          >
+            {projects.map((project, index) => (
+              <SortableProjectIcon
+                key={project.path}
+                id={project.path}
+                project={project}
+                isActive={project.path === activeProjectPath}
+                onSelect={handleSelect}
+                onEditRequest={handleEditRequest}
+                onRemoveRequest={handleRemoveRequest}
+                initial={getProjectInitial(project.name)}
+                color={getProjectColor(project.name)}
+                sessionState={sessionStates?.[project.path]}
+                isUnread={unreadProjects?.has(project.path)}
+                shortcutIndex={altPressed && index < 9 ? index + 1 : null}
+              />
+            ))}
+          </SortableContext>
+        </DndContext>
 
         <Tooltip>
           <TooltipTrigger asChild>

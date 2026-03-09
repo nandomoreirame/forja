@@ -49,6 +49,7 @@ interface ProjectsState {
   setActiveProject: (projectPath: string) => void;
   switchToProject: (projectPath: string) => Promise<void>;
   loadProjectIcon: (projectPath: string) => Promise<void>;
+  reorderProjects: (fromIndex: number, toIndex: number) => void;
   updateProject: (projectPath: string, updates: { name?: string; iconPath?: string | null }) => void;
   getProjectInitial: (nameOrPath: string) => string;
   getProjectColor: (nameOrPath: string) => string;
@@ -139,6 +140,15 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     if (project && project.iconPath === null) {
       await get().loadProjectIcon(projectPath);
     }
+  },
+
+  reorderProjects: (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    const projects = [...get().projects];
+    const [moved] = projects.splice(fromIndex, 1);
+    projects.splice(toIndex, 0, moved);
+    set({ projects });
+    invoke("reorder_recent_projects", { paths: projects.map((p) => p.path) }).catch(() => {});
   },
 
   updateProject: (projectPath, updates) => {

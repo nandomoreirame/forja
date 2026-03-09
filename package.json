@@ -8,7 +8,9 @@
     "email": "nandomoreira.me@gmail.com"
   },
   "type": "module",
-  "sideEffects": ["**/*.css"],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "concurrently \"pnpm dev:vite\" \"pnpm dev:electron\"",
@@ -24,6 +26,8 @@
     "analyze": "ANALYZE=true vite build"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
     "@fontsource-variable/jetbrains-mono": "^5.0.0",
     "@fontsource/geist-sans": "^5.0.0",
     "@tanstack/react-virtual": "^3.13.18",
