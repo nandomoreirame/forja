@@ -14,6 +14,7 @@ import {
   readItem,
   writeItem,
   deleteItem,
+  importItem,
 } from "./context-hub.js";
 import { syncOutbound } from "./context-sync-out.js";
 import { syncInbound } from "./context-sync-in.js";
@@ -55,6 +56,11 @@ interface DeleteItemArgs {
   slug?: string;
 }
 
+interface ImportItemArgs {
+  type?: string;
+  filePath?: string;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -79,6 +85,7 @@ export function createContextHandlers(): Array<[string, IpcHandler]> {
     ["context:read_item", handleReadItem],
     ["context:write_item", handleWriteItem],
     ["context:delete_item", handleDeleteItem],
+    ["context:import_item", handleImportItem],
   ];
 }
 
@@ -137,4 +144,10 @@ async function handleDeleteItem(_event: unknown, args: unknown): Promise<void> {
   const { type, slug } = (args ?? {}) as DeleteItemArgs;
   if (!type || !slug) throw new Error("type and slug are required");
   await deleteItem(type, slug);
+}
+
+async function handleImportItem(_event: unknown, args: unknown): Promise<unknown> {
+  const { type, filePath } = (args ?? {}) as ImportItemArgs;
+  if (!type || !filePath) throw new Error("type and filePath are required");
+  return importItem(type, filePath);
 }

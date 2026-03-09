@@ -327,6 +327,32 @@ export async function writeItem(type: string, slug: string, content: string): Pr
  * Skills delete the entire directory; other types delete the single file.
  * Throws if the item is not found in the index.
  */
+/**
+ * Imports a .md file from disk into the context hub.
+ * Derives a slug from the filename (lowercase, hyphens for spaces).
+ * Reuses writeItem for storage and index update.
+ */
+export async function importItem(
+  type: string,
+  sourceFilePath: string,
+): Promise<string> {
+  if (!sourceFilePath.endsWith(".md")) {
+    throw new Error("Only .md files can be imported");
+  }
+
+  const content = await fs.readFile(sourceFilePath, "utf-8");
+
+  const baseName = path.basename(sourceFilePath, ".md");
+  const slug = baseName.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+
+  return writeItem(type, slug, content);
+}
+
+/**
+ * Deletes a context item from disk and removes it from the index.
+ * Skills delete the entire directory; other types delete the single file.
+ * Throws if the item is not found in the index.
+ */
 export async function deleteItem(type: string, slug: string): Promise<void> {
   const index = await readIndex();
   const itemIdx = index.items.findIndex((i) => i.type === type && i.slug === slug);

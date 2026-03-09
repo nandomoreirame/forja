@@ -559,4 +559,81 @@ describe("ContextHub", () => {
       await expect(deleteItem("skill", "nonexistent")).rejects.toThrow(/not found/);
     });
   });
+
+  describe("importItem", () => {
+    it("imports a markdown file as doc", async () => {
+      mockReadFile.mockImplementation(async (p) => {
+        const s = String(p);
+        if (s.includes(".index.json")) return JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }) as unknown as Buffer;
+        return "# My Guide\nSome content" as unknown as Buffer;
+      });
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const { importItem } = await import("../context/context-hub.js");
+      const result = await importItem("doc", "/tmp/my-guide.md");
+
+      expect(result).toContain("docs/my-guide.md");
+      const docWrite = mockWriteFile.mock.calls.find((c) => (c[0] as string).includes("docs/my-guide.md"));
+      expect(docWrite).toBeDefined();
+      expect(docWrite![1]).toBe("# My Guide\nSome content");
+    });
+
+    it("imports a markdown file as agent", async () => {
+      mockReadFile.mockImplementation(async (p) => {
+        const s = String(p);
+        if (s.includes(".index.json")) return JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }) as unknown as Buffer;
+        return "---\nname: reviewer\n---\n" as unknown as Buffer;
+      });
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const { importItem } = await import("../context/context-hub.js");
+      const result = await importItem("agent", "/tmp/reviewer.md");
+
+      expect(result).toContain("agents/reviewer.md");
+    });
+
+    it("imports a markdown file as skill", async () => {
+      mockReadFile.mockImplementation(async (p) => {
+        const s = String(p);
+        if (s.includes(".index.json")) return JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }) as unknown as Buffer;
+        return "---\nname: tdd\n---\n" as unknown as Buffer;
+      });
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const { importItem } = await import("../context/context-hub.js");
+      const result = await importItem("skill", "/tmp/tdd.md");
+
+      expect(result).toContain("skills/tdd/SKILL.md");
+    });
+
+    it("derives slug from filename without extension", async () => {
+      mockReadFile.mockImplementation(async (p) => {
+        const s = String(p);
+        if (s.includes(".index.json")) return JSON.stringify({ version: 1, items: [], updatedAt: "2026-01-01T00:00:00Z" }) as unknown as Buffer;
+        return "# Content" as unknown as Buffer;
+      });
+      mockMkdir.mockResolvedValue(undefined);
+      mockWriteFile.mockResolvedValue(undefined);
+
+      const { importItem } = await import("../context/context-hub.js");
+      const result = await importItem("doc", "/path/to/My Guide.md");
+
+      expect(result).toContain("docs/my-guide.md");
+    });
+
+    it("throws when source file does not exist", async () => {
+      mockReadFile.mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
+
+      const { importItem } = await import("../context/context-hub.js");
+      await expect(importItem("doc", "/tmp/nonexistent.md")).rejects.toThrow();
+    });
+
+    it("throws when source file is not .md", async () => {
+      const { importItem } = await import("../context/context-hub.js");
+      await expect(importItem("doc", "/tmp/file.txt")).rejects.toThrow("Only .md files can be imported");
+    });
+  });
 });

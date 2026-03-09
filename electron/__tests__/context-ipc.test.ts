@@ -11,6 +11,7 @@ vi.mock("../context/context-hub.js", () => ({
   readItem: vi.fn(),
   writeItem: vi.fn(),
   deleteItem: vi.fn(),
+  importItem: vi.fn(),
 }));
 
 vi.mock("../context/context-sync-out.js", () => ({
@@ -36,6 +37,7 @@ const mockListItems = vi.mocked(contextHub.listItems);
 const mockReadItem = vi.mocked(contextHub.readItem);
 const mockWriteItem = vi.mocked(contextHub.writeItem);
 const mockDeleteItem = vi.mocked(contextHub.deleteItem);
+const mockImportItem = vi.mocked(contextHub.importItem);
 
 describe("context-ipc", () => {
   let handlers: Record<string, (...args: unknown[]) => unknown>;
@@ -46,7 +48,7 @@ describe("context-ipc", () => {
     handlers = Object.fromEntries(raw);
   });
 
-  it("registers all 10 expected handlers", () => {
+  it("registers all 11 expected handlers", () => {
     const keys = Object.keys(handlers);
     expect(keys).toContain("context:init");
     expect(keys).toContain("context:status");
@@ -58,7 +60,8 @@ describe("context-ipc", () => {
     expect(keys).toContain("context:read_item");
     expect(keys).toContain("context:write_item");
     expect(keys).toContain("context:delete_item");
-    expect(keys.length).toBe(10);
+    expect(keys).toContain("context:import_item");
+    expect(keys.length).toBe(11);
   });
 
   describe("context:init", () => {
@@ -237,6 +240,32 @@ describe("context-ipc", () => {
       await expect(
         handlers["context:delete_item"]({}, { slug: "tdd" })
       ).rejects.toThrow("type and slug are required");
+    });
+  });
+
+  describe("context:import_item", () => {
+    it("calls importItem with type and filePath", async () => {
+      mockImportItem.mockResolvedValue("/path/to/result.md");
+
+      const result = await handlers["context:import_item"]({}, {
+        type: "doc",
+        filePath: "/tmp/guide.md",
+      });
+
+      expect(mockImportItem).toHaveBeenCalledWith("doc", "/tmp/guide.md");
+      expect(result).toBe("/path/to/result.md");
+    });
+
+    it("throws when type missing", async () => {
+      await expect(
+        handlers["context:import_item"]({}, { filePath: "/tmp/f.md" })
+      ).rejects.toThrow("type and filePath are required");
+    });
+
+    it("throws when filePath missing", async () => {
+      await expect(
+        handlers["context:import_item"]({}, { type: "doc" })
+      ).rejects.toThrow("type and filePath are required");
     });
   });
 });
