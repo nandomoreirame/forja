@@ -67,19 +67,21 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   loadProjects: async () => {
     set({ loading: true });
     try {
-      const raw = await invoke<Array<{ path: string; name: string; last_opened: string }>>(
+      const raw = await invoke<Array<{ path: string; name: string; last_opened: string; icon_path?: string | null }>>(
         "get_recent_projects"
       );
       const projects: Project[] = (raw ?? []).map((p) => ({
         path: p.path,
         name: p.name || basename(p.path),
         lastOpened: p.last_opened,
-        iconPath: null,
+        iconPath: p.icon_path ?? null,
       }));
       set({ projects, loading: false });
-      // Load icons for all projects (non-blocking, fire-and-forget)
+      // Auto-detect icons only for projects without a persisted icon
       for (const p of projects) {
-        get().loadProjectIcon(p.path).catch(() => {});
+        if (!p.iconPath) {
+          get().loadProjectIcon(p.path).catch(() => {});
+        }
       }
     } catch {
       set({ loading: false });
@@ -157,6 +159,11 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         p.path === projectPath ? { ...p, ...updates } : p
       ),
     }));
+    invoke("update_recent_project", {
+      path: projectPath,
+      name: updates.name,
+      icon_path: updates.iconPath,
+    }).catch(() => {});
   },
 
   loadProjectIcon: async (projectPath: string) => {
