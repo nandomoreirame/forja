@@ -11,6 +11,8 @@ describe("useGitStatusStore", () => {
       statuses: {},
       projectPath: null,
       statusesByProject: {},
+      _changedDirsByProject: {},
+      _lastFetchByProject: {},
     });
     vi.clearAllMocks();
   });

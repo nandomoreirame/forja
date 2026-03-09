@@ -1,12 +1,16 @@
 import { create } from "zustand";
 import { invoke } from "@/lib/ipc";
 
+export const GIT_STATUS_TTL_MS = 5000;
+
 interface GitStatusState {
   statuses: Record<string, string>;
   projectPath: string | null;
   statusesByProject: Record<string, Record<string, string>>;
   _changedDirsByProject: Record<string, Set<string>>;
+  _lastFetchByProject: Record<string, number>;
   fetchStatuses: (projectPath: string) => Promise<void>;
+  forceFetchStatuses: (projectPath: string) => Promise<void>;
   getFileStatus: (relativePath: string, projectPath?: string) => string | undefined;
   hasChangedChildren: (dirRelativePath: string, projectPath?: string) => boolean;
   clearStatuses: (projectPath?: string) => void;
@@ -25,45 +29,67 @@ function computeChangedDirs(statuses: Record<string, string>): Set<string> {
   return dirs;
 }
 
+async function performFetch(projectPath: string, set: (fn: (state: GitStatusState) => Partial<GitStatusState>) => void): Promise<void> {
+  try {
+    const result = await invoke<Record<string, string>>(
+      "get_git_file_statuses",
+      { path: projectPath },
+    );
+    const data = result ?? {};
+    set((state) => ({
+      statuses: data,
+      projectPath,
+      statusesByProject: {
+        ...state.statusesByProject,
+        [projectPath]: data,
+      },
+      _changedDirsByProject: {
+        ...state._changedDirsByProject,
+        [projectPath]: computeChangedDirs(data),
+      },
+      _lastFetchByProject: {
+        ...state._lastFetchByProject,
+        [projectPath]: Date.now(),
+      },
+    }));
+  } catch {
+    set((state) => ({
+      statuses: {},
+      projectPath,
+      statusesByProject: {
+        ...state.statusesByProject,
+        [projectPath]: {},
+      },
+      _changedDirsByProject: {
+        ...state._changedDirsByProject,
+        [projectPath]: new Set(),
+      },
+      _lastFetchByProject: {
+        ...state._lastFetchByProject,
+        [projectPath]: Date.now(),
+      },
+    }));
+  }
+}
+
 export const useGitStatusStore = create<GitStatusState>((set, get) => ({
   statuses: {},
   projectPath: null,
   statusesByProject: {},
   _changedDirsByProject: {},
+  _lastFetchByProject: {},
 
   fetchStatuses: async (projectPath: string) => {
-    try {
-      const result = await invoke<Record<string, string>>(
-        "get_git_file_statuses",
-        { path: projectPath },
-      );
-      const data = result ?? {};
-      set((state) => ({
-        statuses: data,
-        projectPath,
-        statusesByProject: {
-          ...state.statusesByProject,
-          [projectPath]: data,
-        },
-        _changedDirsByProject: {
-          ...state._changedDirsByProject,
-          [projectPath]: computeChangedDirs(data),
-        },
-      }));
-    } catch {
-      set((state) => ({
-        statuses: {},
-        projectPath,
-        statusesByProject: {
-          ...state.statusesByProject,
-          [projectPath]: {},
-        },
-        _changedDirsByProject: {
-          ...state._changedDirsByProject,
-          [projectPath]: new Set(),
-        },
-      }));
+    const { _lastFetchByProject } = get();
+    const lastFetch = _lastFetchByProject[projectPath];
+    if (lastFetch !== undefined && Date.now() - lastFetch < GIT_STATUS_TTL_MS) {
+      return;
     }
+    await performFetch(projectPath, set);
+  },
+
+  forceFetchStatuses: async (projectPath: string) => {
+    await performFetch(projectPath, set);
   },
 
   getFileStatus: (relativePath: string, projectPath?: string) => {
@@ -106,6 +132,7 @@ export const useGitStatusStore = create<GitStatusState>((set, get) => ({
           projectPath: null,
           statusesByProject: {},
           _changedDirsByProject: {},
+          _lastFetchByProject: {},
         };
       }
 
@@ -113,11 +140,14 @@ export const useGitStatusStore = create<GitStatusState>((set, get) => ({
       delete nextByProject[projectPath];
       const nextDirs = { ...state._changedDirsByProject };
       delete nextDirs[projectPath];
+      const nextLastFetch = { ...state._lastFetchByProject };
+      delete nextLastFetch[projectPath];
       return {
         statuses: state.projectPath === projectPath ? {} : state.statuses,
         projectPath: state.projectPath === projectPath ? null : state.projectPath,
         statusesByProject: nextByProject,
         _changedDirsByProject: nextDirs,
+        _lastFetchByProject: nextLastFetch,
       };
     }),
 }));
