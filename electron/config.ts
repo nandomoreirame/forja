@@ -8,6 +8,7 @@ interface RecentProject {
   path: string;
   name: string;
   last_opened: string;
+  icon_path?: string | null;
 }
 
 export interface Workspace {
@@ -57,12 +58,13 @@ export function getRecentProjects(): RecentProject[] {
 
 export function addRecentProject(projectPath: string): void {
   const existing = store.get("recentProjects");
+  const prev = existing.find((p) => p.path === projectPath);
   const name = path.basename(projectPath);
   const lastOpened = new Date().toISOString();
 
   const filtered = existing.filter((p) => p.path !== projectPath);
   const updated: RecentProject[] = [
-    { path: projectPath, name, last_opened: lastOpened },
+    { path: projectPath, name, last_opened: lastOpened, icon_path: prev?.icon_path ?? undefined },
     ...filtered,
   ].slice(0, MAX_RECENT);
 
@@ -73,6 +75,17 @@ export function removeRecentProject(projectPath: string): void {
   const existing = store.get("recentProjects");
   const filtered = existing.filter((p) => p.path !== projectPath);
   store.set("recentProjects", filtered);
+}
+
+export function updateRecentProject(
+  projectPath: string,
+  updates: { name?: string; icon_path?: string | null }
+): void {
+  const existing = store.get("recentProjects");
+  const updated = existing.map((p) =>
+    p.path === projectPath ? { ...p, ...updates } : p
+  );
+  store.set("recentProjects", updated);
 }
 
 export function reorderRecentProjects(orderedPaths: string[]): void {

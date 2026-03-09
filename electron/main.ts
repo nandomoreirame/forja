@@ -232,6 +232,18 @@ ipcMain.handle("reorder_recent_projects", async (_event, args: { paths: string[]
   config.reorderRecentProjects(args.paths);
 });
 
+ipcMain.handle("update_recent_project", async (_event, args: {
+  path: string;
+  name?: string;
+  icon_path?: string | null;
+}) => {
+  const config = await getConfig();
+  config.updateRecentProject(args.path, {
+    name: args.name,
+    icon_path: args.icon_path,
+  });
+});
+
 // Open project in a new window
 ipcMain.handle("open_project_in_new_window", async (_event, args: { path: string }) => {
   await createWindow(args.path);
