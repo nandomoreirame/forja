@@ -17,6 +17,12 @@ const mockState = {
   initHub: vi.fn(),
   createSkill: vi.fn(),
   createAgent: vi.fn(),
+  listItems: vi.fn(),
+  readItem: vi.fn(),
+  writeItem: vi.fn(),
+  deleteItem: vi.fn(),
+  items: [],
+  currentItem: null,
 };
 
 vi.mock("@/stores/context-hub", () => ({
@@ -41,7 +47,7 @@ describe("ContextSyncStatus", () => {
   });
 
   it("renders nothing when status is null", () => {
-    const { container } = render(<ContextSyncStatus projectPath="/project" />);
+    const { container } = render(<ContextSyncStatus />);
     expect(container.querySelector("[data-testid='context-sync-status']")).toBeNull();
   });
 
@@ -52,7 +58,7 @@ describe("ContextSyncStatus", () => {
       lastUpdated: "2026-01-01T00:00:00Z",
     };
 
-    render(<ContextSyncStatus projectPath="/project" />);
+    render(<ContextSyncStatus />);
 
     const indicator = screen.getByTestId("context-sync-status");
     expect(indicator).toBeDefined();
@@ -67,7 +73,7 @@ describe("ContextSyncStatus", () => {
     };
     mockState.loading = true;
 
-    render(<ContextSyncStatus projectPath="/project" />);
+    render(<ContextSyncStatus />);
 
     const indicator = screen.getByTestId("context-sync-status");
     expect(indicator.getAttribute("aria-label")).toContain("Syncing");
@@ -81,24 +87,24 @@ describe("ContextSyncStatus", () => {
     };
     mockState.error = "sync failed";
 
-    render(<ContextSyncStatus projectPath="/project" />);
+    render(<ContextSyncStatus />);
 
     const indicator = screen.getByTestId("context-sync-status");
     expect(indicator.getAttribute("aria-label")).toContain("error");
   });
 
-  it("triggers syncOut on click", () => {
+  it("triggers syncOut on click without projectPath", () => {
     mockState.status = {
       initialized: true,
       counts: { skill: 1, agent: 0, doc: 0, plan: 0 },
       lastUpdated: "2026-01-01T00:00:00Z",
     };
 
-    render(<ContextSyncStatus projectPath="/project" />);
+    render(<ContextSyncStatus />);
 
     const button = screen.getByTestId("context-sync-status");
     fireEvent.click(button);
-    expect(mockSyncOut).toHaveBeenCalledWith("/project");
+    expect(mockSyncOut).toHaveBeenCalledWith();
   });
 
   it("shows item counts in aria-label", () => {
@@ -108,7 +114,7 @@ describe("ContextSyncStatus", () => {
       lastUpdated: "2026-01-01T00:00:00Z",
     };
 
-    render(<ContextSyncStatus projectPath="/project" />);
+    render(<ContextSyncStatus />);
 
     const indicator = screen.getByTestId("context-sync-status");
     const label = indicator.getAttribute("aria-label") ?? "";

@@ -89,30 +89,36 @@ describe("ChatPanel", () => {
   });
 
   it("renders when panel is open", () => {
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     expect(screen.getByTestId("chat-panel")).toBeDefined();
   });
 
+  it("renders without projectPath", () => {
+    render(<ChatPanel />);
+    expect(screen.getByTestId("chat-panel")).toBeDefined();
+    expect(screen.getByText("Claude Code")).toBeDefined();
+  });
+
   it("shows CLI selector when no session active", () => {
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     expect(screen.getByText("Claude Code")).toBeDefined();
     expect(screen.getByText("Gemini CLI")).toBeDefined();
   });
 
   it("hides CLIs that do not support chat from selector", () => {
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     expect(screen.queryByText("OpenCode")).toBeNull();
   });
 
   it("shows MessageSquare icon above the Choose an AI assistant text", () => {
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     const icon = screen.getByTestId("chat-selector-icon");
     expect(icon).toBeDefined();
     expect(screen.getByText("Choose an AI assistant")).toBeDefined();
   });
 
   it("shows CLI icons in selector buttons", () => {
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     const claudeIcon = screen.getByAltText("Claude Code");
     expect(claudeIcon).toBeDefined();
     expect((claudeIcon as HTMLImageElement).src).toContain("claude.svg");
@@ -122,12 +128,26 @@ describe("ChatPanel", () => {
     expect((geminiIcon as HTMLImageElement).src).toContain("gemini.svg");
   });
 
+  it("starts session with projectPath when provided", () => {
+    render(<ChatPanel projectPath="/project" />);
+    const claudeBtn = screen.getByText("Claude Code");
+    fireEvent.click(claudeBtn);
+    expect(mockStartSession).toHaveBeenCalledWith("claude", "/project");
+  });
+
+  it("starts session without projectPath when not provided", () => {
+    render(<ChatPanel />);
+    const claudeBtn = screen.getByText("Claude Code");
+    fireEvent.click(claudeBtn);
+    expect(mockStartSession).toHaveBeenCalledWith("claude");
+  });
+
   it("shows message input when session is active", () => {
     mockChatState.sessionId = "s1";
     mockChatState.cliId = "claude";
     mockChatState.status = "ready";
 
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     expect(screen.getByPlaceholderText(/message/i)).toBeDefined();
   });
 
@@ -140,13 +160,13 @@ describe("ChatPanel", () => {
       { id: "m2", role: "assistant", content: "Hi there!", timestamp: "2026-01-01" },
     ];
 
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     expect(screen.getByText("Hello")).toBeDefined();
     expect(screen.getByText("Hi there!")).toBeDefined();
   });
 
   it("has close button that toggles panel", () => {
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     const closeButton = screen.getByLabelText("Close chat panel");
     expect(closeButton).toBeDefined();
     fireEvent.click(closeButton);
@@ -155,7 +175,7 @@ describe("ChatPanel", () => {
 
   it("shows error when present", () => {
     mockChatState.error = "Connection failed";
-    render(<ChatPanel projectPath="/project" />);
+    render(<ChatPanel />);
     expect(screen.getByText("Connection failed")).toBeDefined();
   });
 
@@ -167,13 +187,13 @@ describe("ChatPanel", () => {
     });
 
     it("shows slash button in toolbar when session is active", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const slashBtn = screen.getByLabelText("Insert slash command");
       expect(slashBtn).toBeDefined();
     });
 
     it("slash button inserts / into textarea and opens slash menu", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const slashBtn = screen.getByLabelText("Insert slash command");
       fireEvent.click(slashBtn);
       const textarea = screen.getByPlaceholderText(/message/i) as HTMLTextAreaElement;
@@ -182,31 +202,29 @@ describe("ChatPanel", () => {
     });
 
     it("shows CLI switcher button with current CLI name when session is active", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const switcherBtn = screen.getByLabelText("Switch AI agent");
       expect(switcherBtn).toBeDefined();
       expect(switcherBtn.textContent).toContain("Claude Code");
     });
 
     it("CLI switcher button opens dropdown with other installed chat CLIs", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const switcherBtn = screen.getByLabelText("Switch AI agent");
       fireEvent.click(switcherBtn);
-      // Gemini is installed and chatSupported, should appear in dropdown
       expect(screen.getByTestId("cli-switcher-dropdown")).toBeDefined();
       expect(screen.getByText("Gemini CLI")).toBeDefined();
     });
 
     it("CLI switcher dropdown does not show current CLI", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const switcherBtn = screen.getByLabelText("Switch AI agent");
       fireEvent.click(switcherBtn);
-      // Claude is current, should not appear as a choice in dropdown
       expect(screen.queryByTestId("cli-switcher-item-claude")).toBeNull();
     });
 
     it("clicking a CLI in dropdown calls switchSession", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const switcherBtn = screen.getByLabelText("Switch AI agent");
       fireEvent.click(switcherBtn);
       const geminiItem = screen.getByTestId("cli-switcher-item-gemini");
@@ -215,7 +233,7 @@ describe("ChatPanel", () => {
     });
 
     it("CLI switcher dropdown closes after selecting a CLI", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const switcherBtn = screen.getByLabelText("Switch AI agent");
       fireEvent.click(switcherBtn);
       const geminiItem = screen.getByTestId("cli-switcher-item-gemini");
@@ -224,17 +242,16 @@ describe("ChatPanel", () => {
     });
 
     it("CLI switcher dropdown does not show CLIs that do not support chat", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const switcherBtn = screen.getByLabelText("Switch AI agent");
       fireEvent.click(switcherBtn);
-      // OpenCode has chatSupported: false - should NOT appear
       expect(screen.queryByTestId("cli-switcher-item-opencode")).toBeNull();
     });
 
     it("toolbar is not shown when no session is active", () => {
       mockChatState.sessionId = null;
       mockChatState.cliId = null;
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       expect(screen.queryByLabelText("Insert slash command")).toBeNull();
       expect(screen.queryByLabelText("Switch AI agent")).toBeNull();
     });
@@ -248,26 +265,26 @@ describe("ChatPanel", () => {
     });
 
     it("shows slash command menu when input starts with /", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const textarea = screen.getByPlaceholderText(/message/i);
       fireEvent.change(textarea, { target: { value: "/" } });
       expect(screen.getByTestId("slash-command-menu")).toBeDefined();
     });
 
     it("hides slash command menu when input does not start with /", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const textarea = screen.getByPlaceholderText(/message/i);
       fireEvent.change(textarea, { target: { value: "hello" } });
       expect(screen.queryByTestId("slash-command-menu")).toBeNull();
     });
 
     it("hides slash command menu on empty input", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       expect(screen.queryByTestId("slash-command-menu")).toBeNull();
     });
 
     it("closes menu when Escape is pressed", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const textarea = screen.getByPlaceholderText(/message/i);
       fireEvent.change(textarea, { target: { value: "/" } });
       expect(screen.getByTestId("slash-command-menu")).toBeDefined();
@@ -277,14 +294,13 @@ describe("ChatPanel", () => {
 
     it("does not show menu when no session active", () => {
       mockChatState.sessionId = null;
-      render(<ChatPanel projectPath="/project" />);
-      // No textarea rendered when no session
+      render(<ChatPanel />);
       expect(screen.queryByPlaceholderText(/message/i)).toBeNull();
       expect(screen.queryByTestId("slash-command-menu")).toBeNull();
     });
 
     it("ArrowDown navigates to next item in slash menu", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const textarea = screen.getByPlaceholderText(/message/i);
       fireEvent.change(textarea, { target: { value: "/" } });
 
@@ -295,11 +311,10 @@ describe("ChatPanel", () => {
     });
 
     it("ArrowUp navigates to previous item in slash menu", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const textarea = screen.getByPlaceholderText(/message/i);
       fireEvent.change(textarea, { target: { value: "/" } });
 
-      // Move down first, then up
       fireEvent.keyDown(textarea, { key: "ArrowDown" });
       fireEvent.keyDown(textarea, { key: "ArrowUp" });
 
@@ -308,18 +323,17 @@ describe("ChatPanel", () => {
     });
 
     it("Enter selects highlighted item and sends command", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const textarea = screen.getByPlaceholderText(/message/i);
       fireEvent.change(textarea, { target: { value: "/" } });
 
-      // First item is selected by default, press Enter
       fireEvent.keyDown(textarea, { key: "Enter" });
 
       expect(mockSendMessage).toHaveBeenCalledWith("/context init");
     });
 
     it("Enter after ArrowDown selects second item", () => {
-      render(<ChatPanel projectPath="/project" />);
+      render(<ChatPanel />);
       const textarea = screen.getByPlaceholderText(/message/i);
       fireEvent.change(textarea, { target: { value: "/" } });
 

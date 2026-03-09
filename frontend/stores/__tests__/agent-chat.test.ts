@@ -17,6 +17,7 @@ describe("useAgentChatStore", () => {
       messages: [],
       sessionId: null,
       cliId: null,
+      projectPath: null,
       status: "idle",
       error: null,
       isPanelOpen: false,
@@ -34,7 +35,7 @@ describe("useAgentChatStore", () => {
   });
 
   describe("startSession", () => {
-    it("spawns a chat session via IPC", async () => {
+    it("spawns a chat session via IPC with projectPath", async () => {
       mockInvoke.mockResolvedValue({ sessionId: "s1" });
       await useAgentChatStore.getState().startSession("claude", "/project");
       expect(mockInvoke).toHaveBeenCalledWith("chat:spawn", {
@@ -44,6 +45,16 @@ describe("useAgentChatStore", () => {
       });
       expect(useAgentChatStore.getState().sessionId).toBeDefined();
       expect(useAgentChatStore.getState().cliId).toBe("claude");
+      expect(useAgentChatStore.getState().status).toBe("ready");
+    });
+
+    it("spawns a chat session without projectPath", async () => {
+      mockInvoke.mockResolvedValue({ sessionId: "s1" });
+      await useAgentChatStore.getState().startSession("claude");
+      expect(mockInvoke).toHaveBeenCalledWith("chat:spawn", {
+        sessionId: expect.any(String),
+        cliId: "claude",
+      });
       expect(useAgentChatStore.getState().status).toBe("ready");
     });
 
@@ -177,7 +188,6 @@ describe("useAgentChatStore", () => {
 
       await useAgentChatStore.getState().switchSession("gemini");
 
-      // Should have called close for old session and spawn for new one
       expect(mockInvoke).toHaveBeenCalledWith("chat:close", { sessionId: "s1" });
       expect(mockInvoke).toHaveBeenCalledWith("chat:spawn", {
         sessionId: expect.any(String),
@@ -185,7 +195,6 @@ describe("useAgentChatStore", () => {
         projectPath: "/project",
       });
 
-      // CLI should have changed
       expect(useAgentChatStore.getState().cliId).toBe("gemini");
       expect(useAgentChatStore.getState().status).toBe("ready");
     });
@@ -206,14 +215,13 @@ describe("useAgentChatStore", () => {
 
       await useAgentChatStore.getState().switchSession("gemini");
 
-      // Messages should persist
       const messages = useAgentChatStore.getState().messages;
       expect(messages.length).toBe(2);
       expect(messages[0].content).toBe("Hello");
       expect(messages[1].content).toBe("Hi!");
     });
 
-    it("does nothing when no project path is set", async () => {
+    it("switches session even without projectPath", async () => {
       useAgentChatStore.setState({
         sessionId: "s1",
         cliId: "claude",
@@ -221,10 +229,14 @@ describe("useAgentChatStore", () => {
         status: "ready",
       });
 
+      mockInvoke.mockResolvedValue(undefined);
+
       await useAgentChatStore.getState().switchSession("gemini");
 
-      // Should not call IPC without projectPath
-      expect(mockInvoke).not.toHaveBeenCalled();
+      expect(mockInvoke).toHaveBeenCalledWith("chat:spawn", {
+        sessionId: expect.any(String),
+        cliId: "gemini",
+      });
     });
 
     it("does nothing when switching to same CLI", async () => {
@@ -237,7 +249,6 @@ describe("useAgentChatStore", () => {
 
       await useAgentChatStore.getState().switchSession("claude");
 
-      // No IPC call needed
       expect(mockInvoke).not.toHaveBeenCalled();
     });
 
@@ -266,26 +277,18 @@ describe("useAgentChatStore", () => {
         sessionId: "s1",
         cliId: "claude",
         status: "ready",
-        projectPath: "/project",
+        projectPath: null,
       });
     });
 
-    it("intercepts /context init and calls context hub IPC", async () => {
+    it("intercepts /context init without needing projectPath", async () => {
       mockInvoke.mockResolvedValue({ initialized: true });
       await useAgentChatStore.getState().sendMessage("/context init");
 
-      // Should call context:init instead of chat:send
-      expect(mockInvoke).toHaveBeenCalledWith("context:init", {
-        projectPath: "/project",
-      });
-
-      // Should add system message about the result
-      const messages = useAgentChatStore.getState().messages;
-      const systemMsgs = messages.filter((m) => m.role === "system");
-      expect(systemMsgs.length).toBeGreaterThan(0);
+      expect(mockInvoke).toHaveBeenCalledWith("context:init", {});
     });
 
-    it("intercepts /context status and calls hub IPC", async () => {
+    it("intercepts /context status without needing projectPath", async () => {
       mockInvoke.mockResolvedValue({
         initialized: true,
         counts: { skill: 1, agent: 0, doc: 0, plan: 0 },
@@ -293,27 +296,23 @@ describe("useAgentChatStore", () => {
       });
       await useAgentChatStore.getState().sendMessage("/context status");
 
-      expect(mockInvoke).toHaveBeenCalledWith("context:status", {
-        projectPath: "/project",
-      });
+      expect(mockInvoke).toHaveBeenCalledWith("context:status", {});
     });
 
     it("intercepts /skill create and calls hub IPC", async () => {
-      mockInvoke.mockResolvedValue("/project/.forja/context/skills/tdd");
+      mockInvoke.mockResolvedValue("/path/to/skill");
       await useAgentChatStore.getState().sendMessage("/skill create tdd");
 
       expect(mockInvoke).toHaveBeenCalledWith("context:create_skill", {
-        projectPath: "/project",
         slug: "tdd",
       });
     });
 
     it("intercepts /agent create and calls hub IPC", async () => {
-      mockInvoke.mockResolvedValue("/project/.forja/context/agents/reviewer.md");
+      mockInvoke.mockResolvedValue("/path/to/agent");
       await useAgentChatStore.getState().sendMessage("/agent create reviewer");
 
       expect(mockInvoke).toHaveBeenCalledWith("context:create_agent", {
-        projectPath: "/project",
         slug: "reviewer",
       });
     });
@@ -326,6 +325,15 @@ describe("useAgentChatStore", () => {
         sessionId: "s1",
         message: "Hello world",
       });
+    });
+
+    it("adds system message about the result", async () => {
+      mockInvoke.mockResolvedValue(undefined);
+      await useAgentChatStore.getState().sendMessage("/context init");
+
+      const messages = useAgentChatStore.getState().messages;
+      const systemMsgs = messages.filter((m) => m.role === "system");
+      expect(systemMsgs.length).toBeGreaterThan(0);
     });
   });
 });

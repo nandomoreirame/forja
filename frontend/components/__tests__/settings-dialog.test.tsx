@@ -41,52 +41,53 @@ describe("SettingsDialog", () => {
   it("renders sidebar with navigation sections", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    expect(screen.getByRole("button", { name: "Aparência" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Atalhos" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sessões" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Appearance" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Shortcuts" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sessions" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Context" })).toBeInTheDocument();
   });
 
-  it("shows Aparencia section by default", async () => {
+  it("shows Appearance section by default", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
     expect(screen.getByTestId("settings-section-appearance")).toBeInTheDocument();
   });
 
-  it("navigates to Atalhos section on click", async () => {
+  it("navigates to Shortcuts section on click", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Atalhos" }));
+    fireEvent.click(screen.getByRole("button", { name: "Shortcuts" }));
     expect(screen.getByTestId("settings-section-shortcuts")).toBeInTheDocument();
   });
 
-  it("navigates to Sessoes section on click", async () => {
+  it("navigates to Sessions section on click", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Sessões" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sessions" }));
     expect(screen.getByTestId("settings-section-sessions")).toBeInTheDocument();
   });
 
-  it("Aparencia section shows font settings", async () => {
+  it("Appearance section shows font settings", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    expect(screen.getByLabelText("Fonte da interface")).toBeInTheDocument();
-    expect(screen.getByLabelText("Tamanho da fonte da interface")).toBeInTheDocument();
+    expect(screen.getByLabelText("App font family")).toBeInTheDocument();
+    expect(screen.getByLabelText("App font size")).toBeInTheDocument();
   });
 
-  it("Aparencia section shows window settings", async () => {
+  it("Appearance section shows window settings", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    expect(screen.getByLabelText("Opacidade da janela")).toBeInTheDocument();
+    expect(screen.getByLabelText("Window opacity")).toBeInTheDocument();
     expect(screen.getByLabelText("Zoom level")).toBeInTheDocument();
   });
 
-  it("renders 'Abrir settings.json' button", async () => {
+  it("renders 'Open settings.json' button", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    expect(screen.getByRole("button", { name: /Abrir settings\.json/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Open settings\.json/i })).toBeInTheDocument();
   });
 
-  it("calls openSettingsEditor and closes dialog on 'Abrir settings.json' click", async () => {
+  it("calls openSettingsEditor and closes dialog on 'Open settings.json' click", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     const { useUserSettingsStore } = await import("@/stores/user-settings");
     const openEditorSpy = vi
@@ -94,7 +95,7 @@ describe("SettingsDialog", () => {
       .mockImplementation(() => {});
     const onOpenChange = vi.fn();
     render(<SettingsDialog open={true} onOpenChange={onOpenChange} />);
-    fireEvent.click(screen.getByRole("button", { name: /Abrir settings\.json/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Open settings\.json/i }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(openEditorSpy).toHaveBeenCalled();
   });
@@ -103,23 +104,30 @@ describe("SettingsDialog", () => {
     const { SettingsDialog } = await import("../settings-dialog");
     const onOpenChange = vi.fn();
     render(<SettingsDialog open={true} onOpenChange={onOpenChange} />);
-    fireEvent.click(screen.getByRole("button", { name: /fechar/i }));
+    fireEvent.click(screen.getByRole("button", { name: /close/i }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it("Aparencia section shows active nav item highlighted", async () => {
+  it("Appearance section shows active nav item highlighted", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    const appearanceBtn = screen.getByRole("button", { name: "Aparência" });
+    const appearanceBtn = screen.getByRole("button", { name: "Appearance" });
     expect(appearanceBtn).toHaveAttribute("data-active", "true");
   });
 
-  it("Sessoes section shows session list", async () => {
+  it("Sessions section shows session list", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    fireEvent.click(screen.getByRole("button", { name: "Sessões" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sessions" }));
     expect(screen.getByTestId("settings-section-sessions")).toBeInTheDocument();
     expect(screen.getByText("claude")).toBeInTheDocument();
+  });
+
+  it("navigates to Context section on click", async () => {
+    const { SettingsDialog } = await import("../settings-dialog");
+    render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Context" }));
+    expect(screen.getByTestId("settings-section-context")).toBeInTheDocument();
   });
 
   it("shows version info in sidebar footer", async () => {
