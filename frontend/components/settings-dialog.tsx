@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import {
   ExternalLink,
+  FolderSync,
   Keyboard,
   Monitor,
   Palette,
@@ -18,9 +19,10 @@ import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { getVersion } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
+import { ContextSection } from "./context-settings-section";
 import type { UserSettings } from "@/lib/settings-types";
 
-type SettingsSection = "appearance" | "shortcuts" | "sessions";
+type SettingsSection = "appearance" | "shortcuts" | "sessions" | "context";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -38,18 +40,23 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   {
     id: "appearance",
-    label: "Aparência",
+    label: "Appearance",
     icon: <Palette className="h-3.5 w-3.5" strokeWidth={1.5} />,
   },
   {
     id: "shortcuts",
-    label: "Atalhos",
+    label: "Shortcuts",
     icon: <Keyboard className="h-3.5 w-3.5" strokeWidth={1.5} />,
   },
   {
     id: "sessions",
-    label: "Sessões",
+    label: "Sessions",
     icon: <Terminal className="h-3.5 w-3.5" strokeWidth={1.5} />,
+  },
+  {
+    id: "context",
+    label: "Context",
+    icon: <FolderSync className="h-3.5 w-3.5" strokeWidth={1.5} />,
   },
 ];
 
@@ -66,11 +73,11 @@ function Sidebar({ activeSection, onSelect, onOpenSettingsFile, version }: Sideb
       {/* Logo area */}
       <div className="flex items-center gap-2 border-b border-ctp-surface0 px-3 py-3">
         <Settings className="h-4 w-4 text-ctp-mauve" strokeWidth={1.5} />
-        <span className="text-sm font-semibold text-ctp-text">Configurações</span>
+        <span className="text-sm font-semibold text-ctp-text">Settings</span>
       </div>
 
       {/* Nav items */}
-      <nav className="flex-1 space-y-0.5 p-2" aria-label="Seções de configuração">
+      <nav className="flex-1 space-y-0.5 p-2" aria-label="Settings sections">
         <p className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-ctp-overlay0">
           Desktop
         </p>
@@ -98,12 +105,12 @@ function Sidebar({ activeSection, onSelect, onOpenSettingsFile, version }: Sideb
       <div className="border-t border-ctp-surface0 p-2 space-y-1">
         <button
           role="button"
-          aria-label="Abrir settings.json"
+          aria-label="Open settings.json"
           onClick={onOpenSettingsFile}
           className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
         >
           <ExternalLink className="h-3 w-3" strokeWidth={1.5} />
-          Abrir settings.json
+          Open settings.json
         </button>
         <div
           data-testid="settings-version-info"
@@ -181,14 +188,14 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="App"
         label="Font Family"
-        description="Fonte usada nos elementos da interface."
+        description="Font used across the app interface."
       >
         <input
           type="text"
           value={localSettings.app.fontFamily}
           onChange={(e) => update({ app: { ...localSettings.app, fontFamily: e.target.value } })}
           placeholder="Geist Sans, Inter, system-ui"
-          aria-label="Fonte da interface"
+          aria-label="App font family"
           className={inputClass}
         />
       </SettingItem>
@@ -196,7 +203,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="App"
         label="Font Size"
-        description="Tamanho da fonte da interface em pixels."
+        description="App interface font size in pixels."
       >
         <input
           type="number"
@@ -207,7 +214,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
             const v = Number(e.target.value);
             if (v >= 8 && v <= 32) update({ app: { ...localSettings.app, fontSize: v } });
           }}
-          aria-label="Tamanho da fonte da interface"
+          aria-label="App font size"
           className={numberInputClass}
         />
       </SettingItem>
@@ -215,14 +222,14 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Editor"
         label="Font Family"
-        description="Fonte usada no editor de código e preview."
+        description="Font used in the code editor and preview."
       >
         <input
           type="text"
           value={localSettings.editor.fontFamily}
           onChange={(e) => update({ editor: { ...localSettings.editor, fontFamily: e.target.value } })}
           placeholder="JetBrains Mono, Fira Code, monospace"
-          aria-label="Fonte do editor"
+          aria-label="Editor font family"
           className={inputClass}
         />
       </SettingItem>
@@ -230,7 +237,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Editor"
         label="Font Size"
-        description="Tamanho da fonte do editor em pixels."
+        description="Editor font size in pixels."
       >
         <input
           type="number"
@@ -241,7 +248,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
             const v = Number(e.target.value);
             if (v >= 8 && v <= 32) update({ editor: { ...localSettings.editor, fontSize: v } });
           }}
-          aria-label="Tamanho da fonte do editor"
+          aria-label="Editor font size"
           className={numberInputClass}
         />
       </SettingItem>
@@ -249,14 +256,14 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Terminal"
         label="Font Family"
-        description="Fonte usada no terminal integrado."
+        description="Font used in the integrated terminal."
       >
         <input
           type="text"
           value={localSettings.terminal.fontFamily}
           onChange={(e) => update({ terminal: { ...localSettings.terminal, fontFamily: e.target.value } })}
           placeholder="JetBrains Mono, Fira Code, monospace"
-          aria-label="Fonte do terminal"
+          aria-label="Terminal font family"
           className={inputClass}
         />
       </SettingItem>
@@ -264,7 +271,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Terminal"
         label="Font Size"
-        description="Tamanho da fonte do terminal em pixels."
+        description="Terminal font size in pixels."
       >
         <input
           type="number"
@@ -275,7 +282,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
             const v = Number(e.target.value);
             if (v >= 8 && v <= 32) update({ terminal: { ...localSettings.terminal, fontSize: v } });
           }}
-          aria-label="Tamanho da fonte do terminal"
+          aria-label="Terminal font size"
           className={numberInputClass}
         />
       </SettingItem>
@@ -283,7 +290,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Window"
         label="Opacity"
-        description="Opacidade da janela principal. Valor entre 30 e 100."
+        description="Main window opacity. Value between 30 and 100."
       >
         <input
           type="number"
@@ -294,7 +301,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
             const v = Number(e.target.value);
             if (v >= 30 && v <= 100) update({ window: { ...localSettings.window, opacity: v / 100 } });
           }}
-          aria-label="Opacidade da janela"
+          aria-label="Window opacity"
           className={numberInputClass}
         />
       </SettingItem>
@@ -302,7 +309,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Window"
         label="Zoom Level"
-        description="Nível de zoom global da interface. Cada incremento acima de 0 ou abaixo representa 20% maior ou menor."
+        description="Global interface zoom level. Each increment above or below 0 represents 20% larger or smaller."
       >
         <input
           type="number"
@@ -327,16 +334,16 @@ const isMac = typeof navigator !== "undefined" && navigator.userAgent.includes("
 const mod = isMac ? "\u2318" : "Ctrl";
 
 const SHORTCUTS = [
-  { label: "Abrir Configurações", keys: [mod, ","] },
-  { label: "Nova Sessão", keys: [mod, "T"] },
-  { label: "Fechar Aba", keys: [mod, "W"] },
-  { label: "Busca de Arquivo", keys: [mod, "P"] },
-  { label: "Paleta de Comandos", keys: [mod, "Shift", "P"] },
-  { label: "Abrir Projeto", keys: [mod, "O"] },
+  { label: "Open Settings", keys: [mod, ","] },
+  { label: "New Session", keys: [mod, "T"] },
+  { label: "Close Tab", keys: [mod, "W"] },
+  { label: "File Search", keys: [mod, "P"] },
+  { label: "Command Palette", keys: [mod, "Shift", "P"] },
+  { label: "Open Project", keys: [mod, "O"] },
   { label: "Toggle Sidebar", keys: [mod, "B"] },
   { label: "Toggle Preview", keys: [mod, "E"] },
   { label: "Toggle Terminal", keys: [mod, "J"] },
-  { label: "Atalhos de Teclado", keys: [mod, "?"] },
+  { label: "Keyboard Shortcuts", keys: [mod, "?"] },
   { label: "Zoom In (Terminal)", keys: [mod, "Alt", "="] },
   { label: "Zoom Out (Terminal)", keys: [mod, "Alt", "-"] },
   { label: "Reset Zoom (Terminal)", keys: [mod, "Alt", "0"] },
@@ -346,7 +353,7 @@ function ShortcutsSection() {
   return (
     <div data-testid="settings-section-shortcuts">
       <SectionHeader
-        title="Atalhos de Teclado"
+        title="Keyboard Shortcuts"
         icon={<Keyboard className="h-3.5 w-3.5 text-ctp-mauve" strokeWidth={1.5} />}
       />
       <div className="divide-y divide-ctp-surface0 rounded-lg border border-ctp-surface0 bg-ctp-mantle">
@@ -407,7 +414,7 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
   return (
     <div data-testid="settings-section-sessions">
       <SectionHeader
-        title="Sessões de CLI"
+        title="CLI Sessions"
         icon={<Terminal className="h-3.5 w-3.5 text-ctp-mauve" strokeWidth={1.5} />}
       />
       <div className="space-y-3">
@@ -427,7 +434,7 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
                   htmlFor={`session-args-${name}`}
                   className="mb-1 block text-xs text-ctp-overlay1"
                 >
-                  Argumentos extras
+                  Extra arguments
                 </label>
                 <input
                   id={`session-args-${name}`}
@@ -443,7 +450,7 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
         ))}
         {sessionEntries.length === 0 && (
           <div className="rounded-lg border border-ctp-surface0 bg-ctp-mantle px-4 py-8 text-center">
-            <p className="text-sm text-ctp-overlay1">Nenhuma sessão configurada</p>
+            <p className="text-sm text-ctp-overlay1">No sessions configured</p>
           </div>
         )}
       </div>
@@ -488,9 +495,9 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
         showCloseButton={false}
         className="h-[80vh] gap-0 overflow-hidden border-ctp-surface0 bg-ctp-base p-0 sm:max-w-[900px]"
       >
-        <DialogTitle className="sr-only">Configurações</DialogTitle>
+        <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">
-          Configurações do aplicativo Forja
+          Forja application settings
         </DialogDescription>
 
         <div className="flex h-full overflow-hidden">
@@ -507,11 +514,11 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
             {/* Header */}
             <div className="flex h-11 shrink-0 items-center justify-between border-b border-ctp-surface0 px-5">
               <span className="text-sm font-semibold text-ctp-text">
-                {NAV_ITEMS.find((i) => i.id === activeSection)?.label ?? "Configurações"}
+                {NAV_ITEMS.find((i) => i.id === activeSection)?.label ?? "Settings"}
               </span>
               <button
                 onClick={() => onOpenChange(false)}
-                aria-label="Fechar"
+                aria-label="Close"
                 className="flex h-7 w-7 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
               >
                 <X className="h-4 w-4" strokeWidth={1.5} />
@@ -533,6 +540,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                   onSave={handleSaveSettings}
                 />
               )}
+              {activeSection === "context" && <ContextSection />}
             </div>
           </div>
         </div>
