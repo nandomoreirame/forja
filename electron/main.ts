@@ -202,6 +202,12 @@ ipcMain.handle("detect_project_icon", async (_event, args: { path: string }) => 
   return projectIcon.detectProjectIcon(args.path);
 });
 
+// Read a specific icon file as a base64 data URL
+ipcMain.handle("read_icon_as_data_url", async (_event, args: { path: string }) => {
+  const projectIcon = await getProjectIcon();
+  return projectIcon.readIconAsDataUrl(args.path);
+});
+
 // Recent projects
 ipcMain.handle("get_recent_projects", async () => {
   const config = await getConfig();

@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import { pathToFileURL } from "url";
 
 // Ordered by preference: SVG > PNG > ICO
 const ICON_CANDIDATES = [
@@ -20,16 +19,47 @@ const ICON_CANDIDATES = [
   "favicon.ico",
 ];
 
+const MIME_TYPES: Record<string, string> = {
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".ico": "image/x-icon",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+};
+
 /**
  * Checks common locations for a project icon.
- * Returns a `file://` URL string if found, or null.
+ * Reads the file and returns a base64 data URL, or null if not found.
  */
 export function detectProjectIcon(projectPath: string): string | null {
   for (const candidate of ICON_CANDIDATES) {
     const fullPath = path.join(projectPath, candidate);
     if (fs.existsSync(fullPath)) {
-      return pathToFileURL(fullPath).toString();
+      try {
+        const buffer = fs.readFileSync(fullPath);
+        const ext = path.extname(fullPath).toLowerCase();
+        const mime = MIME_TYPES[ext] ?? "image/png";
+        return `data:${mime};base64,${buffer.toString("base64")}`;
+      } catch {
+        return null;
+      }
     }
   }
   return null;
+}
+
+/**
+ * Reads a specific image file and returns a base64 data URL.
+ * Used for user-selected custom icons.
+ */
+export function readIconAsDataUrl(filePath: string): string | null {
+  try {
+    const buffer = fs.readFileSync(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const mime = MIME_TYPES[ext] ?? "image/png";
+    return `data:${mime};base64,${buffer.toString("base64")}`;
+  } catch {
+    return null;
+  }
 }
