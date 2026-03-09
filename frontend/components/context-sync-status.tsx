@@ -2,11 +2,7 @@ import { RefreshCw, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useContextHubStore } from "@/stores/context-hub";
 import { cn } from "@/lib/utils";
 
-interface ContextSyncStatusProps {
-  projectPath: string;
-}
-
-export function ContextSyncStatus({ projectPath }: ContextSyncStatusProps) {
+export function ContextSyncStatus() {
   const { status, loading, error, syncOut } = useContextHubStore();
 
   if (!status) return null;
@@ -47,7 +43,7 @@ export function ContextSyncStatus({ projectPath }: ContextSyncStatusProps) {
       data-testid="context-sync-status"
       aria-label={ariaLabel}
       title={ariaLabel}
-      onClick={() => syncOut(projectPath)}
+      onClick={() => syncOut()}
       className={cn(
         "flex h-6 w-6 items-center justify-center rounded transition-colors hover:bg-ctp-surface0",
         iconColor

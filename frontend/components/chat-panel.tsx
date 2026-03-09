@@ -11,7 +11,7 @@ import type { SlashCommandDef } from "@/lib/slash-commands";
 import { getCliDefinition } from "@/lib/cli-registry";
 
 interface ChatPanelProps {
-  projectPath: string | null;
+  projectPath?: string | null;
 }
 
 export function ChatPanel({ projectPath }: ChatPanelProps) {
@@ -31,8 +31,11 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
 
   const handleSelectCli = useCallback(
     (cliId: string) => {
-      if (!projectPath) return;
-      chat.startSession(cliId, projectPath);
+      if (projectPath) {
+        chat.startSession(cliId, projectPath);
+      } else {
+        chat.startSession(cliId);
+      }
     },
     [chat, projectPath]
   );

@@ -21,7 +21,7 @@ interface AgentChatState {
   isPanelOpen: boolean;
 
   togglePanel: () => void;
-  startSession: (cliId: string, projectPath: string) => Promise<void>;
+  startSession: (cliId: string, projectPath?: string) => Promise<void>;
   switchSession: (cliId: string) => Promise<void>;
   sendMessage: (text: string) => Promise<void>;
   closeSession: () => Promise<void>;
@@ -52,29 +52,28 @@ function makeMessage(role: ChatMessage["role"], content: string): ChatMessage {
 
 async function handleContextCommand(
   cmd: ContextCommand,
-  projectPath: string,
   addSystem: (content: string) => void,
 ): Promise<void> {
   try {
     if (cmd.type === "context") {
       switch (cmd.action) {
         case "init": {
-          await invoke("context:init", { projectPath });
+          await invoke("context:init", {});
           addSystem("Context hub initialized.");
           return;
         }
         case "status": {
-          const status = await invoke("context:status", { projectPath });
+          const status = await invoke("context:status", {});
           addSystem(`Context status: ${JSON.stringify(status)}`);
           return;
         }
         case "sync out": {
-          const result = await invoke("context:sync_out", { projectPath, ...cmd.options });
+          const result = await invoke("context:sync_out", { ...cmd.options });
           addSystem(`Sync out complete: ${JSON.stringify(result)}`);
           return;
         }
         case "sync in": {
-          const result = await invoke("context:sync_in", { projectPath, ...cmd.options });
+          const result = await invoke("context:sync_in", { ...cmd.options });
           addSystem(`Sync in complete: ${JSON.stringify(result)}`);
           return;
         }
@@ -82,13 +81,13 @@ async function handleContextCommand(
     }
 
     if (cmd.type === "skill" && cmd.action === "create" && cmd.slug) {
-      await invoke("context:create_skill", { projectPath, slug: cmd.slug });
+      await invoke("context:create_skill", { slug: cmd.slug });
       addSystem(`Skill "${cmd.slug}" created.`);
       return;
     }
 
     if (cmd.type === "agent" && cmd.action === "create" && cmd.slug) {
-      await invoke("context:create_agent", { projectPath, slug: cmd.slug });
+      await invoke("context:create_agent", { slug: cmd.slug });
       addSystem(`Agent "${cmd.slug}" created.`);
       return;
     }
@@ -112,9 +111,11 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
 
   startSession: async (cliId, projectPath) => {
     const sessionId = makeSessionId();
-    set({ status: "spawning", error: null, cliId, projectPath });
+    set({ status: "spawning", error: null, cliId, projectPath: projectPath ?? null });
     try {
-      await invoke("chat:spawn", { sessionId, cliId, projectPath });
+      const spawnArgs: Record<string, string> = { sessionId, cliId };
+      if (projectPath) spawnArgs.projectPath = projectPath;
+      await invoke("chat:spawn", spawnArgs);
       set({ sessionId, status: "ready" });
     } catch (err) {
       set({ status: "error", error: (err as Error).message });
@@ -123,7 +124,6 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
 
   switchSession: async (newCliId) => {
     const { sessionId, cliId, projectPath } = get();
-    if (!projectPath) return;
     if (cliId === newCliId) return;
 
     // Close existing session if any
@@ -139,7 +139,9 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
     const newSessionId = makeSessionId();
     set({ status: "spawning", error: null, cliId: newCliId, sessionId: null });
     try {
-      await invoke("chat:spawn", { sessionId: newSessionId, cliId: newCliId, projectPath });
+      const spawnArgs: Record<string, string> = { sessionId: newSessionId, cliId: newCliId };
+      if (projectPath) spawnArgs.projectPath = projectPath;
+      await invoke("chat:spawn", spawnArgs);
       set({ sessionId: newSessionId, status: "ready" });
     } catch (err) {
       set({ status: "error", error: (err as Error).message });
@@ -152,7 +154,7 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
 
     // Check for context commands
     const cmd = parseContextCommand(text);
-    if (cmd && projectPath) {
+    if (cmd) {
       const userMsg = makeMessage("user", text);
       set((s) => ({ messages: [...s.messages, userMsg] }));
 
@@ -161,7 +163,7 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
         set((s) => ({ messages: [...s.messages, sysMsg] }));
       };
 
-      await handleContextCommand(cmd, projectPath, addSystem);
+      await handleContextCommand(cmd, addSystem);
       return;
     }
 
