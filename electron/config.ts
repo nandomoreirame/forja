@@ -21,6 +21,7 @@ export interface Workspace {
 export interface UiPreferences {
   sidebarSize: number;  // percentage (0-100)
   previewSize: number;  // percentage (0-100)
+  sidebarOpen: boolean; // whether file tree sidebar is visible
 }
 
 interface ConfigSchema {
@@ -44,7 +45,7 @@ const store = new Store<ConfigSchema>({
     recentProjects: [],
     workspaces: [],
     activeWorkspaceId: null,
-    uiPreferences: { sidebarSize: 20, previewSize: 0 },
+    uiPreferences: { sidebarSize: 20, previewSize: 0, sidebarOpen: true },
   },
 }) as TypedConfigStore;
 
@@ -72,6 +73,27 @@ export function removeRecentProject(projectPath: string): void {
   const existing = store.get("recentProjects");
   const filtered = existing.filter((p) => p.path !== projectPath);
   store.set("recentProjects", filtered);
+}
+
+export function reorderRecentProjects(orderedPaths: string[]): void {
+  const existing = store.get("recentProjects");
+  const byPath = new Map(existing.map((p) => [p.path, p]));
+
+  const ordered: RecentProject[] = [];
+  for (const path of orderedPaths) {
+    const project = byPath.get(path);
+    if (project) {
+      ordered.push(project);
+      byPath.delete(path);
+    }
+  }
+
+  // Append remaining projects not in orderedPaths
+  for (const project of byPath.values()) {
+    ordered.push(project);
+  }
+
+  store.set("recentProjects", ordered);
 }
 
 // ─── Workspaces ──────────────────────────────────────────────────────────────

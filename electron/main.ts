@@ -7,6 +7,7 @@ import {
   shell,
 } from "electron";
 import * as path from "path";
+import * as os from "os";
 import { fileURLToPath, pathToFileURL } from "url";
 import { execFile } from "child_process";
 import { assertPathWithinScope } from "./path-validation.js";
@@ -224,6 +225,11 @@ ipcMain.handle("add_recent_project", async (_event, args: { path: string }) => {
 ipcMain.handle("remove_recent_project", async (_event, args: { path: string }) => {
   const config = await getConfig();
   config.removeRecentProject(args.path);
+});
+
+ipcMain.handle("reorder_recent_projects", async (_event, args: { paths: string[] }) => {
+  const config = await getConfig();
+  config.reorderRecentProjects(args.paths);
 });
 
 // Open project in a new window
@@ -535,6 +541,9 @@ ipcMain.handle("app:getVersion", () => app.getVersion());
 ipcMain.handle("app:getElectronVersion", () => process.versions.electron);
 ipcMain.handle("app:is_tiling_desktop", () => isTilingDesktopSession());
 ipcMain.handle("app:isDev", () => isDev);
+ipcMain.handle("app:getForjaConfigPath", () =>
+  path.join(os.homedir(), ".config", "forja")
+);
 
 // Context Hub
 getContextIpc().then(({ createContextHandlers }) => {
