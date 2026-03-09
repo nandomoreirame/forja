@@ -4,6 +4,18 @@ import { execFile } from "child_process";
 const SAFE_BINARY_RE = /^[a-zA-Z0-9._-]+$/;
 
 /**
+ * TTL for the CLI detection cache: 24 hours in milliseconds.
+ */
+export const CLI_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * In-memory cache for CLI detection results.
+ * Stores all detected CLIs with a timestamp to enforce TTL.
+ */
+let cliCache: { data: Record<string, boolean>; timestamp: number } | null =
+  null;
+
+/**
  * Maps CLI IDs to their executable binary names.
  * Must stay in sync with frontend/lib/cli-registry.ts CLI_REGISTRY.
  *
@@ -56,11 +68,28 @@ export async function detectGhCopilot(): Promise<boolean> {
 
 /**
  * Detects which CLIs from the given list are installed.
- * Returns a Record<cliId, boolean> with detection results.
+ * Results are cached in-memory for CLI_CACHE_TTL_MS (24h).
+ * Subsequent calls within the TTL return cached results without re-running detection.
+ * Returns a Record<cliId, boolean> filtered to the requested cliIds.
  */
 export async function detectInstalledClis(
   cliIds: string[]
 ): Promise<Record<string, boolean>> {
+  const now = Date.now();
+
+  // Return cached results if within TTL
+  if (cliCache !== null && now - cliCache.timestamp < CLI_CACHE_TTL_MS) {
+    const cached = cliCache.data;
+    const filtered: Record<string, boolean> = {};
+    for (const id of cliIds) {
+      if (id in cached) {
+        filtered[id] = cached[id];
+      }
+    }
+    return filtered;
+  }
+
+  // Cache miss or expired — run fresh detection
   const results: Record<string, boolean> = {};
 
   const checks = cliIds.map(async (cliId) => {
@@ -79,5 +108,16 @@ export async function detectInstalledClis(
   });
 
   await Promise.all(checks);
+
+  // Store all results in cache with current timestamp
+  cliCache = { data: { ...results }, timestamp: now };
+
   return results;
+}
+
+/**
+ * Clears the CLI detection cache, forcing fresh detection on the next call.
+ */
+export function clearCliCache(): void {
+  cliCache = null;
 }
