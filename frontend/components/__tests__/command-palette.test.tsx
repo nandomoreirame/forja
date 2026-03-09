@@ -91,7 +91,7 @@ describe("CommandPalette", () => {
     render(<CommandPalette />);
 
     expect(screen.getByText("New Session")).toBeInTheDocument();
-    expect(screen.getByText("Open Project")).toBeInTheDocument();
+    expect(screen.getByText("Add Project")).toBeInTheDocument();
     expect(screen.getByText("Toggle Sidebar")).toBeInTheDocument();
     expect(screen.getByText("Toggle File Preview")).toBeInTheDocument();
     expect(screen.getByText("Keyboard Shortcuts")).toBeInTheDocument();

@@ -6,7 +6,6 @@ import { useFileTreeStore } from "@/stores/file-tree";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
 import {
-  FolderOpen,
   Info,
   Keyboard,
   PanelLeft,
@@ -116,11 +115,11 @@ export function CommandPalette() {
               <CommandShortcut>{mod}+T</CommandShortcut>
             </CommandItem>
             <CommandItem
-              value="Open Project"
+              value="Add Project"
               onSelect={() => handleCommand("open-project")}
             >
-              <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-              Open Project
+              <Plus className="h-4 w-4" strokeWidth={1.5} />
+              Add Project
               <CommandShortcut>{mod}+O</CommandShortcut>
             </CommandItem>
             <CommandItem

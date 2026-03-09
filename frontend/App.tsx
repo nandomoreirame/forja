@@ -3,8 +3,8 @@ import { invoke, listen } from "@/lib/ipc";
 import {
   AlertCircle,
   Anvil,
-  FolderOpen,
   PanelRight,
+  Plus,
   TerminalSquare,
 } from "lucide-react";
 import {
@@ -155,8 +155,8 @@ function EmptyState() {
           onClick={openProject}
           className="flex items-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
         >
-          <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-          Open Project
+          <Plus className="h-4 w-4" strokeWidth={1.5} />
+          Add Project
         </button>
       </div>
     </div>
