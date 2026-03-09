@@ -3,12 +3,10 @@ import { X, FileCode, AlertCircle, Pencil, Eye } from 'lucide-react';
 import { invoke } from '@/lib/ipc';
 import { useFilePreviewStore } from '@/stores/file-preview';
 import { useGitDiffStore } from '@/stores/git-diff';
-import { useUserSettingsStore } from '@/stores/user-settings';
 import { GIT_STATUS_LABELS } from '@/lib/git-constants';
 import { CodeViewer } from './code-viewer';
 import { ImageViewer } from './image-viewer';
 import { MarkdownRenderer } from './markdown-renderer';
-import { SettingsEditor } from './settings-editor';
 import { GitDiffViewer } from './git-diff-viewer';
 import { MonacoEditor } from './monaco-editor';
 import { detectLanguage } from '@/lib/detect-language';
@@ -151,7 +149,6 @@ function FilePreviewPaneContent() {
   const setEditing = useFilePreviewStore((s) => s.setEditing);
   const setEditContent = useFilePreviewStore((s) => s.setEditContent);
   const saveFile = useFilePreviewStore((s) => s.saveFile);
-  const editorOpen = useUserSettingsStore((s) => s.editorOpen);
   const selectedDiff = useGitDiffStore((s) => s.selectedDiff);
   const diffMode = useGitDiffStore((s) => s.diffMode);
   const setDiffMode = useGitDiffStore((s) => s.setDiffMode);
@@ -179,10 +176,6 @@ function FilePreviewPaneContent() {
       .then((info) => setFileGitStatus(info.fileStatus))
       .catch(() => setFileGitStatus(null));
   }, [currentFile]);
-
-  if (editorOpen) {
-    return <SettingsEditor />;
-  }
 
   if (!isOpen) {
     return null;

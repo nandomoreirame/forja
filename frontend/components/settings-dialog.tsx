@@ -17,7 +17,7 @@ import {
 } from "./ui/dialog";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
-import { getVersion } from "@/lib/ipc";
+import { invoke, getVersion } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { ContextSection } from "./context-settings-section";
 import type { UserSettings } from "@/lib/settings-types";
@@ -465,7 +465,6 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
   const [version, setVersion] = useState("...");
 
   const settings = useUserSettingsStore((s) => s.settings);
-  const openSettingsEditor = useUserSettingsStore((s) => s.openSettingsEditor);
   const saveEditorContent = useUserSettingsStore((s) => s.saveEditorContent);
   const setEditorContent = useUserSettingsStore((s) => s.setEditorContent);
 
@@ -483,10 +482,18 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     await saveEditorContent();
   }
 
-  function handleOpenSettingsFile() {
+  async function handleOpenSettingsFile() {
     onOpenChange(false);
-    useFilePreviewStore.getState().openPreview();
-    openSettingsEditor();
+    try {
+      const settingsPath = await invoke<string>("get_settings_path");
+      if (settingsPath) {
+        const filePreview = useFilePreviewStore.getState();
+        await filePreview.loadFile(settingsPath);
+        filePreview.setEditing(true);
+      }
+    } catch {
+      // Fallback: do nothing if path cannot be retrieved
+    }
   }
 
   return (
