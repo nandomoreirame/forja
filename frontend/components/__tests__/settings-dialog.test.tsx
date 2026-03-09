@@ -3,7 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "@/lib/settings-types";
 
 vi.mock("@/lib/ipc", () => ({
-  invoke: vi.fn().mockResolvedValue(undefined),
+  invoke: vi.fn().mockImplementation((channel: string) => {
+    if (channel === "get_settings_path") return Promise.resolve("/home/user/.config/forja/settings.json");
+    if (channel === "read_file_command") return Promise.resolve({ path: "/home/user/.config/forja/settings.json", content: "{}", size: 2 });
+    return Promise.resolve(undefined);
+  }),
   listen: vi.fn().mockResolvedValue(() => {}),
   getVersion: vi.fn().mockResolvedValue("1.0.0"),
   getName: vi.fn().mockResolvedValue("Forja"),
@@ -87,17 +91,19 @@ describe("SettingsDialog", () => {
     expect(screen.getByRole("button", { name: /Open settings\.json/i })).toBeInTheDocument();
   });
 
-  it("calls openSettingsEditor and closes dialog on 'Open settings.json' click", async () => {
+  it("closes dialog and opens settings.json via file preview on 'Open settings.json' click", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
-    const { useUserSettingsStore } = await import("@/stores/user-settings");
-    const openEditorSpy = vi
-      .spyOn(useUserSettingsStore.getState(), "openSettingsEditor")
-      .mockImplementation(() => {});
+    const { useFilePreviewStore } = await import("@/stores/file-preview");
+    const loadFileSpy = vi.spyOn(useFilePreviewStore.getState(), "loadFile").mockResolvedValue(undefined);
+    const setEditingSpy = vi.spyOn(useFilePreviewStore.getState(), "setEditing").mockImplementation(() => {});
     const onOpenChange = vi.fn();
     render(<SettingsDialog open={true} onOpenChange={onOpenChange} />);
     fireEvent.click(screen.getByRole("button", { name: /Open settings\.json/i }));
     expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(openEditorSpy).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(loadFileSpy).toHaveBeenCalledWith("/home/user/.config/forja/settings.json");
+      expect(setEditingSpy).toHaveBeenCalledWith(true);
+    });
   });
 
   it("calls onOpenChange(false) when close button is clicked", async () => {

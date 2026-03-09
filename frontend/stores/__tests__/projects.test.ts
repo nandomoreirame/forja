@@ -14,6 +14,17 @@ vi.mock("@/stores/file-tree", () => ({
   },
 }));
 
+const mockSavePreviewForProject = vi.fn();
+const mockRestorePreviewForProject = vi.fn();
+vi.mock("@/stores/file-preview", () => ({
+  useFilePreviewStore: {
+    getState: vi.fn(() => ({
+      savePreviewForProject: mockSavePreviewForProject,
+      restorePreviewForProject: mockRestorePreviewForProject,
+    })),
+  },
+}));
+
 import { invoke } from "@/lib/ipc";
 import { useFileTreeStore } from "@/stores/file-tree";
 
@@ -363,5 +374,59 @@ describe("useProjectsStore", () => {
     expect(detectCalls).toHaveLength(2);
     expect(detectCalls[0][1]).toEqual({ path: "/a/app1" });
     expect(detectCalls[1][1]).toEqual({ path: "/b/app2" });
+  });
+
+  it("saves preview for previous project and restores for new project when switching", async () => {
+    const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useFileTreeStore.getState).mockReturnValue({
+      openProjectPath: mockOpenProjectPath,
+    } as never);
+
+    useProjectsStore.setState({
+      projects: [
+        { path: "/project-a", name: "project-a", lastOpened: "" },
+        { path: "/project-b", name: "project-b", lastOpened: "" },
+      ],
+      activeProjectPath: "/project-a",
+    });
+
+    await useProjectsStore.getState().switchToProject("/project-b");
+
+    expect(mockSavePreviewForProject).toHaveBeenCalledWith("/project-a");
+    expect(mockRestorePreviewForProject).toHaveBeenCalledWith("/project-b");
+  });
+
+  it("does not save or restore preview when switching to the same project", async () => {
+    const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useFileTreeStore.getState).mockReturnValue({
+      openProjectPath: mockOpenProjectPath,
+    } as never);
+
+    useProjectsStore.setState({
+      projects: [{ path: "/project-a", name: "project-a", lastOpened: "" }],
+      activeProjectPath: "/project-a",
+    });
+
+    await useProjectsStore.getState().switchToProject("/project-a");
+
+    expect(mockSavePreviewForProject).not.toHaveBeenCalled();
+    expect(mockRestorePreviewForProject).not.toHaveBeenCalled();
+  });
+
+  it("only restores preview (no save) when there is no previous active project", async () => {
+    const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useFileTreeStore.getState).mockReturnValue({
+      openProjectPath: mockOpenProjectPath,
+    } as never);
+
+    useProjectsStore.setState({
+      projects: [{ path: "/project-a", name: "project-a", lastOpened: "" }],
+      activeProjectPath: null,
+    });
+
+    await useProjectsStore.getState().switchToProject("/project-a");
+
+    expect(mockSavePreviewForProject).not.toHaveBeenCalled();
+    expect(mockRestorePreviewForProject).toHaveBeenCalledWith("/project-a");
   });
 });
