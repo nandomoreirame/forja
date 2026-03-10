@@ -95,6 +95,7 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
     minHeight: 600,
     frame: false,
     titleBarStyle: "hidden",
+    trafficLightPosition: { x: 13, y: 13 },
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
