@@ -100,6 +100,7 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      webviewTag: true,
     },
     icon: path.join(__dirname, "..", "assets", "icons", "icon.png"),
     show: false,
