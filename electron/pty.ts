@@ -2,9 +2,8 @@ import * as os from "os";
 import * as path from "path";
 import * as pty from "node-pty";
 import type { IPty } from "node-pty";
-import { BrowserWindow, type WebContents } from "electron";
+import type { WebContents } from "electron";
 import { RingBuffer } from "./ring-buffer.js";
-import { showSessionEndNotification } from "./pty-notifications.js";
 
 const PTY_BUFFER_MAX_BYTES = 2 * 1024 * 1024; // 2MB
 
@@ -104,16 +103,6 @@ export function spawnPty(opts: SpawnOptions): string {
       });
     }
 
-    // Fire native notification (only if window not focused)
-    const mainWindow = BrowserWindow.getAllWindows()[0] ?? null;
-    showSessionEndNotification(
-      {
-        projectPath: cwd,
-        sessionType: sessionType ?? "terminal",
-        exitCode,
-      },
-      mainWindow,
-    );
   });
 
   sessions.set(tabId, session);
