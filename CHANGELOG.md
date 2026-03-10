@@ -153,5 +153,14 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.4.4] - 2026-03-10
+### Added
+- Keep preview pane always open with empty state when no file is selected.
+
+### Fixed
+- Replace deprecated Vitest poolOptions with maxWorkers for proper CPU limiting.
+
+---
+
 ## [Unreleased]
 
