@@ -35,6 +35,12 @@ declare global {
         isTilingDesktop: () => Promise<boolean>;
         isDev: () => Promise<boolean>;
       };
+      browser: {
+        navigate: (url: string) => Promise<void>;
+        goBack: () => Promise<void>;
+        goForward: () => Promise<void>;
+        reload: () => Promise<void>;
+      };
     };
   }
 }

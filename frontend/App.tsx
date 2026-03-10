@@ -25,6 +25,13 @@ const FilePreviewPane = lazy(() =>
     default: m.FilePreviewPane,
   }))
 );
+import { useBrowserPaneStore } from "./stores/browser-pane";
+
+const BrowserPane = lazy(() =>
+  import("./components/browser-pane").then((m) => ({
+    default: m.BrowserPane,
+  }))
+);
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
 import { NewSessionDropdown } from "./components/new-session-dropdown";
 import { ProjectSidebar } from "./components/project-sidebar";
@@ -55,6 +62,7 @@ import { useUserSettingsStore } from "./stores/user-settings";
 import { useProjectsStore } from "./stores/projects";
 import { useAgentChatStore } from "./stores/agent-chat";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
+import { useBrowserAutoOpen } from "./hooks/use-browser-auto-open";
 import {
   getPanelSizesForLayout,
   usePanelPreferences,
@@ -202,6 +210,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   );
   const isPreviewOpen = useFilePreviewStore((s) => s.isOpen);
   const previewCurrentFile = useFilePreviewStore((s) => s.currentFile);
+  const isBrowserOpen = useBrowserPaneStore((s) => s.isOpen);
   const {
     isTerminalPaneOpen,
     tabs,
@@ -313,11 +322,12 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     ? effectivePanelSizes.previewSize
     : 35;
 
-  // Sync preview panel collapse with store
+  // Sync preview panel collapse with store (also opens for browser pane)
+  const previewPaneVisible = isPreviewOpen || isBrowserOpen;
   useEffect(() => {
     const panel = previewPanelRef.current;
     if (!panel) return;
-    if (isPreviewOpen) {
+    if (previewPaneVisible) {
       if (panel.isCollapsed()) panel.expand();
       // If terminal is hidden, preview takes full width
       const size = isTerminalPaneOpen ? savedPreviewSize : 100;
@@ -325,19 +335,19 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     } else if (!panel.isCollapsed()) {
       panel.collapse();
     }
-  }, [isPreviewOpen, savedPreviewSize, isTerminalPaneOpen]);
+  }, [previewPaneVisible, savedPreviewSize, isTerminalPaneOpen]);
 
   // Sync terminal panel visibility with store via resize
   useEffect(() => {
     const terminal = terminalPanelRef.current;
     if (!terminal) return;
     if (isTerminalPaneOpen) {
-      const targetSize = isPreviewOpen ? 100 - savedPreviewSize : 100;
+      const targetSize = previewPaneVisible ? 100 - savedPreviewSize : 100;
       terminal.resize(`${targetSize}%`);
     } else {
       terminal.resize("0%");
     }
-  }, [isTerminalPaneOpen, isPreviewOpen, savedPreviewSize]);
+  }, [isTerminalPaneOpen, previewPaneVisible, savedPreviewSize]);
 
   // Load projects on mount for ProjectSidebar
   useEffect(() => {
@@ -702,6 +712,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   // Keyboard shortcuts extracted to dedicated hook
   useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab });
 
+  // Auto-open browser pane when a localhost URL is detected in terminal output
+  useBrowserAutoOpen();
+
   return (
     <AppErrorBoundary>
       <div className="relative flex h-full flex-col bg-ctp-mantle">
@@ -765,18 +778,20 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                   <ResizablePanelGroup orientation="horizontal">
                     <ResizablePanel
                       panelRef={previewPanelRef}
-                      defaultSize={isPreviewOpen ? `${isTerminalPaneOpen ? savedPreviewSize : 100}%` : "0%"}
+                      defaultSize={previewPaneVisible ? `${isTerminalPaneOpen ? savedPreviewSize : 100}%` : "0%"}
                       minSize="20%"
                       collapsible
                       collapsedSize="0%"
                       order={1}
                       onResize={(size) => {
                         // Only sync drag-to-collapse; preview opens only via file click
-                        if (
-                          size.asPercentage === 0 &&
-                          useFilePreviewStore.getState().isOpen
-                        ) {
-                          useFilePreviewStore.getState().togglePreview();
+                        if (size.asPercentage === 0) {
+                          if (useFilePreviewStore.getState().isOpen) {
+                            useFilePreviewStore.getState().togglePreview();
+                          }
+                          if (useBrowserPaneStore.getState().isOpen) {
+                            useBrowserPaneStore.getState().closePane();
+                          }
                         }
                         // Only persist the split ratio when both panels are visible
                         // (avoids saving 100% when terminal is hidden)
@@ -786,18 +801,18 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                       }}
                     >
                       <Suspense fallback={<div className="flex h-full items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent" /></div>}>
-                        <FilePreviewPane />
+                        {isBrowserOpen ? <BrowserPane /> : <FilePreviewPane />}
                       </Suspense>
                     </ResizablePanel>
                     <ResizableHandle
-                      disabled={!isPreviewOpen || !isTerminalPaneOpen}
-                      className={isPreviewOpen && isTerminalPaneOpen ? "" : "opacity-0 w-0"}
+                      disabled={!previewPaneVisible || !isTerminalPaneOpen}
+                      className={previewPaneVisible && isTerminalPaneOpen ? "" : "opacity-0 w-0"}
                     />
                     <ResizablePanel
                       panelRef={terminalPanelRef}
                       defaultSize={
                         isTerminalPaneOpen
-                          ? isPreviewOpen ? `${100 - savedPreviewSize}%` : "100%"
+                          ? previewPaneVisible ? `${100 - savedPreviewSize}%` : "100%"
                           : "0%"
                       }
                       minSize="0%"
@@ -835,7 +850,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                       </div>
                     </ResizablePanel>
                   </ResizablePanelGroup>
-                  {!isTerminalPaneOpen && !isPreviewOpen && (
+                  {!isTerminalPaneOpen && !previewPaneVisible && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ctp-base">
                       <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
                       <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
