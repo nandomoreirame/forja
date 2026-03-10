@@ -19,9 +19,15 @@ export default defineConfig({
         test: {
           name: "frontend",
           include: ["frontend/**/*.{test,spec}.{ts,tsx}", "tests/**/*.{test,spec}.{ts,tsx}"],
-          environment: "jsdom",
+          environment: "happy-dom",
           globals: true,
           setupFiles: ["./tests/setup.ts"],
+          pool: "threads",
+          poolOptions: {
+            threads: {
+              maxThreads: 3,
+            },
+          },
         },
         resolve: {
           alias: {
@@ -36,6 +42,11 @@ export default defineConfig({
           include: ["electron/__tests__/**/*.test.ts"],
           environment: "node",
           pool: "forks",
+          poolOptions: {
+            forks: {
+              maxForks: 3,
+            },
+          },
           globals: true,
         },
       },
