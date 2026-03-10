@@ -293,19 +293,17 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     else if (!isSidebarOpen && !panel.isCollapsed()) panel.collapse();
   }, [isSidebarOpen]);
 
-  // Toggle file tree sidebar when chat panel opens/closes
-  const prevChatOpenRef = useRef(isChatOpen);
+  // Expand sidebar when chat opens (chat lives inside the sidebar panel)
   useEffect(() => {
-    const prev = prevChatOpenRef.current;
-    prevChatOpenRef.current = isChatOpen;
-    if (prev === isChatOpen) return;
-    const ftStore = useFileTreeStore.getState();
-    if (isChatOpen && ftStore.isOpen) {
-      ftStore.toggleSidebar();
-      saveSidebarOpen(false);
-    } else if (!isChatOpen && !ftStore.isOpen) {
-      ftStore.toggleSidebar();
-      saveSidebarOpen(true);
+    if (isChatOpen) {
+      const panel = sidebarPanelRef.current;
+      if (panel?.isCollapsed()) {
+        panel.expand();
+      }
+      if (!useFileTreeStore.getState().isOpen) {
+        useFileTreeStore.getState().toggleSidebar();
+        saveSidebarOpen(true);
+      }
     }
   }, [isChatOpen, saveSidebarOpen]);
 
@@ -525,6 +523,19 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     }
   }, [trees]);
 
+  // Refresh file tree on filesystem changes (files:changed events)
+  useEffect(() => {
+    const unlisten = listen<{ path: string }>("files:changed", (event) => {
+      const changedPath = event.payload?.path;
+      if (changedPath) {
+        useFileTreeStore.getState().refreshTree(changedPath);
+      }
+    });
+    return () => {
+      unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
+    };
+  }, []);
+
   // Refresh git file statuses on git:changed events
   useEffect(() => {
     const unlisten = listen<GitChangedPayload>("git:changed", (event) => {
@@ -699,11 +710,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
             <ProjectSidebar
               onOpenProject={() => useFileTreeStore.getState().openProject()}
             />
-            {isChatOpen && (
-              <Suspense fallback={null}>
-                <ChatPanel projectPath={currentPath} />
-              </Suspense>
-            )}
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-tl-xl border-l border-t border-ctp-surface0 bg-ctp-base">
             {hasProject ? (
           <ResizablePanelGroup
@@ -728,12 +734,22 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                   useFileTreeStore.getState().toggleSidebar();
                   saveSidebarOpen(true);
                 }
+                // Close chat if sidebar is collapsed
+                if (isCollapsed && useAgentChatStore.getState().isPanelOpen) {
+                  useAgentChatStore.getState().togglePanel();
+                }
                 if (!isCollapsed) {
                   savePanelSize("sidebarSize", size.asPercentage);
                 }
               }}
             >
-              <FileTreeSidebar />
+              {isChatOpen ? (
+                <Suspense fallback={null}>
+                  <ChatPanel projectPath={currentPath} />
+                </Suspense>
+              ) : (
+                <FileTreeSidebar />
+              )}
             </ResizablePanel>
             <ResizableHandle
               disabled={!isSidebarOpen}
