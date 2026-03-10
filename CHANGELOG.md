@@ -6,6 +6,15 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.4.6] - 2026-03-10
+### Fixed
+- Prevent terminal resize when tab is hidden to avoid PTY corruption from 0x0 dimensions.
+
+### Changed
+- Adjust sidebar icon spacing and reorder bottom buttons for better visual hierarchy.
+
+---
+
 ## [1.4.5] - 2026-03-10
 ### Added
 - Add filesystem watcher for project directory with chokidar (depth: 3, 1000ms debounce).
