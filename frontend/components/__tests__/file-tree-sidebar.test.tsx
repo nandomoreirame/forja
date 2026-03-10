@@ -101,6 +101,53 @@ describe("FileTreeSidebar", () => {
     expect(useFileTreeStore.getState().expandedPaths).toEqual({});
   });
 
+  it("renders refresh button with correct aria-label", async () => {
+    const { useFileTreeStore } = await import("@/stores/file-tree");
+    useFileTreeStore.setState({
+      isOpen: true,
+      tree: {
+        root: {
+          name: "my-project",
+          path: "/path/to/my-project",
+          isDir: true,
+          children: [],
+        },
+      },
+      trees: {},
+    });
+
+    render(<FileTreeSidebar />);
+
+    const refreshButton = screen.getByRole("button", { name: "Refresh file tree" });
+    expect(refreshButton).toBeInTheDocument();
+  });
+
+  it("calls refreshTree when refresh button is clicked", async () => {
+    const user = userEvent.setup();
+    const { useFileTreeStore } = await import("@/stores/file-tree");
+    const refreshTreeSpy = vi.fn();
+    useFileTreeStore.setState({
+      isOpen: true,
+      currentPath: "/path/to/my-project",
+      tree: {
+        root: {
+          name: "my-project",
+          path: "/path/to/my-project",
+          isDir: true,
+          children: [],
+        },
+      },
+      trees: {},
+      refreshTree: refreshTreeSpy,
+    });
+
+    render(<FileTreeSidebar />);
+
+    const refreshButton = screen.getByRole("button", { name: "Refresh file tree" });
+    await user.click(refreshButton);
+    expect(refreshTreeSpy).toHaveBeenCalled();
+  });
+
   it("renders only active tree when multiple trees are cached", async () => {
     const { useFileTreeStore } = await import("@/stores/file-tree");
     const activeTree = {
