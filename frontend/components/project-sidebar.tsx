@@ -329,7 +329,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
     <TooltipProvider delayDuration={500}>
       <div
         data-testid="project-sidebar"
-        className="flex h-full w-12 shrink-0 flex-col items-center gap-1.5 bg-ctp-mantle py-2"
+        className="flex h-full w-12 shrink-0 flex-col items-center gap-2.5 bg-ctp-mantle py-2"
       >
         <DndContext
           sensors={sensors}
@@ -381,22 +381,6 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
             <TooltipTrigger asChild>
               <button
                 type="button"
-                aria-label="Settings"
-                onClick={() => setSettingsOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-              >
-                <Settings className="h-4 w-4" strokeWidth={1.5} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Settings</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
                 aria-label="Chat"
                 aria-pressed={isChatOpen}
                 onClick={toggleChat}
@@ -412,6 +396,22 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
             </TooltipTrigger>
             <TooltipContent side="right">
               <p>Chat</p>
+            </TooltipContent>
+          </Tooltip>
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Settings"
+                onClick={() => setSettingsOpen(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+              >
+                <Settings className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>Settings</p>
             </TooltipContent>
           </Tooltip>
 
