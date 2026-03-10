@@ -43,4 +43,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
     isTilingDesktop: () => ipcRenderer.invoke("app:is_tiling_desktop"),
     isDev: () => ipcRenderer.invoke("app:isDev"),
   },
+
+  browser: {
+    navigate: (url: string) => ipcRenderer.invoke("browser:navigate", url),
+    goBack: () => ipcRenderer.invoke("browser:goBack"),
+    goForward: () => ipcRenderer.invoke("browser:goForward"),
+    reload: () => ipcRenderer.invoke("browser:reload"),
+  },
 });
