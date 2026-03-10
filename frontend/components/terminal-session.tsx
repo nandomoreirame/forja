@@ -25,6 +25,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
   const fitAddonRef = useRef<FitAddon | null>(null);
   const webglAddonRef = useRef<WebglAddon | null>(null);
   const webglTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isVisibleRef = useRef(isVisible);
+  isVisibleRef.current = isVisible;
 
   const { spawn, write, resize, close } = usePty({
     tabId,
@@ -123,6 +125,12 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
 
     let resizeTimeout: ReturnType<typeof setTimeout>;
     const handleResize = () => {
+      // Skip resize when the terminal is hidden — the container has 0×0
+      // dimensions and fit() would collapse the PTY to ~6 cols, corrupting
+      // all buffered output.  The ResizeObserver will fire again when the
+      // tab becomes visible and the container expands to its real size.
+      if (!isVisibleRef.current) return;
+
       fitAddon.fit();
       clearTimeout(resizeTimeout);
       resizeTimeout = setTimeout(() => {
@@ -190,15 +198,21 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         }
       }
 
-      // Re-fit
+      // Re-fit after becoming visible.  Use double-RAF so the browser
+      // has finished layout after removing the hidden class/attribute.
+      // The ResizeObserver should also fire, but this acts as a safety
+      // net for edge-cases where the container size hasn't changed.
       if (fitAddonRef.current) {
-        requestAnimationFrame(() => {
-          fitAddonRef.current?.fit();
-          const dims = fitAddonRef.current?.proposeDimensions();
-          if (dims) {
-            resize(dims.rows, dims.cols);
-          }
+        const id = requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            fitAddonRef.current?.fit();
+            const dims = fitAddonRef.current?.proposeDimensions();
+            if (dims) {
+              resize(dims.rows, dims.cols);
+            }
+          });
         });
+        return () => cancelAnimationFrame(id);
       }
     } else {
       // Schedule WebGL disposal after delay
