@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractLocalhostUrl } from "../localhost-detector";
+import { extractLocalhostUrl, isLocalhostUrl } from "../localhost-detector";
 
 describe("extractLocalhostUrl", () => {
   it("extracts http://localhost:3000 from plain text", () => {
@@ -45,5 +45,47 @@ describe("extractLocalhostUrl", () => {
 
   it("extracts URL from Vite output format", () => {
     expect(extractLocalhostUrl("  ➜  Local:   http://localhost:5173/")).toBe("http://localhost:5173/");
+  });
+});
+
+describe("isLocalhostUrl", () => {
+  it("returns true for http://localhost:3000", () => {
+    expect(isLocalhostUrl("http://localhost:3000")).toBe(true);
+  });
+
+  it("returns true for http://127.0.0.1:5173", () => {
+    expect(isLocalhostUrl("http://127.0.0.1:5173")).toBe(true);
+  });
+
+  it("returns true for http://0.0.0.0:8080", () => {
+    expect(isLocalhostUrl("http://0.0.0.0:8080")).toBe(true);
+  });
+
+  it("returns true for https://localhost:3000", () => {
+    expect(isLocalhostUrl("https://localhost:3000")).toBe(true);
+  });
+
+  it("returns true for http://localhost:3000/app/dashboard", () => {
+    expect(isLocalhostUrl("http://localhost:3000/app/dashboard")).toBe(true);
+  });
+
+  it("returns true for http://localhost without port", () => {
+    expect(isLocalhostUrl("http://localhost")).toBe(true);
+  });
+
+  it("returns false for https://example.com", () => {
+    expect(isLocalhostUrl("https://example.com")).toBe(false);
+  });
+
+  it("returns false for https://localhost.evil.com", () => {
+    expect(isLocalhostUrl("https://localhost.evil.com")).toBe(false);
+  });
+
+  it("returns false for empty string", () => {
+    expect(isLocalhostUrl("")).toBe(false);
+  });
+
+  it("returns false for invalid URL", () => {
+    expect(isLocalhostUrl("not-a-url")).toBe(false);
   });
 });
