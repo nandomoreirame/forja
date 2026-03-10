@@ -14,8 +14,8 @@ vi.mock("../terminal-session", () => ({
 // Mock terminal-tabs store
 const mockStore = {
   tabs: [
-    { id: "tab-1", name: "Claude #1", path: "/a", isRunning: true },
-    { id: "tab-2", name: "Claude #2", path: "/b", isRunning: true },
+    { id: "tab-1", name: "Claude #1", path: "/a", isRunning: true, sessionType: "claude" },
+    { id: "tab-2", name: "Claude #2", path: "/b", isRunning: true, sessionType: "claude" },
   ],
   activeTabId: "tab-1",
 };
@@ -27,8 +27,8 @@ vi.mock("@/stores/terminal-tabs", () => ({
 describe("TerminalPane", () => {
   beforeEach(() => {
     mockStore.tabs = [
-      { id: "tab-1", name: "Claude #1", path: "/a", isRunning: true },
-      { id: "tab-2", name: "Claude #2", path: "/b", isRunning: true },
+      { id: "tab-1", name: "Claude #1", path: "/a", isRunning: true, sessionType: "claude" },
+      { id: "tab-2", name: "Claude #2", path: "/b", isRunning: true, sessionType: "claude" },
     ];
     mockStore.activeTabId = "tab-1";
   });
@@ -54,8 +54,8 @@ describe("TerminalPane", () => {
 
   it("only shows active tab of the current project", () => {
     mockStore.tabs = [
-      { id: "tab-1", name: "Claude #1", path: "/project-a", isRunning: true },
-      { id: "tab-2", name: "Claude #2", path: "/project-b", isRunning: true },
+      { id: "tab-1", name: "Claude #1", path: "/project-a", isRunning: true, sessionType: "claude" },
+      { id: "tab-2", name: "Claude #2", path: "/project-b", isRunning: true, sessionType: "claude" },
     ];
     mockStore.activeTabId = "tab-1";
 
@@ -69,8 +69,8 @@ describe("TerminalPane", () => {
 
   it("hides tabs from other projects even if they match activeTabId", () => {
     mockStore.tabs = [
-      { id: "tab-1", name: "Claude #1", path: "/project-a", isRunning: true },
-      { id: "tab-2", name: "Claude #2", path: "/project-b", isRunning: true },
+      { id: "tab-1", name: "Claude #1", path: "/project-a", isRunning: true, sessionType: "claude" },
+      { id: "tab-2", name: "Claude #2", path: "/project-b", isRunning: true, sessionType: "claude" },
     ];
     // activeTabId points to tab from project-b, but we're viewing project-a
     mockStore.activeTabId = "tab-2";
