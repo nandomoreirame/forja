@@ -7,7 +7,8 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
-import { memo, useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useRef } from "react";
+import { TerminalContextMenu } from "./terminal-context-menu";
 
 interface TerminalSessionProps {
   tabId: string;
@@ -34,6 +35,31 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       terminalRef.current?.write("\r\n\x1b[1;33m[Session ended]\x1b[0m\r\n");
     },
   });
+
+  // Keep a stable ref to write so callbacks don't need to redeclare on change
+  const writeRef = useRef(write);
+  writeRef.current = write;
+
+  const handleCopy = useCallback(() => {
+    const terminal = terminalRef.current;
+    if (!terminal) return;
+    const selection = terminal.getSelection();
+    if (selection) {
+      navigator.clipboard.writeText(selection).catch((err) => {
+        console.warn("[terminal] Copy failed:", err);
+      });
+    }
+  }, []);
+
+  const handlePaste = useCallback(() => {
+    navigator.clipboard.readText().then((text) => {
+      if (text) {
+        writeRef.current(text);
+      }
+    }).catch((err) => {
+      console.warn("[terminal] Paste failed:", err);
+    });
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -178,10 +204,14 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     <div
       role="region"
       aria-label="Claude Code Terminal"
-      className={`h-full w-full bg-ctp-base pt-3 pl-4 pb-3 ${!isVisible ? "hidden" : ""}`}
+      className={`h-full w-full bg-ctp-base ${!isVisible ? "hidden" : ""}`}
     >
-      <div ref={containerRef} className="h-full w-full" />
-      <div role="status" aria-live="polite" className="sr-only" />
+      <TerminalContextMenu tabId={tabId} onCopy={handleCopy} onPaste={handlePaste}>
+        <div className="h-full w-full pt-3 pl-4 pb-3">
+          <div ref={containerRef} className="h-full w-full" />
+          <div role="status" aria-live="polite" className="sr-only" />
+        </div>
+      </TerminalContextMenu>
     </div>
   );
 });
