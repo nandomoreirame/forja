@@ -119,18 +119,9 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Fixed
 - Open settings.json via file preview instead of custom editor.---
 
-## [Unreleased]
-
+## [1.4.0] - 2026-03-10
 ### Added
-- Add terminal split preferences (enabled, orientation, ratio) to electron config.
-- Add split shortcuts to keyboard shortcuts dialog.
-- Add hasTab helper to terminal tabs store.
+- Add terminal split preferences to config and PTY.---
 
-### Changed
-- Redesign terminal split to pane-based model (no new tabs on split).
-- Replace primaryTabId/secondaryTabId with splitTabId and secondarySessionType in split layout store.
-- Render secondary pane outside tabs.map() with derived tabId for independent PTY.
-- Simplify handleSelectTab to plain setActiveTab (split managed by TerminalPane).
-- Update session persistence to use splitTabIndex and secondarySessionType.
-- Add terminal split persistence to panel preferences hook.
+## [Unreleased]
 
