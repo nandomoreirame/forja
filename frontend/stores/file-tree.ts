@@ -73,6 +73,7 @@ interface FileTreeState {
   removeProjectTree: (projectPath: string) => void;
   setActiveProjectPath: (path: string) => void;
   setTree: (tree: DirectoryTree | null) => void;
+  refreshTree: (projectPath?: string) => Promise<void>;
   toggleExpanded: (path: string) => void;
   isExpanded: (path: string) => boolean;
   collapseAll: () => void;
@@ -94,6 +95,9 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     );
     invoke("start_watcher", { path: projectPath }).catch((err) =>
       console.warn("[file-tree] Failed to start watcher:", err),
+    );
+    invoke("start_file_watcher", { path: projectPath }).catch((err) =>
+      console.warn("[file-tree] Failed to start file watcher:", err),
     );
   };
 
@@ -212,9 +216,12 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
         });
       }
 
-      // Stop the file watcher for the removed project
+      // Stop the watchers for the removed project
       invoke("stop_watcher", { path: projectPath }).catch((err) =>
         console.warn("[file-tree] Failed to stop watcher:", err),
+      );
+      invoke("stop_file_watcher", { path: projectPath }).catch((err) =>
+        console.warn("[file-tree] Failed to stop file watcher:", err),
       );
     },
 
@@ -250,6 +257,16 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
       const trees = get().trees;
       const tree = trees[path] ?? null;
       set({ activeProjectPath: path, currentPath: path, tree });
+    },
+
+    refreshTree: async (projectPath?: string) => {
+      const path = projectPath ?? get().currentPath;
+      if (!path) return;
+      await get().loadProjectTree(path);
+      const updatedTrees = get().trees;
+      if (get().activeProjectPath === path) {
+        set({ tree: updatedTrees[path] ?? null });
+      }
     },
 
     setTree: (tree: DirectoryTree | null) => set({ tree }),
