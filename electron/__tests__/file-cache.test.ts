@@ -5,6 +5,7 @@ import {
   getFileFromCache,
   putFileInCache,
   invalidateFileCache,
+  invalidateProjectCache,
   clearFileCache,
   getFileCacheStats,
 } from "../file-cache";
@@ -182,6 +183,45 @@ describe("file-cache", () => {
     expect(entry).not.toBeUndefined();
     expect(entry!.size).toBe(expectedBytes);
     expect(getFileCacheStats().totalBytes).toBe(expectedBytes);
+  });
+
+  describe("invalidateProjectCache", () => {
+    it("removes all entries under a project path", () => {
+      putFileInCache("/my-project/src/index.ts", "content a");
+      putFileInCache("/my-project/src/utils.ts", "content b");
+      putFileInCache("/other-project/main.ts", "content c");
+
+      expect(getFileCacheStats().entries).toBe(3);
+
+      invalidateProjectCache("/my-project");
+
+      expect(getFileFromCache("/my-project/src/index.ts")).toBeUndefined();
+      expect(getFileFromCache("/my-project/src/utils.ts")).toBeUndefined();
+      expect(getFileFromCache("/other-project/main.ts")).not.toBeUndefined();
+      expect(getFileCacheStats().entries).toBe(1);
+    });
+
+    it("does nothing when no entries match the project path", () => {
+      putFileInCache("/other/file.ts", "content");
+
+      invalidateProjectCache("/nonexistent-project");
+
+      expect(getFileCacheStats().entries).toBe(1);
+    });
+
+    it("updates totalBytes correctly after invalidation", () => {
+      const content = "hello world"; // 11 bytes
+      putFileInCache("/proj/a.ts", content);
+      putFileInCache("/proj/b.ts", content);
+      putFileInCache("/other/c.ts", content);
+
+      const bytesBefore = getFileCacheStats().totalBytes;
+      expect(bytesBefore).toBe(33);
+
+      invalidateProjectCache("/proj");
+
+      expect(getFileCacheStats().totalBytes).toBe(11);
+    });
   });
 
   it("LRU: most recently accessed entry survives eviction", () => {

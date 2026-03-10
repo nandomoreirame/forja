@@ -81,6 +81,20 @@ export function putFileInCache(absolutePath: string, content: string): void {
 }
 
 /**
+ * Removes all cached entries whose paths start with the given project path.
+ * Used when external file changes are detected by the file watcher.
+ */
+export function invalidateProjectCache(projectPath: string): void {
+  const prefix = projectPath.endsWith("/") ? projectPath : `${projectPath}/`;
+  for (const [key, entry] of cache) {
+    if (key.startsWith(prefix)) {
+      totalBytes -= entry.size;
+      cache.delete(key);
+    }
+  }
+}
+
+/**
  * Removes the cached entry for the given absolute path (e.g., after write_file IPC).
  */
 export function invalidateFileCache(absolutePath: string): void {
