@@ -78,7 +78,10 @@ export function Titlebar() {
   return (
     <div
       style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
-      className="relative flex h-10 shrink-0 select-none items-center justify-between pr-3"
+      className={cn(
+        "relative flex h-10 shrink-0 select-none items-center justify-between pr-3",
+        isMac && "pl-[78px]"
+      )}
     >
       {/* Left: menu + sidebar toggle */}
       <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
@@ -164,39 +167,43 @@ export function Titlebar() {
       {/* Right: resource usage + window controls */}
       <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <ResourceUsagePopover />
-        {!tilingDesktop && (
+        {!isMac && (
           <>
-            <button
-              onClick={() => getAppWindow().minimize()}
-              className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-              aria-label="Minimize"
-            >
-              <Minus className="h-3.5 w-3.5" strokeWidth={1.5} />
-            </button>
+            {!tilingDesktop && (
+              <>
+                <button
+                  onClick={() => getAppWindow().minimize()}
+                  className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                  aria-label="Minimize"
+                >
+                  <Minus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                </button>
+
+                <button
+                  onClick={() =>
+                    maximized ? getAppWindow().unmaximize() : getAppWindow().maximize()
+                  }
+                  className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                  aria-label={maximized ? "Restore" : "Maximize"}
+                >
+                  {maximized ? (
+                    <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  ) : (
+                    <Square className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  )}
+                </button>
+              </>
+            )}
 
             <button
-              onClick={() =>
-                maximized ? getAppWindow().unmaximize() : getAppWindow().maximize()
-              }
-              className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-              aria-label={maximized ? "Restore" : "Maximize"}
+              onClick={() => getAppWindow().close()}
+              className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-red/20 hover:text-ctp-red"
+              aria-label="Close"
             >
-              {maximized ? (
-                <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
-              ) : (
-                <Square className="h-3.5 w-3.5" strokeWidth={1.5} />
-              )}
+              <X className="h-3.5 w-3.5" strokeWidth={1.5} />
             </button>
           </>
         )}
-
-        <button
-          onClick={() => getAppWindow().close()}
-          className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-red/20 hover:text-ctp-red"
-          aria-label="Close"
-        >
-          <X className="h-3.5 w-3.5" strokeWidth={1.5} />
-        </button>
       </div>
       <KeyboardShortcutsDialog open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       <AboutDialog open={aboutOpen} onOpenChange={setAboutOpen} />

@@ -6,6 +6,16 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.4.10] - 2026-03-10
+### Added
+- Error page overlay for browser pane load failures.
+- Hide custom window controls on macOS.
+
+### Fixed
+- Scope browser pane state per project (was global, staying visible across all projects when switching).
+
+---
+
 ## [1.4.9] - 2026-03-10
 ### Added
 - Embedded browser pane inside the preview panel with Electron `<webview>` tag.

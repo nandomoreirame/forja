@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect } from "react";
-import { ArrowLeft, ArrowRight, RefreshCw, X, Globe, XCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCw, X, Globe, XCircle, AlertCircle } from "lucide-react";
 import { useBrowserPaneStore } from "@/stores/browser-pane";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +35,9 @@ export function BrowserPane() {
   const setNavigationState = useBrowserPaneStore((s) => s.setNavigationState);
   const setTitle = useBrowserPaneStore((s) => s.setTitle);
   const onDidNavigate = useBrowserPaneStore((s) => s.onDidNavigate);
+  const error = useBrowserPaneStore((s) => s.error);
+  const setError = useBrowserPaneStore((s) => s.setError);
+  const clearError = useBrowserPaneStore((s) => s.clearError);
 
   // Wire webview events to store
   useEffect(() => {
@@ -55,7 +58,18 @@ export function BrowserPane() {
     const handleTitleUpdate = (e: Event & { title?: string }) => {
       if (e.title) setTitle(e.title);
     };
-    const handleDidFailLoad = () => setLoading(false);
+    const handleDidFailLoad = (
+      e: Event & { errorCode?: number; errorDescription?: string; validatedURL?: string },
+    ) => {
+      setLoading(false);
+      if (e.errorCode && e.errorCode !== -3) {
+        setError({
+          code: e.errorCode,
+          description: e.errorDescription ?? "Unknown error",
+          url: e.validatedURL ?? "",
+        });
+      }
+    };
 
     wv.addEventListener("did-start-loading", handleLoadStart);
     wv.addEventListener("did-stop-loading", handleLoadStop);
@@ -83,8 +97,9 @@ export function BrowserPane() {
   }, []);
 
   const handleReload = useCallback(() => {
+    clearError();
     webviewRef.current?.reload();
-  }, []);
+  }, [clearError]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -180,7 +195,7 @@ export function BrowserPane() {
       )}
 
       {/* Webview content */}
-      <div className="flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden">
         <webview
           ref={webviewRef}
           src={committedUrl}
@@ -188,6 +203,37 @@ export function BrowserPane() {
           allowpopups="false"
           partition="persist:browser-pane"
         />
+
+        {/* Error overlay */}
+        {error && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ctp-base">
+            <AlertCircle className="h-12 w-12 text-ctp-overlay1" strokeWidth={1.5} />
+            <div className="flex flex-col items-center gap-1 text-center">
+              <h2 className="text-base font-medium text-ctp-text">
+                Could not access this site
+              </h2>
+              <p className="text-sm font-semibold text-ctp-subtext0">
+                {(() => {
+                  try {
+                    return new URL(error.url).hostname;
+                  } catch {
+                    return error.url;
+                  }
+                })()}
+              </p>
+              <p className="mt-1 text-xs text-ctp-overlay1">{error.description}</p>
+            </div>
+            <button
+              onClick={() => {
+                clearError();
+                webviewRef.current?.reload();
+              }}
+              className="mt-2 rounded bg-ctp-surface1 px-4 py-1.5 text-sm text-ctp-text transition-colors hover:bg-ctp-surface2"
+            >
+              Reload
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
