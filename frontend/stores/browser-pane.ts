@@ -7,6 +7,12 @@ interface BrowserError {
   url: string;
 }
 
+interface PerProjectBrowserState {
+  isOpen: boolean;
+  url: string;
+  committedUrl: string;
+}
+
 interface BrowserPaneState {
   isOpen: boolean;
   /** URL in the address bar (may be edited but not yet navigated) */
@@ -18,6 +24,8 @@ interface BrowserPaneState {
   canGoForward: boolean;
   title: string;
   error: BrowserError | null;
+  /** Persisted browser state per project path */
+  browserStateByProject: Record<string, PerProjectBrowserState>;
   // Actions
   toggleOpen: () => void;
   openPane: () => void;
@@ -31,6 +39,10 @@ interface BrowserPaneState {
   onDidNavigate: (url: string) => void;
   setError: (error: BrowserError) => void;
   clearError: () => void;
+  /** Saves current browser state (isOpen, url, committedUrl) for the given project path. */
+  saveBrowserStateForProject: (projectPath: string) => void;
+  /** Restores browser state for the given project path, or closes the pane if no saved state exists. */
+  restoreBrowserStateForProject: (projectPath: string) => void;
 }
 
 export const useBrowserPaneStore = create<BrowserPaneState>((set, get) => ({
@@ -42,6 +54,7 @@ export const useBrowserPaneStore = create<BrowserPaneState>((set, get) => ({
   canGoForward: false,
   title: "",
   error: null,
+  browserStateByProject: {},
 
   toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
   openPane: () => set({ isOpen: true }),
@@ -80,4 +93,44 @@ export const useBrowserPaneStore = create<BrowserPaneState>((set, get) => ({
 
   setError: (error) => set({ error }),
   clearError: () => set({ error: null }),
+
+  saveBrowserStateForProject: (projectPath: string) => {
+    const { isOpen, url, committedUrl, browserStateByProject } = get();
+    set({
+      browserStateByProject: {
+        ...browserStateByProject,
+        [projectPath]: { isOpen, url, committedUrl },
+      },
+    });
+  },
+
+  restoreBrowserStateForProject: (projectPath: string) => {
+    const { browserStateByProject } = get();
+    const saved = browserStateByProject[projectPath];
+    if (saved) {
+      set({
+        isOpen: saved.isOpen,
+        url: saved.url,
+        committedUrl: saved.committedUrl,
+        // Reset transient navigation state since it belongs to the webview session
+        isLoading: false,
+        canGoBack: false,
+        canGoForward: false,
+        title: "",
+        error: null,
+      });
+    } else {
+      // No saved state for this project: close the pane and reset to default URL
+      set({
+        isOpen: false,
+        url: "http://localhost:3000",
+        committedUrl: "http://localhost:3000",
+        isLoading: false,
+        canGoBack: false,
+        canGoForward: false,
+        title: "",
+        error: null,
+      });
+    }
+  },
 }));

@@ -153,6 +153,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
     tabsStore.restoreActiveTabForProject(projectPath);
 
+    // Save/restore browser pane state per project
+    const { useBrowserPaneStore } = await import("./browser-pane");
+    const browserStore = useBrowserPaneStore.getState();
+    if (previousPath && previousPath !== projectPath) {
+      browserStore.saveBrowserStateForProject(previousPath);
+    }
+    browserStore.restoreBrowserStateForProject(projectPath);
+
     const { useFileTreeStore } = await import("./file-tree");
     await useFileTreeStore.getState().openProjectPath(projectPath);
     // Load icon if not already loaded
