@@ -92,7 +92,7 @@ function ProjectIcon({
       aria-pressed={isActive}
       onClick={() => onSelect(project.path)}
       className={cn(
-        "group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-all duration-150",
+        "group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-sm font-bold transition-all duration-150",
         isActive
           ? "ring-2 ring-ctp-mauve ring-offset-1 ring-offset-ctp-mantle"
           : "opacity-70 hover:opacity-100"
@@ -366,7 +366,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
               type="button"
               aria-label="Add project"
               onClick={onOpenProject}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-ctp-surface1 text-ctp-overlay1 transition-colors hover:border-ctp-surface2 hover:text-ctp-text"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-ctp-surface1 text-ctp-overlay1 transition-colors hover:border-ctp-surface2 hover:bg-ctp-surface0 hover:text-ctp-text"
             >
               <Plus className="h-4 w-4" strokeWidth={1.5} />
             </button>
@@ -385,7 +385,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 aria-pressed={isChatOpen}
                 onClick={toggleChat}
                 className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-lg transition-colors",
+                  "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
                   isChatOpen
                     ? "bg-ctp-surface0 text-ctp-mauve"
                     : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
@@ -405,7 +405,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 type="button"
                 aria-label="Settings"
                 onClick={() => setSettingsOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                className="flex h-9 w-9 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
               >
                 <Settings className="h-4 w-4" strokeWidth={1.5} />
               </button>
@@ -420,7 +420,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
               <button
                 type="button"
                 aria-label="Help"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                className="flex h-9 w-9 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
               >
                 <CircleHelp className="h-4 w-4" strokeWidth={1.5} />
               </button>

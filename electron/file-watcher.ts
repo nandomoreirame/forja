@@ -60,6 +60,7 @@ export function startFileWatcher(
   };
 
   watcher.on("add", notify);
+  watcher.on("change", notify);
   watcher.on("unlink", notify);
   watcher.on("addDir", notify);
   watcher.on("unlinkDir", notify);

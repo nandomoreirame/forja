@@ -170,6 +170,81 @@ describe("useFilePreviewStore", () => {
     });
   });
 
+  describe("reloadCurrentFile", () => {
+    it("reloads the currently previewed file via IPC", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      const freshContent = {
+        path: "/test/file.ts",
+        content: "updated content",
+        size: 15,
+      };
+      vi.mocked(invoke).mockResolvedValue(freshContent);
+
+      // Set up a file already loaded in preview
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/test/file.ts",
+        content: {
+          path: "/test/file.ts",
+          content: "old content",
+          size: 11,
+        },
+        isLoading: false,
+        error: null,
+      });
+
+      await useFilePreviewStore.getState().reloadCurrentFile();
+
+      const state = useFilePreviewStore.getState();
+      expect(state.content).toEqual(freshContent);
+      expect(invoke).toHaveBeenCalledWith("read_file_command", {
+        path: "/test/file.ts",
+        maxSizeMb: 10,
+        skipCache: true,
+      });
+    });
+
+    it("does nothing when no file is currently open", async () => {
+      const { invoke } = await import("@/lib/ipc");
+
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: null,
+        content: null,
+      });
+
+      await useFilePreviewStore.getState().reloadCurrentFile();
+
+      expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it("does not reset editing state when reloading", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue({
+        path: "/test/file.ts",
+        content: "new",
+        size: 3,
+      });
+
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/test/file.ts",
+        content: { path: "/test/file.ts", content: "old", size: 3 },
+        isEditing: true,
+        editContent: "user edits",
+        editDirty: true,
+      });
+
+      await useFilePreviewStore.getState().reloadCurrentFile();
+
+      const state = useFilePreviewStore.getState();
+      // Should not touch editing state
+      expect(state.isEditing).toBe(true);
+      expect(state.editContent).toBe("user edits");
+      expect(state.editDirty).toBe(true);
+    });
+  });
+
   describe("clearError", () => {
     it("should clear error state", () => {
       useFilePreviewStore.setState({ error: "some error" });
