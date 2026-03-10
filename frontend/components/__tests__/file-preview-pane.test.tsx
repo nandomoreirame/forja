@@ -73,6 +73,20 @@ describe("FilePreviewPane", () => {
     expect(container.innerHTML).toBe("");
   });
 
+  it("shows empty state when open but no file selected", () => {
+    useFilePreviewStore.setState({
+      isOpen: true,
+      isLoading: false,
+      currentFile: null,
+      content: null,
+      error: null,
+    });
+    renderWithSuspense(<FilePreviewPane />);
+    const pane = screen.getByTestId("file-preview-pane");
+    expect(pane).toBeInTheDocument();
+    expect(screen.getByText("Select a file to preview")).toBeInTheDocument();
+  });
+
   it("renders with fixed width when open", () => {
     useFilePreviewStore.setState({
       isOpen: true,
@@ -120,7 +134,7 @@ describe("FilePreviewPane", () => {
     expect(screen.getByText("example.ts")).toBeInTheDocument();
   });
 
-  it("shows close button that calls closePreview", () => {
+  it("shows close button that clears file but keeps panel open", () => {
     useFilePreviewStore.setState({
       isOpen: true,
       isLoading: false,
@@ -134,7 +148,9 @@ describe("FilePreviewPane", () => {
     fireEvent.click(closeButton);
 
     const state = useFilePreviewStore.getState();
-    expect(state.isOpen).toBe(false);
+    expect(state.isOpen).toBe(true);
+    expect(state.currentFile).toBeNull();
+    expect(state.content).toBeNull();
   });
 
   it("shows file info in footer", () => {

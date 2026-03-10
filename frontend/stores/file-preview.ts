@@ -32,7 +32,7 @@ interface FilePreviewState {
 }
 
 export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
-  isOpen: false,
+  isOpen: true,
   currentFile: null,
   content: null,
   isLoading: false,
@@ -48,7 +48,7 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
 
   closePreview: () =>
     set({
-      isOpen: false,
+      isOpen: true,
       currentFile: null,
       content: null,
       error: null,
@@ -147,7 +147,7 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
       });
     } else {
       set({
-        isOpen: false,
+        isOpen: true,
         currentFile: null,
         content: null,
         error: null,
