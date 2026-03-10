@@ -11,6 +11,7 @@ beforeEach(() => {
     canGoBack: false,
     canGoForward: false,
     title: "",
+    error: null,
   });
 });
 
@@ -65,5 +66,47 @@ describe("useBrowserPaneStore", () => {
     expect(state.url).toBe("http://localhost:4321");
     expect(state.committedUrl).toBe("http://localhost:4321");
     expect(state.isOpen).toBe(true);
+  });
+
+  describe("error state", () => {
+    const sampleError = {
+      code: -102,
+      description: "ERR_CONNECTION_REFUSED",
+      url: "http://localhost:9999",
+    };
+
+    it("starts with error as null", () => {
+      expect(useBrowserPaneStore.getState().error).toBeNull();
+    });
+
+    it("setError stores error details", () => {
+      useBrowserPaneStore.getState().setError(sampleError);
+      expect(useBrowserPaneStore.getState().error).toEqual(sampleError);
+    });
+
+    it("clearError resets error to null", () => {
+      useBrowserPaneStore.getState().setError(sampleError);
+      useBrowserPaneStore.getState().clearError();
+      expect(useBrowserPaneStore.getState().error).toBeNull();
+    });
+
+    it("navigate clears error", () => {
+      useBrowserPaneStore.getState().setError(sampleError);
+      useBrowserPaneStore.getState().setUrl("http://localhost:8080");
+      useBrowserPaneStore.getState().navigate();
+      expect(useBrowserPaneStore.getState().error).toBeNull();
+    });
+
+    it("navigateToUrl clears error", () => {
+      useBrowserPaneStore.getState().setError(sampleError);
+      useBrowserPaneStore.getState().navigateToUrl("http://localhost:8080");
+      expect(useBrowserPaneStore.getState().error).toBeNull();
+    });
+
+    it("onDidNavigate clears error", () => {
+      useBrowserPaneStore.getState().setError(sampleError);
+      useBrowserPaneStore.getState().onDidNavigate("http://localhost:8080");
+      expect(useBrowserPaneStore.getState().error).toBeNull();
+    });
   });
 });

@@ -11,6 +11,7 @@ const mockState = {
   canGoBack: false,
   canGoForward: false,
   title: "",
+  error: null as { code: number; description: string; url: string } | null,
   toggleOpen: vi.fn(),
   closePane: vi.fn(),
   // setUrl updates mockState.url so the controlled input reflects typed value
@@ -24,6 +25,8 @@ const mockState = {
   setTitle: vi.fn(),
   onDidNavigate: vi.fn(),
   openPane: vi.fn(),
+  setError: vi.fn(),
+  clearError: vi.fn(),
 };
 
 vi.mock("@/stores/browser-pane", () => ({
@@ -48,6 +51,7 @@ describe("BrowserPane", () => {
     mockState.isLoading = false;
     mockState.canGoBack = false;
     mockState.canGoForward = false;
+    mockState.error = null;
   });
 
   it("renders the address bar input with current url", () => {
@@ -102,5 +106,41 @@ describe("BrowserPane", () => {
     render(<BrowserPane />);
     await user.click(screen.getByLabelText(/close browser/i));
     expect(mockState.closePane).toHaveBeenCalled();
+  });
+
+  describe("error overlay", () => {
+    const sampleError = {
+      code: -102,
+      description: "ERR_CONNECTION_REFUSED",
+      url: "http://localhost:9999",
+    };
+
+    it("does not render error overlay when error is null", () => {
+      mockState.error = null;
+      render(<BrowserPane />);
+      expect(screen.queryByText(/could not access/i)).not.toBeInTheDocument();
+    });
+
+    it("renders error overlay when error is set", () => {
+      mockState.error = sampleError;
+      render(<BrowserPane />);
+      expect(screen.getByText(/could not access/i)).toBeInTheDocument();
+      expect(screen.getByText("localhost")).toBeInTheDocument();
+      expect(screen.getByText("ERR_CONNECTION_REFUSED")).toBeInTheDocument();
+    });
+
+    it("renders a reload button in the error overlay", () => {
+      mockState.error = sampleError;
+      render(<BrowserPane />);
+      expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
+    });
+
+    it("reload button clears error and reloads webview", async () => {
+      mockState.error = sampleError;
+      const user = userEvent.setup();
+      render(<BrowserPane />);
+      await user.click(screen.getByRole("button", { name: "Reload" }));
+      expect(mockState.clearError).toHaveBeenCalled();
+    });
   });
 });
