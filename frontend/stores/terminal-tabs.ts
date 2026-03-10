@@ -31,6 +31,7 @@ interface TerminalTabsState {
   getTabDisplayNames: () => Record<string, string>;
   /** Returns tabs belonging to a specific project path. */
   getTabsForProject: (projectPath: string) => TerminalTab[];
+  hasTab: (tabId: string) => boolean;
   /** Saves current activeTabId for the given project path. */
   saveActiveTabForProject: (projectPath: string) => void;
   /** Restores activeTabId for the given project path (falls back to first tab or null). */
@@ -104,6 +105,10 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
 
   getTabsForProject: (projectPath: string) => {
     return get().tabs.filter((t) => t.path === projectPath);
+  },
+
+  hasTab: (tabId: string) => {
+    return get().tabs.some((t) => t.id === tabId);
   },
 
   saveActiveTabForProject: (projectPath: string) => {

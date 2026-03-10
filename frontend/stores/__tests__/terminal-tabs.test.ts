@@ -258,6 +258,14 @@ describe("useTerminalTabsStore", () => {
       expect(tabs).toHaveLength(0);
     });
 
+    it("hasTab returns true only for existing tab ids", () => {
+      const id = createTab("/project-a", "claude");
+      const store = useTerminalTabsStore.getState();
+
+      expect(store.hasTab(id)).toBe(true);
+      expect(store.hasTab("missing-tab")).toBe(false);
+    });
+
     it("remembers active tab per project when switching", () => {
       const idA1 = createTab("/project-a", "claude");
       const idA2 = createTab("/project-a", "terminal");
