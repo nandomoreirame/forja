@@ -460,15 +460,35 @@ describe("config module", () => {
       const { getUiPreferences } = await import("../config");
       const prefs = getUiPreferences();
 
-      expect(prefs).toEqual({ sidebarSize: 20, previewSize: 0, sidebarOpen: true });
+      expect(prefs).toEqual({
+        sidebarSize: 20,
+        previewSize: 0,
+        sidebarOpen: true,
+        terminalSplitEnabled: false,
+        terminalSplitOrientation: "vertical",
+        terminalSplitRatio: 50,
+      });
     });
 
     it("saves and retrieves ui preferences", async () => {
       const { saveUiPreferences, getUiPreferences } = await import("../config");
-      saveUiPreferences({ sidebarSize: 30, previewSize: 40 });
+      saveUiPreferences({
+        sidebarSize: 30,
+        previewSize: 40,
+        terminalSplitEnabled: true,
+        terminalSplitOrientation: "horizontal",
+        terminalSplitRatio: 65,
+      });
       const prefs = getUiPreferences();
 
-      expect(prefs).toEqual({ sidebarSize: 30, previewSize: 40, sidebarOpen: true });
+      expect(prefs).toEqual({
+        sidebarSize: 30,
+        previewSize: 40,
+        sidebarOpen: true,
+        terminalSplitEnabled: true,
+        terminalSplitOrientation: "horizontal",
+        terminalSplitRatio: 65,
+      });
     });
 
     it("supports partial updates preserving existing values", async () => {
@@ -494,6 +514,15 @@ describe("config module", () => {
       const prefs = getUiPreferences();
 
       expect(prefs.sidebarOpen).toBe(true);
+    });
+
+    it("returns default terminal split preferences", async () => {
+      const { getUiPreferences } = await import("../config");
+      const prefs = getUiPreferences();
+
+      expect(prefs.terminalSplitEnabled).toBe(false);
+      expect(prefs.terminalSplitOrientation).toBe("vertical");
+      expect(prefs.terminalSplitRatio).toBe(50);
     });
 
     it("saves and retrieves sidebarOpen", async () => {

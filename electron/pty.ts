@@ -118,8 +118,8 @@ export function spawnPty(opts: SpawnOptions): string {
 
   sessions.set(tabId, session);
 
-  // After spawning, emit running state
-  if (!sender.isDestroyed()) {
+  // After spawning, emit running state (only for AI CLI sessions, not plain terminals)
+  if (sessionType !== "terminal" && !sender.isDestroyed()) {
     sender.send("pty:session-state-changed", {
       sessionId: tabId,
       projectPath: cwd,

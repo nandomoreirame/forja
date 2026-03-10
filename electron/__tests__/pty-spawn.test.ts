@@ -147,3 +147,67 @@ describe("spawnPty - session type handling", () => {
     );
   });
 });
+
+describe("spawnPty - session state events", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+
+    const mockPtyProcess = {
+      onData: vi.fn(),
+      onExit: vi.fn(),
+      write: vi.fn(),
+      resize: vi.fn(),
+      kill: vi.fn(),
+    };
+    mockPtySpawn.mockReturnValue(mockPtyProcess);
+  });
+
+  it("does not emit running state for terminal sessions", async () => {
+    process.env.SHELL = "/bin/zsh";
+    const { spawnPty } = await import("../pty");
+
+    const mockSender = {
+      send: vi.fn(),
+      isDestroyed: vi.fn(() => false),
+    };
+
+    spawnPty({
+      tabId: "test-terminal-state",
+      path: "/home/test/project",
+      sessionType: "terminal",
+      windowId: 1,
+      sender: mockSender as unknown as Electron.WebContents,
+    });
+
+    const runningCalls = mockSender.send.mock.calls.filter(
+      ([channel, payload]: [string, { state?: string }]) =>
+        channel === "pty:session-state-changed" && payload?.state === "running"
+    );
+    expect(runningCalls).toHaveLength(0);
+  });
+
+  it("emits running state for AI CLI sessions", async () => {
+    const { spawnPty } = await import("../pty");
+
+    const mockSender = {
+      send: vi.fn(),
+      isDestroyed: vi.fn(() => false),
+    };
+
+    spawnPty({
+      tabId: "test-claude-state",
+      path: "/home/test/project",
+      sessionType: "claude",
+      windowId: 1,
+      sender: mockSender as unknown as Electron.WebContents,
+    });
+
+    expect(mockSender.send).toHaveBeenCalledWith("pty:session-state-changed", {
+      sessionId: "test-claude-state",
+      projectPath: "/home/test/project",
+      state: "running",
+      exitCode: null,
+    });
+  });
+});
