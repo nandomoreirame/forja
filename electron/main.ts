@@ -29,6 +29,7 @@ const lazyImport = <T>(factory: () => Promise<T>) => {
 
 const getCliDetector = lazyImport(() => import("./cli-detector.js"));
 const getWatcher = lazyImport(() => import("./watcher.js"));
+const getFileWatcher = lazyImport(() => import("./file-watcher.js"));
 const getAppMetrics = lazyImport(() => import("./app-metrics.js"));
 const getConfig = lazyImport(() => import("./config.js"));
 const getGitInfo = lazyImport(() => import("./git-info.js"));
@@ -119,6 +120,8 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
     closeAllPtysForWindow(win.id);
     const watcher = await getWatcher();
     watcher.stopWatcher(win.id);
+    const fileWatcher = await getFileWatcher();
+    fileWatcher.stopAllFileWatchers();
   });
 
   const params = new URLSearchParams();
@@ -441,6 +444,21 @@ ipcMain.handle("stop_watcher", async (event) => {
   if (!win) return;
   const watcher = await getWatcher();
   watcher.stopWatcher(win.id);
+});
+
+// File system watcher (project directory changes)
+ipcMain.handle("start_file_watcher", async (event, args: { path: string }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  const fileWatcher = await getFileWatcher();
+  fileWatcher.startFileWatcher(win.id, args.path, event.sender);
+});
+
+ipcMain.handle("stop_file_watcher", async (event, args: { path: string }) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  const fileWatcher = await getFileWatcher();
+  fileWatcher.stopFileWatcher(win.id, args.path);
 });
 
 // File system

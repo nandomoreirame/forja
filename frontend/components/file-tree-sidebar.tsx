@@ -3,7 +3,7 @@ import {
   type DirectoryTree,
   type FileNode,
 } from "@/stores/file-tree";
-import { ChevronsDownUp } from "lucide-react";
+import { ChevronsDownUp, RefreshCw } from "lucide-react";
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ErrorBoundary } from "./error-boundary";
@@ -40,12 +40,14 @@ interface SingleTreeViewProps {
   expandedPaths: Record<string, boolean>;
   toggleExpanded: (path: string) => void;
   collapseAll: () => void;
+  refreshTree: () => void;
 }
 
 function SingleTreeView({
   tree,
   expandedPaths,
   collapseAll,
+  refreshTree,
 }: SingleTreeViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +75,13 @@ function SingleTreeView({
         <span className="flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-ctp-subtext0">
           {tree.root.name}
         </span>
+        <button
+          onClick={refreshTree}
+          className="inline-flex h-5 w-5 items-center justify-center rounded text-ctp-overlay1 transition-colors duration-100 hover:bg-ctp-surface0 hover:text-ctp-text"
+          aria-label="Refresh file tree"
+        >
+          <RefreshCw className="h-3 w-3" strokeWidth={1.5} />
+        </button>
         <button
           onClick={collapseAll}
           disabled={!hasExpandedPaths}
@@ -203,6 +212,7 @@ export function FileTreeSidebar() {
   const expandedPaths = useFileTreeStore((s) => s.expandedPaths);
   const toggleExpanded = useFileTreeStore((s) => s.toggleExpanded);
   const collapseAll = useFileTreeStore((s) => s.collapseAll);
+  const refreshTree = useFileTreeStore((s) => s.refreshTree);
 
   if (!isOpen) return null;
   if (!tree) return null;
@@ -224,6 +234,7 @@ export function FileTreeSidebar() {
           expandedPaths={expandedPaths}
           toggleExpanded={toggleExpanded}
           collapseAll={collapseAll}
+          refreshTree={refreshTree}
         />
       </ErrorBoundary>
 

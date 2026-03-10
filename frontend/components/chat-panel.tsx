@@ -128,7 +128,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
   return (
     <div
       data-testid="chat-panel"
-      className="flex h-full w-[450px] flex-col bg-ctp-mantle"
+      className="flex h-full w-full flex-col bg-ctp-mantle"
     >
       {/* Header */}
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
