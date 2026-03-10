@@ -6,6 +6,19 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.4.5] - 2026-03-10
+### Added
+- Add filesystem watcher for project directory with chokidar (depth: 3, 1000ms debounce).
+- Add file tree refresh button (RefreshCw) in sidebar header.
+- Add `refreshTree` action to file-tree store for manual and automatic tree refresh.
+- Listen for `files:changed` IPC events to auto-refresh file tree on disk changes.
+- Start/stop file watcher on project activate/remove.
+
+### Changed
+- Move chat panel inside sidebar resizable panel for better layout integration.
+
+---
+
 ## [1.0.0] - 2026-03-04
 ### Added
 - Improve session restoration with workspace fallback.
