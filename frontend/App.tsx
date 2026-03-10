@@ -48,6 +48,7 @@ import { useFileTreeStore } from "./stores/file-tree";
 import { useGitStatusStore } from "./stores/git-status";
 import { useGitDiffStore } from "./stores/git-diff";
 import { useSessionStateStore } from "./stores/session-state";
+import { useTerminalSplitLayoutStore } from "./stores/terminal-split-layout";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
 import { useUserSettingsStore } from "./stores/user-settings";
@@ -218,6 +219,10 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       setActiveTab: s.setActiveTab,
     })),
   );
+  const splitOrientation = useTerminalSplitLayoutStore((s) => s.orientation);
+  const splitRatio = useTerminalSplitLayoutStore((s) => s.ratio);
+  const splitTabId = useTerminalSplitLayoutStore((s) => s.splitTabId);
+  const secondarySessionType = useTerminalSplitLayoutStore((s) => s.secondarySessionType);
   // Filter tabs to only show the ones belonging to the active project
   const projectTabs = useMemo(
     () => (currentPath ? tabs.filter((t) => t.path === currentPath) : tabs),
@@ -232,7 +237,15 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const sidebarPanelRef = usePanelRef();
   const previewPanelRef = usePanelRef();
   const terminalPanelRef = usePanelRef();
-  const { panelSizes, sidebarOpen: persistedSidebarOpen, loaded: panelPrefsLoaded, savePanelSize, saveSidebarOpen } =
+  const {
+    panelSizes,
+    sidebarOpen: persistedSidebarOpen,
+    terminalSplit: persistedTerminalSplit,
+    loaded: panelPrefsLoaded,
+    savePanelSize,
+    saveSidebarOpen,
+    saveTerminalSplit,
+  } =
     usePanelPreferences();
   const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
@@ -248,6 +261,27 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       store.toggleSidebar();
     }
   }, [panelPrefsLoaded, persistedSidebarOpen]);
+
+  const splitPrefsSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!panelPrefsLoaded || splitPrefsSyncedRef.current) return;
+    splitPrefsSyncedRef.current = true;
+    const splitStore = useTerminalSplitLayoutStore.getState();
+    splitStore.setRatio(persistedTerminalSplit.ratio);
+    if (!persistedTerminalSplit.enabled) {
+      splitStore.closeSplit();
+    }
+  }, [panelPrefsLoaded, persistedTerminalSplit]);
+
+  useEffect(() => {
+    if (!panelPrefsLoaded) return;
+    saveTerminalSplit({
+      enabled: splitOrientation !== "none",
+      orientation:
+        splitOrientation === "horizontal" ? "horizontal" : "vertical",
+      ratio: splitRatio,
+    });
+  }, [panelPrefsLoaded, splitOrientation, splitRatio, saveTerminalSplit]);
 
   // Sync sidebar panel collapse with store
   useEffect(() => {
@@ -328,6 +362,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
 
       const previewStore = useFilePreviewStore.getState();
       const tabsStore = useTerminalTabsStore.getState();
+      const splitStore = useTerminalSplitLayoutStore.getState();
 
       // 1) Restore project
       if (snapshot.activeProjectPath) {
@@ -365,6 +400,19 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
             Math.min(snapshot.terminal.activeTabIndex, restoredTabIds.length - 1)
           ] ?? restoredTabIds[0];
         tabsStore.setActiveTab(restoredActiveTabId);
+      }
+
+      const split = snapshot.terminal.split;
+      if (
+        split.isEnabled &&
+        split.splitTabIndex < restoredTabIds.length &&
+        split.secondarySessionType
+      ) {
+        const splitId = restoredTabIds[split.splitTabIndex];
+        splitStore.openSplit(split.orientation, splitId, split.secondarySessionType);
+        splitStore.setRatio(split.ratio);
+      } else {
+        splitStore.resetForProjectSwitch();
       }
 
       if (!cancelled) setSessionRestoreDone(true);
@@ -509,8 +557,22 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     [currentPath, nextTabId, addTab],
   );
 
+  const handleSelectTab = useCallback(
+    (tabId: string) => setActiveTab(tabId),
+    [setActiveTab],
+  );
+
   const closeTab = useCallback(
     async (tabId: string) => {
+      const splitStore = useTerminalSplitLayoutStore.getState();
+      if (splitStore.splitTabId === tabId) {
+        splitStore.closeSplit();
+        try {
+          await invoke("close_pty", { tabId: `${tabId}:split` });
+        } catch {
+          // Secondary PTY may already be closed
+        }
+      }
       try {
         await invoke("close_pty", { tabId });
       } catch {
@@ -520,6 +582,14 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     },
     [removeTab],
   );
+
+  useEffect(() => {
+    const splitStore = useTerminalSplitLayoutStore.getState();
+    if (splitStore.orientation === "none" || !splitStore.splitTabId) return;
+    if (!useTerminalTabsStore.getState().hasTab(splitStore.splitTabId)) {
+      splitStore.closeSplit();
+    }
+  }, [tabs]);
 
   // Centralized PTY event dispatcher — single IPC listener routes to all sessions via Map O(1)
   useEffect(() => {
@@ -572,6 +642,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   useEffect(() => {
     if (!sessionRestoreDone) return;
     const activeTabIndex = tabs.findIndex((tab) => tab.id === activeTabId);
+    const splitTabIndex = splitTabId
+      ? tabs.findIndex((t) => t.id === splitTabId)
+      : -1;
     savePersistedSessionState({
       activeWorkspaceId: null, // deprecated, keep for backward compat
       activeProjectPath: currentPath,
@@ -582,6 +655,14 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       terminal: {
         isPaneOpen: isTerminalPaneOpen,
         activeTabIndex: activeTabIndex >= 0 ? activeTabIndex : 0,
+        split: {
+          isEnabled: splitOrientation !== "none" && splitTabIndex >= 0,
+          orientation:
+            splitOrientation === "horizontal" ? "horizontal" : "vertical",
+          ratio: splitRatio,
+          splitTabIndex: splitTabIndex >= 0 ? splitTabIndex : 0,
+          secondarySessionType: secondarySessionType ?? null,
+        },
         tabs: tabs.map((tab) => ({
           path: tab.path,
           sessionType: tab.sessionType,
@@ -594,6 +675,10 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     isPreviewOpen,
     previewCurrentFile,
     isTerminalPaneOpen,
+    splitOrientation,
+    splitRatio,
+    splitTabId,
+    secondarySessionType,
     tabs,
     activeTabId,
   ]);
@@ -712,7 +797,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                             <TabBar
                               tabs={projectTabs}
                               activeTabId={projectActiveTabId}
-                              onSelectTab={setActiveTab}
+                              onSelectTab={handleSelectTab}
                               onCloseTab={closeTab}
                               onSessionTypeSelect={handleNewSessionType}
                             />
