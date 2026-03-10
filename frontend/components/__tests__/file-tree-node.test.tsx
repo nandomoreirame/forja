@@ -88,6 +88,97 @@ describe("FileTreeNode", () => {
     expect(selectFileSpy).not.toHaveBeenCalled();
   });
 
+  it("should call loadSubdirectory when expanding a directory with empty children", async () => {
+    const user = userEvent.setup();
+    const loadSubdirectorySpy = vi.spyOn(
+      useFileTreeStore.getState(),
+      "loadSubdirectory",
+    );
+
+    // Directory truncated by maxDepth (children is empty array)
+    const dirNode: FileNode = {
+      name: "components",
+      path: "/project/src/components",
+      isDir: true,
+      children: [],
+    };
+
+    useFileTreeStore.setState({
+      expandedPaths: {},
+      currentPath: "/project",
+      activeProjectPath: "/project",
+    });
+
+    render(<FileTreeNode node={dirNode} depth={1} projectPath="/project" />);
+
+    const button = screen.getByRole("button");
+    await user.click(button);
+
+    expect(loadSubdirectorySpy).toHaveBeenCalledWith(
+      "/project/src/components",
+      "/project",
+    );
+  });
+
+  it("should NOT call loadSubdirectory when expanding a directory that already has children", async () => {
+    const user = userEvent.setup();
+    const loadSubdirectorySpy = vi.spyOn(
+      useFileTreeStore.getState(),
+      "loadSubdirectory",
+    );
+
+    const dirNode: FileNode = {
+      name: "src",
+      path: "/project/src",
+      isDir: true,
+      children: [
+        { name: "index.ts", path: "/project/src/index.ts", isDir: false },
+      ],
+    };
+
+    useFileTreeStore.setState({
+      expandedPaths: {},
+      currentPath: "/project",
+      activeProjectPath: "/project",
+    });
+
+    render(<FileTreeNode node={dirNode} depth={0} projectPath="/project" />);
+
+    const button = screen.getByRole("button");
+    await user.click(button);
+
+    expect(loadSubdirectorySpy).not.toHaveBeenCalled();
+  });
+
+  it("should NOT call loadSubdirectory when collapsing a directory", async () => {
+    const user = userEvent.setup();
+    const loadSubdirectorySpy = vi.spyOn(
+      useFileTreeStore.getState(),
+      "loadSubdirectory",
+    );
+
+    const dirNode: FileNode = {
+      name: "components",
+      path: "/project/src/components",
+      isDir: true,
+      children: [],
+    };
+
+    // Directory is already expanded
+    useFileTreeStore.setState({
+      expandedPaths: { "/project/src/components": true },
+      currentPath: "/project",
+      activeProjectPath: "/project",
+    });
+
+    render(<FileTreeNode node={dirNode} depth={1} projectPath="/project" />);
+
+    const button = screen.getByRole("button");
+    await user.click(button);
+
+    expect(loadSubdirectorySpy).not.toHaveBeenCalled();
+  });
+
   it("should apply reduced opacity for ignored files", () => {
     const ignoredNode: FileNode = {
       name: "ignored.log",
