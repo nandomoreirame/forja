@@ -82,9 +82,21 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
 
     terminal.attachCustomKeyEventHandler((event) => {
       const mod = event.metaKey || event.ctrlKey;
-      if (mod && event.altKey && (event.key === "=" || event.key === "+" || event.key === "-" || event.key === "0")) {
-        return false;
-      }
+      if (!mod) return true;
+
+      // Ctrl+Alt: zoom, splits, diff nav -> app
+      if (event.altKey) return false;
+      // Ctrl+Shift: new tab, close tab, command palette, git -> app
+      if (event.shiftKey) return false;
+      // Ctrl+[number]: tab switching -> app
+      if (event.key >= "1" && event.key <= "9") return false;
+      // Ctrl+Tab: cycle tabs -> app
+      if (event.key === "Tab") return false;
+      // Ctrl+[letter] the app uses
+      const appKeys = new Set(["b", "e", "j", "o", "p", "s", "w", ","]);
+      if (appKeys.has(event.key.toLowerCase())) return false;
+
+      // Ctrl+C, Ctrl+D, Ctrl+Z, etc. -> xterm
       return true;
     });
 

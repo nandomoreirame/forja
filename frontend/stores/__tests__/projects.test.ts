@@ -413,6 +413,53 @@ describe("useProjectsStore", () => {
     expect(mockRestorePreviewForProject).not.toHaveBeenCalled();
   });
 
+  describe("thinkingProjects and notifiedProjects", () => {
+    beforeEach(() => {
+      useProjectsStore.setState({
+        projects: [
+          { path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null },
+          { path: "/b/other", name: "other", lastOpened: "", iconPath: null },
+        ],
+        activeProjectPath: "/a/my-app",
+        thinkingProjects: new Set<string>(),
+        notifiedProjects: new Set<string>(),
+      });
+    });
+
+    it("setProjectThinking(path, true) adds to thinkingProjects", () => {
+      useProjectsStore.getState().setProjectThinking("/b/other", true);
+      expect(useProjectsStore.getState().thinkingProjects.has("/b/other")).toBe(true);
+    });
+
+    it("setProjectThinking(path, false) removes from thinkingProjects", () => {
+      useProjectsStore.setState({ thinkingProjects: new Set(["/b/other"]) });
+      useProjectsStore.getState().setProjectThinking("/b/other", false);
+      expect(useProjectsStore.getState().thinkingProjects.has("/b/other")).toBe(false);
+    });
+
+    it("markProjectNotified adds to notifiedProjects when not active project", () => {
+      useProjectsStore.getState().markProjectNotified("/b/other");
+      expect(useProjectsStore.getState().notifiedProjects.has("/b/other")).toBe(true);
+    });
+
+    it("markProjectNotified does NOT add when IS active project", () => {
+      useProjectsStore.getState().markProjectNotified("/a/my-app");
+      expect(useProjectsStore.getState().notifiedProjects.has("/a/my-app")).toBe(false);
+    });
+
+    it("clearProjectNotified removes from notifiedProjects", () => {
+      useProjectsStore.setState({ notifiedProjects: new Set(["/b/other"]) });
+      useProjectsStore.getState().clearProjectNotified("/b/other");
+      expect(useProjectsStore.getState().notifiedProjects.has("/b/other")).toBe(false);
+    });
+
+    it("switchToProject clears notifiedProjects for that project", async () => {
+      useProjectsStore.setState({ notifiedProjects: new Set(["/b/other"]) });
+      await useProjectsStore.getState().switchToProject("/b/other");
+      expect(useProjectsStore.getState().notifiedProjects.has("/b/other")).toBe(false);
+    });
+  });
+
   it("only restores preview (no save) when there is no previous active project", async () => {
     const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useFileTreeStore.getState).mockReturnValue({

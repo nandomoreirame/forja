@@ -335,8 +335,10 @@ const mod = isMac ? "\u2318" : "Ctrl";
 
 const SHORTCUTS = [
   { label: "Open Settings", keys: [mod, ","] },
-  { label: "New Session", keys: [mod, "T"] },
-  { label: "Close Tab", keys: [mod, "W"] },
+  { label: "New Session", keys: [mod, "Shift", "T"] },
+  { label: "Close Tab", keys: [mod, "Shift", "W"] },
+  { label: "Close File Preview", keys: [mod, "W"] },
+  { label: "Switch Tab 1-9", keys: [mod, "1-9"] },
   { label: "File Search", keys: [mod, "P"] },
   { label: "Command Palette", keys: [mod, "Shift", "P"] },
   { label: "Open Project", keys: [mod, "O"] },

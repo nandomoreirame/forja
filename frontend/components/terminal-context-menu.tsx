@@ -37,20 +37,26 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
   const splitTabId = useTerminalSplitLayoutStore((s) => s.splitTabId);
   const removeTab = useTerminalTabsStore((s) => s.removeTab);
 
-  // The split is active if this tab has a split open
-  const isSplitActive = splitOrientation !== "none" && splitTabId === tabId;
+  // Detect if this context menu is in the secondary (split) pane
+  const isSplitPane = tabId.endsWith(":split");
+  const baseTabId = isSplitPane ? tabId.slice(0, -":split".length) : tabId;
+
+  // Split is active for this tab context (works for both primary and secondary panes)
+  const isSplitActive =
+    splitOrientation !== "none" && (splitTabId === tabId || splitTabId === baseTabId);
 
   const handleSplitVertical = () => {
-    openSplit("vertical", tabId, "terminal");
+    openSplit("vertical", baseTabId, "terminal");
   };
 
   const handleSplitHorizontal = () => {
-    openSplit("horizontal", tabId, "terminal");
+    openSplit("horizontal", baseTabId, "terminal");
   };
 
   const handleCloseTerminal = () => {
     if (isSplitActive) {
       closeSplit();
+      return;
     }
     removeTab(tabId);
   };
@@ -73,7 +79,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
         >
           <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
           Copy
-          <ContextMenuShortcut>Ctrl+C</ContextMenuShortcut>
+          <ContextMenuShortcut>Ctrl+Shift+C</ContextMenuShortcut>
         </ContextMenuItem>
 
         <ContextMenuItem
@@ -82,7 +88,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
         >
           <Clipboard className="h-3.5 w-3.5" strokeWidth={1.5} />
           Paste
-          <ContextMenuShortcut>Ctrl+V</ContextMenuShortcut>
+          <ContextMenuShortcut>Ctrl+Shift+V</ContextMenuShortcut>
         </ContextMenuItem>
 
         <ContextMenuSeparator className="bg-ctp-surface0" />
@@ -93,7 +99,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
           onSelect={handleSplitVertical}
           disabled={isSplitActive}
         >
-          <SplitSquareVertical className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <SplitSquareHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
           Split Vertical
         </ContextMenuItem>
 
@@ -102,7 +108,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
           onSelect={handleSplitHorizontal}
           disabled={isSplitActive}
         >
-          <SplitSquareHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <SplitSquareVertical className="h-3.5 w-3.5" strokeWidth={1.5} />
           Split Horizontal
         </ContextMenuItem>
 

@@ -188,7 +188,7 @@ describe("TerminalContextMenu", () => {
     expect(mockOpenSplit).toHaveBeenCalledWith("horizontal", "tab-1", "terminal");
   });
 
-  it("calls removeTab when Close Terminal is clicked", async () => {
+  it("calls removeTab when Close Terminal is clicked without split", async () => {
     const user = userEvent.setup();
 
     render(
@@ -202,6 +202,83 @@ describe("TerminalContextMenu", () => {
     await user.click(closeItem);
 
     expect(mockRemoveTab).toHaveBeenCalledWith("tab-1");
+    expect(mockCloseSplit).not.toHaveBeenCalled();
+  });
+
+  it("closes split instead of removing tab when Close Terminal is clicked on primary pane with split", async () => {
+    const user = userEvent.setup();
+    splitState.orientation = "vertical";
+    splitState.splitTabId = "tab-1";
+
+    render(
+      <TerminalContextMenu tabId="tab-1" onCopy={vi.fn()} onPaste={vi.fn()}>
+        <div data-testid="terminal-child">terminal</div>
+      </TerminalContextMenu>
+    );
+
+    await user.pointer({ target: screen.getByTestId("terminal-child"), keys: "[MouseRight]" });
+    const closeItem = await screen.findByText("Close Terminal");
+    await user.click(closeItem);
+
+    expect(mockCloseSplit).toHaveBeenCalledTimes(1);
+    expect(mockRemoveTab).not.toHaveBeenCalled();
+  });
+
+  it("closes split instead of removing tab when Close Terminal is clicked on secondary split pane", async () => {
+    const user = userEvent.setup();
+    splitState.orientation = "vertical";
+    splitState.splitTabId = "tab-1";
+
+    render(
+      <TerminalContextMenu tabId="tab-1:split" onCopy={vi.fn()} onPaste={vi.fn()}>
+        <div data-testid="terminal-child">terminal</div>
+      </TerminalContextMenu>
+    );
+
+    await user.pointer({ target: screen.getByTestId("terminal-child"), keys: "[MouseRight]" });
+    const closeItem = await screen.findByText("Close Terminal");
+    await user.click(closeItem);
+
+    expect(mockCloseSplit).toHaveBeenCalledTimes(1);
+    expect(mockRemoveTab).not.toHaveBeenCalled();
+  });
+
+  it("detects split as active in secondary pane (tabId with :split suffix)", async () => {
+    const user = userEvent.setup();
+    splitState.orientation = "horizontal";
+    splitState.splitTabId = "tab-1";
+
+    render(
+      <TerminalContextMenu tabId="tab-1:split" onCopy={vi.fn()} onPaste={vi.fn()}>
+        <div data-testid="terminal-child">terminal</div>
+      </TerminalContextMenu>
+    );
+
+    await user.pointer({ target: screen.getByTestId("terminal-child"), keys: "[MouseRight]" });
+    await screen.findByRole("menu");
+
+    expect(screen.getByText("Close Split")).toBeInTheDocument();
+
+    const splitVertical = screen.getByText("Split Vertical").closest('[role="menuitem"]');
+    expect(splitVertical).toHaveAttribute("data-disabled");
+  });
+
+  it("uses baseTabId for openSplit when called from secondary split pane", async () => {
+    const user = userEvent.setup();
+    splitState.orientation = "none";
+    splitState.splitTabId = null;
+
+    render(
+      <TerminalContextMenu tabId="tab-1:split" onCopy={vi.fn()} onPaste={vi.fn()}>
+        <div data-testid="terminal-child">terminal</div>
+      </TerminalContextMenu>
+    );
+
+    await user.pointer({ target: screen.getByTestId("terminal-child"), keys: "[MouseRight]" });
+    const splitVerticalItem = await screen.findByText("Split Vertical");
+    await user.click(splitVerticalItem);
+
+    expect(mockOpenSplit).toHaveBeenCalledWith("vertical", "tab-1", "terminal");
   });
 
   it("does not show Close Split when split is inactive", async () => {

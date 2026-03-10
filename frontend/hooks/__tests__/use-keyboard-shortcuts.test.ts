@@ -15,12 +15,17 @@ vi.mock("@/stores/terminal-split-layout", () => ({
   },
 }));
 
+const tabStoreActions = {
+  setActiveTab: vi.fn(),
+  toggleTerminalPane: vi.fn(),
+  nextTabId: vi.fn(() => "new-tab-1"),
+  addTab: vi.fn(),
+  getTabsForProject: vi.fn(() => []),
+};
+
 vi.mock("@/stores/terminal-tabs", () => ({
   useTerminalTabsStore: {
-    getState: () => ({
-      setActiveTab: vi.fn(),
-      toggleTerminalPane: vi.fn(),
-    }),
+    getState: () => tabStoreActions,
   },
 }));
 
@@ -38,8 +43,15 @@ vi.mock("@/stores/command-palette", () => ({
   useCommandPaletteStore: { getState: () => ({ open: vi.fn() }) },
 }));
 
+const filePreviewActions = {
+  openPreview: vi.fn(),
+  togglePreview: vi.fn(),
+  closePreview: vi.fn(),
+  isOpen: false,
+};
+
 vi.mock("@/stores/file-preview", () => ({
-  useFilePreviewStore: { getState: () => ({ openPreview: vi.fn(), togglePreview: vi.fn(), isOpen: false }) },
+  useFilePreviewStore: { getState: () => filePreviewActions },
 }));
 
 vi.mock("@/stores/git-diff", () => ({
@@ -70,6 +82,14 @@ vi.mock("@/stores/user-settings", () => ({
     }),
   },
 }));
+
+function setupHook() {
+  const tabsRef = { current: [{ id: "tab-1", sessionType: "claude" }] as any[] };
+  const activeTabIdRef = { current: "tab-1" };
+  const closeTab = vi.fn();
+  renderHook(() => useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab }));
+  return { tabsRef, activeTabIdRef, closeTab };
+}
 
 describe("useKeyboardShortcuts split", () => {
   beforeEach(() => {
@@ -200,5 +220,153 @@ describe("useKeyboardShortcuts split", () => {
     );
 
     expect(splitActions.closeSplit).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("useKeyboardShortcuts tab management", () => {
+  beforeEach(() => {
+    splitActions.orientation = "none";
+    splitActions.closeSplit.mockReset();
+    tabStoreActions.setActiveTab.mockReset();
+    tabStoreActions.nextTabId.mockReset().mockReturnValue("new-tab-1");
+    tabStoreActions.addTab.mockReset();
+    tabStoreActions.getTabsForProject.mockReset().mockReturnValue([]);
+    filePreviewActions.closePreview.mockReset();
+    filePreviewActions.isOpen = false;
+  });
+
+  it("Ctrl+Shift+T creates a new terminal tab", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "T",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tabStoreActions.nextTabId).toHaveBeenCalled();
+    expect(tabStoreActions.addTab).toHaveBeenCalledWith("new-tab-1", "/project", "terminal");
+  });
+
+  it("Ctrl+T (without shift) does NOT create a new tab", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "t",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(tabStoreActions.addTab).not.toHaveBeenCalled();
+  });
+
+  it("Ctrl+Shift+W closes the active terminal tab", () => {
+    const { closeTab } = setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "W",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(closeTab).toHaveBeenCalledWith("tab-1");
+  });
+
+  it("Ctrl+W closes preview when preview is open", () => {
+    filePreviewActions.isOpen = true;
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "w",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(filePreviewActions.closePreview).toHaveBeenCalled();
+  });
+
+  it("Ctrl+W does NOT close a terminal tab", () => {
+    const { closeTab } = setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "w",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(closeTab).not.toHaveBeenCalled();
+  });
+});
+
+describe("useKeyboardShortcuts tab switching with Ctrl+number", () => {
+  beforeEach(() => {
+    splitActions.orientation = "none";
+    tabStoreActions.setActiveTab.mockReset();
+    tabStoreActions.getTabsForProject.mockReset();
+  });
+
+  it("Ctrl+2 navigates to the second tab of the project", () => {
+    const projectTabs = [
+      { id: "tab-1", path: "/project", sessionType: "claude" },
+      { id: "tab-2", path: "/project", sessionType: "terminal" },
+      { id: "tab-3", path: "/project", sessionType: "gemini" },
+    ];
+    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
+
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "2",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(tabStoreActions.setActiveTab).toHaveBeenCalledWith("tab-2");
+  });
+
+  it("Ctrl+1 navigates to the first tab", () => {
+    const projectTabs = [
+      { id: "tab-1", path: "/project", sessionType: "claude" },
+      { id: "tab-2", path: "/project", sessionType: "terminal" },
+    ];
+    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
+
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "1",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(tabStoreActions.setActiveTab).toHaveBeenCalledWith("tab-1");
+  });
+
+  it("Ctrl+9 does nothing when fewer than 9 tabs exist", () => {
+    const projectTabs = [
+      { id: "tab-1", path: "/project", sessionType: "claude" },
+      { id: "tab-2", path: "/project", sessionType: "terminal" },
+    ];
+    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
+
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "9",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(tabStoreActions.setActiveTab).not.toHaveBeenCalled();
   });
 });

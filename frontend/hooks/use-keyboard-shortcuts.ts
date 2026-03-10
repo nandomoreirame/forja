@@ -63,7 +63,7 @@ export function useKeyboardShortcuts({
         useFileTreeStore.getState().openProject();
         return;
       }
-      if (mod && event.key === "t") {
+      if (mod && event.shiftKey && event.key.toLowerCase() === "t") {
         event.preventDefault();
         const cp = useFileTreeStore.getState().currentPath;
         if (cp) {
@@ -73,15 +73,26 @@ export function useKeyboardShortcuts({
         }
         return;
       }
-      if (mod && event.key === "w") {
+      if (mod && event.key.toLowerCase() === "w") {
+        // Ctrl+Alt+W: close split (unchanged)
         if (event.altKey && splitStore.orientation !== "none") {
           event.preventDefault();
           splitStore.closeSplit();
           return;
         }
+        // Ctrl+Shift+W: close terminal tab
+        if (event.shiftKey) {
+          event.preventDefault();
+          const id = activeTabIdRef.current;
+          if (id) closeTab(id);
+          return;
+        }
+        // Ctrl+W: close file preview
         event.preventDefault();
-        const id = activeTabIdRef.current;
-        if (id) closeTab(id);
+        const previewState = useFilePreviewStore.getState();
+        if (previewState.isOpen) {
+          previewState.closePreview();
+        }
         return;
       }
       if (mod && event.altKey && event.key.toLowerCase() === "v") {
@@ -171,6 +182,18 @@ export function useKeyboardShortcuts({
       if (mod && event.altKey && event.key === "0") {
         event.preventDefault();
         useTerminalZoomStore.getState().resetZoom();
+        return;
+      }
+      // Ctrl+1..9: switch tabs by position
+      if (mod && !event.shiftKey && !event.altKey && event.key >= "1" && event.key <= "9") {
+        event.preventDefault();
+        const projectPath = useFileTreeStore.getState().currentPath;
+        if (!projectPath) return;
+        const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
+        const index = parseInt(event.key, 10) - 1;
+        if (index < projectTabs.length) {
+          useTerminalTabsStore.getState().setActiveTab(projectTabs[index].id);
+        }
         return;
       }
       // Alt+1..9: switch projects by position

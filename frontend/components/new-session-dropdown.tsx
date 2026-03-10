@@ -59,7 +59,7 @@ export function NewSessionDropdown({
             >
               <TerminalSquare className="h-4 w-4 text-ctp-overlay1" strokeWidth={1.5} />
               <span>Terminal</span>
-              <DropdownMenuShortcut>{MOD_KEY}+T</DropdownMenuShortcut>
+              <DropdownMenuShortcut>{MOD_KEY}+Shift+T</DropdownMenuShortcut>
             </DropdownMenuItem>
           </>
         )}

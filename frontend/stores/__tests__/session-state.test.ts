@@ -1,9 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useSessionStateStore } from "../session-state";
+import { useProjectsStore } from "../projects";
 
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
 }));
+
+vi.mock("../projects", () => ({
+  useProjectsStore: {
+    getState: vi.fn(() => ({
+      setProjectThinking: vi.fn(),
+      markProjectNotified: vi.fn(),
+    })),
+  },
+}));
+
+const mockProjectsStore = vi.mocked(useProjectsStore);
 
 describe("useSessionStateStore", () => {
   beforeEach(() => {
@@ -93,6 +105,105 @@ describe("useSessionStateStore", () => {
     onData("tab-1");
     cleanup("tab-1");
     expect(getState("tab-1")).toBe("idle");
+  });
+
+  describe("projects store bridging", () => {
+    let mockSetProjectThinking: ReturnType<typeof vi.fn>;
+    let mockMarkProjectNotified: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      mockSetProjectThinking = vi.fn();
+      mockMarkProjectNotified = vi.fn();
+      mockProjectsStore.getState.mockReturnValue({
+        setProjectThinking: mockSetProjectThinking,
+        markProjectNotified: mockMarkProjectNotified,
+      } as never);
+    });
+
+    it("onData with non-terminal meta calls setProjectThinking(projectPath, true)", () => {
+      const { onData } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+
+      expect(mockSetProjectThinking).toHaveBeenCalledWith("/home/user/my-app", true);
+    });
+
+    it("onData without meta does NOT call setProjectThinking", () => {
+      const { onData } = useSessionStateStore.getState();
+      onData("tab-1");
+
+      expect(mockSetProjectThinking).not.toHaveBeenCalled();
+    });
+
+    it("onData for terminal does NOT call setProjectThinking", () => {
+      const { onData } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "terminal" });
+
+      expect(mockSetProjectThinking).not.toHaveBeenCalled();
+    });
+
+    it("on thinking→ready calls markProjectNotified(projectPath)", () => {
+      const { onData } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+
+      vi.advanceTimersByTime(2500);
+
+      expect(mockMarkProjectNotified).toHaveBeenCalledWith("/home/user/my-app");
+    });
+
+    it("on thinking→ready with no other tab thinking calls setProjectThinking(false)", () => {
+      const { onData } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+
+      vi.advanceTimersByTime(2500);
+
+      expect(mockSetProjectThinking).toHaveBeenCalledWith("/home/user/my-app", false);
+    });
+
+    it("on thinking→ready with another tab still thinking does NOT call setProjectThinking(false)", () => {
+      const { onData } = useSessionStateStore.getState();
+      // Both tabs for same project
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+      onData("tab-2", { projectPath: "/home/user/my-app", sessionType: "gemini" });
+
+      // Only advance enough for tab-1's timer (tab-2 was last, so its timer is fresh)
+      // Both started at ~same time, but tab-2 resets its own timer
+      // We need tab-1 to fire but tab-2 to still be thinking
+      // Reset: set tab-1 data, wait 1s, set tab-2 data, wait 2s → tab-1 fires at 3s, tab-2 still thinking
+      useSessionStateStore.setState({ states: {} });
+      mockSetProjectThinking.mockClear();
+
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+      vi.advanceTimersByTime(1000);
+      onData("tab-2", { projectPath: "/home/user/my-app", sessionType: "gemini" });
+      vi.advanceTimersByTime(1500);
+
+      // tab-1 timer fires (2s since tab-1's onData), tab-2 still thinking (only 1.5s since its onData)
+      // setProjectThinking(true) was called for each onData, clear those
+      const falseCall = mockSetProjectThinking.mock.calls.find(
+        (call) => call[0] === "/home/user/my-app" && call[1] === false
+      );
+      expect(falseCall).toBeUndefined();
+    });
+
+    it("onExit clears thinking if no other tab thinking for project", () => {
+      const { onData, onExit } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+      mockSetProjectThinking.mockClear();
+
+      onExit("tab-1");
+
+      expect(mockSetProjectThinking).toHaveBeenCalledWith("/home/user/my-app", false);
+    });
+
+    it("cleanup clears thinking if no other tab thinking for project", () => {
+      const { onData, cleanup } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+      mockSetProjectThinking.mockClear();
+
+      cleanup("tab-1");
+
+      expect(mockSetProjectThinking).toHaveBeenCalledWith("/home/user/my-app", false);
+    });
   });
 
   describe("notification on thinking → ready", () => {
