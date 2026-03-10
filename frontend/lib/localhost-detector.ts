@@ -24,3 +24,18 @@ export function extractLocalhostUrl(text: string): string | null {
   const match = cleaned.match(LOCALHOST_URL_REGEX);
   return match ? match[0] : null;
 }
+
+const LOCALHOST_HOSTS = new Set(["localhost", "127.0.0.1", "0.0.0.0"]);
+
+/**
+ * Checks if a full URL points to a localhost address.
+ * Uses URL parsing to prevent subdomain attacks (e.g. localhost.evil.com).
+ */
+export function isLocalhostUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return LOCALHOST_HOSTS.has(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
