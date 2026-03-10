@@ -23,6 +23,9 @@ export interface UiPreferences {
   sidebarSize: number;  // percentage (0-100)
   previewSize: number;  // percentage (0-100)
   sidebarOpen: boolean; // whether file tree sidebar is visible
+  terminalSplitEnabled: boolean;
+  terminalSplitOrientation: "horizontal" | "vertical";
+  terminalSplitRatio: number;
 }
 
 interface ConfigSchema {
@@ -31,6 +34,15 @@ interface ConfigSchema {
   activeWorkspaceId: string | null;
   uiPreferences: UiPreferences;
 }
+
+const DEFAULT_UI_PREFERENCES: UiPreferences = {
+  sidebarSize: 20,
+  previewSize: 0,
+  sidebarOpen: true,
+  terminalSplitEnabled: false,
+  terminalSplitOrientation: "vertical",
+  terminalSplitRatio: 50,
+};
 
 type TypedConfigStore = Store<ConfigSchema> & {
   get<Key extends keyof ConfigSchema>(key: Key): ConfigSchema[Key];
@@ -46,7 +58,7 @@ const store = new Store<ConfigSchema>({
     recentProjects: [],
     workspaces: [],
     activeWorkspaceId: null,
-    uiPreferences: { sidebarSize: 20, previewSize: 0, sidebarOpen: true },
+    uiPreferences: DEFAULT_UI_PREFERENCES,
   },
 }) as TypedConfigStore;
 
@@ -233,10 +245,11 @@ export function getActiveWorkspace(): Workspace | null {
 // ─── UI Preferences ─────────────────────────────────────────────────────────
 
 export function getUiPreferences(): UiPreferences {
-  return store.get("uiPreferences");
+  const current = store.get("uiPreferences");
+  return { ...DEFAULT_UI_PREFERENCES, ...current };
 }
 
 export function saveUiPreferences(prefs: Partial<UiPreferences>): void {
-  const current = store.get("uiPreferences");
+  const current = getUiPreferences();
   store.set("uiPreferences", { ...current, ...prefs });
 }

@@ -119,5 +119,9 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Fixed
 - Open settings.json via file preview instead of custom editor.---
 
+## [1.4.0] - 2026-03-10
+### Added
+- Add terminal split preferences to config and PTY.---
+
 ## [Unreleased]
 

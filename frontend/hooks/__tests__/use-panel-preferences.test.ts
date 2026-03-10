@@ -13,7 +13,13 @@ describe("usePanelPreferences", () => {
   });
 
   it("loads persisted panel sizes from ui preferences", async () => {
-    mockInvoke.mockResolvedValueOnce({ sidebarSize: 33, previewSize: 27 });
+    mockInvoke.mockResolvedValueOnce({
+      sidebarSize: 33,
+      previewSize: 27,
+      terminalSplitEnabled: true,
+      terminalSplitOrientation: "horizontal",
+      terminalSplitRatio: 62,
+    });
     const { usePanelPreferences } = await import("../use-panel-preferences");
 
     const { result } = renderHook(() => usePanelPreferences());
@@ -24,6 +30,11 @@ describe("usePanelPreferences", () => {
       expect(result.current.loaded).toBe(true);
     });
     expect(result.current.panelSizes).toEqual({ sidebarSize: 33, previewSize: 27 });
+    expect(result.current.terminalSplit).toEqual({
+      enabled: true,
+      orientation: "horizontal",
+      ratio: 62,
+    });
     expect(mockInvoke).toHaveBeenCalledWith("get_ui_preferences");
   });
 
@@ -88,5 +99,47 @@ describe("usePanelPreferences", () => {
     result.current.saveSidebarOpen(false);
 
     expect(mockInvoke).toHaveBeenCalledWith("save_ui_preferences", { sidebarOpen: false });
+  });
+
+  it("loads terminal split defaults when fields are not persisted", async () => {
+    mockInvoke.mockResolvedValueOnce({ sidebarSize: 20, previewSize: 0, sidebarOpen: true });
+    const { usePanelPreferences } = await import("../use-panel-preferences");
+
+    const { result } = renderHook(() => usePanelPreferences());
+
+    await waitFor(() => {
+      expect(result.current.loaded).toBe(true);
+    });
+
+    expect(result.current.terminalSplit).toEqual({
+      enabled: false,
+      orientation: "vertical",
+      ratio: 50,
+    });
+  });
+
+  it("saveTerminalSplit persists terminal split fields via IPC", async () => {
+    mockInvoke
+      .mockResolvedValueOnce({ sidebarSize: 20, previewSize: 0, sidebarOpen: true })
+      .mockResolvedValueOnce(undefined);
+    const { usePanelPreferences } = await import("../use-panel-preferences");
+
+    const { result } = renderHook(() => usePanelPreferences());
+
+    await waitFor(() => {
+      expect(result.current.loaded).toBe(true);
+    });
+
+    result.current.saveTerminalSplit({
+      enabled: true,
+      orientation: "horizontal",
+      ratio: 70,
+    });
+
+    expect(mockInvoke).toHaveBeenCalledWith("save_ui_preferences", {
+      terminalSplitEnabled: true,
+      terminalSplitOrientation: "horizontal",
+      terminalSplitRatio: 70,
+    });
   });
 });
