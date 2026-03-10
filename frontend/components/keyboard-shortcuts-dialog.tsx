@@ -49,6 +49,11 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
       { label: "Zoom In", keys: [mod, "Alt", "="] },
       { label: "Zoom Out", keys: [mod, "Alt", "-"] },
       { label: "Reset Zoom", keys: [mod, "Alt", "0"] },
+      { label: "Split Vertical", keys: [mod, "Alt", "V"] },
+      { label: "Split Horizontal", keys: [mod, "Alt", "H"] },
+      { label: "Close Split", keys: [mod, "Alt", "W"] },
+      { label: "Focus Next Split Pane", keys: [mod, "Alt", "]"] },
+      { label: "Focus Previous Split Pane", keys: [mod, "Alt", "["] },
     ],
   },
 ];
