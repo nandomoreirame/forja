@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import { normalizeUrl, isAllowedUrl } from "@/lib/browser-url";
 
+interface BrowserError {
+  code: number;
+  description: string;
+  url: string;
+}
+
 interface BrowserPaneState {
   isOpen: boolean;
   /** URL in the address bar (may be edited but not yet navigated) */
@@ -11,6 +17,7 @@ interface BrowserPaneState {
   canGoBack: boolean;
   canGoForward: boolean;
   title: string;
+  error: BrowserError | null;
   // Actions
   toggleOpen: () => void;
   openPane: () => void;
@@ -22,6 +29,8 @@ interface BrowserPaneState {
   setNavigationState: (state: { canGoBack: boolean; canGoForward: boolean }) => void;
   setTitle: (title: string) => void;
   onDidNavigate: (url: string) => void;
+  setError: (error: BrowserError) => void;
+  clearError: () => void;
 }
 
 export const useBrowserPaneStore = create<BrowserPaneState>((set, get) => ({
@@ -32,6 +41,7 @@ export const useBrowserPaneStore = create<BrowserPaneState>((set, get) => ({
   canGoBack: false,
   canGoForward: false,
   title: "",
+  error: null,
 
   toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
   openPane: () => set({ isOpen: true }),
@@ -46,7 +56,7 @@ export const useBrowserPaneStore = create<BrowserPaneState>((set, get) => ({
       console.warn("[BrowserPane] Blocked URL:", normalized);
       return;
     }
-    set({ committedUrl: normalized, url: normalized, isOpen: true });
+    set({ committedUrl: normalized, url: normalized, isOpen: true, error: null });
   },
 
   navigateToUrl: (url: string) => {
@@ -55,7 +65,7 @@ export const useBrowserPaneStore = create<BrowserPaneState>((set, get) => ({
       console.warn("[BrowserPane] Blocked URL:", normalized);
       return;
     }
-    set({ url: normalized, committedUrl: normalized, isOpen: true });
+    set({ url: normalized, committedUrl: normalized, isOpen: true, error: null });
   },
 
   setLoading: (isLoading) => set({ isLoading }),
@@ -66,5 +76,8 @@ export const useBrowserPaneStore = create<BrowserPaneState>((set, get) => ({
   setTitle: (title) => set({ title }),
 
   // Called when webview actually navigates (updates address bar to match)
-  onDidNavigate: (url: string) => set({ url, committedUrl: url }),
+  onDidNavigate: (url: string) => set({ url, committedUrl: url, error: null }),
+
+  setError: (error) => set({ error }),
+  clearError: () => set({ error: null }),
 }));
