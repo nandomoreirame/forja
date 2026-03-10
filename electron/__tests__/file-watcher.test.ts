@@ -50,7 +50,7 @@ describe("file-watcher", () => {
       });
     });
 
-    it("listens for addDir, unlinkDir, add, and unlink events", async () => {
+    it("listens for addDir, unlinkDir, add, unlink, and change events", async () => {
       const { startFileWatcher } = await import("../file-watcher.js");
 
       const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
@@ -63,6 +63,7 @@ describe("file-watcher", () => {
       expect(eventNames).toContain("unlinkDir");
       expect(eventNames).toContain("add");
       expect(eventNames).toContain("unlink");
+      expect(eventNames).toContain("change");
     });
 
     it("sends files:changed IPC event with 1000ms debounce", async () => {
