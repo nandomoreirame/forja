@@ -595,7 +595,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   useEffect(() => {
     // Global data handler: track session activity
     ptyDispatcher.onGlobalData((tabId) => {
-      useSessionStateStore.getState().onData(tabId);
+      const tab = useTerminalTabsStore.getState().tabs.find((t) => t.id === tabId);
+      const meta = tab ? { projectPath: tab.path, sessionType: tab.sessionType } : undefined;
+      useSessionStateStore.getState().onData(tabId, meta);
     });
 
     // Single IPC listener for pty:data
