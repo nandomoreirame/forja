@@ -6,6 +6,24 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.4.9] - 2026-03-10
+### Added
+- Embedded browser pane inside the preview panel with Electron `<webview>` tag.
+- Browser navigation toolbar with back, forward, reload, and address bar.
+- Globe toggle button in titlebar to open/close the browser pane.
+- Ctrl+Shift+B keyboard shortcut to toggle the browser pane.
+- URL validation blocking dangerous schemes (javascript, file, data, vbscript, blob).
+- Auto-open browser pane when localhost/127.0.0.1 URLs are detected in terminal output.
+- Localhost URL detector with ANSI escape code stripping for PTY output.
+- Browser IPC bridge namespace in Electron preload.
+- Zustand store for browser pane state management.
+
+---
+
+## [Unreleased]
+
+---
+
 ## [1.4.7] - 2026-03-10
 ### Added
 - Watch for file content changes (`change` event) in file-watcher, not just add/unlink.
