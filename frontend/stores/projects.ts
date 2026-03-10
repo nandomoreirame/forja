@@ -42,6 +42,8 @@ interface ProjectsState {
   loading: boolean;
   sessionStates: Record<string, SessionState>;
   unreadProjects: Set<string>;
+  thinkingProjects: Set<string>;
+  notifiedProjects: Set<string>;
 
   loadProjects: () => Promise<void>;
   addProject: (projectPath: string) => Promise<void>;
@@ -55,6 +57,9 @@ interface ProjectsState {
   getProjectColor: (nameOrPath: string) => string;
   setProjectSessionState: (projectPath: string, state: SessionState) => void;
   markProjectAsRead: (projectPath: string) => void;
+  setProjectThinking: (projectPath: string, isThinking: boolean) => void;
+  markProjectNotified: (projectPath: string) => void;
+  clearProjectNotified: (projectPath: string) => void;
 }
 
 export const useProjectsStore = create<ProjectsState>((set, get) => ({
@@ -63,6 +68,8 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   loading: false,
   sessionStates: {},
   unreadProjects: new Set<string>(),
+  thinkingProjects: new Set<string>(),
+  notifiedProjects: new Set<string>(),
 
   loadProjects: async () => {
     set({ loading: true });
@@ -126,6 +133,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     const previousPath = get().activeProjectPath;
     set({ activeProjectPath: projectPath });
     get().markProjectAsRead(projectPath);
+    get().clearProjectNotified(projectPath);
 
     // Save/restore file preview per project
     if (previousPath !== projectPath) {
@@ -218,6 +226,31 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       const newUnread = new Set(s.unreadProjects);
       newUnread.delete(projectPath);
       return { unreadProjects: newUnread };
+    });
+  },
+
+  setProjectThinking: (projectPath, isThinking) => {
+    set((s) => {
+      const next = new Set(s.thinkingProjects);
+      isThinking ? next.add(projectPath) : next.delete(projectPath);
+      return { thinkingProjects: next };
+    });
+  },
+
+  markProjectNotified: (projectPath) => {
+    set((s) => {
+      if (s.activeProjectPath === projectPath) return {};
+      const next = new Set(s.notifiedProjects);
+      next.add(projectPath);
+      return { notifiedProjects: next };
+    });
+  },
+
+  clearProjectNotified: (projectPath) => {
+    set((s) => {
+      const next = new Set(s.notifiedProjects);
+      next.delete(projectPath);
+      return { notifiedProjects: next };
     });
   },
 }));

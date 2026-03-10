@@ -62,8 +62,8 @@ interface ProjectIconProps {
   onRemoveRequest: (project: Project) => void;
   initial: string;
   color: string;
-  sessionState?: string;
-  isUnread?: boolean;
+  isThinking?: boolean;
+  isNotified?: boolean;
   shortcutIndex?: number | null;
 }
 
@@ -75,12 +75,12 @@ function ProjectIcon({
   onRemoveRequest,
   initial,
   color,
-  sessionState,
-  isUnread,
+  isThinking,
+  isNotified,
   shortcutIndex,
 }: ProjectIconProps) {
-  const showSpinner = !isActive && sessionState === "running";
-  const showBadge = !isActive && isUnread && sessionState === "exited";
+  const showSpinner = !isActive && !!isThinking;
+  const showBadge = !isActive && !!isNotified;
   const [imgError, setImgError] = useState(false);
 
   const hasIcon = !!project.iconPath && !imgError;
@@ -225,8 +225,8 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
     switchToProject,
     getProjectInitial,
     getProjectColor,
-    sessionStates,
-    unreadProjects,
+    thinkingProjects,
+    notifiedProjects,
     removeProject,
     updateProject,
     reorderProjects,
@@ -352,8 +352,8 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 onRemoveRequest={handleRemoveRequest}
                 initial={getProjectInitial(project.name)}
                 color={getProjectColor(project.name)}
-                sessionState={sessionStates?.[project.path]}
-                isUnread={unreadProjects?.has(project.path)}
+                isThinking={thinkingProjects?.has(project.path)}
+                isNotified={notifiedProjects?.has(project.path)}
                 shortcutIndex={altPressed && index < 9 ? index + 1 : null}
               />
             ))}

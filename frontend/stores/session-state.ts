@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { invoke } from "@/lib/ipc";
+import { useProjectsStore } from "./projects";
 
 export type SessionState = "idle" | "thinking" | "ready" | "exited";
 
@@ -24,6 +25,15 @@ const timers = new Map<string, ReturnType<typeof setTimeout>>();
 // Metadata per tab for notification context
 const tabMetas = new Map<string, TabMeta>();
 
+function isAnyTabThinkingForProject(projectPath: string, excludeTabId?: string): boolean {
+  const { states } = useSessionStateStore.getState();
+  for (const [tid, state] of Object.entries(states)) {
+    if (tid === excludeTabId) continue;
+    if (state === "thinking" && tabMetas.get(tid)?.projectPath === projectPath) return true;
+  }
+  return false;
+}
+
 export const useSessionStateStore = create<SessionStateStoreState>(
   (set, get) => ({
     states: {},
@@ -39,6 +49,11 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       set((state) => ({
         states: { ...state.states, [tabId]: "thinking" },
       }));
+
+      // Bridge to projects store for sidebar spinner
+      if (meta && meta.sessionType !== "terminal") {
+        useProjectsStore.getState().setProjectThinking(meta.projectPath, true);
+      }
 
       // Clear existing timer and set new one
       const existing = timers.get(tabId);
@@ -58,6 +73,12 @@ export const useSessionStateStore = create<SessionStateStoreState>(
               projectPath: storedMeta.projectPath,
               sessionType: storedMeta.sessionType,
             });
+
+            // Bridge to projects store for sidebar badge
+            useProjectsStore.getState().markProjectNotified(storedMeta.projectPath);
+            if (!isAnyTabThinkingForProject(storedMeta.projectPath, tabId)) {
+              useProjectsStore.getState().setProjectThinking(storedMeta.projectPath, false);
+            }
           }
         }
         timers.delete(tabId);
@@ -75,6 +96,14 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       set((state) => ({
         states: { ...state.states, [tabId]: "exited" },
       }));
+
+      // Bridge to projects store: clear thinking if no other tab thinking
+      const meta = tabMetas.get(tabId);
+      if (meta && meta.sessionType !== "terminal") {
+        if (!isAnyTabThinkingForProject(meta.projectPath, tabId)) {
+          useProjectsStore.getState().setProjectThinking(meta.projectPath, false);
+        }
+      }
     },
 
     cleanup: (tabId: string) => {
@@ -83,6 +112,16 @@ export const useSessionStateStore = create<SessionStateStoreState>(
         clearTimeout(existing);
         timers.delete(tabId);
       }
+
+      // Bridge to projects store: clear thinking if no other tab thinking
+      const meta = tabMetas.get(tabId);
+      tabMetas.delete(tabId);
+      if (meta && meta.sessionType !== "terminal") {
+        if (!isAnyTabThinkingForProject(meta.projectPath, tabId)) {
+          useProjectsStore.getState().setProjectThinking(meta.projectPath, false);
+        }
+      }
+
       set((state) => {
         const { [tabId]: _, ...rest } = state.states;
         return { states: rest };
