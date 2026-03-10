@@ -23,6 +23,7 @@ interface FilePreviewState {
   openPreview: () => void;
   closePreview: () => void;
   loadFile: (path: string) => Promise<void>;
+  reloadCurrentFile: () => Promise<void>;
   clearError: () => void;
   setEditing: (editing: boolean) => void;
   setEditContent: (content: string) => void;
@@ -85,6 +86,22 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
         isLoading: false,
         error: errorMessage,
       });
+    }
+  },
+
+  reloadCurrentFile: async () => {
+    const { currentFile } = get();
+    if (!currentFile) return;
+
+    try {
+      const result = await invoke<FileContent>("read_file_command", {
+        path: currentFile,
+        maxSizeMb: 10,
+        skipCache: true,
+      });
+      set({ content: result });
+    } catch {
+      // Silently ignore reload errors — file may have been deleted
     }
   },
 

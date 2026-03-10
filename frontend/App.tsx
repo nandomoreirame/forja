@@ -529,6 +529,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       const changedPath = event.payload?.path;
       if (changedPath) {
         useFileTreeStore.getState().refreshTree(changedPath);
+        useFilePreviewStore.getState().reloadCurrentFile();
       }
     });
     return () => {

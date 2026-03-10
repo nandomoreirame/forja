@@ -467,14 +467,16 @@ ipcMain.handle("read_directory_tree_command", async (_event, args: { path: strin
   return fileTree.readDirectoryTree(args.path, args.maxDepth ?? 3);
 });
 
-ipcMain.handle("read_file_command", async (_event, args: { path: string; projectPath?: string; maxSizeMb?: number }) => {
+ipcMain.handle("read_file_command", async (_event, args: { path: string; projectPath?: string; maxSizeMb?: number; skipCache?: boolean }) => {
   if (args.projectPath) {
     assertPathWithinScope(args.projectPath, args.path);
   }
   const fileCacheMod = await getFileCache();
-  const cached = fileCacheMod.getFileFromCache(args.path);
-  if (cached) {
-    return { path: args.path, content: cached.content, size: cached.size };
+  if (!args.skipCache) {
+    const cached = fileCacheMod.getFileFromCache(args.path);
+    if (cached) {
+      return { path: args.path, content: cached.content, size: cached.size };
+    }
   }
   const fileReader = await getFileReader();
   const result = await fileReader.readFile(args.path, args.maxSizeMb ?? 10);
