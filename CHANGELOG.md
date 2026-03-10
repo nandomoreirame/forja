@@ -129,5 +129,17 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.4.2] - 2026-03-10
+### Added
+- Add terminal context menu and split pane close headers.
+- Trigger session-ready notification on thinking-to-ready transition.
+- Add session-ready notifications via IPC.
+
+### Changed
+- Switch frontend tests to happy-dom and limit pool sizes.
+- Clean old AppImages on build and show version in desktop entry.
+
+---
+
 ## [Unreleased]
 
