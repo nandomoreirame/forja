@@ -84,7 +84,7 @@ export function TabBar({
                   onCloseTab(tab.id);
                 }}
                 tabIndex={isActive ? 0 : -1}
-                className="flex h-4 w-4 items-center justify-center rounded opacity-0 transition-opacity hover:bg-ctp-surface0 group-hover:opacity-100 focus-visible:opacity-100"
+                className="flex h-4 w-4 items-center justify-center rounded-md opacity-0 transition-opacity hover:bg-ctp-surface0 group-hover:opacity-100 focus-visible:opacity-100"
               >
                 <X className="h-3 w-3" strokeWidth={1.5} />
               </button>
@@ -98,7 +98,7 @@ export function TabBar({
       </div>
       <button
         onClick={() => useTerminalTabsStore.getState().toggleTerminalPane()}
-        className="inline-flex h-9 items-center justify-center px-2 text-ctp-overlay1 transition-colors hover:text-ctp-text"
+        className="inline-flex h-9 items-center justify-center rounded-md px-2 text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
         aria-label="Hide terminal"
       >
         <PanelRightClose className="h-4 w-4" strokeWidth={1.5} />

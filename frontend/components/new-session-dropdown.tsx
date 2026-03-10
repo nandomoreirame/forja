@@ -26,7 +26,7 @@ export function NewSessionDropdown({
       <DropdownMenuTrigger asChild>
         <button
           aria-label="New tab"
-          className="flex h-9 items-center gap-0.5 px-2 text-ctp-overlay1 transition-colors hover:text-ctp-text"
+          className="flex h-9 items-center gap-0.5 rounded-md px-2 text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           <ChevronDown className="h-3 w-3" strokeWidth={1.5} />

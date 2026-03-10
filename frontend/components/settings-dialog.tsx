@@ -92,7 +92,7 @@ function Sidebar({ activeSection, onSelect, onOpenSettingsFile, version }: Sideb
               "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
               activeSection === item.id
                 ? "bg-ctp-surface0 text-ctp-text"
-                : "text-ctp-subtext0 hover:bg-ctp-surface0/50 hover:text-ctp-text",
+                : "text-ctp-subtext0 hover:bg-ctp-surface0 hover:text-ctp-text",
             )}
           >
             {item.icon}

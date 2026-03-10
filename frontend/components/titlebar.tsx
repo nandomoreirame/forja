@@ -128,7 +128,7 @@ export function Titlebar() {
         {(tree !== null || Object.keys(trees).length > 0) && (
           <button
             onClick={toggleSidebar}
-            className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+            className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
             aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
           >
             <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
@@ -150,7 +150,7 @@ export function Titlebar() {
           <>
             <button
               onClick={() => getAppWindow().minimize()}
-              className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+              className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
               aria-label="Minimize"
             >
               <Minus className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -160,7 +160,7 @@ export function Titlebar() {
               onClick={() =>
                 maximized ? getAppWindow().unmaximize() : getAppWindow().maximize()
               }
-              className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+              className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
               aria-label={maximized ? "Restore" : "Maximize"}
             >
               {maximized ? (
@@ -174,7 +174,7 @@ export function Titlebar() {
 
         <button
           onClick={() => getAppWindow().close()}
-          className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-red/20 hover:text-ctp-red"
+          className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-red/20 hover:text-ctp-red"
           aria-label="Close"
         >
           <X className="h-3.5 w-3.5" strokeWidth={1.5} />
