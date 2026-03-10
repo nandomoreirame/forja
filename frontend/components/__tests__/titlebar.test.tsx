@@ -51,6 +51,15 @@ vi.mock("@/stores/file-tree", async () => {
   };
 });
 
+vi.mock("@/stores/browser-pane", async () => {
+  const { create } = await import("zustand");
+  const useBrowserPaneStore = create<{ isOpen: boolean; toggleOpen: () => void }>((set) => ({
+    isOpen: false,
+    toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
+  }));
+  return { useBrowserPaneStore };
+});
+
 describe("Titlebar", () => {
   beforeEach(() => {
     useAppDialogsStore.setState({
@@ -117,5 +126,37 @@ describe("Titlebar", () => {
     expect(screen.queryByRole("button", { name: "Minimize" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Maximize" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
+  });
+
+  it("renders the browser toggle button when a project is loaded", async () => {
+    const { useFileTreeStore } = await import("@/stores/file-tree");
+    (useFileTreeStore as any).setState({
+      tree: { root: { name: "test", path: "/test", isDir: true, children: [] } },
+      trees: {},
+      currentPath: "/test",
+    });
+
+    render(<Titlebar />);
+
+    expect(screen.getByLabelText(/toggle browser/i)).toBeInTheDocument();
+  });
+
+  it("clicking browser toggle calls toggleOpen", async () => {
+    const user = userEvent.setup();
+    const { useFileTreeStore } = await import("@/stores/file-tree");
+    (useFileTreeStore as any).setState({
+      tree: { root: { name: "test", path: "/test", isDir: true, children: [] } },
+      trees: {},
+      currentPath: "/test",
+    });
+
+    const { useBrowserPaneStore } = await import("@/stores/browser-pane");
+
+    render(<Titlebar />);
+
+    await user.click(screen.getByLabelText(/toggle browser/i));
+    // The store's toggleOpen should have been called via the actual zustand store action
+    // Since we use a real zustand store mock, clicking should toggle isOpen
+    expect(useBrowserPaneStore.getState().isOpen).toBe(true);
   });
 });

@@ -9,6 +9,7 @@ import { useTerminalSplitLayoutStore } from "@/stores/terminal-split-layout";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
+import { useBrowserPaneStore } from "@/stores/browser-pane";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
 interface UseKeyboardShortcutsOptions {
@@ -48,6 +49,12 @@ export function useKeyboardShortcuts({
       if (mod && event.key === ",") {
         event.preventDefault();
         useAppDialogsStore.getState().setSettingsOpen(true);
+        return;
+      }
+      // Ctrl/Cmd+Shift+B — toggle browser pane
+      if (mod && event.shiftKey && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        useBrowserPaneStore.getState().toggleOpen();
         return;
       }
       if (mod && event.key === "b") {
