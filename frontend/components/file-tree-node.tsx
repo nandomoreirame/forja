@@ -88,14 +88,21 @@ export const FileTreeNode = memo(function FileTreeNode({
     }
   }, [renaming]);
 
+  const loadSubdirectory = useFileTreeStore((s) => s.loadSubdirectory);
+
   const handleClick = useCallback(() => {
     if (renaming) return;
     if (node.isDir) {
+      const wasExpanded = expanded;
       toggleExpanded(node.path);
+      // Lazy-load children when expanding a directory with empty children (truncated by maxDepth)
+      if (!wasExpanded && node.children && node.children.length === 0 && effectiveProjectPath) {
+        loadSubdirectory(node.path, effectiveProjectPath);
+      }
     } else {
       selectFile(node.path);
     }
-  }, [node.isDir, node.path, toggleExpanded, selectFile, renaming]);
+  }, [node.isDir, node.path, toggleExpanded, selectFile, renaming, expanded, node.children, effectiveProjectPath, loadSubdirectory]);
 
   const handleRenameStart = useCallback(() => {
     setRenameValue(node.name);

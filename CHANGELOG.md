@@ -123,5 +123,11 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Added
 - Add terminal split preferences to config and PTY.---
 
+## [1.4.1] - 2026-03-10
+### Fixed
+- Lazy-load file tree children on directory expand.
+
+---
+
 ## [Unreleased]
 
