@@ -1,6 +1,8 @@
-import { memo, useCallback, useRef } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
+import { X } from "lucide-react";
 import { useTerminalSplitLayoutStore } from "@/stores/terminal-split-layout";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
+import { computeTabDisplayNames, getSessionDisplayName } from "@/lib/cli-registry";
 import { TerminalSession } from "./terminal-session";
 
 interface TerminalPaneProps {
@@ -99,6 +101,27 @@ function SplitResizeHandle({ orientation, ratio, onRatioChange }: SplitResizeHan
   );
 }
 
+interface SplitPaneHeaderProps {
+  label?: string;
+  onClose: () => void;
+}
+
+function SplitPaneHeader({ label = "Split", onClose }: SplitPaneHeaderProps) {
+  return (
+    <div className="flex h-7 items-center justify-between border-b border-ctp-surface0 bg-ctp-mantle px-2">
+      <span className="text-xs text-ctp-overlay1">{label}</span>
+      <button
+        type="button"
+        aria-label="Close split"
+        onClick={onClose}
+        className="flex h-5 w-5 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+      >
+        <X className="h-3 w-3" strokeWidth={1.5} />
+      </button>
+    </div>
+  );
+}
+
 export const TerminalPane = memo(function TerminalPane({ projectPath }: TerminalPaneProps) {
   const tabs = useTerminalTabsStore((s) => s.tabs);
   const activeTabId = useTerminalTabsStore((s) => s.activeTabId);
@@ -107,6 +130,9 @@ export const TerminalPane = memo(function TerminalPane({ projectPath }: Terminal
   const splitTabId = useTerminalSplitLayoutStore((s) => s.splitTabId);
   const secondarySessionType = useTerminalSplitLayoutStore((s) => s.secondarySessionType);
   const setRatio = useTerminalSplitLayoutStore((s) => s.setRatio);
+  const closeSplit = useTerminalSplitLayoutStore((s) => s.closeSplit);
+
+  const tabDisplayNames = useMemo(() => computeTabDisplayNames(tabs), [tabs]);
 
   const splitIsActive =
     splitOrientation !== "none" &&
@@ -145,15 +171,20 @@ export const TerminalPane = memo(function TerminalPane({ projectPath }: Terminal
             id={`tabpanel-${tab.id}`}
             aria-labelledby={`tab-${tab.id}`}
             hidden={!isVisible}
-            className={isVisible ? "h-full" : ""}
+            className={isVisible ? (isTabSplit ? "flex h-full flex-col" : "h-full") : ""}
             style={primaryStyle}
           >
-            <TerminalSession
-              tabId={tab.id}
-              path={tab.path}
-              isVisible={isVisible}
-              sessionType={tab.sessionType}
-            />
+            {isTabSplit && (
+              <SplitPaneHeader label={tabDisplayNames[tab.id] ?? "Terminal"} onClose={closeSplit} />
+            )}
+            <div className={isTabSplit ? "flex-1 min-h-0" : "h-full"}>
+              <TerminalSession
+                tabId={tab.id}
+                path={tab.path}
+                isVisible={isVisible}
+                sessionType={tab.sessionType}
+              />
+            </div>
           </div>
         );
       })}
@@ -165,7 +196,7 @@ export const TerminalPane = memo(function TerminalPane({ projectPath }: Terminal
         return (
           <div
             hidden={!isSecondaryVisible}
-            className={isSecondaryVisible ? "h-full" : ""}
+            className={isSecondaryVisible ? "flex h-full flex-col" : ""}
             style={
               isSecondaryVisible
                 ? {
@@ -178,6 +209,12 @@ export const TerminalPane = memo(function TerminalPane({ projectPath }: Terminal
                 : undefined
             }
           >
+            {isSecondaryVisible && (
+              <SplitPaneHeader
+                label={secondarySessionType ? getSessionDisplayName(secondarySessionType) : "Split"}
+                onClose={closeSplit}
+              />
+            )}
             <TerminalSession
               tabId={`${splitTabId}:split`}
               path={splitTab.path}

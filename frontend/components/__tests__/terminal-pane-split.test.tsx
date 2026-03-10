@@ -132,7 +132,7 @@ describe("TerminalPane split rendering", () => {
 
     render(<TerminalPane projectPath="/project" />);
 
-    const primary = screen.getByTestId("session-tab-1").parentElement!;
+    const primary = screen.getByTestId("session-tab-1").closest('[role="tabpanel"]') as HTMLElement;
     const secondary = screen.getByTestId("session-tab-1:split").parentElement!;
     expect(primary.style.flexBasis).toBe("60%");
     expect(secondary.style.flexBasis).toBe("40%");
@@ -145,7 +145,7 @@ describe("TerminalPane split rendering", () => {
 
     render(<TerminalPane projectPath="/project" />);
 
-    const primary = screen.getByTestId("session-tab-1").parentElement!;
+    const primary = screen.getByTestId("session-tab-1").closest('[role="tabpanel"]') as HTMLElement;
     const secondary = screen.getByTestId("session-tab-1:split").parentElement!;
     expect(primary.style.order).toBe("0");
     expect(secondary.style.order).toBe("2");
@@ -164,6 +164,41 @@ describe("TerminalPane split rendering", () => {
     expect(screen.getByTestId("session-tab-3")).toHaveAttribute("data-visible", "true");
     // No resize handle
     expect(screen.queryByRole("separator")).not.toBeInTheDocument();
+  });
+
+  it("shows close header on both panes with correct labels when split is active", () => {
+    splitState.orientation = "vertical";
+    splitState.splitTabId = "tab-1";
+    splitState.secondarySessionType = "terminal";
+
+    render(<TerminalPane projectPath="/project" />);
+
+    // Primary header shows the tab display name ("Claude Code" from cli-registry)
+    expect(screen.getByText("Claude Code")).toBeInTheDocument();
+    // Secondary header shows the session type display name
+    expect(screen.getByText("Terminal")).toBeInTheDocument();
+  });
+
+  it("does not show primary pane header when split is inactive", () => {
+    splitState.orientation = "none";
+    splitState.splitTabId = null;
+
+    render(<TerminalPane projectPath="/project" />);
+
+    // No split headers should be visible
+    const closeButtons = screen.queryAllByRole("button", { name: "Close split" });
+    expect(closeButtons).toHaveLength(0);
+  });
+
+  it("shows close buttons on both panes when split is active", () => {
+    splitState.orientation = "vertical";
+    splitState.splitTabId = "tab-1";
+    splitState.secondarySessionType = "claude";
+
+    render(<TerminalPane projectPath="/project" />);
+
+    const closeButtons = screen.getAllByRole("button", { name: "Close split" });
+    expect(closeButtons).toHaveLength(2);
   });
 
   it("does not render secondary pane when splitTabId is null", () => {

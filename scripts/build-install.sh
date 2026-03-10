@@ -125,6 +125,27 @@ fi
 APPIMAGE_SIZE=$(du -h "$APPIMAGE_PATH" | cut -f1)
 info "AppImage ready: $APPIMAGE_PATH ($APPIMAGE_SIZE)"
 
+# ─── Clean old versions ──────────────────────────────────────────────────────
+if [[ -d "$INSTALL_DIR" ]]; then
+  old_count=$(find "$INSTALL_DIR" -maxdepth 1 -name "*.AppImage" ! -name "$APPIMAGE_NAME" | wc -l)
+  if [[ "$old_count" -gt 0 ]]; then
+    info "Removing $old_count old AppImage(s) from $INSTALL_DIR..."
+    find "$INSTALL_DIR" -maxdepth 1 -name "*.AppImage" ! -name "$APPIMAGE_NAME" -print -delete | while read -r f; do
+      ok "Removed $(basename "$f")"
+    done
+  fi
+fi
+
+if [[ -d "$RELEASE_DIR" ]]; then
+  old_count=$(find "$RELEASE_DIR" -maxdepth 1 -name "*.AppImage" ! -name "$APPIMAGE_NAME" | wc -l)
+  if [[ "$old_count" -gt 0 ]]; then
+    info "Removing $old_count old AppImage(s) from $RELEASE_DIR..."
+    find "$RELEASE_DIR" -maxdepth 1 -name "*.AppImage" ! -name "$APPIMAGE_NAME" -print -delete | while read -r f; do
+      ok "Removed $(basename "$f")"
+    done
+  fi
+fi
+
 # ─── Install ─────────────────────────────────────────────────────────────────
 info "Installing to $INSTALL_DIR..."
 
@@ -154,7 +175,7 @@ info "Creating desktop entry..."
 cat > "$DESKTOP_FILE" << EOF
 [Desktop Entry]
 Version=${VERSION}
-Name=${APP_NAME}
+Name=${APP_NAME} v${VERSION}
 Comment=Desktop GUI for AI coding CLIs
 Exec=${INSTALL_DIR}/${APPIMAGE_NAME} %U
 Terminal=false

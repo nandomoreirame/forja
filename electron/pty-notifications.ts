@@ -1,10 +1,10 @@
 import * as path from "path";
+import { execFile } from "child_process";
 import { Notification } from "electron";
 
-interface SessionEndInfo {
+interface SessionReadyInfo {
   projectPath: string;
   sessionType: string;
-  exitCode: number;
 }
 
 interface NotificationData {
@@ -13,38 +13,38 @@ interface NotificationData {
 }
 
 /**
- * Pure function that builds notification data for a PTY session exit.
- * Testable without Electron.
+ * Pure function that builds notification data for a session-ready event.
  */
-export function buildSessionEndNotification(info: SessionEndInfo): NotificationData {
+export function buildSessionReadyNotification(info: SessionReadyInfo): NotificationData {
   const projectName = path.basename(info.projectPath);
   const sessionName = info.sessionType.charAt(0).toUpperCase() + info.sessionType.slice(1);
 
-  const title = `Session ended — ${projectName}`;
-  const body =
-    info.exitCode === 0
-      ? `${sessionName} finished successfully.`
-      : `${sessionName} exited with code ${info.exitCode}.`;
-
-  return { title, body };
+  return {
+    title: `Forja — ${projectName}`,
+    body: `${sessionName} is ready for input.`,
+  };
 }
 
-/**
- * Shows a native system notification when a PTY session ends.
- * Only fires when the main window is NOT focused.
- */
-export function showSessionEndNotification(
-  info: SessionEndInfo,
+function showNotificationLinux(data: NotificationData): void {
+  execFile(
+    "notify-send",
+    ["--app-name=Forja", "--expire-time=5000", data.title, data.body],
+    (err) => {
+      if (err) {
+        console.warn("[pty-notifications] notify-send failed:", err);
+      }
+    },
+  );
+}
+
+function showNotificationElectron(
+  data: NotificationData,
+  info: SessionReadyInfo,
   mainWindow: Electron.BrowserWindow | null,
 ): void {
-  // Only notify when window is not focused
-  if (mainWindow?.isFocused()) return;
-
-  // Electron Notification API requires app to be ready
   try {
     if (!Notification.isSupported()) return;
 
-    const data = buildSessionEndNotification(info);
     const notification = new Notification({
       title: data.title,
       body: data.body,
@@ -55,7 +55,6 @@ export function showSessionEndNotification(
       if (mainWindow) {
         mainWindow.show();
         mainWindow.focus();
-        // Emit event to frontend to switch to the project
         mainWindow.webContents.send("project:focus-requested", {
           projectPath: info.projectPath,
         });
@@ -63,7 +62,26 @@ export function showSessionEndNotification(
     });
 
     notification.show();
-  } catch {
-    // Notifications not available (e.g., in test environment)
+  } catch (err) {
+    console.warn("[pty-notifications] Electron notification failed:", err);
+  }
+}
+
+/**
+ * Shows a native notification when an AI session transitions to ready.
+ * Only fires when the main window is NOT focused.
+ */
+export function showSessionReadyNotification(
+  info: SessionReadyInfo,
+  mainWindow: Electron.BrowserWindow | null,
+): void {
+  if (mainWindow?.isFocused()) return;
+
+  const data = buildSessionReadyNotification(info);
+
+  if (process.platform === "linux") {
+    showNotificationLinux(data);
+  } else {
+    showNotificationElectron(data, info, mainWindow);
   }
 }
