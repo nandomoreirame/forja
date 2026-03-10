@@ -53,7 +53,7 @@ describe("useFilePreviewStore", () => {
   });
 
   describe("closePreview", () => {
-    it("should reset all state to defaults", () => {
+    it("should clear file content but keep panel open", () => {
       // Set non-default state
       useFilePreviewStore.setState({
         isOpen: true,
@@ -71,7 +71,7 @@ describe("useFilePreviewStore", () => {
       closePreview();
 
       const state = useFilePreviewStore.getState();
-      expect(state.isOpen).toBe(false);
+      expect(state.isOpen).toBe(true);
       expect(state.currentFile).toBeNull();
       expect(state.content).toBeNull();
       expect(state.error).toBeNull();
@@ -284,7 +284,7 @@ describe("useFilePreviewStore", () => {
       });
     });
 
-    it("closes preview when saved state is null", () => {
+    it("keeps panel open but clears file when saved state is null", () => {
       useFilePreviewStore.setState({
         isOpen: true,
         currentFile: "/some/file.ts",
@@ -295,12 +295,12 @@ describe("useFilePreviewStore", () => {
       useFilePreviewStore.getState().restorePreviewForProject("/project-a");
 
       const state = useFilePreviewStore.getState();
-      expect(state.isOpen).toBe(false);
+      expect(state.isOpen).toBe(true);
       expect(state.currentFile).toBeNull();
       expect(state.content).toBeNull();
     });
 
-    it("closes preview when no saved state exists for project", () => {
+    it("keeps panel open but clears file when no saved state exists for project", () => {
       useFilePreviewStore.setState({
         isOpen: true,
         currentFile: "/some/file.ts",
@@ -311,7 +311,7 @@ describe("useFilePreviewStore", () => {
       useFilePreviewStore.getState().restorePreviewForProject("/project-unknown");
 
       const state = useFilePreviewStore.getState();
-      expect(state.isOpen).toBe(false);
+      expect(state.isOpen).toBe(true);
       expect(state.currentFile).toBeNull();
       expect(state.content).toBeNull();
     });

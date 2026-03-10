@@ -23,16 +23,12 @@ export default defineConfig({
           globals: true,
           setupFiles: ["./tests/setup.ts"],
           pool: "threads",
-          poolOptions: {
-            threads: {
-              maxThreads: 3,
-            },
-          },
+          maxWorkers: 2,
         },
         resolve: {
           alias: {
             "@": path.resolve(__dirname, "./frontend"),
-          },
+          }, 
         },
       },
       {
@@ -42,11 +38,7 @@ export default defineConfig({
           include: ["electron/__tests__/**/*.test.ts"],
           environment: "node",
           pool: "forks",
-          poolOptions: {
-            forks: {
-              maxForks: 3,
-            },
-          },
+          maxWorkers: 2,
           globals: true,
         },
       },

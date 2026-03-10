@@ -181,6 +181,25 @@ function FilePreviewPaneContent() {
     return null;
   }
 
+  const hasFile = Boolean(currentFile);
+  const showEmptyState = !hasFile && !isLoading && !error && !isDiffView;
+
+  if (showEmptyState) {
+    return (
+      <div
+        data-testid="file-preview-pane"
+        className="flex h-full w-full flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
+      >
+        <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <FileCode className="h-8 w-8 text-ctp-surface1" strokeWidth={1.5} />
+            <p className="text-sm text-ctp-overlay1">Select a file to preview</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       data-testid="file-preview-pane"
