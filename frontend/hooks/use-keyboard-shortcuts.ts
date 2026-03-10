@@ -5,9 +5,11 @@ import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useProjectsStore } from "@/stores/projects";
-import { useTerminalTabsStore, type TerminalTab } from "@/stores/terminal-tabs";
+import { useTerminalSplitLayoutStore } from "@/stores/terminal-split-layout";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
+import type { TerminalTab } from "@/stores/terminal-tabs";
 
 interface UseKeyboardShortcutsOptions {
   tabsRef: RefObject<TerminalTab[]>;
@@ -23,6 +25,17 @@ export function useKeyboardShortcuts({
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
+      const splitStore = useTerminalSplitLayoutStore.getState();
+
+      const createSplit = (orientation: "horizontal" | "vertical") => {
+        if (splitStore.orientation !== "none") return;
+        const activeId = activeTabIdRef.current;
+        if (!activeId) return;
+        const activeTab = tabsRef.current?.find((t) => t.id === activeId);
+        const sessionType = activeTab?.sessionType ?? "terminal";
+        splitStore.openSplit(orientation, activeId, sessionType);
+        splitStore.setFocusedPane("secondary");
+      };
 
       if (mod && event.key === "s") {
         const settingsState = useUserSettingsStore.getState();
@@ -61,9 +74,32 @@ export function useKeyboardShortcuts({
         return;
       }
       if (mod && event.key === "w") {
+        if (event.altKey && splitStore.orientation !== "none") {
+          event.preventDefault();
+          splitStore.closeSplit();
+          return;
+        }
         event.preventDefault();
         const id = activeTabIdRef.current;
         if (id) closeTab(id);
+        return;
+      }
+      if (mod && event.altKey && event.key.toLowerCase() === "v") {
+        event.preventDefault();
+        createSplit("vertical");
+        return;
+      }
+      if (mod && event.altKey && event.key.toLowerCase() === "h") {
+        event.preventDefault();
+        createSplit("horizontal");
+        return;
+      }
+      if (mod && event.altKey && (event.key === "[" || event.key === "]")) {
+        event.preventDefault();
+        if (splitStore.orientation === "none") return;
+        splitStore.setFocusedPane(
+          splitStore.focusedPane === "primary" ? "secondary" : "primary",
+        );
         return;
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "p") {
