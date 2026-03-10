@@ -6,6 +6,18 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.4.7] - 2026-03-10
+### Added
+- Watch for file content changes (`change` event) in file-watcher, not just add/unlink.
+- Add `invalidateProjectCache` to file-cache for clearing stale entries by project path.
+- Auto-reload file preview when external file changes are detected via `files:changed` IPC.
+- Support `skipCache` option in `read_file_command` IPC handler.
+
+### Changed
+- Standardize hover buttons with `rounded-md` and `bg-ctp-surface0`.
+
+---
+
 ## [1.4.6] - 2026-03-10
 ### Fixed
 - Prevent terminal resize when tab is hidden to avoid PTY corruption from 0x0 dimensions.
