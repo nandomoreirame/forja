@@ -141,5 +141,17 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
+## [1.4.3] - 2026-03-10
+### Added
+- Refactor keyboard shortcuts with Shift modifier for tab management (Ctrl+Shift+T/W).
+- Add Ctrl+1-9 to switch tabs by position.
+- Add thinking/notified indicators for sidebar projects.
+
+### Fixed
+- Improve terminal context menu split pane handling and icon alignment.
+- Correct copy/paste shortcuts to Ctrl+Shift+C/V in context menu.
+
+---
+
 ## [Unreleased]
 
