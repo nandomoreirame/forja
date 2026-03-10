@@ -181,6 +181,8 @@ function NoSessionsState({
           <span className="flex items-center gap-1">
             <Kbd>{mod}</Kbd>
             <span className="text-[11px] text-ctp-surface1">+</span>
+            <Kbd>Shift</Kbd>
+            <span className="text-[11px] text-ctp-surface1">+</span>
             <Kbd>T</Kbd>
           </span>
         </div>
