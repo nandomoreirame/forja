@@ -274,6 +274,109 @@ describe("useFilePreviewStore", () => {
     });
   });
 
+  describe("reloadCurrentFileIfChanged", () => {
+    it("reloads the file when its path is in changedPaths", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue({
+        path: "/project-a/src/file.ts",
+        content: "updated",
+        size: 7,
+      });
+
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-a/src/file.ts",
+        content: { path: "/project-a/src/file.ts", content: "old", size: 3 },
+      });
+
+      await useFilePreviewStore.getState().reloadCurrentFileIfChanged(
+        "/project-a",
+        ["src/file.ts", "src/other.ts"],
+      );
+
+      expect(invoke).toHaveBeenCalledWith("read_file_command", {
+        path: "/project-a/src/file.ts",
+        maxSizeMb: 10,
+        skipCache: true,
+      });
+      const state = useFilePreviewStore.getState();
+      expect(state.content?.content).toBe("updated");
+    });
+
+    it("does NOT reload when changedPaths does not include the current file", async () => {
+      const { invoke } = await import("@/lib/ipc");
+
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-a/src/file.ts",
+        content: { path: "/project-a/src/file.ts", content: "original", size: 8 },
+      });
+
+      await useFilePreviewStore.getState().reloadCurrentFileIfChanged(
+        "/project-a",
+        ["src/other.ts", "package.json"],
+      );
+
+      expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it("does NOT reload when the current file belongs to a different project", async () => {
+      const { invoke } = await import("@/lib/ipc");
+
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-b/src/file.ts",
+        content: { path: "/project-b/src/file.ts", content: "original", size: 8 },
+      });
+
+      await useFilePreviewStore.getState().reloadCurrentFileIfChanged(
+        "/project-a",
+        ["src/file.ts"],
+      );
+
+      expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when no file is currently open", async () => {
+      const { invoke } = await import("@/lib/ipc");
+
+      useFilePreviewStore.setState({ currentFile: null });
+
+      await useFilePreviewStore.getState().reloadCurrentFileIfChanged(
+        "/project-a",
+        ["src/file.ts"],
+      );
+
+      expect(invoke).not.toHaveBeenCalled();
+    });
+
+    it("falls back to reloading when changedPaths is empty (full project refresh)", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue({
+        path: "/project-a/src/file.ts",
+        content: "refreshed",
+        size: 9,
+      });
+
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-a/src/file.ts",
+        content: { path: "/project-a/src/file.ts", content: "old", size: 3 },
+      });
+
+      await useFilePreviewStore.getState().reloadCurrentFileIfChanged(
+        "/project-a",
+        [],
+      );
+
+      expect(invoke).toHaveBeenCalledWith("read_file_command", {
+        path: "/project-a/src/file.ts",
+        maxSizeMb: 10,
+        skipCache: true,
+      });
+    });
+  });
+
   describe("clearError", () => {
     it("should clear error state", () => {
       useFilePreviewStore.setState({ error: "some error" });

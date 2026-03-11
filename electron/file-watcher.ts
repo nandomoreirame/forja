@@ -1,11 +1,14 @@
 import chokidar from "chokidar";
 import type { FSWatcher } from "chokidar";
 import type { WebContents } from "electron";
+import path from "path";
+import { invalidateFileCache, invalidateProjectCache } from "./file-cache.js";
 
 interface FileWatcherSession {
   watcher: FSWatcher;
   path: string;
   debounceTimer: ReturnType<typeof setTimeout> | null;
+  pendingPaths: Set<string>;
 }
 
 const fileWatchers = new Map<string, FileWatcherSession>();
@@ -47,14 +50,38 @@ export function startFileWatcher(
     watcher,
     path: projectPath,
     debounceTimer: null,
+    pendingPaths: new Set<string>(),
   };
   fileWatchers.set(key, session);
 
-  const notify = () => {
+  const notify = (changedAbsolutePath: string) => {
+    // Collect the changed path (relative to project root)
+    if (changedAbsolutePath) {
+      const relativePath = path.relative(projectPath, changedAbsolutePath);
+      if (relativePath && !relativePath.startsWith("..")) {
+        session.pendingPaths.add(relativePath);
+        // Invalidate this specific file in the backend cache
+        invalidateFileCache(changedAbsolutePath);
+      }
+    }
+
     if (session.debounceTimer) clearTimeout(session.debounceTimer);
     session.debounceTimer = setTimeout(() => {
       if (!sender.isDestroyed()) {
-        sender.send("files:changed", { path: projectPath });
+        const changedPaths = Array.from(session.pendingPaths);
+        session.pendingPaths.clear();
+
+        sender.send("files:changed", {
+          path: projectPath,
+          changedPaths,
+        });
+
+        // If no specific paths were tracked, invalidate the whole project cache
+        if (changedPaths.length === 0) {
+          invalidateProjectCache(projectPath);
+        }
+      } else {
+        session.pendingPaths.clear();
       }
     }, DEBOUNCE_MS);
   };

@@ -138,6 +138,11 @@ interface GitChangedPayload {
   path: string;
 }
 
+interface FilesChangedPayload {
+  path: string;
+  changedPaths: string[];
+}
+
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
     <kbd className="inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-[11px] text-ctp-overlay1">
@@ -527,7 +532,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     return () => cancelIdleCallback(idleId);
   }, [currentPath]);
 
-  // Fetch git file statuses when project changes (deferred)
+  // Fetch git file statuses when project changes (deferred, force to ensure fresh data on switch)
   useEffect(() => {
     if (!currentPath) {
       useGitStatusStore.getState().clearStatuses();
@@ -535,8 +540,8 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       return;
     }
     const idleId = requestIdleCallback(() => {
-      useGitStatusStore.getState().fetchStatuses(currentPath);
-      useGitDiffStore.getState().fetchChangedFiles(currentPath);
+      useGitStatusStore.getState().forceFetchStatuses(currentPath);
+      useGitDiffStore.getState().forceRefresh(currentPath);
     });
     return () => cancelIdleCallback(idleId);
   }, [currentPath]);
@@ -563,33 +568,57 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
 
   // Refresh file tree on filesystem changes (files:changed events)
   useEffect(() => {
-    const unlisten = listen<{ path: string }>("files:changed", (event) => {
-      const changedPath = event.payload?.path;
-      if (changedPath) {
-        useFileTreeStore.getState().refreshTree(changedPath);
-        useFilePreviewStore.getState().reloadCurrentFileForProject(changedPath);
+    const unlisten = listen<FilesChangedPayload>("files:changed", (event) => {
+      const changedProjectPath = event.payload?.path;
+      const changedPaths = event.payload?.changedPaths ?? [];
+      if (!changedProjectPath) return;
+
+      // Only refresh the file tree if the changed project is the currently active one
+      const activeProjectPath = useFileTreeStore.getState().activeProjectPath;
+      if (activeProjectPath === changedProjectPath) {
+        useFileTreeStore.getState().refreshTree(changedProjectPath);
       }
+
+      // Reload preview only if the currently previewed file is among the changed paths
+      useFilePreviewStore.getState().reloadCurrentFileIfChanged(changedProjectPath, changedPaths);
     });
     return () => {
       unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
 
-  // Refresh git file statuses on git:changed events
+  // Refresh git file statuses on git:changed events (debounced to coalesce rapid events)
   useEffect(() => {
+    const pendingPaths = new Set<string>();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushPendingPaths = () => {
+      for (const projectPath of pendingPaths) {
+        useGitStatusStore.getState().fetchStatuses(projectPath);
+        useGitDiffStore.getState().refresh(projectPath);
+      }
+      pendingPaths.clear();
+      debounceTimer = null;
+    };
+
     const unlisten = listen<GitChangedPayload>("git:changed", (event) => {
       const changedProjectPath = event.payload?.path;
-      if (changedProjectPath) {
-        useGitStatusStore.getState().fetchStatuses(changedProjectPath);
-        useGitDiffStore.getState().refresh(changedProjectPath);
-        return;
+      const resolvedPath = changedProjectPath || useFileTreeStore.getState().currentPath;
+      if (!resolvedPath) return;
+
+      pendingPaths.add(resolvedPath);
+
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
       }
-      const fallbackPath = useFileTreeStore.getState().currentPath;
-      if (!fallbackPath) return;
-      useGitStatusStore.getState().fetchStatuses(fallbackPath);
-      useGitDiffStore.getState().refresh(fallbackPath);
+      debounceTimer = setTimeout(flushPendingPaths, 250);
     });
+
     return () => {
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
+      }
+      pendingPaths.clear();
       unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
