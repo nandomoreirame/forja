@@ -24,3 +24,6 @@ Thumbs.db
 # Release build files
 /release
 /.superset
+
+# Firebase
+site/.firebase/

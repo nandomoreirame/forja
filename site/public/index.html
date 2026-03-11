@@ -1,0 +1,395 @@
+<html lang="en" class="scroll-smooth"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forja — The desktop client your AI CLI deserves</title>
+    <meta name="description" content="Open source desktop GUI for Claude Code, Gemini CLI, OpenAI Codex and more. Rich rendering, session tabs, Git context. Free forever.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1e1e2e;
+            color: #cdd6f4;
+        }
+        .font-mono {
+            font-family: 'JetBrains+Mono', monospace;
+        }
+        .cat-mauve { color: #cba6f7; }
+        .bg-cat-mauve { background-color: #cba6f7; }
+        .border-cat-surface0 { border-color: #313244; }
+        .bg-cat-mantle { background-color: #181825; }
+        .bg-cat-crust { background-color: #11111b; }
+        
+        .hero-gradient {
+            background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(203, 166, 247, 0.12) 0%, transparent 70%);
+        }
+
+        .glass-nav {
+            background: rgba(30, 30, 46, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(49, 50, 68, 0.5);
+        }
+
+        .app-shadow {
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(203, 166, 247, 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 0.25rem;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #181825;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #313244;
+            border-radius: 999px;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-purple-500/30 selection:text-white">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass-nav h-14 md:h-16 flex items-center">
+        <div class="container mx-auto px-6 flex justify-between items-center">
+            <a href="#" class="text-xl font-bold tracking-tighter flex items-center gap-3 group">
+                <span class="w-9 h-9 flex items-center justify-center rounded-lg group-hover:scale-105 transition-transform overflow-hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="36" height="36"><rect width="512" height="512" rx="108" fill="#1e1e2e"/><g transform="translate(28, 18.5) scale(19)"><path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4z" fill="#b99de6"/><path d="M7 5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1 7 7 0 0 1-7 7H8a1 1 0 0 1-1-1z" fill="#cba6f7"/><rect x="7.8" y="11.5" width="3" height="6" rx="0.4" fill="#b08de0"/><rect x="13.2" y="11.5" width="3" height="6" rx="0.4" fill="#b08de0"/><path d="M5 20a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3 1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" fill="#a580d4"/></g></svg>
+                </span>
+                <span class="text-[#cdd6f4]">Forja</span>
+            </a>
+            
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-[#a6adc8]">
+                <a href="#features" class="hover:text-[#cdd6f4] transition-colors">Features</a>
+                <a href="#themes" class="hover:text-[#cdd6f4] transition-colors">Themes</a>
+                <a href="https://github.com/nandomoreirame/forja" target="_blank" class="hover:text-[#cdd6f4] transition-colors">GitHub</a>
+                <a href="https://github.com/nandomoreirame/forja/releases/latest" target="_blank" class="hover:text-[#cdd6f4] transition-colors text-xs bg-[#313244] px-2 py-1 rounded">v1.5.0</a>
+            </div>
+
+            <a href="https://github.com/nandomoreirame/forja/releases/latest" target="_blank" class="bg-cat-mauve text-[#1e1e2e] px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity">
+                Download
+            </a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="relative pt-32 pb-20 md:pt-48 md:pb-32 hero-gradient overflow-hidden">
+            <div class="container mx-auto px-6 text-center">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-[#cba6f7]/30 bg-[#cba6f7]/10 text-[#cba6f7] text-xs font-medium mb-8 animate-fade-in">
+                    <iconify-icon icon="solar:shield-check-linear" stroke-width="1.5"></iconify-icon>
+                    Open Source · MIT License
+                </div>
+                
+                <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-[#cdd6f4] mb-6 max-w-3xl mx-auto leading-tight">
+                    The GUI your AI CLI deserves.
+                </h1>
+
+                <p class="text-lg md:text-xl text-[#a6adc8] mb-10 max-w-2xl mx-auto leading-relaxed">
+                    Open source desktop client for Claude Code, Gemini CLI, and Codex.
+                    Rich rendering, session tabs, and Git context in one focused window.
+                </p>
+
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                    <a id="download-btn" href="https://github.com/nandomoreirame/forja/releases/latest" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-cat-mauve text-[#1e1e2e] px-8 py-4 rounded-xl text-base font-semibold hover:translate-y-[-2px] transition-all duration-200">
+                        <iconify-icon id="download-icon" icon="solar:apple-linear" width="20"></iconify-icon>
+                        <span id="download-label">Download for macOS</span>
+                    </a>
+                    <a href="https://github.com/nandomoreirame/forja/stargazers" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 border border-[#45475a] hover:border-[#cba6f7] text-[#cdd6f4] px-8 py-4 rounded-xl text-base font-semibold transition-all duration-200">
+                        <iconify-icon icon="solar:star-linear" width="20"></iconify-icon>
+                        Star on GitHub
+                    </a>
+                </div>
+
+                <!-- App Mockup -->
+                <div class="relative max-w-5xl mx-auto animate-fade-up">
+                    <div class="app-shadow rounded-xl border border-[#313244] bg-[#1e1e2e] overflow-hidden flex flex-col h-[500px] md:h-[600px]">
+                        <!-- Titlebar -->
+                        <div class="h-10 bg-[#181825] border-b border-[#313244] flex items-center px-4 justify-between">
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 rounded-full bg-[#f38ba8]"></div>
+                                <div class="w-3 h-3 rounded-full bg-[#f9e2af]"></div>
+                                <div class="w-3 h-3 rounded-full bg-[#a6e3a1]"></div>
+                            </div>
+                            <div class="text-xs font-medium text-[#6c7086] font-mono tracking-tight">Forja — src/main.tsx</div>
+                            <div class="flex items-center gap-3">
+                                <iconify-icon icon="solar:global-linear" class="text-[#6c7086]"></iconify-icon>
+                                <iconify-icon icon="solar:sidebar-minimalistic-linear" class="text-[#6c7086]"></iconify-icon>
+                            </div>
+                        </div>
+                        <!-- Workspace -->
+                        <div class="flex flex-1 overflow-hidden">
+                            <!-- Sidebar -->
+                            <div class="w-48 bg-[#11111b] border-r border-[#313244] hidden md:flex flex-col p-3 gap-2">
+                                <div class="text-[10px] uppercase tracking-widest text-[#585b70] font-semibold mb-2 px-2">Project Explorer</div>
+                                <div class="flex items-center gap-2 text-xs text-[#a6adc8] px-2 py-1.5 rounded hover:bg-[#313244] cursor-pointer">
+                                    <iconify-icon icon="solar:folder-2-linear" class="text-blue-400"></iconify-icon> src
+                                </div>
+                                <div class="flex items-center gap-2 text-xs text-[#cdd6f4] px-4 py-1.5 rounded bg-[#313244] cursor-pointer">
+                                    <iconify-icon icon="solar:file-text-linear" class="text-yellow-400"></iconify-icon> main.tsx
+                                </div>
+                                <div class="flex items-center gap-2 text-xs text-[#a6adc8] px-4 py-1.5 rounded hover:bg-[#313244] cursor-pointer">
+                                    <iconify-icon icon="solar:file-code-linear" class="text-blue-300"></iconify-icon> App.css
+                                </div>
+                            </div>
+                            <!-- Editor / Terminal -->
+                            <div class="flex-1 flex flex-col bg-[#1e1e2e]">
+                                <div class="h-8 bg-[#11111b] flex items-center px-4 gap-4 border-b border-[#313244]">
+                                    <div class="text-[11px] text-[#cba6f7] border-b border-[#cba6f7] h-full flex items-center px-2">Claude Code</div>
+                                    <div class="text-[11px] text-[#6c7086] h-full flex items-center px-2">Gemini CLI</div>
+                                </div>
+                                <div class="flex-1 p-6 font-mono text-sm overflow-y-auto custom-scrollbar text-left">
+                                    <div class="flex gap-3 mb-4">
+                                        <span class="text-[#cba6f7]">➜</span>
+                                        <span class="text-[#cdd6f4]">Refactor the auth service for better testability</span>
+                                    </div>
+                                    <div class="bg-[#181825] border border-[#313244] p-4 rounded-lg mb-6 leading-relaxed">
+                                        <div class="flex items-center gap-2 mb-3">
+                                            <span class="text-xs bg-[#cba6f7]/20 text-[#cba6f7] px-2 py-0.5 rounded">Claude</span>
+                                            <span class="text-[11px] text-[#585b70]">Now</span>
+                                        </div>
+                                        <h3 class="text-[#fab387] mb-2 font-semibold">Authentication Strategy</h3>
+                                        <p class="text-[#a6adc8] mb-4">I recommend extracting a higher-order component for route protection.</p>
+                                        <div class="bg-[#11111b] p-3 rounded text-xs text-[#94e2d5]">
+                                            <pre>export const withAuth = (Component) =&gt; { ... }</pre>
+                                        </div>
+                                    </div>
+                                    <div class="animate-pulse flex gap-1">
+                                        <span class="w-2 h-4 bg-[#cba6f7]"></span>
+                                    </div>
+                                </div>
+                                <!-- Status Bar -->
+                                <div class="h-6 bg-[#11111b] border-t border-[#313244] flex items-center px-3 justify-between text-[10px] text-[#6c7086] font-mono">
+                                    <div class="flex items-center gap-4">
+                                        <span class="flex items-center gap-1 text-[#a6e3a1]"><iconify-icon icon="solar:git-branch-linear"></iconify-icon> main</span>
+                                        <span>2 files modified</span>
+                                    </div>
+                                    <div class="flex items-center gap-4">
+                                        <span>UTF-8</span>
+                                        <span>TypeScript</span>
+                                        <span class="flex items-center gap-1"><iconify-icon icon="solar:cpu-linear"></iconify-icon> 12%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Social Proof -->
+        <section class="bg-cat-mantle py-12 border-y border-cat-surface0">
+            <div class="container mx-auto px-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
+                    <div class="text-center group">
+                        <span class="block text-2xl font-bold text-[#cdd6f4] mb-1 group-hover:text-[#cba6f7] transition-colors">1.2k+</span>
+                        <span class="text-[11px] uppercase tracking-widest text-[#6c7086] font-semibold">GitHub Stars</span>
+                    </div>
+                    <div class="text-center group">
+                        <span class="block text-2xl font-bold text-[#cdd6f4] mb-1 group-hover:text-[#a6e3a1] transition-colors">400+</span>
+                        <span class="text-[11px] uppercase tracking-widest text-[#6c7086] font-semibold">Tests Passing</span>
+                    </div>
+                    <div class="text-center group">
+                        <span class="block text-2xl font-bold text-[#cdd6f4] mb-1 group-hover:text-[#89b4fa] transition-colors">MIT</span>
+                        <span class="text-[11px] uppercase tracking-widest text-[#6c7086] font-semibold">OSS License</span>
+                    </div>
+                    <div class="text-center group">
+                        <span class="block text-2xl font-bold text-[#cdd6f4] mb-1 group-hover:text-[#f9e2af] transition-colors">Native</span>
+                        <span class="text-[11px] uppercase tracking-widest text-[#6c7086] font-semibold">macOS &amp; Linux</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Feature Showcase -->
+        <section id="features" class="py-24 border-t border-[#313244]">
+            <div class="container mx-auto px-6 space-y-32">
+                <!-- Feature 1 -->
+                <div class="flex flex-col md:flex-row items-center gap-12 md:gap-24">
+                    <div class="flex-1 order-2 md:order-1">
+                        <div class="app-shadow rounded-xl border border-[#313244] bg-[#181825] h-64 flex items-center justify-center p-8">
+                             <div class="flex gap-4">
+                                <div class="w-12 h-12 bg-[#cba6f7]/20 rounded-lg flex items-center justify-center text-[#cba6f7] border border-[#cba6f7]/30">Cl</div>
+                                <div class="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 border border-blue-500/30">Gm</div>
+                                <div class="w-12 h-12 bg-emerald-500/20 rounded-lg flex items-center justify-center text-emerald-400 border border-emerald-500/30">Cx</div>
+                                <div class="w-12 h-12 bg-[#313244] rounded-lg flex items-center justify-center text-[#6c7086] border border-[#45475a]">
+                                    <iconify-icon icon="solar:add-circle-linear"></iconify-icon>
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 order-1 md:order-2">
+                        <span class="text-[11px] font-bold tracking-widest bg-[#cba6f7]/10 text-[#cba6f7] px-2 py-1 rounded mb-4 inline-block uppercase">Multi-CLI Support</span>
+                        <h3 class="text-3xl font-bold mb-6 tracking-tight text-[#cdd6f4]">One home for every AI CLI</h3>
+                        <p class="text-[#a6adc8] leading-relaxed mb-6">
+                            Switch between Claude Code, Gemini CLI, Codex, or a plain terminal from one unified interface.
+                            Each session runs in its own isolated tab environment.
+                        </p>
+                        <ul class="space-y-3 text-sm text-[#bac2de]">
+                            <li class="flex items-center gap-2 font-mono"><iconify-icon icon="solar:check-circle-linear" class="text-[#a6e3a1]"></iconify-icon> Session management with Ctrl+T / Ctrl+W</li>
+                            <li class="flex items-center gap-2 font-mono"><iconify-icon icon="solar:check-circle-linear" class="text-[#a6e3a1]"></iconify-icon> Multi-session tab sync</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="flex flex-col md:flex-row items-center gap-12 md:gap-24">
+                    <div class="flex-1">
+                        <span class="text-[11px] font-bold tracking-widest bg-[#a6e3a1]/10 text-[#a6e3a1] px-2 py-1 rounded mb-4 inline-block uppercase">Rendering</span>
+                        <h3 class="text-3xl font-bold mb-6 tracking-tight text-[#cdd6f4]">Markdown, actually readable</h3>
+                        <p class="text-[#a6adc8] leading-relaxed mb-6">
+                            CLI output is intercepted and rendered as clean, structured HTML. Code blocks get full
+                            syntax highlighting via Shiki with support for 100+ languages.
+                        </p>
+                        <ul class="space-y-3 text-sm text-[#bac2de]">
+                            <li class="flex items-center gap-2 font-mono"><iconify-icon icon="solar:check-circle-linear" class="text-[#a6e3a1]"></iconify-icon> Catppuccin Mocha syntax theme</li>
+                            <li class="flex items-center gap-2 font-mono"><iconify-icon icon="solar:check-circle-linear" class="text-[#a6e3a1]"></iconify-icon> GitHub Flavored Markdown support</li>
+                        </ul>
+                    </div>
+                    <div class="flex-1">
+                        <div class="app-shadow rounded-xl border border-[#313244] bg-[#11111b] h-64 overflow-hidden relative p-6">
+                            <div class="absolute inset-0 bg-gradient-to-tr from-[#11111b] via-transparent to-transparent"></div>
+                            <h4 class="text-lg text-[#89b4fa] font-semibold mb-2"># Project Structure</h4>
+                            <p class="text-xs text-[#6c7086] mb-4">Recommended directory layout for your app.</p>
+                            <div class="space-y-1 font-mono text-[11px]">
+                                <div class="text-[#a6e3a1]">- 1. /src (Core logic)</div>
+                                <div class="text-[#f9e2af]">- 2. /tests (Vitest setup)</div>
+                                <div class="text-[#fab387]">- 3. /docs (Markdown spec)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Theme Showcase -->
+        <section id="themes" class="py-24 bg-[#1e1e2e] border-b border-[#313244]">
+            <div class="container mx-auto px-6 text-center">
+                <span class="text-[11px] uppercase tracking-widest text-[#cba6f7] font-semibold block mb-4">Themes</span>
+                <h2 class="text-3xl font-bold text-[#cdd6f4] mb-12 tracking-tight">14 editor themes. Your rules.</h2>
+                <div class="grid grid-cols-3 md:grid-cols-7 gap-4 max-w-4xl mx-auto">
+                    <div class="aspect-square rounded-xl bg-[#1e1e2e] border-2 border-[#cba6f7] flex flex-col items-center justify-center gap-2 group cursor-pointer">
+                        <div class="w-6 h-6 rounded-full bg-[#cba6f7]"></div>
+                        <span class="text-[10px] text-[#cdd6f4]">Mocha</span>
+                    </div>
+                    <div class="aspect-square rounded-xl bg-[#eff1f5] border border-[#313244] flex flex-col items-center justify-center gap-2 hover:border-[#a6adc8] transition-colors cursor-pointer">
+                        <div class="w-6 h-6 rounded-full bg-[#d20f39]"></div>
+                        <span class="text-[10px] text-[#4c4f69]">Latte</span>
+                    </div>
+                    <div class="aspect-square rounded-xl bg-[#1a1b26] border border-[#313244] flex flex-col items-center justify-center gap-2 hover:border-[#a6adc8] transition-colors cursor-pointer">
+                        <div class="w-6 h-6 rounded-full bg-[#7aa2f7]"></div>
+                        <span class="text-[10px] text-[#c0caf5]">Tokyo</span>
+                    </div>
+                    <div class="aspect-square rounded-xl bg-[#282c34] border border-[#313244] flex flex-col items-center justify-center gap-2 hover:border-[#a6adc8] transition-colors cursor-pointer">
+                        <div class="w-6 h-6 rounded-full bg-[#61afef]"></div>
+                        <span class="text-[10px] text-[#abb2bf]">OneDark</span>
+                    </div>
+                    <div class="aspect-square rounded-xl bg-[#282a36] border border-[#313244] flex flex-col items-center justify-center gap-2 hover:border-[#a6adc8] transition-colors cursor-pointer">
+                        <div class="w-6 h-6 rounded-full bg-[#bd93f9]"></div>
+                        <span class="text-[10px] text-[#f8f8f2]">Dracula</span>
+                    </div>
+                    <div class="aspect-square rounded-xl bg-[#2e3440] border border-[#313244] flex flex-col items-center justify-center gap-2 hover:border-[#a6adc8] transition-colors cursor-pointer">
+                        <div class="w-6 h-6 rounded-full bg-[#88c0d0]"></div>
+                        <span class="text-[10px] text-[#d8dee9]">Nord</span>
+                    </div>
+                    <div class="aspect-square rounded-xl bg-[#0d1117] border border-[#313244] flex flex-col items-center justify-center gap-2 hover:border-[#a6adc8] transition-colors cursor-pointer">
+                        <div class="w-6 h-6 rounded-full bg-white"></div>
+                        <span class="text-[10px] text-[#c9d1d9]">GitHub</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Open Source CTA -->
+        <section class="py-32 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-br from-[#181825] via-[#1e1e2e] to-[#251e3a] z-0"></div>
+            <div class="container mx-auto px-6 text-center relative z-10">
+                <span class="text-[11px] uppercase tracking-widest text-[#cba6f7] font-semibold block mb-4">Built in public</span>
+                <h2 class="text-4xl font-bold text-[#cdd6f4] mb-8 tracking-tight">Free today. Free forever.</h2>
+                <p class="text-lg text-[#a6adc8] max-w-2xl mx-auto leading-relaxed mb-12">
+                    Forja is MIT-licensed and developed in the open on GitHub. No paywalls, no subscriptions.
+                    Just a good tool for developers, made by a developer.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <a href="https://github.com/nandomoreirame/forja/stargazers" target="_blank" class="w-full sm:w-auto flex items-center justify-center gap-2 bg-cat-mauve text-[#1e1e2e] px-8 py-4 rounded-xl text-base font-semibold transition-all">
+                        <iconify-icon icon="solar:star-linear" width="20"></iconify-icon>
+                        Star on GitHub
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-cat-crust py-16 border-t border-[#1e1e2e]">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-12 mb-12">
+                <div class="col-span-2">
+                    <div class="text-xl font-bold tracking-tighter flex items-center gap-3 mb-6">
+                        <span class="w-9 h-9 flex items-center justify-center rounded-lg overflow-hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="36" height="36"><rect width="512" height="512" rx="108" fill="#1e1e2e"/><g transform="translate(28, 18.5) scale(19)"><path d="M7 10H6a4 4 0 0 1-4-4 1 1 0 0 1 1-1h4z" fill="#b99de6"/><path d="M7 5a1 1 0 0 1 1-1h13a1 1 0 0 1 1 1 7 7 0 0 1-7 7H8a1 1 0 0 1-1-1z" fill="#cba6f7"/><rect x="7.8" y="11.5" width="3" height="6" rx="0.4" fill="#b08de0"/><rect x="13.2" y="11.5" width="3" height="6" rx="0.4" fill="#b08de0"/><path d="M5 20a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3 1 1 0 0 1-1 1H6a1 1 0 0 1-1-1z" fill="#a580d4"/></g></svg>
+                        </span>
+                        <span>Forja</span>
+                    </div>
+                    <p class="text-[#6c7086] text-sm max-w-xs leading-relaxed">
+                        The open source desktop GUI for AI coding CLIs. Built for developers who love terminal speed but need the context of a proper UI.
+                    </p>
+                </div>
+                <div>
+                    <h5 class="text-[#cdd6f4] font-semibold text-sm mb-6">Project</h5>
+                    <ul class="space-y-4 text-sm text-[#6c7086]">
+                        <li><a href="https://github.com/nandomoreirame/forja" class="hover:text-[#cba6f7] transition-colors">Source Code</a></li>
+                        <li><a href="https://github.com/nandomoreirame/forja/releases" class="hover:text-[#cba6f7] transition-colors">Releases</a></li>
+                        <li><a href="https://github.com/nandomoreirame/forja/issues" class="hover:text-[#cba6f7] transition-colors">Issue Tracker</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="text-[#cdd6f4] font-semibold text-sm mb-6">Stack</h5>
+                    <ul class="space-y-4 text-sm text-[#6c7086] font-mono">
+                        <li>Electron / React</li>
+                        <li>TypeScript</li>
+                        <li>xterm.js / Shiki</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-8 border-t border-[#1e1e2e] flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-[#585b70] font-mono uppercase tracking-widest">
+                <div>© 2026 Fernando Moreira</div>
+                <div class="flex gap-6">
+                    <a href="#" class="hover:text-[#cba6f7]">Privacy</a>
+                    <a href="https://github.com/nandomoreirame/forja/blob/main/LICENSE" class="hover:text-[#cba6f7]">MIT License</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const nav = document.querySelector('nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 20) {
+                nav.style.background = 'rgba(17, 17, 27, 0.9)';
+            } else {
+                nav.style.background = 'rgba(30, 30, 46, 0.8)';
+            }
+        });
+
+        // OS detection for download button
+        (function() {
+            const ua = navigator.userAgent || navigator.platform || '';
+            const label = document.getElementById('download-label');
+            const icon = document.getElementById('download-icon');
+            if (/Mac|iPhone|iPad/.test(ua)) {
+                label.textContent = 'Download for macOS';
+                icon.setAttribute('icon', 'solar:apple-linear');
+            } else if (/Win/.test(ua)) {
+                label.textContent = 'Download for Windows';
+                icon.setAttribute('icon', 'solar:windows-linear');
+            } else if (/Linux|X11/.test(ua)) {
+                label.textContent = 'Download for Linux';
+                icon.setAttribute('icon', 'solar:linux-linear');
+            }
+        })();
+    </script>
+
+</body></html>
