@@ -1,6 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+
+// Hoist mockInvoke so it's available when vi.mock is hoisted
+const mockInvoke = vi.hoisted(() => vi.fn());
+
+// Mock IPC invoke (hoisted - must come before other mocks)
+vi.mock("@/lib/ipc", () => ({
+  invoke: mockInvoke,
+}));
 
 // Mock the store
 const mockState = {
@@ -34,10 +42,15 @@ vi.mock("@/stores/browser-pane", () => ({
     selector ? selector(mockState) : mockState,
 }));
 
-// Patch document.createElement so jsdom returns a div when "webview" is requested
+// Patch document.createElement so jsdom returns a div with getWebContentsId when "webview" is requested
 const originalCreateElement = document.createElement.bind(document);
 document.createElement = ((tagName: string, options?: ElementCreationOptions) => {
-  if (tagName === "webview") return originalCreateElement("div", options);
+  if (tagName === "webview") {
+    const div = originalCreateElement("div", options);
+    // Simulate Electron WebviewTag API methods used in tests
+    (div as HTMLElement & { getWebContentsId?: () => number }).getWebContentsId = () => 1;
+    return div;
+  }
   return originalCreateElement(tagName, options);
 }) as typeof document.createElement;
 
@@ -52,6 +65,7 @@ describe("BrowserPane", () => {
     mockState.canGoBack = false;
     mockState.canGoForward = false;
     mockState.error = null;
+    mockInvoke.mockResolvedValue({ success: true });
   });
 
   it("renders the address bar input with current url", () => {
@@ -108,6 +122,75 @@ describe("BrowserPane", () => {
     expect(mockState.closePane).toHaveBeenCalled();
   });
 
+  describe("screenshot button", () => {
+    it("renders the screenshot button in the toolbar", () => {
+      render(<BrowserPane />);
+      expect(screen.getByLabelText(/take screenshot/i)).toBeInTheDocument();
+    });
+
+    it("screenshot button is visible next to close button", () => {
+      render(<BrowserPane />);
+      const screenshotBtn = screen.getByLabelText(/take screenshot/i);
+      const closeBtn = screen.getByLabelText(/close browser/i);
+      // Both buttons should be in the same toolbar container
+      expect(screenshotBtn.closest("div")).toBe(closeBtn.closest("div"));
+    });
+
+    it("calls invoke with browser:screenshot when clicked", async () => {
+      render(<BrowserPane />);
+      const screenshotBtn = screen.getByLabelText(/take screenshot/i);
+
+      await act(async () => {
+        fireEvent.click(screenshotBtn);
+      });
+
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "browser:screenshot",
+        expect.objectContaining({ webContentsId: expect.any(Number) }),
+      );
+    });
+
+    it("shows success state after successful screenshot", async () => {
+      vi.useFakeTimers();
+      mockInvoke.mockResolvedValue({ success: true });
+      render(<BrowserPane />);
+      const screenshotBtn = screen.getByLabelText(/take screenshot/i);
+
+      // Click and flush microtasks
+      await act(async () => {
+        fireEvent.click(screenshotBtn);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      // The button should show success state
+      expect(screen.getByLabelText(/screenshot copied/i)).toBeInTheDocument();
+
+      // After 2 seconds, should revert to normal
+      await act(async () => {
+        vi.advanceTimersByTime(2100);
+      });
+      expect(screen.getByLabelText(/take screenshot/i)).toBeInTheDocument();
+
+      vi.useRealTimers();
+    });
+
+    it("reverts to idle state after error", async () => {
+      mockInvoke.mockRejectedValue(new Error("capture failed"));
+      render(<BrowserPane />);
+      const screenshotBtn = screen.getByLabelText(/take screenshot/i);
+
+      await act(async () => {
+        fireEvent.click(screenshotBtn);
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      // Should be back in idle state after error
+      expect(screen.getByLabelText(/take screenshot/i)).toBeInTheDocument();
+    });
+  });
+
   describe("error overlay", () => {
     const sampleError = {
       code: -102,
@@ -137,9 +220,10 @@ describe("BrowserPane", () => {
 
     it("reload button clears error and reloads webview", async () => {
       mockState.error = sampleError;
-      const user = userEvent.setup();
       render(<BrowserPane />);
-      await user.click(screen.getByRole("button", { name: "Reload" }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Reload" }));
+      });
       expect(mockState.clearError).toHaveBeenCalled();
     });
   });
