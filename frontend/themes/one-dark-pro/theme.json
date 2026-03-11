@@ -1,0 +1,40 @@
+{
+  "id": "one-dark-pro",
+  "name": "One Dark Pro",
+  "type": "dark",
+  "colors": {
+    "base": "#282c34",
+    "mantle": "#21252b",
+    "surface": "#3a3f4b",
+    "overlay": "#4b5162",
+    "highlight": "#5c6370",
+    "text": "#abb2bf",
+    "subtext": "#9da5b4",
+    "muted": "#5c6370",
+    "accent": "#c678dd",
+    "accentHover": "#d58dee",
+    "accentSubtle": "#2e2040",
+    "success": "#98c379",
+    "warning": "#d19a66",
+    "error": "#e06c75",
+    "info": "#61afef"
+  },
+  "terminal": {
+    "black": "#282c34",
+    "red": "#e06c75",
+    "green": "#98c379",
+    "yellow": "#d19a66",
+    "blue": "#61afef",
+    "magenta": "#c678dd",
+    "cyan": "#56b6c2",
+    "white": "#abb2bf",
+    "brightBlack": "#5c6370",
+    "brightRed": "#e06c75",
+    "brightGreen": "#98c379",
+    "brightYellow": "#d19a66",
+    "brightBlue": "#61afef",
+    "brightMagenta": "#c678dd",
+    "brightCyan": "#56b6c2",
+    "brightWhite": "#ffffff"
+  }
+}

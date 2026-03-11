@@ -1,0 +1,40 @@
+{
+  "id": "monokai-pro",
+  "name": "Monokai Pro",
+  "type": "dark",
+  "colors": {
+    "base": "#2d2a2e",
+    "mantle": "#221f22",
+    "surface": "#403e41",
+    "overlay": "#5b5a5c",
+    "highlight": "#727072",
+    "text": "#fcfcfa",
+    "subtext": "#c1c0c0",
+    "muted": "#727072",
+    "accent": "#ff6188",
+    "accentHover": "#ff7a9a",
+    "accentSubtle": "#3a1e25",
+    "success": "#a9dc76",
+    "warning": "#ffd866",
+    "error": "#ff6188",
+    "info": "#78dce8"
+  },
+  "terminal": {
+    "black": "#221f22",
+    "red": "#ff6188",
+    "green": "#a9dc76",
+    "yellow": "#ffd866",
+    "blue": "#fc9867",
+    "magenta": "#ab9df2",
+    "cyan": "#78dce8",
+    "white": "#fcfcfa",
+    "brightBlack": "#727072",
+    "brightRed": "#ff6188",
+    "brightGreen": "#a9dc76",
+    "brightYellow": "#ffd866",
+    "brightBlue": "#fc9867",
+    "brightMagenta": "#ab9df2",
+    "brightCyan": "#78dce8",
+    "brightWhite": "#fcfcfa"
+  }
+}
