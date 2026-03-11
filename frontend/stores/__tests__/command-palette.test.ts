@@ -29,6 +29,13 @@ describe("useCommandPaletteStore", () => {
     expect(state.mode).toBe("commands");
   });
 
+  it("opens with sessions mode", () => {
+    useCommandPaletteStore.getState().open("sessions");
+    const state = useCommandPaletteStore.getState();
+    expect(state.isOpen).toBe(true);
+    expect(state.mode).toBe("sessions");
+  });
+
   it("closes the palette", () => {
     useCommandPaletteStore.getState().open("files");
     useCommandPaletteStore.getState().close();
