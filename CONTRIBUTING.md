@@ -6,7 +6,7 @@ Thank you for your interest in contributing to Forja! This guide will help you g
 
 | Tool | Version | Install |
 |------|---------|---------|
-| **Node.js** | 22+ | [nodejs.org](https://nodejs.org/) |
+| **Node.js** | 22+ | [nodejs.org](https://nodejs.org/) or via `mise` |
 | **pnpm** | 9+ | `npm install -g pnpm` |
 
 ### Linux additional dependencies
@@ -14,6 +14,9 @@ Thank you for your interest in contributing to Forja! This guide will help you g
 ```bash
 # Ubuntu/Debian (for native modules like node-pty)
 sudo apt install build-essential python3
+
+# Arch Linux
+sudo pacman -S base-devel python
 ```
 
 ### macOS additional dependencies
@@ -41,62 +44,151 @@ pnpm dev
 
 # Run frontend only (useful for UI work without Electron)
 pnpm dev:vite
+
+# Run Electron main process only (requires Vite running on port 1420)
+pnpm dev:electron
 ```
 
 ## Testing
 
+Tests use Vitest with a multi-project setup: `frontend` (happy-dom) and `electron` (node).
+
 ```bash
-# Run all tests (frontend + electron)
+# Run all tests
 pnpm test
 
-# Run tests in watch mode
-pnpm test -- --watch
-
 # Run a specific test file
-pnpm vitest run frontend/lib/__tests__/strip-ansi.test.ts
+pnpm test path/to/file.test.ts
 
-# Run tests with coverage
+# Run tests by project
+pnpm test --project frontend    # Frontend tests only
+pnpm test --project electron    # Electron tests only
+
+# Watch mode
+pnpm test --watch
+
+# Coverage report
 pnpm test:coverage
+
+# Visual UI
+pnpm test:ui
+```
+
+### Testing conventions
+
+- **Frontend tests**: Use happy-dom environment. Mock `@/lib/ipc` for all component/store tests.
+- **Electron tests**: Use node environment with `forks` pool. Mock `fs`, `chokidar`, `node-pty` as needed.
+- **Test location**: Colocated in `__tests__/` directories next to source files.
+- **IPC mock pattern**:
+
+```typescript
+vi.mock("@/lib/ipc", () => ({
+  invoke: vi.fn(),
+  listen: vi.fn(() => () => {}),
+}));
+```
+
+## Building
+
+```bash
+# TypeScript compile + Vite build
+pnpm build
+
+# Full Electron build (DMG for macOS, AppImage/DEB for Linux)
+pnpm build:electron
+```
+
+Build output goes to `release/`. App ID: `dev.forja.terminal`.
+
+## Branching Strategy (Git Flow)
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Production releases (tagged) |
+| `develop` | Integration branch (default) |
+| `feature/*` | New features (branch from `develop`) |
+| `bugfix/*` | Bug fixes (branch from `develop`) |
+| `hotfix/*` | Urgent fixes (branch from `main`) |
+| `release/*` | Release preparation (branch from `develop`) |
+
+### Workflow
+
+1. Fork the repository
+2. Create a branch from `develop`:
+   - `feature/your-feature-name` for new features
+   - `bugfix/your-fix-name` for bug fixes
+3. Make your changes following the code style below
+4. Write tests (TDD: Red-Green-Refactor)
+5. Ensure all tests pass (`pnpm test`)
+6. Submit a pull request to `develop`
+
+## Commit Convention
+
+Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+
+```
+<type>(<scope>): <description>
+```
+
+| Type | When to use |
+|------|-------------|
+| `feat` | New feature |
+| `fix` | Bug fix |
+| `refactor` | Code restructuring (no behavior change) |
+| `test` | Adding or updating tests |
+| `docs` | Documentation changes |
+| `chore` | Build, config, tooling changes |
+| `perf` | Performance improvements |
+| `style` | Formatting, whitespace (no code change) |
+
+Examples:
+
+```
+feat(terminal): add split pane support
+fix(file-tree): lazy-load children on directory expand
+refactor(stores): extract keyboard shortcuts hook
+test(pty): add spawn error handling tests
+chore(config): update electron-builder targets
 ```
 
 ## Code Style
 
 - All code, variables, comments, and commits in **English**
-- Frontend: TypeScript, React 19, Tailwind CSS 4, shadcn/ui components
-- Backend: TypeScript (Electron main process)
-- State management: Zustand stores
-- Testing: Vitest + React Testing Library (frontend), Vitest with node environment (electron)
-- Icons: Lucide React (`strokeWidth={1.5}`)
+- **TypeScript** strict mode enabled
+- **Files**: kebab-case (`file-tree.ts`, `use-pty.ts`)
+- **Components**: PascalCase (`TerminalPane.tsx`)
+- **Hooks**: `use` prefix (`usePty.ts`)
+- **Stores**: kebab-case Zustand stores (`terminal-tabs.ts`)
+- **Types**: PascalCase (`TerminalTab`, `TerminalTabsState`)
+- **Imports**: External, then `@/` internal, then relative, then `import type`
+- **State**: Zustand only (no React Context for state management)
+- **Styling**: Tailwind CSS 4 with `cn()` utility for conditional classes
+- **Icons**: Lucide React with `strokeWidth={1.5}`
 
 ## Project Structure
 
 ```
 forja/
-  electron/           # Electron main process (TypeScript)
-    main.ts           # Entry point, IPC handlers
-    preload.ts        # contextBridge for window.electronAPI
-    pty.ts            # PTY management (node-pty)
-    config.ts         # electron-store config manager
-    watcher.ts        # File watcher (chokidar)
-    git-info.ts       # Git status reader
-    metrics.ts        # System metrics collector
-    user-settings.ts  # User settings manager
-  frontend/           # React + TypeScript frontend
-    components/       # React components
-    stores/           # Zustand state stores
-    hooks/            # Custom React hooks
-    lib/              # Utility functions
-    styles/           # CSS (Tailwind + globals)
-  docs/               # Documentation
-  public/             # Static assets (icons, images)
+  electron/               # Electron main process
+    main.ts               # Entry point, IPC handlers
+    preload.ts            # contextBridge (window.electronAPI)
+    pty.ts                # PTY management (node-pty)
+    config.ts             # electron-store config
+    user-settings.ts      # User settings manager
+    git-info.ts           # Git status reader
+    context/              # Context synchronization system
+    __tests__/            # Electron tests (node env)
+  frontend/               # React + TypeScript frontend
+    components/           # React components (43)
+    stores/               # Zustand stores (18)
+    hooks/                # Custom hooks (7)
+    lib/                  # Utility modules (21)
+    themes/               # Theme definitions (14+)
+    styles/               # CSS (Tailwind + globals)
+  docs/                   # Documentation
+  site/                   # Landing page (static HTML)
+  public/                 # Static assets (icons, images)
 ```
-
-## Pull Request Process
-
-1. Fork the repository and create a feature branch from `develop`
-2. Write tests for new functionality (TDD: Red-Green-Refactor)
-3. Ensure all tests pass (`pnpm test`)
-4. Submit a pull request to `develop`
 
 ## License
 

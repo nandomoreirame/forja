@@ -13,6 +13,7 @@ import * as os from "os";
 import { fileURLToPath, pathToFileURL } from "url";
 import { execFile } from "child_process";
 import { assertPathWithinScope } from "./path-validation.js";
+import { resolveImeConfig } from "./ime-config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,6 +83,13 @@ if (process.platform === "linux") {
     app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
   }
 }
+
+// IME / dead-key support (cedilla on pt_BR, Wayland IME)
+const imeConfig = resolveImeConfig(process.platform, process.env);
+for (const sw of imeConfig.switches) {
+  app.commandLine.appendSwitch(...sw);
+}
+Object.assign(process.env, imeConfig.env);
 
 // V8 GC: larger semi-space reduces minor GC pauses
 app.commandLine.appendSwitch("js-flags", "--max-semi-space-size=64");

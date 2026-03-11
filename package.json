@@ -1,7 +1,7 @@
 {
   "name": "@forja/app",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Desktop GUI client for Vibe Coders and other AI coding CLIs",
   "author": {
     "name": "Fernando Moreira",
@@ -23,7 +23,9 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "version:bump": "bash scripts/bump-version.sh",
-    "analyze": "ANALYZE=true vite build"
+    "analyze": "ANALYZE=true vite build",
+    "site:dev": "npx http-server site/public -p 3030 -c-1 --cors",
+    "site:deploy": "firebase deploy --only hosting:forja --config site/firebase.json"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
