@@ -274,7 +274,7 @@ export function CommandPalette() {
               >
                 <Plus className="h-4 w-4" strokeWidth={1.5} />
                 Add Project
-                <CommandShortcut>{mod}+O</CommandShortcut>
+                <CommandShortcut>{mod}+Shift+O</CommandShortcut>
               </CommandItem>
             </CommandGroup>
 
@@ -285,7 +285,7 @@ export function CommandPalette() {
               >
                 <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
                 Toggle Sidebar
-                <CommandShortcut>{mod}+B</CommandShortcut>
+                <CommandShortcut>{mod}+Shift+B</CommandShortcut>
               </CommandItem>
               <CommandItem
                 value="Toggle File Preview"

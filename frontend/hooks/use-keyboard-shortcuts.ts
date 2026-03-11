@@ -51,13 +51,13 @@ export function useKeyboardShortcuts({
         useAppDialogsStore.getState().setSettingsOpen(true);
         return;
       }
-      // Ctrl/Cmd+Shift+B — toggle browser pane
-      if (mod && event.shiftKey && event.key.toLowerCase() === "b") {
+      // Ctrl/Cmd+Alt+B — toggle browser pane
+      if (mod && event.altKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
         useBrowserPaneStore.getState().toggleOpen();
         return;
       }
-      if (mod && event.key === "b") {
+      if (mod && event.shiftKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
         const { tree: t, trees: tr } = useFileTreeStore.getState();
         if (t !== null || Object.keys(tr).length > 0) {
@@ -65,7 +65,7 @@ export function useKeyboardShortcuts({
         }
         return;
       }
-      if (mod && event.key === "o") {
+      if (mod && event.shiftKey && event.key.toLowerCase() === "o") {
         event.preventDefault();
         useFileTreeStore.getState().openProject();
         return;

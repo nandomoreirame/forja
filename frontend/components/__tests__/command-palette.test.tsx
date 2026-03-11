@@ -231,6 +231,14 @@ describe("CommandPalette", () => {
     const newSessionItem = screen.getByText("New Session").closest("[cmdk-item]") as HTMLElement;
     expect(newSessionItem).toBeInTheDocument();
     expect(within(newSessionItem).getByText(/T$/)).toBeInTheDocument();
+
+    const addProjectItem = screen.getByText("Add Project").closest("[cmdk-item]") as HTMLElement;
+    expect(addProjectItem).toBeInTheDocument();
+    expect(within(addProjectItem).getByText(/Shift\+O$/)).toBeInTheDocument();
+
+    const toggleSidebarItem = screen.getByText("Toggle Sidebar").closest("[cmdk-item]") as HTMLElement;
+    expect(toggleSidebarItem).toBeInTheDocument();
+    expect(within(toggleSidebarItem).getByText(/Shift\+B$/)).toBeInTheDocument();
   });
 
   describe("sessions mode", () => {
