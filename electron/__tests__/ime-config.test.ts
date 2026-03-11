@@ -2,13 +2,13 @@ import { describe, test, expect } from "vitest";
 import { resolveImeConfig } from "../ime-config.js";
 
 describe("resolveImeConfig", () => {
-  test("returns wayland IME switch when WAYLAND_DISPLAY is set", () => {
+  test("does not return wayland IME switch (avoids double dead-key input)", () => {
     const result = resolveImeConfig("linux", {
       WAYLAND_DISPLAY: "wayland-1",
       LANG: "en_US.UTF-8",
     });
 
-    expect(result.switches).toContainEqual(["enable-wayland-ime"]);
+    expect(result.switches).not.toContainEqual(["enable-wayland-ime"]);
   });
 
   test("sets GTK_IM_MODULE to cedilla for pt_BR locale when not already set", () => {
@@ -48,21 +48,13 @@ describe("resolveImeConfig", () => {
     expect(result.env.GTK_IM_MODULE).toBeUndefined();
   });
 
-  test("does not return wayland switch when not on wayland", () => {
-    const result = resolveImeConfig("linux", {
-      LANG: "pt_BR.UTF-8",
-    });
-
-    expect(result.switches).not.toContainEqual(["enable-wayland-ime"]);
-  });
-
-  test("combines wayland IME and cedilla for pt_BR on wayland", () => {
+  test("sets cedilla on wayland for pt_BR (XKB compose handles dead keys)", () => {
     const result = resolveImeConfig("linux", {
       WAYLAND_DISPLAY: "wayland-1",
       LANG: "pt_BR.UTF-8",
     });
 
-    expect(result.switches).toContainEqual(["enable-wayland-ime"]);
+    expect(result.switches).toHaveLength(0);
     expect(result.env).toEqual(
       expect.objectContaining({ GTK_IM_MODULE: "cedilla" }),
     );
