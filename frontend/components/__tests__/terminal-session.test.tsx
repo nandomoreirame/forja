@@ -9,6 +9,8 @@ const mockDispose = vi.fn();
 const mockOnData = vi.fn().mockReturnValue({ dispose: vi.fn() });
 const mockLoadAddon = vi.fn();
 const mockFocus = vi.fn();
+const mockGetSelection = vi.fn().mockReturnValue("");
+let capturedKeyHandler: ((event: KeyboardEvent) => boolean) | undefined;
 
 vi.mock("@xterm/xterm", () => ({
   Terminal: class MockTerminal {
@@ -18,7 +20,12 @@ vi.mock("@xterm/xterm", () => ({
     onData = mockOnData;
     loadAddon = mockLoadAddon;
     focus = mockFocus;
-    attachCustomKeyEventHandler = vi.fn();
+    getSelection = mockGetSelection;
+    attachCustomKeyEventHandler = vi.fn(
+      (handler: (event: KeyboardEvent) => boolean) => {
+        capturedKeyHandler = handler;
+      },
+    );
     options = {};
     rows = 24;
     cols = 80;
@@ -97,6 +104,8 @@ describe("TerminalSession", () => {
     mockClose.mockClear();
     mockRouteLinkClick.mockClear();
     capturedWebLinksHandler = undefined;
+    capturedKeyHandler = undefined;
+    mockGetSelection.mockReset().mockReturnValue("");
     webglInstances.length = 0;
   });
 
@@ -277,6 +286,99 @@ describe("TerminalSession", () => {
       // but the timer-based disposal itself should be cleared
       // We verify no extra calls beyond what unmount cleanup does
       expect(webgl.dispose).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("copy/paste keyboard shortcuts", () => {
+    const mockClipboardWriteText = vi.fn().mockResolvedValue(undefined);
+    const mockClipboardReadText = vi.fn().mockResolvedValue("");
+
+    beforeEach(() => {
+      mockClipboardWriteText.mockClear().mockResolvedValue(undefined);
+      mockClipboardReadText.mockClear().mockResolvedValue("");
+      Object.defineProperty(navigator, "clipboard", {
+        value: {
+          writeText: mockClipboardWriteText,
+          readText: mockClipboardReadText,
+        },
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("Ctrl+Shift+C copies selected terminal text to clipboard", () => {
+      mockGetSelection.mockReturnValue("selected text");
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      expect(capturedKeyHandler).toBeDefined();
+
+      const event = new KeyboardEvent("keydown", {
+        key: "C",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(false);
+      expect(mockClipboardWriteText).toHaveBeenCalledWith("selected text");
+    });
+
+    it("Ctrl+Shift+C does nothing when no text is selected", () => {
+      mockGetSelection.mockReturnValue("");
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      const event = new KeyboardEvent("keydown", {
+        key: "C",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      capturedKeyHandler!(event);
+
+      expect(mockClipboardWriteText).not.toHaveBeenCalled();
+    });
+
+    it("Ctrl+Shift+V pastes clipboard text to terminal PTY", async () => {
+      mockClipboardReadText.mockResolvedValue("pasted text");
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      const event = new KeyboardEvent("keydown", {
+        key: "V",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(mockPtyWrite).toHaveBeenCalledWith("pasted text");
+    });
+
+    it("Ctrl+C (without Shift) passes through to xterm for SIGINT", () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      const event = new KeyboardEvent("keydown", {
+        key: "c",
+        ctrlKey: true,
+        shiftKey: false,
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(true);
+    });
+
+    it("does not trigger copy on keyup events", () => {
+      mockGetSelection.mockReturnValue("some text");
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      const event = new KeyboardEvent("keyup", {
+        key: "C",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      capturedKeyHandler!(event);
+
+      expect(mockClipboardWriteText).not.toHaveBeenCalled();
     });
   });
 });
