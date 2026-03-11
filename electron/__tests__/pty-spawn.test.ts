@@ -210,4 +210,116 @@ describe("spawnPty - session state events", () => {
       exitCode: null,
     });
   });
+
+  it("does not emit running state when sender is already destroyed", async () => {
+    const { spawnPty } = await import("../pty");
+
+    const mockSender = {
+      send: vi.fn(),
+      isDestroyed: vi.fn(() => true),
+    };
+
+    spawnPty({
+      tabId: "test-claude-destroyed",
+      path: "/home/test/project",
+      sessionType: "claude",
+      windowId: 1,
+      sender: mockSender as unknown as Electron.WebContents,
+    });
+
+    expect(mockSender.send).not.toHaveBeenCalled();
+  });
+
+  it("emits exit state after the spawned PTY exits", async () => {
+    let exitHandler: ((event: { exitCode: number }) => void) | undefined;
+    const mockPtyProcess = {
+      onData: vi.fn(),
+      onExit: vi.fn((handler: (event: { exitCode: number }) => void) => {
+        exitHandler = handler;
+      }),
+      write: vi.fn(),
+      resize: vi.fn(),
+      kill: vi.fn(),
+    };
+    mockPtySpawn.mockReturnValueOnce(mockPtyProcess);
+
+    const { spawnPty } = await import("../pty");
+
+    const mockSender = {
+      send: vi.fn(),
+      isDestroyed: vi.fn(() => false),
+    };
+
+    spawnPty({
+      tabId: "test-claude-exit",
+      path: "/home/test/project",
+      sessionType: "claude",
+      windowId: 1,
+      sender: mockSender as unknown as Electron.WebContents,
+    });
+
+    expect(exitHandler).toBeTypeOf("function");
+
+    exitHandler!({ exitCode: 17 });
+
+    expect(mockSender.send).toHaveBeenCalledWith("pty:exit", {
+      tab_id: "test-claude-exit",
+      code: 17,
+    });
+    expect(mockSender.send).toHaveBeenCalledWith("pty:session-state-changed", {
+      sessionId: "test-claude-exit",
+      projectPath: "/home/test/project",
+      state: "exited",
+      exitCode: 17,
+    });
+  });
+
+  it("closeAllPtysForWindow only kills sessions from the targeted window", async () => {
+    const { spawnPty, closeAllPtysForWindow } = await import("../pty");
+
+    const firstProcess = {
+      onData: vi.fn(),
+      onExit: vi.fn(),
+      write: vi.fn(),
+      resize: vi.fn(),
+      kill: vi.fn(),
+    };
+    const secondProcess = {
+      onData: vi.fn(),
+      onExit: vi.fn(),
+      write: vi.fn(),
+      resize: vi.fn(),
+      kill: vi.fn(),
+    };
+
+    mockPtySpawn
+      .mockReturnValueOnce(firstProcess)
+      .mockReturnValueOnce(secondProcess);
+
+    const mockSender = {
+      send: vi.fn(),
+      isDestroyed: vi.fn(() => false),
+    };
+
+    spawnPty({
+      tabId: "tab-window-1",
+      path: "/home/test/project-a",
+      sessionType: "claude",
+      windowId: 1,
+      sender: mockSender as unknown as Electron.WebContents,
+    });
+
+    spawnPty({
+      tabId: "tab-window-2",
+      path: "/home/test/project-b",
+      sessionType: "claude",
+      windowId: 2,
+      sender: mockSender as unknown as Electron.WebContents,
+    });
+
+    closeAllPtysForWindow(1);
+
+    expect(firstProcess.kill).toHaveBeenCalledTimes(1);
+    expect(secondProcess.kill).not.toHaveBeenCalled();
+  });
 });

@@ -243,6 +243,35 @@ describe("useFilePreviewStore", () => {
       expect(state.editContent).toBe("user edits");
       expect(state.editDirty).toBe(true);
     });
+
+    it("reloads only when the open file belongs to the changed project", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue({
+        path: "/project-a/src/file.ts",
+        content: "updated",
+        size: 7,
+      });
+
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-a/src/file.ts",
+        content: {
+          path: "/project-a/src/file.ts",
+          content: "old",
+          size: 3,
+        },
+      });
+
+      await useFilePreviewStore.getState().reloadCurrentFileForProject("/project-b");
+      expect(invoke).not.toHaveBeenCalled();
+
+      await useFilePreviewStore.getState().reloadCurrentFileForProject("/project-a");
+      expect(invoke).toHaveBeenCalledWith("read_file_command", {
+        path: "/project-a/src/file.ts",
+        maxSizeMb: 10,
+        skipCache: true,
+      });
+    });
   });
 
   describe("clearError", () => {

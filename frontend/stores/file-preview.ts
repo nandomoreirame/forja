@@ -25,6 +25,7 @@ interface FilePreviewState {
   closePreview: () => void;
   loadFile: (path: string) => Promise<void>;
   reloadCurrentFile: () => Promise<void>;
+  reloadCurrentFileForProject: (projectPath: string) => Promise<void>;
   clearError: () => void;
   setEditing: (editing: boolean) => void;
   setEditContent: (content: string) => void;
@@ -106,6 +107,19 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
     } catch {
       // Silently ignore reload errors — file may have been deleted
     }
+  },
+
+  reloadCurrentFileForProject: async (projectPath: string) => {
+    const { currentFile } = get();
+    if (!currentFile) return;
+
+    const normalizedProjectPath = projectPath.endsWith("/")
+      ? projectPath
+      : `${projectPath}/`;
+
+    if (!currentFile.startsWith(normalizedProjectPath)) return;
+
+    await get().reloadCurrentFile();
   },
 
   clearError: () => set({ error: null }),

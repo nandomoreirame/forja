@@ -89,6 +89,102 @@ describe("file-watcher", () => {
       });
     });
 
+    it("coalesces multiple filesystem events into a single debounced IPC event", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )?.[1] as (() => void) | undefined;
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as (() => void) | undefined;
+
+      expect(addHandler).toBeDefined();
+      expect(changeHandler).toBeDefined();
+
+      addHandler!();
+      vi.advanceTimersByTime(500);
+      changeHandler!();
+      vi.advanceTimersByTime(999);
+
+      expect(sender.send).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+      expect(sender.send).toHaveBeenCalledTimes(1);
+      expect(sender.send).toHaveBeenCalledWith("files:changed", {
+        path: "/my-project",
+      });
+    });
+
+    it("coalesces burst filesystem events into a single IPC send", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )![1] as () => void;
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )![1] as () => void;
+      const unlinkHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "unlink",
+      )![1] as () => void;
+
+      addHandler();
+      vi.advanceTimersByTime(400);
+      changeHandler();
+      vi.advanceTimersByTime(400);
+      unlinkHandler();
+
+      expect(sender.send).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1000);
+
+      expect(sender.send).toHaveBeenCalledTimes(1);
+      expect(sender.send).toHaveBeenCalledWith("files:changed", {
+        path: "/my-project",
+      });
+    });
+
+    it("coalesces rapid filesystem events into a single refresh", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )?.[1] as (() => void) | undefined;
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as (() => void) | undefined;
+      const unlinkHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "unlink",
+      )?.[1] as (() => void) | undefined;
+
+      addHandler?.();
+      vi.advanceTimersByTime(400);
+      changeHandler?.();
+      vi.advanceTimersByTime(400);
+      unlinkHandler?.();
+
+      expect(sender.send).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(999);
+      expect(sender.send).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+      expect(sender.send).toHaveBeenCalledTimes(1);
+      expect(sender.send).toHaveBeenCalledWith("files:changed", {
+        path: "/my-project",
+      });
+    });
+
     it("does not send if sender is destroyed", async () => {
       const { startFileWatcher } = await import("../file-watcher.js");
 

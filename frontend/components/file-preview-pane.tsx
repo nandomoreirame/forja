@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import { X, FileCode, AlertCircle, Pencil, Eye, Anvil } from 'lucide-react';
 import { invoke } from '@/lib/ipc';
 import { useFilePreviewStore } from '@/stores/file-preview';
@@ -8,9 +8,14 @@ import { CodeViewer } from './code-viewer';
 import { ImageViewer } from './image-viewer';
 import { MarkdownRenderer } from './markdown-renderer';
 import { GitDiffViewer } from './git-diff-viewer';
-import { MonacoEditor } from './monaco-editor';
 import { detectLanguage } from '@/lib/detect-language';
 import { MOD_KEY } from '@/lib/platform';
+
+const MonacoEditor = lazy(() =>
+  import("./monaco-editor").then((module) => ({
+    default: module.MonacoEditor,
+  })),
+);
 
 const IMAGE_EXTENSIONS = new Set([
   "png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "bmp",
@@ -308,16 +313,18 @@ function FilePreviewPaneContent() {
               <MarkdownRenderer content={content.content} />
             </div>
           ) : isEditing ? (
-            <MonacoEditor
-              value={editContent ?? content.content}
-              language={detectLanguage(currentFile ?? filename)}
-              onChange={(value) => setEditContent(value)}
-              onSave={(value) => {
-                setEditContent(value);
-                saveFile();
-              }}
-              className="h-full w-full"
-            />
+            <Suspense fallback={<div className="h-full w-full bg-ctp-base" />}>
+              <MonacoEditor
+                value={editContent ?? content.content}
+                language={detectLanguage(currentFile ?? filename)}
+                onChange={(value) => setEditContent(value)}
+                onSave={(value) => {
+                  setEditContent(value);
+                  saveFile();
+                }}
+                className="h-full w-full"
+              />
+            </Suspense>
           ) : (
             <CodeViewer code={content.content} filename={filename} />
           )

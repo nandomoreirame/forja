@@ -254,6 +254,40 @@ describe("app-metrics", () => {
 
       stopAppMetricsLoop();
     });
+
+    it("collects metrics only once per interval even with multiple windows", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 1.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 10 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const firstWindow = { send: vi.fn(), isDestroyed: () => false };
+      const secondWindow = { send: vi.fn(), isDestroyed: () => false };
+
+      startAppMetricsLoop(
+        () =>
+          [
+            firstWindow as unknown as Electron.WebContents,
+            secondWindow as unknown as Electron.WebContents,
+          ],
+      );
+
+      vi.advanceTimersByTime(2000);
+
+      expect(app.getAppMetrics).toHaveBeenCalledTimes(1);
+      expect(firstWindow.send).toHaveBeenCalledTimes(1);
+      expect(secondWindow.send).toHaveBeenCalledTimes(1);
+
+      stopAppMetricsLoop();
+    });
   });
 
   describe("startAppMetricsLoop with isAnyWindowFocused callback", () => {
@@ -374,6 +408,26 @@ describe("app-metrics", () => {
       expect(mockSend).toHaveBeenCalledWith("app-metrics", expect.objectContaining({
         process_count: 1,
       }));
+
+      stopAppMetricsLoop();
+    });
+
+    it("does not call getWindows or app metrics work while unfocused", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const getWindows = vi.fn(() => []);
+      const isAnyWindowFocused = vi.fn().mockReturnValue(false);
+
+      startAppMetricsLoop(getWindows, isAnyWindowFocused);
+
+      vi.advanceTimersByTime(4000);
+
+      expect(isAnyWindowFocused).toHaveBeenCalledTimes(2);
+      expect(app.getAppMetrics).not.toHaveBeenCalled();
+      expect(getWindows).not.toHaveBeenCalled();
 
       stopAppMetricsLoop();
     });
