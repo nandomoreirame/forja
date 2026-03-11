@@ -8,6 +8,13 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.5.2] - 2026-03-11
+
+### Fixed
+- Prevent duplicate characters during dead-key composition.
+- Fix broken CHANGELOG formatting from release script.
+---
+
 ## [1.5.1] - 2026-03-11
 
 ### Fixed
