@@ -14,6 +14,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { execFile } from "child_process";
 import { assertPathWithinScope } from "./path-validation.js";
 import { resolveImeConfig } from "./ime-config.js";
+import { readSettingsModeSync, resolveModeSyncFromHardware } from "./lite-mode.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,24 +64,30 @@ function isTilingDesktopSession(): boolean {
 
 // Let the system handle DPI scaling natively (supports fractional scaling on Wayland)
 
-// GPU Acceleration
-app.commandLine.appendSwitch("ignore-gpu-blocklist");
-app.commandLine.appendSwitch("enable-gpu-rasterization");
-app.commandLine.appendSwitch("enable-oop-rasterization");
-app.commandLine.appendSwitch("enable-zero-copy");
-app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
+// Resolve performance mode synchronously (needed before app.ready for GPU switches)
+const perfSettingsMode = readSettingsModeSync();
+const resolvedPerfMode = resolveModeSyncFromHardware(perfSettingsMode);
 
-// Linux-specific GPU
-if (process.platform === "linux") {
-  const isWayland = !!process.env.WAYLAND_DISPLAY;
-  if (isWayland) {
-    app.commandLine.appendSwitch("ozone-platform", "wayland");
-    app.commandLine.appendSwitch(
-      "enable-features",
-      "VaapiVideoDecoder,VaapiVideoEncoder,CanvasOopRasterization",
-    );
-  } else {
-    app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
+// GPU Acceleration (skip in lite mode)
+if (resolvedPerfMode !== "lite") {
+  app.commandLine.appendSwitch("ignore-gpu-blocklist");
+  app.commandLine.appendSwitch("enable-gpu-rasterization");
+  app.commandLine.appendSwitch("enable-oop-rasterization");
+  app.commandLine.appendSwitch("enable-zero-copy");
+  app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
+
+  // Linux-specific GPU
+  if (process.platform === "linux") {
+    const isWayland = !!process.env.WAYLAND_DISPLAY;
+    if (isWayland) {
+      app.commandLine.appendSwitch("ozone-platform", "wayland");
+      app.commandLine.appendSwitch(
+        "enable-features",
+        "VaapiVideoDecoder,VaapiVideoEncoder,CanvasOopRasterization",
+      );
+    } else {
+      app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
+    }
   }
 }
 
@@ -91,8 +98,9 @@ for (const sw of imeConfig.switches) {
 }
 Object.assign(process.env, imeConfig.env);
 
-// V8 GC: larger semi-space reduces minor GC pauses
-app.commandLine.appendSwitch("js-flags", "--max-semi-space-size=64");
+// V8 GC: smaller semi-space in lite mode
+const semiSpaceSize = resolvedPerfMode === "lite" ? 32 : 64;
+app.commandLine.appendSwitch("js-flags", `--max-semi-space-size=${semiSpaceSize}`);
 
 // Augment PATH for finding `claude` and other tools
 process.env.PATH = resolveShellPath();
