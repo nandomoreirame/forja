@@ -236,7 +236,7 @@ function FilePreviewPaneContent() {
             {isDiffView ? "Diff" : isEditing ? "Editing" : "Preview"}
           </span>
         </div>
-        {!isDiffView && !isImage && !isMarkdown && content && (
+        {!isDiffView && !isImage && content && (
           <button
             onClick={() => setEditing(!isEditing)}
             aria-label={isEditing ? "Switch to preview" : "Switch to edit"}
@@ -303,7 +303,7 @@ function FilePreviewPaneContent() {
         {!isDiffView && !isLoading && !error && content && (
           isImage ? (
             <ImageViewer content={content.content} filename={filename} />
-          ) : isMarkdown ? (
+          ) : isMarkdown && !isEditing ? (
             <div className="h-full overflow-y-auto p-4">
               <MarkdownRenderer content={content.content} />
             </div>

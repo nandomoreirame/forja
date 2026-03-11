@@ -224,6 +224,57 @@ describe("FilePreviewPane", () => {
     expect(screen.getByText("# Hello")).toBeInTheDocument();
   });
 
+  it("shows Edit button for markdown files", () => {
+    useFilePreviewStore.setState({
+      isOpen: true,
+      isLoading: false,
+      currentFile: "/test/README.md",
+      content: { path: "/test/README.md", content: "# Hello", size: 7 },
+    });
+    renderWithSuspense(<FilePreviewPane />);
+    expect(screen.getByLabelText("Switch to edit")).toBeInTheDocument();
+    expect(screen.getByText("Edit")).toBeInTheDocument();
+  });
+
+  it("switches markdown from preview to editor when Edit is clicked", async () => {
+    useFilePreviewStore.setState({
+      isOpen: true,
+      isLoading: false,
+      currentFile: "/test/README.md",
+      content: { path: "/test/README.md", content: "# Hello", size: 7 },
+    });
+    renderWithSuspense(<FilePreviewPane />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByLabelText("Switch to edit"));
+
+    expect(screen.queryByTestId("markdown-content")).not.toBeInTheDocument();
+    expect(screen.getByText("Editing")).toBeInTheDocument();
+  });
+
+  it("switches markdown from editor back to preview when Preview is clicked", async () => {
+    useFilePreviewStore.setState({
+      isOpen: true,
+      isLoading: false,
+      isEditing: true,
+      currentFile: "/test/README.md",
+      content: { path: "/test/README.md", content: "# Hello", size: 7 },
+    });
+    renderWithSuspense(<FilePreviewPane />);
+
+    expect(screen.getByLabelText("Switch to preview")).toBeInTheDocument();
+    expect(screen.getByText("Preview")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Switch to preview"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
+    });
+  });
+
   it("renders image viewer for PNG files with base64 encoding", () => {
     const fakeBase64 = "iVBORw0KGgoAAAANSUhEUg";
     useFilePreviewStore.setState({
