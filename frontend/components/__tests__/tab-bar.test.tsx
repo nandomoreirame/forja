@@ -238,6 +238,46 @@ describe("TabBar", () => {
     expect(tabButtons[2]).toHaveClass("opacity-60");
   });
 
+  describe("tooltips on action buttons", () => {
+    it("shows tooltip with shortcut on fullscreen button", async () => {
+      const user = userEvent.setup();
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+        />
+      );
+
+      await user.hover(screen.getByLabelText("Toggle fullscreen"));
+      expect(await screen.findByRole("tooltip")).toHaveTextContent(/Ctrl\+Shift\+F/);
+    });
+
+    it("shows tooltip with shortcut on hide terminal button", async () => {
+      const user = userEvent.setup();
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+        />
+      );
+
+      await user.hover(screen.getByLabelText("Hide terminal"));
+      expect(await screen.findByRole("tooltip")).toHaveTextContent(/Ctrl\+J/);
+    });
+  });
+
   describe("fullscreen toggle button", () => {
     it("renders a fullscreen toggle button", () => {
       const tabs: TerminalTab[] = [
