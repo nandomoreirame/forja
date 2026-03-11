@@ -350,6 +350,60 @@ describe("useTerminalTabsStore", () => {
     });
   });
 
+  describe("renameTab", () => {
+    it("renameTab sets customName on the specified tab", () => {
+      const id1 = createTab("/a", "claude");
+      createTab("/b", "claude");
+
+      useTerminalTabsStore.getState().renameTab(id1, "My Build");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].customName).toBe("My Build");
+      expect(state.tabs[1].customName).toBeUndefined();
+    });
+
+    it("renameTab with empty string clears customName", () => {
+      const id1 = createTab("/a", "claude");
+      useTerminalTabsStore.getState().renameTab(id1, "Custom Name");
+      useTerminalTabsStore.getState().renameTab(id1, "");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].customName).toBeUndefined();
+    });
+
+    it("renameTab does nothing for unknown tabId", () => {
+      createTab("/a", "claude");
+      useTerminalTabsStore.getState().renameTab("unknown-id", "Name");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].customName).toBeUndefined();
+    });
+
+    it("getTabDisplayNames returns customName for renamed tabs", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "claude");
+
+      useTerminalTabsStore.getState().renameTab(id1, "My Build");
+
+      const names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names[id1]).toBe("My Build");
+      // id2 still gets auto-named — but since id1 has customName, only id2 is "claude" type for numbering
+      expect(names[id2]).toBe("Claude Code");
+    });
+
+    it("getTabDisplayNames: two renamed tabs each show their customName", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "claude");
+
+      useTerminalTabsStore.getState().renameTab(id1, "Frontend");
+      useTerminalTabsStore.getState().renameTab(id2, "Backend");
+
+      const names = useTerminalTabsStore.getState().getTabDisplayNames();
+      expect(names[id1]).toBe("Frontend");
+      expect(names[id2]).toBe("Backend");
+    });
+  });
+
   describe("terminal fullscreen", () => {
     it("starts with isTerminalFullscreen as false", () => {
       const state = useTerminalTabsStore.getState();
