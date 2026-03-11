@@ -3,10 +3,12 @@ import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
 import { useBrowserPaneStore } from "@/stores/browser-pane";
-import { getCurrentWindow, isTilingDesktop } from "@/lib/ipc";
+import { getCurrentWindow, isDev, isTilingDesktop } from "@/lib/ipc";
+import { usePerformanceStore } from "@/stores/performance";
 import { cn } from "@/lib/utils";
 import {
   Copy,
+  Gauge,
   Globe,
   Info,
   Keyboard,
@@ -44,6 +46,9 @@ const isMac = IS_MAC;
 export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
   const [tilingDesktop, setTilingDesktop] = useState(false);
+  const [devMode, setDevMode] = useState(false);
+  const isLite = usePerformanceStore((s) => s.isLite);
+  const toggleLiteMode = usePerformanceStore((s) => s.toggleLiteMode);
   const { aboutOpen, setAboutOpen, shortcutsOpen, setShortcutsOpen, settingsOpen, setSettingsOpen } = useAppDialogsStore();
   const { isOpen, tree, trees, currentPath, toggleSidebar, openProject } = useFileTreeStore();
   const isBrowserOpen = useBrowserPaneStore((s) => s.isOpen);
@@ -60,6 +65,10 @@ export function Titlebar() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [shortcutsOpen, setShortcutsOpen]);
+
+  useEffect(() => {
+    isDev().then(setDevMode).catch(() => setDevMode(false));
+  }, []);
 
   useEffect(() => {
     getAppWindow().isMaximized().then(setMaximized);
@@ -100,7 +109,7 @@ export function Titlebar() {
               <Plus className="h-3.5 w-3.5" />
               Add Project
               <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
-                {isMac ? "\u2318" : "Ctrl"}+O
+                {isMac ? "\u2318" : "Ctrl"}+Shift+O
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => useCommandPaletteStore.getState().open("commands")}>
@@ -166,6 +175,21 @@ export function Titlebar() {
 
       {/* Right: resource usage + window controls */}
       <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+        {devMode && (
+          <button
+            onClick={toggleLiteMode}
+            aria-label="Toggle lite mode"
+            className={cn(
+              "mr-1 inline-flex h-6 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-semibold uppercase transition-colors",
+              isLite
+                ? "border-ctp-yellow/40 bg-ctp-yellow/10 text-ctp-yellow"
+                : "border-ctp-surface1 bg-ctp-surface0/50 text-ctp-overlay0 hover:text-ctp-text"
+            )}
+          >
+            <Gauge className="h-3 w-3" strokeWidth={1.5} />
+            Lite
+          </button>
+        )}
         <ResourceUsagePopover />
         {!isMac && (
           <>

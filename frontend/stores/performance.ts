@@ -9,9 +9,10 @@ interface PerformanceState {
   isLite: boolean;
 
   loadPerformanceMode: () => Promise<void>;
+  toggleLiteMode: () => void;
 }
 
-export const usePerformanceStore = create<PerformanceState>((set) => ({
+export const usePerformanceStore = create<PerformanceState>((set, get) => ({
   resolved: "full",
   tabHibernation: false,
   tabHibernationTimeoutMs: 0,
@@ -36,5 +37,16 @@ export const usePerformanceStore = create<PerformanceState>((set) => ({
     } catch {
       set({ loaded: true });
     }
+  },
+
+  toggleLiteMode: () => {
+    const next = get().resolved === "lite" ? "full" : "lite";
+    const isLite = next === "lite";
+    set({
+      resolved: next,
+      isLite,
+      tabHibernation: isLite,
+      tabHibernationTimeoutMs: isLite ? 60_000 : 0,
+    });
   },
 }));

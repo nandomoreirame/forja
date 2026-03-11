@@ -77,4 +77,33 @@ describe("performance store", () => {
     expect(state.loaded).toBe(true);
     expect(state.resolved).toBe("full");
   });
+
+  describe("toggleLiteMode", () => {
+    it("toggles from full to lite mode", () => {
+      usePerformanceStore.getState().toggleLiteMode();
+
+      const state = usePerformanceStore.getState();
+      expect(state.resolved).toBe("lite");
+      expect(state.isLite).toBe(true);
+      expect(state.tabHibernation).toBe(true);
+      expect(state.tabHibernationTimeoutMs).toBe(60_000);
+    });
+
+    it("toggles from lite back to full mode", () => {
+      usePerformanceStore.setState({
+        resolved: "lite",
+        isLite: true,
+        tabHibernation: true,
+        tabHibernationTimeoutMs: 60_000,
+      });
+
+      usePerformanceStore.getState().toggleLiteMode();
+
+      const state = usePerformanceStore.getState();
+      expect(state.resolved).toBe("full");
+      expect(state.isLite).toBe(false);
+      expect(state.tabHibernation).toBe(false);
+      expect(state.tabHibernationTimeoutMs).toBe(0);
+    });
+  });
 });
