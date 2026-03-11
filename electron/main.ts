@@ -169,11 +169,20 @@ app.whenReady().then(async () => {
     return BrowserWindow.getAllWindows().map((w) => w.webContents);
   });
 
-  const appMetricsMod = await getAppMetrics();
-  appMetricsMod.startAppMetricsLoop(
-    () => BrowserWindow.getAllWindows().map((w) => w.webContents),
-    () => BrowserWindow.getAllWindows().some((w) => w.isFocused()),
-  );
+  // Register IPC handlers for demand-driven metrics subscription.
+  // The loop starts only when the frontend registers a subscriber,
+  // avoiding wasted CPU cycles when no component displays metrics.
+  ipcMain.handle("register_metrics_subscriber", async () => {
+    const appMetricsMod = await getAppMetrics();
+    appMetricsMod.registerMetricsSubscriber(
+      () => BrowserWindow.getAllWindows().map((w) => w.webContents),
+    );
+  });
+
+  ipcMain.handle("unregister_metrics_subscriber", async () => {
+    const appMetricsMod = await getAppMetrics();
+    appMetricsMod.unregisterMetricsSubscriber();
+  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -182,6 +191,8 @@ app.whenReady().then(async () => {
 
 app.on("window-all-closed", async () => {
   const appMetricsMod = await getAppMetrics();
+  // Force-stop the loop as a safety net when all windows close,
+  // regardless of subscriber count (e.g., renderer crash without cleanup).
   appMetricsMod.stopAppMetricsLoop();
   const userSettings = await getUserSettings();
   userSettings.stopSettingsWatcher();

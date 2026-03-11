@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { listen } from "@/lib/ipc";
+import { invoke, listen } from "@/lib/ipc";
 
 export interface AppMetrics {
   total_rss: number;
@@ -27,6 +27,12 @@ export function useAppMetrics() {
   const cpuHistory = useRef<number[]>([]);
 
   useEffect(() => {
+    // Register interest in app metrics so the main process starts the
+    // sampling loop on-demand instead of polling continuously.
+    invoke("register_metrics_subscriber").catch((err) =>
+      console.warn("[use-app-metrics] Failed to register subscriber:", err),
+    );
+
     const unlisten = listen<AppMetrics>("app-metrics", (event) => {
       const metrics = event.payload;
       setCurrent(metrics);
@@ -38,6 +44,11 @@ export function useAppMetrics() {
     });
 
     return () => {
+      // Unregister when the component unmounts so the loop stops when
+      // no UI component is displaying metrics.
+      invoke("unregister_metrics_subscriber").catch((err) =>
+        console.warn("[use-app-metrics] Failed to unregister subscriber:", err),
+      );
       unlisten.then((fn) => fn()).catch((err) => console.warn("[use-app-metrics] Cleanup unlisten failed:", err));
     };
   }, []);

@@ -290,6 +290,147 @@ describe("app-metrics", () => {
     });
   });
 
+  describe("registerMetricsSubscriber / unregisterMetricsSubscriber", () => {
+    it("starts the loop when subscriber count goes from 0 to 1", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 1.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 10 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { registerMetricsSubscriber, unregisterMetricsSubscriber } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      // No subscriber yet — loop should not run
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).not.toHaveBeenCalled();
+
+      // Register first subscriber — loop should start
+      registerMetricsSubscriber(getWindows);
+
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledWith("app-metrics", expect.objectContaining({
+        process_count: 1,
+      }));
+
+      unregisterMetricsSubscriber();
+    });
+
+    it("stops the loop when subscriber count drops to 0", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { registerMetricsSubscriber, unregisterMetricsSubscriber } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      registerMetricsSubscriber(getWindows);
+
+      // Loop is running — advance one tick
+      vi.advanceTimersByTime(2000);
+      const callCountAfterStart = mockSend.mock.calls.length;
+
+      // Unregister — loop should stop
+      unregisterMetricsSubscriber();
+
+      // Advance more time — no more calls
+      vi.advanceTimersByTime(4000);
+      expect(mockSend.mock.calls.length).toBe(callCountAfterStart);
+    });
+
+    it("does not drop subscriberCount below 0", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { registerMetricsSubscriber, unregisterMetricsSubscriber } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      // Unregister more than register — should not crash
+      unregisterMetricsSubscriber();
+      unregisterMetricsSubscriber();
+
+      // Register one — loop should start (count goes from 0 to 1)
+      registerMetricsSubscriber(getWindows);
+
+      vi.advanceTimersByTime(2000);
+      // Loop should work because count is 1 not negative
+      expect(mockSend).toHaveBeenCalledTimes(1);
+
+      unregisterMetricsSubscriber();
+    });
+
+    it("keeps loop running while at least one subscriber is active", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { registerMetricsSubscriber, unregisterMetricsSubscriber } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      registerMetricsSubscriber(getWindows);
+      registerMetricsSubscriber(getWindows); // 2 subscribers
+
+      unregisterMetricsSubscriber(); // back to 1
+
+      // Loop should still be running
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledTimes(1);
+
+      unregisterMetricsSubscriber(); // back to 0 — loop stops
+
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledTimes(1); // no new calls
+    });
+
+    it("resumes loop when subscriber re-registers after stopping", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([
+        {
+          pid: 1,
+          type: "Browser",
+          creationTime: 0,
+          cpu: { percentCPUUsage: 1.0, idleWakeupsPerSecond: 0 },
+          memory: { workingSetSize: 10 * 1024, privateBytes: 0, sharedBytes: 0 },
+        },
+      ] as Electron.ProcessMetric[]);
+
+      const { registerMetricsSubscriber, unregisterMetricsSubscriber } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      registerMetricsSubscriber(getWindows);
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledTimes(1);
+
+      unregisterMetricsSubscriber(); // stop
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledTimes(1); // still 1
+
+      registerMetricsSubscriber(getWindows); // restart
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledTimes(2); // resumes
+
+      unregisterMetricsSubscriber();
+    });
+  });
+
   describe("startAppMetricsLoop with isAnyWindowFocused callback", () => {
     it("skips metrics collection when isAnyWindowFocused returns false", async () => {
       const { app } = await import("electron");
