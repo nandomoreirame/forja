@@ -222,6 +222,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
   const {
     projects,
     activeProjectPath,
+    sessionStates,
     switchToProject,
     getProjectInitial,
     getProjectColor,
@@ -329,7 +330,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
     <TooltipProvider delayDuration={500}>
       <div
         data-testid="project-sidebar"
-        className="flex h-full w-12 shrink-0 flex-col items-center gap-2.5 bg-ctp-mantle py-2"
+        className="flex h-full w-12 shrink-0 flex-col items-center gap-1.5 bg-ctp-mantle py-2"
       >
         <DndContext
           sensors={sensors}
@@ -352,7 +353,10 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 onRemoveRequest={handleRemoveRequest}
                 initial={getProjectInitial(project.name)}
                 color={getProjectColor(project.name)}
-                isThinking={thinkingProjects?.has(project.path)}
+                isThinking={
+                  sessionStates?.[project.path] === "running" ||
+                  thinkingProjects?.has(project.path)
+                }
                 isNotified={notifiedProjects?.has(project.path)}
                 shortcutIndex={altPressed && index < 9 ? index + 1 : null}
               />
@@ -366,7 +370,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
               type="button"
               aria-label="Add project"
               onClick={onOpenProject}
-              className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-ctp-surface1 text-ctp-overlay1 transition-colors hover:border-ctp-surface2 hover:bg-ctp-surface0 hover:text-ctp-text"
+              className="flex h-9 w-9 items-center justify-center rounded-md border border-dashed border-transparent text-ctp-overlay1 transition-all duration-150 hover:border-ctp-surface2 hover:bg-ctp-surface0 hover:text-ctp-text"
             >
               <Plus className="h-4 w-4" strokeWidth={1.5} />
             </button>

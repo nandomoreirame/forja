@@ -84,7 +84,7 @@ describe("ProjectSidebar — session indicators", () => {
     expect(screen.queryByTestId("session-badge-/a/my-app")).toBeNull();
   });
 
-  it("does NOT show spinner for running-only (not thinking) project", () => {
+  it("shows spinner for background project with AI session running", () => {
     mockUseProjectsStore.mockReturnValue(makeStore({
       sessionStates: { "/b/other": "running" },
       thinkingProjects: new Set<string>(),
@@ -92,6 +92,6 @@ describe("ProjectSidebar — session indicators", () => {
 
     render(<ProjectSidebar onOpenProject={vi.fn()} />);
 
-    expect(screen.queryByTestId("session-spinner-/b/other")).toBeNull();
+    expect(screen.getByTestId("session-spinner-/b/other")).toBeTruthy();
   });
 });
