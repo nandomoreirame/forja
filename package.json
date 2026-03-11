@@ -23,7 +23,9 @@
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
     "version:bump": "bash scripts/bump-version.sh",
-    "analyze": "ANALYZE=true vite build"
+    "analyze": "ANALYZE=true vite build",
+    "site:dev": "npx http-server site/public -p 3030 -c-1 --cors",
+    "site:deploy": "firebase deploy --only hosting:forja --config site/firebase.json"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
