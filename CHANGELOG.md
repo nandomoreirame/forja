@@ -43,6 +43,18 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Exclude git-ignored files from quick open.
 - Show dot directories in file tree.---
 
+## [1.4.12] - 2026-03-10
+### Added
+- Add keyboard shortcuts for fullscreen and browser toggle.
+- Add tooltips to tab bar action buttons.
+- Add terminal fullscreen toggle.
+- Add edit button to markdown preview pane.
+- Add browser screenshot to clipboard.
+- Autofocus terminal on session open and tab switch.
+
+### Fixed
+- Show spinner only when project is actively thinking.---
+
 ## [Unreleased]
 
 ## [1.4.7] - 2026-03-10
