@@ -2,6 +2,7 @@ import { memo, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import { routeLinkClick } from "@/lib/link-router";
 
 interface MarkdownRendererProps {
   content: string;
@@ -39,9 +40,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   content,
 }: MarkdownRendererProps) {
   const openExternalLink = useCallback((href: string) => {
-    import("@/lib/ipc").then(({ openUrl }) => {
-      openUrl(href);
-    });
+    routeLinkClick(href);
   }, []);
 
   const components: Components = {

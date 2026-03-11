@@ -11,6 +11,10 @@ interface TabMeta {
   sessionType: string;
 }
 
+interface FinishedNotificationPayload extends TabMeta {
+  activeProjectPath: string | null;
+}
+
 interface SessionStateStoreState {
   states: Record<string, SessionState>;
 
@@ -24,6 +28,7 @@ interface SessionStateStoreState {
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 // Metadata per tab for notification context
 const tabMetas = new Map<string, TabMeta>();
+const tabsWithOutput = new Set<string>();
 
 function isAnyTabThinkingForProject(projectPath: string, excludeTabId?: string): boolean {
   const { states } = useSessionStateStore.getState();
@@ -44,6 +49,7 @@ export const useSessionStateStore = create<SessionStateStoreState>(
 
     onData: (tabId: string, meta?: TabMeta) => {
       if (meta) tabMetas.set(tabId, meta);
+      tabsWithOutput.add(tabId);
 
       // Mark as thinking
       set((state) => ({
@@ -66,16 +72,8 @@ export const useSessionStateStore = create<SessionStateStoreState>(
             states: { ...state.states, [tabId]: "ready" },
           }));
 
-          // Notify backend that session is ready for input
           const storedMeta = tabMetas.get(tabId);
           if (storedMeta && storedMeta.sessionType !== "terminal") {
-            invoke("pty:notify-session-ready", {
-              projectPath: storedMeta.projectPath,
-              sessionType: storedMeta.sessionType,
-            });
-
-            // Bridge to projects store for sidebar badge
-            useProjectsStore.getState().markProjectNotified(storedMeta.projectPath);
             if (!isAnyTabThinkingForProject(storedMeta.projectPath, tabId)) {
               useProjectsStore.getState().setProjectThinking(storedMeta.projectPath, false);
             }
@@ -100,10 +98,20 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       // Bridge to projects store: clear thinking if no other tab thinking
       const meta = tabMetas.get(tabId);
       if (meta && meta.sessionType !== "terminal") {
+        if (tabsWithOutput.has(tabId)) {
+          const payload: FinishedNotificationPayload = {
+            projectPath: meta.projectPath,
+            sessionType: meta.sessionType,
+            activeProjectPath: useProjectsStore.getState().activeProjectPath,
+          };
+          void invoke("pty:notify-session-finished", payload);
+          useProjectsStore.getState().markProjectNotified(meta.projectPath);
+        }
         if (!isAnyTabThinkingForProject(meta.projectPath, tabId)) {
           useProjectsStore.getState().setProjectThinking(meta.projectPath, false);
         }
       }
+      tabsWithOutput.delete(tabId);
     },
 
     cleanup: (tabId: string) => {
@@ -116,6 +124,7 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       // Bridge to projects store: clear thinking if no other tab thinking
       const meta = tabMetas.get(tabId);
       tabMetas.delete(tabId);
+      tabsWithOutput.delete(tabId);
       if (meta && meta.sessionType !== "terminal") {
         if (!isAnyTabThinkingForProject(meta.projectPath, tabId)) {
           useProjectsStore.getState().setProjectThinking(meta.projectPath, false);

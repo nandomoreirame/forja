@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { Suspense } from "react";
 import { FilePreviewPane } from "../file-preview-pane";
 import { useFilePreviewStore } from "@/stores/file-preview";
+import { useGitDiffStore } from "@/stores/git-diff";
 
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn().mockResolvedValue({ isGitRepo: false, branch: null, fileStatus: null, changedFiles: 0 }),
@@ -66,6 +67,7 @@ describe("FilePreviewPane", () => {
       editContent: null,
       editDirty: false,
     });
+    useGitDiffStore.getState().reset();
   });
 
   it("returns null when isOpen is false", () => {
@@ -73,7 +75,7 @@ describe("FilePreviewPane", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("shows empty state when open but no file selected", () => {
+  it("shows Forja branding with keyboard shortcuts when open but no file selected", () => {
     useFilePreviewStore.setState({
       isOpen: true,
       isLoading: false,
@@ -84,7 +86,10 @@ describe("FilePreviewPane", () => {
     renderWithSuspense(<FilePreviewPane />);
     const pane = screen.getByTestId("file-preview-pane");
     expect(pane).toBeInTheDocument();
-    expect(screen.getByText("Select a file to preview")).toBeInTheDocument();
+    expect(screen.getByText("Forja")).toBeInTheDocument();
+    expect(screen.getByText("A dedicated desktop client for vibe coders")).toBeInTheDocument();
+    expect(screen.getByText("Quick open")).toBeInTheDocument();
+    expect(screen.getByText("Command palette")).toBeInTheDocument();
   });
 
   it("renders with fixed width when open", () => {
@@ -151,6 +156,43 @@ describe("FilePreviewPane", () => {
     expect(state.isOpen).toBe(true);
     expect(state.currentFile).toBeNull();
     expect(state.content).toBeNull();
+  });
+
+  it("clears the selected git diff when closing a diff preview", () => {
+    useFilePreviewStore.setState({
+      isOpen: true,
+      currentFile: null,
+      content: null,
+      isLoading: false,
+      error: null,
+    });
+    useGitDiffStore.setState({
+      selectedProjectPath: "/repo",
+      selectedPath: "src/file.ts",
+      selectedDiff: {
+        path: "src/file.ts",
+        status: "M",
+        patch: "diff --git a/src/file.ts b/src/file.ts",
+        truncated: false,
+        isBinary: false,
+        originalContent: "const a = 1;",
+        modifiedContent: "const a = 2;",
+      },
+      isLoadingDiff: false,
+    });
+
+    renderWithSuspense(<FilePreviewPane />);
+
+    fireEvent.click(screen.getByLabelText("Close preview"));
+
+    const previewState = useFilePreviewStore.getState();
+    const diffState = useGitDiffStore.getState();
+
+    expect(previewState.isOpen).toBe(true);
+    expect(diffState.selectedDiff).toBeNull();
+    expect(diffState.selectedProjectPath).toBeNull();
+    expect(diffState.selectedPath).toBeNull();
+    expect(screen.getByText("Forja")).toBeInTheDocument();
   });
 
   it("shows file info in footer", () => {

@@ -39,8 +39,12 @@ vi.mock("@/stores/app-dialogs", () => ({
   useAppDialogsStore: { getState: () => ({ setSettingsOpen: vi.fn() }) },
 }));
 
+const commandPaletteActions = {
+  open: vi.fn(),
+};
+
 vi.mock("@/stores/command-palette", () => ({
-  useCommandPaletteStore: { getState: () => ({ open: vi.fn() }) },
+  useCommandPaletteStore: { getState: () => commandPaletteActions },
 }));
 
 const filePreviewActions = {
@@ -235,7 +239,8 @@ describe("useKeyboardShortcuts tab management", () => {
     filePreviewActions.isOpen = false;
   });
 
-  it("Ctrl+Shift+T creates a new terminal tab", () => {
+  it("Ctrl+Shift+T opens command palette in sessions mode", () => {
+    commandPaletteActions.open.mockReset();
     setupHook();
 
     window.dispatchEvent(
@@ -246,8 +251,8 @@ describe("useKeyboardShortcuts tab management", () => {
       }),
     );
 
-    expect(tabStoreActions.nextTabId).toHaveBeenCalled();
-    expect(tabStoreActions.addTab).toHaveBeenCalledWith("new-tab-1", "/project", "terminal");
+    expect(commandPaletteActions.open).toHaveBeenCalledWith("sessions");
+    expect(tabStoreActions.addTab).not.toHaveBeenCalled();
   });
 
   it("Ctrl+T (without shift) does NOT create a new tab", () => {

@@ -1,14 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MarkdownRenderer } from "../markdown-renderer";
 
-vi.mock("@/lib/ipc", () => ({
-  openUrl: vi.fn(),
+const mockRouteLinkClick = vi.fn();
+vi.mock("@/lib/link-router", () => ({
+  routeLinkClick: (...args: unknown[]) => mockRouteLinkClick(...args),
 }));
 
 describe("MarkdownRenderer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRouteLinkClick.mockClear();
   });
 
   it("renders plain text content", () => {
@@ -94,5 +97,31 @@ describe("MarkdownRenderer", () => {
     const wrapper = container.firstElementChild;
     expect(wrapper?.className).toContain("markdown");
     expect(wrapper?.className).toContain("prose");
+  });
+
+  describe("link routing", () => {
+    it("calls routeLinkClick with href when link is clicked", async () => {
+      const user = userEvent.setup();
+      render(
+        <MarkdownRenderer content="Visit [Example](https://example.com)" />
+      );
+      const link = screen.getByText("Example");
+      await user.click(link);
+
+      expect(mockRouteLinkClick).toHaveBeenCalledWith("https://example.com");
+    });
+
+    it("calls routeLinkClick for localhost URLs", async () => {
+      const user = userEvent.setup();
+      render(
+        <MarkdownRenderer content="Open [App](http://localhost:3000/app)" />
+      );
+      const link = screen.getByText("App");
+      await user.click(link);
+
+      expect(mockRouteLinkClick).toHaveBeenCalledWith(
+        "http://localhost:3000/app"
+      );
+    });
   });
 });

@@ -14,6 +14,7 @@ import {
   GitCompareArrows,
   Info,
   Keyboard,
+  Loader2,
   MessageSquare,
   PanelBottom,
   PanelLeft,
@@ -23,11 +24,15 @@ import {
   RotateCcw,
   Settings,
   SplitSquareHorizontal,
+  TerminalSquare,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
 import { useMemo } from "react";
+import { useInstalledClis } from "@/hooks/use-installed-clis";
+import { CliIcon } from "./cli-icon";
 import { FileIcon } from "./file-icon";
+import type { SessionType } from "@/lib/cli-registry";
 import {
   CommandDialog,
   CommandEmpty,
@@ -42,8 +47,9 @@ import { MOD_KEY } from "@/lib/platform";
 const mod = MOD_KEY;
 
 export function CommandPalette() {
-  const { isOpen, mode, close } = useCommandPaletteStore();
+  const { isOpen, mode, close, open } = useCommandPaletteStore();
   const { tree, currentPath } = useFileTreeStore();
+  const { installedClis, loading: clisLoading } = useInstalledClis();
 
   const flatFiles = useMemo(() => {
     if (!tree || !currentPath) return [];
@@ -55,17 +61,21 @@ export function CommandPalette() {
     close();
   };
 
+  const handleSessionSelect = (sessionType: SessionType) => {
+    const cp = useFileTreeStore.getState().currentPath;
+    if (cp) {
+      const tabStore = useTerminalTabsStore.getState();
+      const id = tabStore.nextTabId();
+      tabStore.addTab(id, cp, sessionType);
+    }
+    close();
+  };
+
   const handleCommand = (command: string) => {
     switch (command) {
-      case "new-session": {
-        const cp = useFileTreeStore.getState().currentPath;
-        if (cp) {
-          const tabStore = useTerminalTabsStore.getState();
-          const id = tabStore.nextTabId();
-          tabStore.addTab(id, cp, "claude");
-        }
-        break;
-      }
+      case "new-session":
+        open("sessions");
+        return; // return early to avoid close()
       case "open-project":
         useFileTreeStore.getState().openProject();
         break;
@@ -136,11 +146,21 @@ export function CommandPalette() {
   return (
     <CommandDialog open={isOpen} onOpenChange={(open) => !open && close()}>
       <CommandInput
-        placeholder={mode === "files" ? "Search files..." : "Type a command..."}
+        placeholder={
+          mode === "files"
+            ? "Search files..."
+            : mode === "sessions"
+              ? "Select session type..."
+              : "Type a command..."
+        }
       />
       <CommandList>
         <CommandEmpty>
-          {mode === "files" ? "No files found." : "No commands found."}
+          {mode === "files"
+            ? "No files found."
+            : mode === "sessions"
+              ? "No session types found."
+              : "No commands found."}
         </CommandEmpty>
 
         {mode === "files" && (
@@ -158,6 +178,37 @@ export function CommandPalette() {
                 <span className="truncate">{file.relativePath}</span>
               </CommandItem>
             ))}
+          </CommandGroup>
+        )}
+
+        {mode === "sessions" && (
+          <CommandGroup heading="New Session">
+            {clisLoading ? (
+              <div className="flex items-center gap-2 px-2 py-3 text-sm text-ctp-overlay1">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Detecting installed CLIs...
+              </div>
+            ) : (
+              <>
+                {installedClis.map((cli) => (
+                  <CommandItem
+                    key={cli.id}
+                    value={cli.displayName}
+                    onSelect={() => handleSessionSelect(cli.id as SessionType)}
+                  >
+                    <CliIcon sessionType={cli.id as SessionType} className="h-4 w-4" />
+                    {cli.displayName}
+                  </CommandItem>
+                ))}
+                <CommandItem
+                  value="Terminal"
+                  onSelect={() => handleSessionSelect("terminal")}
+                >
+                  <TerminalSquare className="h-4 w-4 text-ctp-overlay1" strokeWidth={1.5} />
+                  Terminal
+                </CommandItem>
+              </>
+            )}
           </CommandGroup>
         )}
 

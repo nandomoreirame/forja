@@ -72,13 +72,7 @@ async function buildNode(
   try {
     const entries: Dirent[] = await readdir(nodePath, { withFileTypes: true });
 
-    const filtered = entries.filter((e) => {
-      if (e.name.startsWith(".") && e.name !== ".env") {
-        // allow .env files but skip hidden dirs (except we already skip via SKIP_DIRS)
-        if (e.isDirectory()) return false;
-      }
-      return !SKIP_DIRS.has(e.name);
-    });
+    const filtered = entries.filter((e) => !SKIP_DIRS.has(e.name));
 
     // Sort: dirs first, then files, both alphabetically
     filtered.sort((a, b) => {

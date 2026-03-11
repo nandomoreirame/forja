@@ -30,9 +30,20 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
-## [Unreleased]
+## [1.4.11] - 2026-03-10
+### Added
+- Replace file preview empty state with Forja branding and shortcuts.
+- Add session picker via command palette.
+- Add sessions mode to command palette store.
+- Add isLocalhostUrl helper with URL parsing.
 
----
+### Fixed
+- Notify only active project on session state change.
+- Scope git diff selection per project on switch.
+- Exclude git-ignored files from quick open.
+- Show dot directories in file tree.---
+
+## [Unreleased]
 
 ## [1.4.7] - 2026-03-10
 ### Added
@@ -223,6 +234,4 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Replace deprecated Vitest poolOptions with maxWorkers for proper CPU limiting.
 
 ---
-
-## [Unreleased]
 

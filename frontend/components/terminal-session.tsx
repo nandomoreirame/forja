@@ -1,5 +1,6 @@
 import { usePty } from "@/hooks/use-pty";
 import { TERMINAL_OPTIONS } from "@/lib/terminal-theme";
+import { routeLinkClick } from "@/lib/link-router";
 import type { SessionType } from "@/lib/cli-registry";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
@@ -68,7 +69,9 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
 
     const terminal = new Terminal(TERMINAL_OPTIONS);
     const fitAddon = new FitAddon();
-    const webLinksAddon = new WebLinksAddon();
+    const webLinksAddon = new WebLinksAddon((_event, uri) => {
+      routeLinkClick(uri);
+    });
 
     terminal.loadAddon(fitAddon);
     terminal.loadAddon(webLinksAddon);

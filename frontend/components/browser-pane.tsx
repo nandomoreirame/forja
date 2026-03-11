@@ -39,6 +39,16 @@ export function BrowserPane() {
   const setError = useBrowserPaneStore((s) => s.setError);
   const clearError = useBrowserPaneStore((s) => s.clearError);
 
+  // Inject custom scrollbar CSS into webview to match app theme
+  const injectScrollbarCSS = useCallback((wv: Electron.WebviewTag) => {
+    wv.insertCSS(`
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: #45475a; }
+    `);
+  }, []);
+
   // Wire webview events to store
   useEffect(() => {
     const wv = webviewRef.current;
@@ -51,6 +61,7 @@ export function BrowserPane() {
         canGoBack: wv.canGoBack(),
         canGoForward: wv.canGoForward(),
       });
+      injectScrollbarCSS(wv);
     };
     const handleDidNavigate = (e: Event & { url?: string }) => {
       if (e.url) onDidNavigate(e.url);
@@ -71,6 +82,9 @@ export function BrowserPane() {
       }
     };
 
+    const handleDomReady = () => injectScrollbarCSS(wv);
+
+    wv.addEventListener("dom-ready", handleDomReady);
     wv.addEventListener("did-start-loading", handleLoadStart);
     wv.addEventListener("did-stop-loading", handleLoadStop);
     wv.addEventListener("did-navigate", handleDidNavigate);
@@ -79,6 +93,7 @@ export function BrowserPane() {
     wv.addEventListener("did-fail-load", handleDidFailLoad);
 
     return () => {
+      wv.removeEventListener("dom-ready", handleDomReady);
       wv.removeEventListener("did-start-loading", handleLoadStart);
       wv.removeEventListener("did-stop-loading", handleLoadStop);
       wv.removeEventListener("did-navigate", handleDidNavigate);
@@ -86,7 +101,7 @@ export function BrowserPane() {
       wv.removeEventListener("page-title-updated", handleTitleUpdate);
       wv.removeEventListener("did-fail-load", handleDidFailLoad);
     };
-  }, [setLoading, setNavigationState, setTitle, onDidNavigate]);
+  }, [setLoading, setNavigationState, setTitle, onDidNavigate, injectScrollbarCSS]);
 
   const handleGoBack = useCallback(() => {
     webviewRef.current?.goBack();

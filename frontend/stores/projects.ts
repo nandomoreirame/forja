@@ -143,6 +143,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         previewStore.savePreviewForProject(previousPath);
       }
       previewStore.restorePreviewForProject(projectPath);
+
+      // Save/restore git diff selection per project
+      const { useGitDiffStore } = await import("./git-diff");
+      const diffStore = useGitDiffStore.getState();
+      if (previousPath) {
+        diffStore.saveDiffForProject(previousPath);
+      }
+      diffStore.restoreDiffForProject(projectPath);
     }
 
     // Save/restore terminal tabs per project

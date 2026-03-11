@@ -5,6 +5,7 @@ import { Notification } from "electron";
 interface SessionReadyInfo {
   projectPath: string;
   sessionType: string;
+  activeProjectPath: string | null;
 }
 
 interface NotificationData {
@@ -13,15 +14,15 @@ interface NotificationData {
 }
 
 /**
- * Pure function that builds notification data for a session-ready event.
+ * Pure function that builds notification data for a completed session.
  */
-export function buildSessionReadyNotification(info: SessionReadyInfo): NotificationData {
+export function buildSessionFinishedNotification(info: SessionReadyInfo): NotificationData {
   const projectName = path.basename(info.projectPath);
   const sessionName = info.sessionType.charAt(0).toUpperCase() + info.sessionType.slice(1);
 
   return {
     title: `Forja — ${projectName}`,
-    body: `${sessionName} is ready for input.`,
+    body: `${sessionName} finished with new output.`,
   };
 }
 
@@ -41,9 +42,9 @@ function showNotificationElectron(
   data: NotificationData,
   info: SessionReadyInfo,
   mainWindow: Electron.BrowserWindow | null,
-): void {
+): boolean {
   try {
-    if (!Notification.isSupported()) return;
+    if (!Notification.isSupported()) return false;
 
     const notification = new Notification({
       title: data.title,
@@ -62,25 +63,29 @@ function showNotificationElectron(
     });
 
     notification.show();
+    return true;
   } catch (err) {
     console.warn("[pty-notifications] Electron notification failed:", err);
+    return false;
   }
 }
 
 /**
- * Shows a native notification when an AI session transitions to ready.
- * Only fires when the main window is NOT focused.
+ * Shows a native notification when an AI session finishes with new output.
+ * Suppresses notifications only when the app is focused on the same project.
  */
-export function showSessionReadyNotification(
+export function showSessionFinishedNotification(
   info: SessionReadyInfo,
   mainWindow: Electron.BrowserWindow | null,
 ): void {
-  if (mainWindow?.isFocused()) return;
+  if (mainWindow?.isFocused() && info.activeProjectPath === info.projectPath) return;
 
-  const data = buildSessionReadyNotification(info);
+  const data = buildSessionFinishedNotification(info);
 
   if (process.platform === "linux") {
-    showNotificationLinux(data);
+    if (!showNotificationElectron(data, info, mainWindow)) {
+      showNotificationLinux(data);
+    }
   } else {
     showNotificationElectron(data, info, mainWindow);
   }
