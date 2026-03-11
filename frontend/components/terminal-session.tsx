@@ -87,6 +87,10 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     }
 
     terminal.attachCustomKeyEventHandler((event) => {
+      // Let the browser handle dead-key / IME composition events so that
+      // composed characters (e.g. ' + c = ç) are not processed twice.
+      if (event.isComposing || event.key === "Dead") return false;
+
       const mod = event.metaKey || event.ctrlKey;
       if (!mod) return true;
 

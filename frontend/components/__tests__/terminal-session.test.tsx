@@ -339,4 +339,44 @@ describe("TerminalSession", () => {
       expect(mockClipboardWriteText).not.toHaveBeenCalled();
     });
   });
+
+  describe("dead key / IME composition", () => {
+    it("returns false for events during composition (isComposing)", () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      expect(capturedKeyHandler).toBeDefined();
+
+      const event = new KeyboardEvent("keydown", {
+        key: "c",
+        isComposing: true,
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(false);
+    });
+
+    it("returns false for Dead key events", () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      expect(capturedKeyHandler).toBeDefined();
+
+      const event = new KeyboardEvent("keydown", {
+        key: "Dead",
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(false);
+    });
+
+    it("still allows normal key events through", () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      expect(capturedKeyHandler).toBeDefined();
+
+      const event = new KeyboardEvent("keydown", {
+        key: "a",
+        isComposing: false,
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(true);
+    });
+  });
 });
