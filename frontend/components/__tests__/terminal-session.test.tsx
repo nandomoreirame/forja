@@ -31,9 +31,13 @@ vi.mock("@xterm/addon-fit", () => ({
   },
 }));
 
+let capturedWebLinksHandler: ((event: MouseEvent, uri: string) => void) | undefined;
 vi.mock("@xterm/addon-web-links", () => ({
   WebLinksAddon: class MockWebLinksAddon {
     dispose = vi.fn();
+    constructor(handler?: (event: MouseEvent, uri: string) => void) {
+      capturedWebLinksHandler = handler;
+    }
   },
 }));
 
@@ -49,6 +53,11 @@ vi.mock("@xterm/addon-webgl", () => ({
 }));
 
 vi.mock("@xterm/xterm/css/xterm.css", () => ({}));
+
+const mockRouteLinkClick = vi.fn();
+vi.mock("@/lib/link-router", () => ({
+  routeLinkClick: (...args: unknown[]) => mockRouteLinkClick(...args),
+}));
 
 const mockPtyWrite = vi.fn().mockResolvedValue(undefined);
 const mockResize = vi.fn().mockResolvedValue(undefined);
@@ -83,6 +92,8 @@ describe("TerminalSession", () => {
     mockPtyWrite.mockClear();
     mockResize.mockClear();
     mockClose.mockClear();
+    mockRouteLinkClick.mockClear();
+    capturedWebLinksHandler = undefined;
     webglInstances.length = 0;
   });
 
@@ -120,6 +131,23 @@ describe("TerminalSession", () => {
     unmount();
     expect(mockClose).toHaveBeenCalled();
     expect(mockDispose).toHaveBeenCalled();
+  });
+
+  describe("link routing", () => {
+    it("passes a custom handler to WebLinksAddon", () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      expect(capturedWebLinksHandler).toBeDefined();
+      expect(typeof capturedWebLinksHandler).toBe("function");
+    });
+
+    it("calls routeLinkClick when link handler is invoked", () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      expect(capturedWebLinksHandler).toBeDefined();
+
+      capturedWebLinksHandler!(new MouseEvent("click"), "http://localhost:3000");
+
+      expect(mockRouteLinkClick).toHaveBeenCalledWith("http://localhost:3000");
+    });
   });
 
   describe("WebGL virtualization", () => {
