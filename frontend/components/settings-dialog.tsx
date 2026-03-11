@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { useUserSettingsStore } from "@/stores/user-settings";
+import { useThemeStore } from "@/stores/theme";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { invoke, getVersion } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
@@ -172,9 +173,15 @@ interface AppearanceSectionProps {
 
 function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
   const [localSettings, setLocalSettings] = useState(settings);
+  const [lineHeightText, setLineHeightText] = useState(
+    String(settings.editor.lineHeight ?? 1.5),
+  );
+  const { activeThemeId, setActiveTheme } = useThemeStore();
+  const allThemes = useThemeStore.getState().getAllThemes();
 
   useEffect(() => {
     setLocalSettings(settings);
+    setLineHeightText(String(settings.editor.lineHeight ?? 1.5));
   }, [settings]);
 
   function update(partial: Partial<UserSettings>) {
@@ -185,6 +192,30 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
 
   return (
     <div data-testid="settings-section-appearance">
+      <SettingItem
+        category="Appearance"
+        label="Theme"
+        description="Color theme for the entire application."
+      >
+        <select
+          value={activeThemeId}
+          onChange={(e) => {
+            setActiveTheme(e.target.value);
+            update({
+              theme: { ...localSettings.theme, active: e.target.value },
+            });
+          }}
+          aria-label="Theme"
+          className={cn(inputClass, "w-56")}
+        >
+          {allThemes.map((theme) => (
+            <option key={theme.id} value={theme.id}>
+              {theme.name} ({theme.type})
+            </option>
+          ))}
+        </select>
+      </SettingItem>
+
       <SettingItem
         category="App"
         label="Font Family"
@@ -249,6 +280,36 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
             if (v >= 8 && v <= 32) update({ editor: { ...localSettings.editor, fontSize: v } });
           }}
           aria-label="Editor font size"
+          className={numberInputClass}
+        />
+      </SettingItem>
+
+      <SettingItem
+        category="Editor"
+        label="Line Height"
+        description="Editor line height multiplier (1.0 to 3.0)."
+      >
+        <input
+          type="text"
+          inputMode="decimal"
+          value={lineHeightText}
+          onChange={(e) => {
+            const raw = e.target.value.replace(",", ".");
+            if (/^[0-9]*\.?[0-9]*$/.test(raw)) {
+              setLineHeightText(raw);
+            }
+          }}
+          onBlur={() => {
+            const v = parseFloat(lineHeightText);
+            if (!isNaN(v) && v >= 1.0 && v <= 3.0) {
+              const rounded = Math.round(v * 10) / 10;
+              setLineHeightText(String(rounded));
+              update({ editor: { ...localSettings.editor, lineHeight: rounded } });
+            } else {
+              setLineHeightText(String(localSettings.editor.lineHeight ?? 1.5));
+            }
+          }}
+          aria-label="Editor line height"
           className={numberInputClass}
         />
       </SettingItem>
