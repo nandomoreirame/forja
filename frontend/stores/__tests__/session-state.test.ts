@@ -11,16 +11,26 @@ vi.mock("../projects", () => ({
     getState: vi.fn(() => ({
       setProjectThinking: vi.fn(),
       markProjectNotified: vi.fn(),
+      activeProjectPath: null,
     })),
   },
 }));
 
 const mockProjectsStore = vi.mocked(useProjectsStore);
+let mockSetProjectThinking: ReturnType<typeof vi.fn>;
+let mockMarkProjectNotified: ReturnType<typeof vi.fn>;
 
 describe("useSessionStateStore", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     useSessionStateStore.setState({ states: {} });
+    mockSetProjectThinking = vi.fn();
+    mockMarkProjectNotified = vi.fn();
+    mockProjectsStore.getState.mockReturnValue({
+      setProjectThinking: mockSetProjectThinking,
+      markProjectNotified: mockMarkProjectNotified,
+      activeProjectPath: null,
+    } as never);
   });
 
   afterEach(() => {
@@ -108,15 +118,13 @@ describe("useSessionStateStore", () => {
   });
 
   describe("projects store bridging", () => {
-    let mockSetProjectThinking: ReturnType<typeof vi.fn>;
-    let mockMarkProjectNotified: ReturnType<typeof vi.fn>;
-
     beforeEach(() => {
       mockSetProjectThinking = vi.fn();
       mockMarkProjectNotified = vi.fn();
       mockProjectsStore.getState.mockReturnValue({
         setProjectThinking: mockSetProjectThinking,
         markProjectNotified: mockMarkProjectNotified,
+        activeProjectPath: null,
       } as never);
     });
 
@@ -141,13 +149,13 @@ describe("useSessionStateStore", () => {
       expect(mockSetProjectThinking).not.toHaveBeenCalled();
     });
 
-    it("on thinking→ready calls markProjectNotified(projectPath)", () => {
+    it("on thinking→ready does not mark project as notified", () => {
       const { onData } = useSessionStateStore.getState();
       onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
 
       vi.advanceTimersByTime(2500);
 
-      expect(mockMarkProjectNotified).toHaveBeenCalledWith("/home/user/my-app");
+      expect(mockMarkProjectNotified).not.toHaveBeenCalled();
     });
 
     it("on thinking→ready with no other tab thinking calls setProjectThinking(false)", () => {
@@ -206,34 +214,56 @@ describe("useSessionStateStore", () => {
     });
   });
 
-  describe("notification on thinking → ready", () => {
-    it("calls pty:notify-session-ready on thinking → ready transition", async () => {
+  describe("notification on session exit", () => {
+    it("calls pty:notify-session-finished on exit after AI output", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockClear();
+
+      const { onData, onExit } = useSessionStateStore.getState();
+      const meta = { projectPath: "/home/user/my-app", sessionType: "claude" };
+      onData("tab-1", meta);
+      onExit("tab-1");
+
+      expect(invoke).toHaveBeenCalledWith("pty:notify-session-finished", {
+        projectPath: "/home/user/my-app",
+        sessionType: "claude",
+        activeProjectPath: null,
+      });
+    });
+
+    it("marks project as notified on exit after AI output", () => {
+      const { onData, onExit } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+      onExit("tab-1");
+
+      expect(mockMarkProjectNotified).toHaveBeenCalledWith("/home/user/my-app");
+    });
+
+    it("does not call notify on thinking → ready transition", async () => {
       const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockClear();
 
       const { onData } = useSessionStateStore.getState();
-      const meta = { projectPath: "/home/user/my-app", sessionType: "claude" };
-      onData("tab-1", meta);
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
 
       vi.advanceTimersByTime(2500);
 
-      expect(invoke).toHaveBeenCalledWith("pty:notify-session-ready", {
-        projectPath: "/home/user/my-app",
-        sessionType: "claude",
-      });
+      expect(invoke).not.toHaveBeenCalledWith(
+        "pty:notify-session-finished",
+        expect.anything(),
+      );
     });
 
     it("does not call notify for terminal sessions", async () => {
       const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockClear();
 
-      const { onData } = useSessionStateStore.getState();
+      const { onData, onExit } = useSessionStateStore.getState();
       onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "terminal" });
-
-      vi.advanceTimersByTime(2500);
+      onExit("tab-1");
 
       expect(invoke).not.toHaveBeenCalledWith(
-        "pty:notify-session-ready",
+        "pty:notify-session-finished",
         expect.anything(),
       );
     });
@@ -242,13 +272,25 @@ describe("useSessionStateStore", () => {
       const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockClear();
 
-      const { onData } = useSessionStateStore.getState();
+      const { onData, onExit } = useSessionStateStore.getState();
       onData("tab-1");
-
-      vi.advanceTimersByTime(2500);
+      onExit("tab-1");
 
       expect(invoke).not.toHaveBeenCalledWith(
-        "pty:notify-session-ready",
+        "pty:notify-session-finished",
+        expect.anything(),
+      );
+    });
+
+    it("does not call notify when session exits without output", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockClear();
+
+      const { onExit } = useSessionStateStore.getState();
+      onExit("tab-1");
+
+      expect(invoke).not.toHaveBeenCalledWith(
+        "pty:notify-session-finished",
         expect.anything(),
       );
     });
