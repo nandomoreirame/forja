@@ -14,6 +14,7 @@ export function flattenFileTree(root: FileNode, rootPath: string): FlatFile[] {
   const result: FlatFile[] = [];
 
   function walk(node: FileNode) {
+    if (node.ignored) return;
     if (!node.isDir) {
       result.push({
         name: node.name,

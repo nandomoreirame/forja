@@ -181,6 +181,74 @@ describe("flattenFileTree", () => {
     ]);
   });
 
+  it("excludes git-ignored files", () => {
+    const root: FileNode = {
+      name: "project",
+      path: "/home/user/project",
+      isDir: true,
+      children: [
+        {
+          name: ".env",
+          path: "/home/user/project/.env",
+          isDir: false,
+          extension: "env",
+          ignored: true,
+        },
+        {
+          name: "index.ts",
+          path: "/home/user/project/index.ts",
+          isDir: false,
+          extension: "ts",
+        },
+      ],
+    };
+
+    const result = flattenFileTree(root, "/home/user/project");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("index.ts");
+  });
+
+  it("excludes files inside git-ignored directories", () => {
+    const root: FileNode = {
+      name: "project",
+      path: "/home/user/project",
+      isDir: true,
+      children: [
+        {
+          name: ".obsidian",
+          path: "/home/user/project/.obsidian",
+          isDir: true,
+          ignored: true,
+          children: [
+            {
+              name: "app.json",
+              path: "/home/user/project/.obsidian/app.json",
+              isDir: false,
+              extension: "json",
+            },
+          ],
+        },
+        {
+          name: "src",
+          path: "/home/user/project/src",
+          isDir: true,
+          children: [
+            {
+              name: "main.ts",
+              path: "/home/user/project/src/main.ts",
+              isDir: false,
+              extension: "ts",
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = flattenFileTree(root, "/home/user/project");
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("main.ts");
+  });
+
   it("strips root path with trailing slash", () => {
     const root: FileNode = {
       name: "project",
