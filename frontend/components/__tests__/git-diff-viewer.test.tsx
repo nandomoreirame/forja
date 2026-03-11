@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("monaco-editor", () => {
@@ -25,6 +25,22 @@ vi.mock("monaco-editor", () => {
 vi.mock("@/lib/monaco-theme", () => ({
   catppuccinMochaTheme: { base: "vs-dark", inherit: true, rules: [], colors: {} },
   THEME_NAME: "catppuccin-mocha",
+  getMonacoThemeName: vi.fn(() => "catppuccin-mocha"),
+  getMonacoThemeData: vi.fn(() => ({ base: "vs-dark", inherit: true, rules: [], colors: {} })),
+}));
+
+vi.mock("@/stores/theme", () => ({
+  useThemeStore: Object.assign(
+    vi.fn(() => ({ customThemes: [] })),
+    {
+      getState: vi.fn(() => ({
+        getActiveTheme: vi.fn(() => ({ id: "catppuccin-mocha", type: "dark" })),
+        getAllThemes: vi.fn(() => []),
+        customThemes: [],
+      })),
+      subscribe: vi.fn(() => () => {}),
+    }
+  ),
 }));
 
 import { GitDiffViewer } from "../git-diff-viewer";
@@ -33,7 +49,7 @@ import * as monaco from "monaco-editor";
 describe("GitDiffViewer", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("renders Monaco diff editor when content is available", () => {
+  it("renders Monaco diff editor when content is available", async () => {
     render(
       <GitDiffViewer
         diff={{
@@ -50,7 +66,9 @@ describe("GitDiffViewer", () => {
       />,
     );
     expect(screen.getByTestId("git-diff-viewer")).toBeInTheDocument();
-    expect(monaco.editor.createDiffEditor).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(monaco.editor.createDiffEditor).toHaveBeenCalled();
+    });
   });
 
   it("renders split/unified toggle buttons", () => {
