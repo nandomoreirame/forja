@@ -91,6 +91,16 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
 
       // Ctrl+Alt: zoom, splits, diff nav -> app
       if (event.altKey) return false;
+      // Ctrl+Shift+C: copy terminal selection
+      if (event.shiftKey && event.key === "C" && event.type === "keydown") {
+        handleCopy();
+        return false;
+      }
+      // Ctrl+Shift+V: paste from clipboard
+      if (event.shiftKey && event.key === "V" && event.type === "keydown") {
+        handlePaste();
+        return false;
+      }
       // Ctrl+Shift: new tab, close tab, command palette, git -> app
       if (event.shiftKey) return false;
       // Ctrl+[number]: tab switching -> app

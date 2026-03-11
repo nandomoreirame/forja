@@ -49,6 +49,8 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
   {
     section: "Terminal",
     items: [
+      { label: "Copy Selection", keys: [mod, "Shift", "C"] },
+      { label: "Paste", keys: [mod, "Shift", "V"] },
       { label: "Zoom In", keys: [mod, "Alt", "="] },
       { label: "Zoom Out", keys: [mod, "Alt", "-"] },
       { label: "Reset Zoom", keys: [mod, "Alt", "0"] },
