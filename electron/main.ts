@@ -509,7 +509,10 @@ ipcMain.handle("start_file_watcher", async (event, args: { path: string }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
   const fileWatcher = await getFileWatcher();
-  fileWatcher.startFileWatcher(win.id, args.path, event.sender);
+  const liteModeConfig = getLiteModeConfig(resolvedPerfMode);
+  fileWatcher.startFileWatcher(win.id, args.path, event.sender, {
+    depth: liteModeConfig.fileWatcherDepth,
+  });
 });
 
 ipcMain.handle("stop_file_watcher", async (event, args: { path: string }) => {
