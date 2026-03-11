@@ -11,6 +11,16 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [1.5.4] - 2026-03-11
 
 ### Fixed
+- Prevent dead key character duplication on Linux.
+- Delegate Ctrl+Shift+V paste to native browser event.
+
+### Security
+- Block reload shortcuts in production builds.
+---
+
+## [1.5.4] - 2026-03-11
+
+### Fixed
 - Delegate Ctrl+Shift+V paste to native browser event instead of manual handler.
 - Prevent dead key character duplication on Linux.
 
