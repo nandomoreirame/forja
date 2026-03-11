@@ -2,6 +2,19 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "@/lib/settings-types";
 
+const mockPerformanceStore = {
+  resolved: "full" as "full" | "lite",
+  tabHibernation: false,
+  tabHibernationTimeoutMs: 0,
+  loaded: true,
+  isLite: false,
+};
+
+vi.mock("@/stores/performance", () => ({
+  usePerformanceStore: (selector: (state: typeof mockPerformanceStore) => unknown) =>
+    selector(mockPerformanceStore),
+}));
+
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn().mockImplementation((channel: string) => {
     if (channel === "get_settings_path") return Promise.resolve("/home/user/.config/forja/settings.json");
@@ -140,5 +153,34 @@ describe("SettingsDialog", () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
     expect(screen.getByTestId("settings-version-info")).toBeInTheDocument();
+  });
+
+  it("renders Performance nav item", async () => {
+    const { SettingsDialog } = await import("../settings-dialog");
+    render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+    expect(screen.getByRole("button", { name: "Performance" })).toBeInTheDocument();
+  });
+
+  it("navigates to Performance section on click", async () => {
+    const { SettingsDialog } = await import("../settings-dialog");
+    render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Performance" }));
+    expect(screen.getByTestId("settings-section-performance")).toBeInTheDocument();
+  });
+
+  it("shows performance mode select", async () => {
+    const { SettingsDialog } = await import("../settings-dialog");
+    render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Performance" }));
+    expect(screen.getByLabelText("Performance mode")).toBeInTheDocument();
+  });
+
+  it("shows lite mode warning when resolved is lite", async () => {
+    mockPerformanceStore.resolved = "lite";
+    const { SettingsDialog } = await import("../settings-dialog");
+    render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Performance" }));
+    expect(screen.getByText(/Lite mode is active/)).toBeInTheDocument();
+    mockPerformanceStore.resolved = "full";
   });
 });
