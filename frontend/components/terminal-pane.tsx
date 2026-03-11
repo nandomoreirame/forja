@@ -1,7 +1,8 @@
-import { memo, useCallback, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { useTerminalSplitLayoutStore } from "@/stores/terminal-split-layout";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
+import { usePerformanceStore } from "@/stores/performance";
 import { computeTabDisplayNames, getSessionDisplayName } from "@/lib/cli-registry";
 import { TerminalSession } from "./terminal-session";
 
@@ -122,6 +123,23 @@ function SplitPaneHeader({ label = "Split", onClose }: SplitPaneHeaderProps) {
   );
 }
 
+function HibernatedTabPlaceholder({ onWake }: { onWake: () => void }) {
+  return (
+    <div className="flex h-full w-full items-center justify-center bg-ctp-base">
+      <div className="text-center">
+        <p className="mb-2 text-sm text-ctp-overlay1">Session hibernated</p>
+        <button
+          type="button"
+          onClick={onWake}
+          className="rounded-md bg-ctp-surface0 px-3 py-1.5 text-xs text-ctp-text transition-colors hover:bg-ctp-surface1"
+        >
+          Wake session
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export const TerminalPane = memo(function TerminalPane({ projectPath }: TerminalPaneProps) {
   const tabs = useTerminalTabsStore((s) => s.tabs);
   const activeTabId = useTerminalTabsStore((s) => s.activeTabId);
@@ -131,6 +149,31 @@ export const TerminalPane = memo(function TerminalPane({ projectPath }: Terminal
   const secondarySessionType = useTerminalSplitLayoutStore((s) => s.secondarySessionType);
   const setRatio = useTerminalSplitLayoutStore((s) => s.setRatio);
   const closeSplit = useTerminalSplitLayoutStore((s) => s.closeSplit);
+  const tabHibernation = usePerformanceStore((s) => s.tabHibernation);
+  const hibernationTimeout = usePerformanceStore((s) => s.tabHibernationTimeoutMs);
+
+  const [hibernatedTabs, setHibernatedTabs] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!tabHibernation) {
+      setHibernatedTabs(new Set());
+      return;
+    }
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const tabLastActiveAt = useTerminalTabsStore.getState().tabLastActiveAt;
+      const newHibernated = new Set<string>();
+      for (const tab of tabs) {
+        if (tab.id === activeTabId) continue;
+        const lastActive = tabLastActiveAt[tab.id] ?? now;
+        if (now - lastActive > hibernationTimeout) {
+          newHibernated.add(tab.id);
+        }
+      }
+      setHibernatedTabs(newHibernated);
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [tabHibernation, hibernationTimeout, tabs, activeTabId]);
 
   const tabDisplayNames = useMemo(() => computeTabDisplayNames(tabs), [tabs]);
 
@@ -178,12 +221,25 @@ export const TerminalPane = memo(function TerminalPane({ projectPath }: Terminal
               <SplitPaneHeader label={tabDisplayNames[tab.id] ?? "Terminal"} onClose={closeSplit} />
             )}
             <div className={isTabSplit ? "flex-1 min-h-0" : "h-full"}>
-              <TerminalSession
-                tabId={tab.id}
-                path={tab.path}
-                isVisible={isVisible}
-                sessionType={tab.sessionType}
-              />
+              {hibernatedTabs.has(tab.id) ? (
+                <HibernatedTabPlaceholder
+                  onWake={() => {
+                    useTerminalTabsStore.getState().setActiveTab(tab.id);
+                    setHibernatedTabs((prev) => {
+                      const next = new Set(prev);
+                      next.delete(tab.id);
+                      return next;
+                    });
+                  }}
+                />
+              ) : (
+                <TerminalSession
+                  tabId={tab.id}
+                  path={tab.path}
+                  isVisible={isVisible}
+                  sessionType={tab.sessionType}
+                />
+              )}
             </div>
           </div>
         );

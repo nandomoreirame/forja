@@ -24,6 +24,7 @@ describe("useTerminalTabsStore", () => {
       counter: 0,
       isTerminalPaneOpen: true,
       isTerminalFullscreen: false,
+      tabLastActiveAt: {},
     });
   });
 
@@ -433,6 +434,33 @@ describe("useTerminalTabsStore", () => {
 
       useTerminalTabsStore.getState().toggleTerminalPane(); // hide terminal
       expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(false);
+    });
+  });
+
+  describe("tabLastActiveAt tracking", () => {
+    it("initializes with empty tabLastActiveAt", () => {
+      expect(useTerminalTabsStore.getState().tabLastActiveAt).toEqual({});
+    });
+
+    it("records timestamp when setActiveTab is called", () => {
+      const id1 = createTab("/a");
+      const before = Date.now();
+      useTerminalTabsStore.getState().setActiveTab(id1);
+      const after = Date.now();
+
+      const lastActive = useTerminalTabsStore.getState().tabLastActiveAt[id1];
+      expect(lastActive).toBeGreaterThanOrEqual(before);
+      expect(lastActive).toBeLessThanOrEqual(after);
+    });
+
+    it("records timestamp when addTab creates a tab", () => {
+      const before = Date.now();
+      const id1 = createTab("/a");
+      const after = Date.now();
+
+      const lastActive = useTerminalTabsStore.getState().tabLastActiveAt[id1];
+      expect(lastActive).toBeGreaterThanOrEqual(before);
+      expect(lastActive).toBeLessThanOrEqual(after);
     });
   });
 });
