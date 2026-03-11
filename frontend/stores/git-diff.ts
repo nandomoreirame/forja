@@ -6,6 +6,8 @@ import type {
 } from "@/lib/git-diff-types";
 import { create } from "zustand";
 
+export const GIT_DIFF_TTL_MS = 5000;
+
 function emptyCounters(): GitProjectCounters {
   return { modified: 0, added: 0, deleted: 0, untracked: 0, total: 0 };
 }
@@ -41,15 +43,61 @@ interface GitDiffState {
   isLoadingDiff: boolean;
   error: string | null;
   diffByProject: Record<string, DiffSelectionSnapshot | null>;
+  _lastFetchByProject: Record<string, number>;
 
   fetchChangedFiles: (projectPath: string) => Promise<void>;
   selectChangedFile: (projectPath: string, relativePath: string) => Promise<void>;
   setDiffMode: (mode: "split" | "unified") => void;
   refresh: (projectPath: string) => Promise<void>;
+  forceRefresh: (projectPath: string) => Promise<void>;
   clearSelection: () => void;
   saveDiffForProject: (projectPath: string) => void;
   restoreDiffForProject: (projectPath: string) => void;
   reset: () => void;
+}
+
+async function performFetchChangedFiles(
+  projectPath: string,
+  set: (fn: (state: GitDiffState) => Partial<GitDiffState>) => void,
+): Promise<void> {
+  set((state) => ({
+    isLoadingFiles: true,
+    error: null,
+    _lastFetchByProject: {
+      ...state._lastFetchByProject,
+      [projectPath]: Date.now(),
+    },
+  }));
+  try {
+    const files = await invoke<GitChangedFile[]>("get_git_changed_files", {
+      path: projectPath,
+    });
+    const safeFiles = files ?? [];
+    set((state) => ({
+      isLoadingFiles: false,
+      changedFilesByProject: {
+        ...state.changedFilesByProject,
+        [projectPath]: safeFiles,
+      },
+      projectCountersByPath: {
+        ...state.projectCountersByPath,
+        [projectPath]: computeCounters(safeFiles),
+      },
+    }));
+  } catch (error) {
+    set((state) => ({
+      isLoadingFiles: false,
+      error: error instanceof Error ? error.message : "Failed to load git changes",
+      changedFilesByProject: {
+        ...state.changedFilesByProject,
+        [projectPath]: [],
+      },
+      projectCountersByPath: {
+        ...state.projectCountersByPath,
+        [projectPath]: emptyCounters(),
+      },
+    }));
+  }
 }
 
 export const useGitDiffStore = create<GitDiffState>((set, get) => ({
@@ -63,39 +111,15 @@ export const useGitDiffStore = create<GitDiffState>((set, get) => ({
   isLoadingDiff: false,
   error: null,
   diffByProject: {},
+  _lastFetchByProject: {},
 
   fetchChangedFiles: async (projectPath: string) => {
-    set({ isLoadingFiles: true, error: null });
-    try {
-      const files = await invoke<GitChangedFile[]>("get_git_changed_files", {
-        path: projectPath,
-      });
-      const safeFiles = files ?? [];
-      set((state) => ({
-        isLoadingFiles: false,
-        changedFilesByProject: {
-          ...state.changedFilesByProject,
-          [projectPath]: safeFiles,
-        },
-        projectCountersByPath: {
-          ...state.projectCountersByPath,
-          [projectPath]: computeCounters(safeFiles),
-        },
-      }));
-    } catch (error) {
-      set((state) => ({
-        isLoadingFiles: false,
-        error: error instanceof Error ? error.message : "Failed to load git changes",
-        changedFilesByProject: {
-          ...state.changedFilesByProject,
-          [projectPath]: [],
-        },
-        projectCountersByPath: {
-          ...state.projectCountersByPath,
-          [projectPath]: emptyCounters(),
-        },
-      }));
+    const { _lastFetchByProject } = get();
+    const lastFetch = _lastFetchByProject[projectPath];
+    if (lastFetch !== undefined && Date.now() - lastFetch < GIT_DIFF_TTL_MS) {
+      return;
     }
+    await performFetchChangedFiles(projectPath, set);
   },
 
   selectChangedFile: async (projectPath: string, relativePath: string) => {
@@ -142,6 +166,10 @@ export const useGitDiffStore = create<GitDiffState>((set, get) => ({
 
   refresh: async (projectPath: string) => {
     await get().fetchChangedFiles(projectPath);
+  },
+
+  forceRefresh: async (projectPath: string) => {
+    await performFetchChangedFiles(projectPath, set);
   },
 
   clearSelection: () =>
@@ -206,5 +234,6 @@ export const useGitDiffStore = create<GitDiffState>((set, get) => ({
       isLoadingDiff: false,
       error: null,
       diffByProject: {},
+      _lastFetchByProject: {},
     }),
 }));
