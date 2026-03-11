@@ -1,0 +1,40 @@
+{
+  "id": "catppuccin-latte",
+  "name": "Catppuccin Latte",
+  "type": "light",
+  "colors": {
+    "base": "#eff1f5",
+    "mantle": "#e6e9ef",
+    "surface": "#ccd0da",
+    "overlay": "#bcc0cc",
+    "highlight": "#acb0be",
+    "text": "#4c4f69",
+    "subtext": "#6c6f85",
+    "muted": "#9ca0b0",
+    "accent": "#8839ef",
+    "accentHover": "#7287fd",
+    "accentSubtle": "#e8dff5",
+    "success": "#40a02b",
+    "warning": "#df8e1d",
+    "error": "#d20f39",
+    "info": "#1e66f5"
+  },
+  "terminal": {
+    "black": "#bcc0cc",
+    "red": "#d20f39",
+    "green": "#40a02b",
+    "yellow": "#df8e1d",
+    "blue": "#1e66f5",
+    "magenta": "#ea76cb",
+    "cyan": "#179299",
+    "white": "#6c6f85",
+    "brightBlack": "#acb0be",
+    "brightRed": "#d20f39",
+    "brightGreen": "#40a02b",
+    "brightYellow": "#df8e1d",
+    "brightBlue": "#1e66f5",
+    "brightMagenta": "#ea76cb",
+    "brightCyan": "#179299",
+    "brightWhite": "#4c4f69"
+  }
+}
