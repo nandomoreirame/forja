@@ -49,5 +49,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     goBack: () => ipcRenderer.invoke("browser:goBack"),
     goForward: () => ipcRenderer.invoke("browser:goForward"),
     reload: () => ipcRenderer.invoke("browser:reload"),
+    screenshot: (webContentsId: number) =>
+      ipcRenderer.invoke("browser:screenshot", { webContentsId }),
   },
 });

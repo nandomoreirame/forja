@@ -1,10 +1,12 @@
 import {
   app,
   BrowserWindow,
+  clipboard,
   dialog,
   ipcMain,
   session,
   shell,
+  webContents,
 } from "electron";
 import * as path from "path";
 import * as os from "os";
@@ -595,6 +597,15 @@ ipcMain.handle("app:isDev", () => isDev);
 ipcMain.handle("app:getForjaConfigPath", () =>
   path.join(os.homedir(), ".config", "forja")
 );
+
+// Browser screenshot to clipboard
+ipcMain.handle("browser:screenshot", async (_event, args: { webContentsId: number }) => {
+  const wc = webContents.fromId(args.webContentsId);
+  if (!wc) throw new Error(`WebContents not found for id: ${args.webContentsId}`);
+  const image = await wc.capturePage();
+  clipboard.writeImage(image);
+  return { success: true };
+});
 
 // Context Hub
 getContextIpc().then(({ createContextHandlers }) => {
