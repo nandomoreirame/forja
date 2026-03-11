@@ -384,11 +384,17 @@ ipcMain.handle("pty:get-buffer", (_event, args: { tabId: string }) => {
   return getSessionBuffer(args.tabId);
 });
 
-ipcMain.handle("pty:notify-session-ready", async (_event, args: { projectPath: string; sessionType: string }) => {
-  const { showSessionReadyNotification } = await import("./pty-notifications.js");
-  const mainWindow = BrowserWindow.getAllWindows()[0] ?? null;
-  showSessionReadyNotification(args, mainWindow);
-});
+ipcMain.handle(
+  "pty:notify-session-finished",
+  async (
+    _event,
+    args: { projectPath: string; sessionType: string; activeProjectPath: string | null },
+  ) => {
+    const { showSessionFinishedNotification } = await import("./pty-notifications.js");
+    const mainWindow = BrowserWindow.getAllWindows()[0] ?? null;
+    showSessionFinishedNotification(args, mainWindow);
+  },
+);
 
 // Git info
 ipcMain.handle("get_git_info_command", async (_event, args: { path: string }) => {

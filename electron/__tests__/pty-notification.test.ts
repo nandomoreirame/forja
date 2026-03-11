@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { buildSessionReadyNotification } from "../pty-notifications";
+import { buildSessionFinishedNotification } from "../pty-notifications";
 
 const { mockNotificationInstance, MockNotification } = vi.hoisted(() => {
   const instance = {
@@ -31,37 +31,41 @@ vi.mock("electron", () => ({
   Notification: MockNotification,
 }));
 
-describe("buildSessionReadyNotification", () => {
+describe("buildSessionFinishedNotification", () => {
   it("builds title with project name", () => {
-    const notif = buildSessionReadyNotification({
+    const notif = buildSessionFinishedNotification({
       projectPath: "/home/user/my-app",
       sessionType: "claude",
+      activeProjectPath: null,
     });
     expect(notif.title).toContain("my-app");
   });
 
-  it("builds body with capitalized session type", () => {
-    const notif = buildSessionReadyNotification({
+  it("builds body with capitalized session type and finished copy", () => {
+    const notif = buildSessionFinishedNotification({
       projectPath: "/home/user/my-app",
       sessionType: "claude",
+      activeProjectPath: null,
     });
     expect(notif.body).toContain("Claude");
-    expect(notif.body.toLowerCase()).toContain("ready");
+    expect(notif.body.toLowerCase()).toContain("finished");
   });
 
   it("capitalizes different session types", () => {
-    const notif = buildSessionReadyNotification({
+    const notif = buildSessionFinishedNotification({
       projectPath: "/home/user/proj",
       sessionType: "gemini",
+      activeProjectPath: null,
     });
     expect(notif.body).toContain("Gemini");
   });
 });
 
-describe("showSessionReadyNotification", () => {
+describe("showSessionFinishedNotification", () => {
   const readyInfo = {
     projectPath: "/home/user/my-app",
     sessionType: "claude",
+    activeProjectPath: null,
   };
 
   let originalPlatform: PropertyDescriptor | undefined;
@@ -99,26 +103,59 @@ describe("showSessionReadyNotification", () => {
 
   it("does nothing when window is focused", async () => {
     const { execFile } = await import("child_process");
-    const { showSessionReadyNotification } = await import(
+    const { showSessionFinishedNotification } = await import(
       "../pty-notifications"
     );
 
     const win = makeMockWindow(true);
-    showSessionReadyNotification(readyInfo, win);
+    showSessionFinishedNotification(
+      { ...readyInfo, activeProjectPath: "/home/user/my-app" },
+      win,
+    );
 
     expect(execFile).not.toHaveBeenCalled();
     expect(mockNotificationInstance.show).not.toHaveBeenCalled();
   });
 
+  it("shows notification when window is focused but another project is active", async () => {
+    setPlatform("darwin");
+    const { showSessionFinishedNotification } = await import(
+      "../pty-notifications"
+    );
+
+    const win = makeMockWindow(true);
+    showSessionFinishedNotification(
+      { ...readyInfo, activeProjectPath: "/home/user/other-app" },
+      win,
+    );
+
+    expect(mockNotificationInstance.show).toHaveBeenCalled();
+  });
+
   it("on Linux calls notify-send via execFile", async () => {
     setPlatform("linux");
     const { execFile } = await import("child_process");
-    const { showSessionReadyNotification } = await import(
+    const { showSessionFinishedNotification } = await import(
       "../pty-notifications"
     );
 
     const win = makeMockWindow(false);
-    showSessionReadyNotification(readyInfo, win);
+    showSessionFinishedNotification(readyInfo, win);
+
+    expect(mockNotificationInstance.show).toHaveBeenCalled();
+    expect(execFile).not.toHaveBeenCalled();
+  });
+
+  it("on Linux falls back to notify-send when Electron notifications are unsupported", async () => {
+    setPlatform("linux");
+    MockNotification.isSupported.mockReturnValueOnce(false);
+    const { execFile } = await import("child_process");
+    const { showSessionFinishedNotification } = await import(
+      "../pty-notifications"
+    );
+
+    const win = makeMockWindow(false);
+    showSessionFinishedNotification(readyInfo, win);
 
     expect(execFile).toHaveBeenCalledWith(
       "notify-send",
@@ -129,12 +166,12 @@ describe("showSessionReadyNotification", () => {
 
   it("on macOS uses Electron.Notification", async () => {
     setPlatform("darwin");
-    const { showSessionReadyNotification } = await import(
+    const { showSessionFinishedNotification } = await import(
       "../pty-notifications"
     );
 
     const win = makeMockWindow(false);
-    showSessionReadyNotification(readyInfo, win);
+    showSessionFinishedNotification(readyInfo, win);
 
     const lastOpts = MockNotification.lastOpts;
     expect(lastOpts).toEqual(
@@ -148,12 +185,12 @@ describe("showSessionReadyNotification", () => {
 
   it("on macOS registers click handler that shows and focuses window", async () => {
     setPlatform("darwin");
-    const { showSessionReadyNotification } = await import(
+    const { showSessionFinishedNotification } = await import(
       "../pty-notifications"
     );
 
     const win = makeMockWindow(false);
-    showSessionReadyNotification(readyInfo, win);
+    showSessionFinishedNotification(readyInfo, win);
 
     expect(mockNotificationInstance.on).toHaveBeenCalledWith(
       "click",
@@ -175,12 +212,12 @@ describe("showSessionReadyNotification", () => {
 
   it("does not throw when mainWindow is null", async () => {
     setPlatform("linux");
-    const { showSessionReadyNotification } = await import(
+    const { showSessionFinishedNotification } = await import(
       "../pty-notifications"
     );
 
     expect(() => {
-      showSessionReadyNotification(readyInfo, null);
+      showSessionFinishedNotification(readyInfo, null);
     }).not.toThrow();
   });
 });
