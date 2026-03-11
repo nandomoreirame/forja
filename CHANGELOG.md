@@ -59,6 +59,30 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Added
 - Add context menu and inline rename to terminal tabs.---
 
+## [1.5.0] - 2026-03-11
+### Added
+- Add theme and lineHeight to settings dialog.
+- Add theme switcher to command palette.
+- Integrate theme system into app.
+- Add Zustand theme store.
+- Add theme and lineHeight to UserSettings.
+- Add theme applicator with CSS variable mapping.
+- Add theme registry with resolve logic.
+- Add 10 popular editor theme definitions.
+- Add 4 core theme definitions.
+- Add theme schema types and validation.
+
+### Changed
+- Tighten browser pane lifecycle.
+- Remove sync icon IO from main process.
+- Make app metrics sampling demand-driven.
+- Coalesce git refresh by project with TTL caching.
+- Make file refresh selective by project and path.
+- Add performance guardrails, lazy-load monaco editors.
+
+### Fixed
+- Handle Ctrl+Shift+C/V for terminal copy/paste.---
+
 ## [Unreleased]
 
 ## [1.4.7] - 2026-03-10
