@@ -22,6 +22,8 @@ describe("useTerminalTabsStore", () => {
       tabs: [],
       activeTabId: null,
       counter: 0,
+      isTerminalPaneOpen: true,
+      isTerminalFullscreen: false,
     });
   });
 
@@ -345,6 +347,38 @@ describe("useTerminalTabsStore", () => {
       const tabA = useTerminalTabsStore.getState().tabs.find((t) => t.id === idA1);
       expect(tabA).toBeDefined();
       expect(tabA!.isRunning).toBe(false);
+    });
+  });
+
+  describe("terminal fullscreen", () => {
+    it("starts with isTerminalFullscreen as false", () => {
+      const state = useTerminalTabsStore.getState();
+      expect(state.isTerminalFullscreen).toBe(false);
+    });
+
+    it("toggleTerminalFullscreen toggles the value", () => {
+      useTerminalTabsStore.getState().toggleTerminalFullscreen();
+      expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(true);
+
+      useTerminalTabsStore.getState().toggleTerminalFullscreen();
+      expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(false);
+    });
+
+    it("toggling fullscreen also opens terminal pane if closed", () => {
+      useTerminalTabsStore.getState().toggleTerminalPane(); // close it
+      expect(useTerminalTabsStore.getState().isTerminalPaneOpen).toBe(false);
+
+      useTerminalTabsStore.getState().toggleTerminalFullscreen();
+      expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(true);
+      expect(useTerminalTabsStore.getState().isTerminalPaneOpen).toBe(true);
+    });
+
+    it("toggling terminal pane off exits fullscreen", () => {
+      useTerminalTabsStore.getState().toggleTerminalFullscreen();
+      expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(true);
+
+      useTerminalTabsStore.getState().toggleTerminalPane(); // hide terminal
+      expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(false);
     });
   });
 });

@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { PanelRightClose, X } from "lucide-react";
+import { Maximize, Minimize, PanelRightClose, X } from "lucide-react";
 import { useSessionStateStore } from "@/stores/session-state";
 import { useTerminalTabsStore, type TerminalTab } from "@/stores/terminal-tabs";
 import { computeTabDisplayNames, type SessionType } from "@/lib/cli-registry";
@@ -22,6 +22,7 @@ export function TabBar({
   onSessionTypeSelect,
 }: TabBarProps) {
   const sessionStates = useSessionStateStore((s) => s.states);
+  const isFullscreen = useTerminalTabsStore((s) => s.isTerminalFullscreen);
   const displayNames = computeTabDisplayNames(tabs);
 
   const handleTabKeyDown = useCallback(
@@ -96,6 +97,17 @@ export function TabBar({
         })}
         <NewSessionDropdown onSessionTypeSelect={onSessionTypeSelect} />
       </div>
+      <button
+        onClick={() => useTerminalTabsStore.getState().toggleTerminalFullscreen()}
+        className="inline-flex h-9 items-center justify-center rounded-md px-2 text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+        aria-label="Toggle fullscreen"
+      >
+        {isFullscreen ? (
+          <Minimize className="h-4 w-4" strokeWidth={1.5} />
+        ) : (
+          <Maximize className="h-4 w-4" strokeWidth={1.5} />
+        )}
+      </button>
       <button
         onClick={() => useTerminalTabsStore.getState().toggleTerminalPane()}
         className="inline-flex h-9 items-center justify-center rounded-md px-2 text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
