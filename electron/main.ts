@@ -133,7 +133,7 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
   if (!isDev) {
     win.webContents.on("before-input-event", (_event, input) => {
       const isReload =
-        (input.key === "r" && (input.control || input.meta)) ||
+        (input.key.toLowerCase() === "r" && (input.control || input.meta)) ||
         input.key === "F5";
       if (isReload) {
         _event.preventDefault();
