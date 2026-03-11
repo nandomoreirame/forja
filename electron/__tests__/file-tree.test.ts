@@ -108,6 +108,31 @@ describe("readDirectoryTree", () => {
     expect(file?.extension).toBeNull();
   });
 
+  it("shows dot directories except .git and other SKIP_DIRS entries", async () => {
+    fs.mkdirSync(path.join(tmpDir, ".claude"));
+    fs.mkdirSync(path.join(tmpDir, ".github"));
+    fs.mkdirSync(path.join(tmpDir, ".vscode"));
+    fs.mkdirSync(path.join(tmpDir, ".forja"));
+    fs.mkdirSync(path.join(tmpDir, ".git"));
+    fs.mkdirSync(path.join(tmpDir, ".next"));
+    fs.writeFileSync(path.join(tmpDir, "README.md"), "");
+
+    const result = await readDirectoryTree(tmpDir);
+    const names = result.root.children?.map((c) => c.name) ?? [];
+
+    // dot directories should be visible
+    expect(names).toContain(".claude");
+    expect(names).toContain(".github");
+    expect(names).toContain(".vscode");
+    expect(names).toContain(".forja");
+
+    // .git and .next are in SKIP_DIRS, should be hidden
+    expect(names).not.toContain(".git");
+    expect(names).not.toContain(".next");
+
+    expect(names).toContain("README.md");
+  });
+
   it("handles nonexistent directory gracefully", async () => {
     await expect(
       readDirectoryTree("/nonexistent/path/that/does/not/exist")
