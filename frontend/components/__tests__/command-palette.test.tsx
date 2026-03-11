@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from "vitest";
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { CommandPalette } from "../command-palette";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 
@@ -108,6 +109,15 @@ vi.mock("@/stores/git-status", () => ({
       forceFetchStatuses: vi.fn(),
     }),
   }),
+}));
+
+const mockInstalledClis = {
+  installedClis: [] as Array<{ id: string; displayName: string; icon: string }>,
+  loading: false,
+};
+
+vi.mock("@/hooks/use-installed-clis", () => ({
+  useInstalledClis: () => mockInstalledClis,
 }));
 
 describe("CommandPalette", () => {
@@ -221,5 +231,81 @@ describe("CommandPalette", () => {
     const newSessionItem = screen.getByText("New Session").closest("[cmdk-item]") as HTMLElement;
     expect(newSessionItem).toBeInTheDocument();
     expect(within(newSessionItem).getByText(/T$/)).toBeInTheDocument();
+  });
+
+  describe("sessions mode", () => {
+    beforeEach(() => {
+      mockInstalledClis.installedClis = [];
+      mockInstalledClis.loading = false;
+    });
+
+    it("renders sessions mode with correct placeholder", () => {
+      useCommandPaletteStore.setState({ isOpen: true, mode: "sessions" });
+      render(<CommandPalette />);
+      expect(screen.getByPlaceholderText("Select session type...")).toBeInTheDocument();
+    });
+
+    it("always shows Terminal in sessions mode", () => {
+      useCommandPaletteStore.setState({ isOpen: true, mode: "sessions" });
+      render(<CommandPalette />);
+      expect(screen.getByText("Terminal")).toBeInTheDocument();
+    });
+
+    it("shows installed CLIs in sessions mode", () => {
+      mockInstalledClis.installedClis = [
+        { id: "claude", displayName: "Claude Code", icon: "./images/claude.svg" },
+        { id: "gemini", displayName: "Gemini CLI", icon: "./images/gemini.svg" },
+      ];
+      useCommandPaletteStore.setState({ isOpen: true, mode: "sessions" });
+      render(<CommandPalette />);
+      expect(screen.getByText("Claude Code")).toBeInTheDocument();
+      expect(screen.getByText("Gemini CLI")).toBeInTheDocument();
+      expect(screen.getByText("Terminal")).toBeInTheDocument();
+    });
+
+    it("shows loading spinner while detecting CLIs", () => {
+      mockInstalledClis.loading = true;
+      useCommandPaletteStore.setState({ isOpen: true, mode: "sessions" });
+      render(<CommandPalette />);
+      expect(screen.getByText("Detecting installed CLIs...")).toBeInTheDocument();
+    });
+
+    it("selecting a CLI creates tab and closes palette", async () => {
+      const user = userEvent.setup();
+      const addTabMock = vi.fn();
+      const { useTerminalTabsStore } = await import("@/stores/terminal-tabs");
+      const original = useTerminalTabsStore.getState;
+      (useTerminalTabsStore as any).getState = () => ({
+        addTab: addTabMock,
+        nextTabId: () => "tab-new",
+      });
+
+      mockInstalledClis.installedClis = [
+        { id: "claude", displayName: "Claude Code", icon: "./images/claude.svg" },
+      ];
+      mockFileTreeState.currentPath = "/project";
+      useCommandPaletteStore.setState({ isOpen: true, mode: "sessions" });
+      render(<CommandPalette />);
+
+      await user.click(screen.getByText("Claude Code"));
+      expect(addTabMock).toHaveBeenCalledWith("tab-new", "/project", "claude");
+
+      const state = useCommandPaletteStore.getState();
+      expect(state.isOpen).toBe(false);
+
+      (useTerminalTabsStore as any).getState = original;
+    });
+
+    it("'New Session' command in commands mode switches to sessions mode", async () => {
+      const user = userEvent.setup();
+      mockFileTreeState.currentPath = "/project";
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+
+      await user.click(screen.getByText("New Session"));
+      const state = useCommandPaletteStore.getState();
+      expect(state.mode).toBe("sessions");
+      expect(state.isOpen).toBe(true);
+    });
   });
 });

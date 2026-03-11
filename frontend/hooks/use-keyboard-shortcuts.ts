@@ -72,12 +72,7 @@ export function useKeyboardShortcuts({
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "t") {
         event.preventDefault();
-        const cp = useFileTreeStore.getState().currentPath;
-        if (cp) {
-          const tabStore = useTerminalTabsStore.getState();
-          const id = tabStore.nextTabId();
-          tabStore.addTab(id, cp, "terminal");
-        }
+        useCommandPaletteStore.getState().open("sessions");
         return;
       }
       if (mod && event.key.toLowerCase() === "w") {

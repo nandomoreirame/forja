@@ -1,13 +1,11 @@
 import { Loader2, Plus, ChevronDown, TerminalSquare } from "lucide-react";
 import { useInstalledClis } from "@/hooks/use-installed-clis";
 import type { SessionType } from "@/lib/cli-registry";
-import { MOD_KEY } from "@/lib/platform";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { CliIcon } from "./cli-icon";
@@ -59,7 +57,6 @@ export function NewSessionDropdown({
             >
               <TerminalSquare className="h-4 w-4 text-ctp-overlay1" strokeWidth={1.5} />
               <span>Terminal</span>
-              <DropdownMenuShortcut>{MOD_KEY}+Shift+T</DropdownMenuShortcut>
             </DropdownMenuItem>
           </>
         )}
