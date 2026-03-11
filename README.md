@@ -13,39 +13,44 @@ Forja opens directly into Claude Code. The user picks a project directory and th
 ## Features
 
 - **Multi-CLI Support** - Claude Code, Gemini CLI, Codex CLI, Cursor Agent, and plain terminal sessions
-- **Multi-Session Tabs** - Multiple concurrent sessions with tab management (Ctrl+T, Ctrl+W, Ctrl+Tab)
-- **Project Selector** - Home screen with recent projects and filesystem browser
-- **Claude Code Pane** - PTY running AI CLIs with full terminal emulation via xterm.js
-- **File Tree Sidebar** - Collapsible sidebar with project directory structure, file type icons, git status indicators, and Ctrl+B toggle
-- **File Preview Pane** - Syntax-highlighted code preview and markdown rendering for project files
-- **Settings Editor** - In-app JSON settings editor with syntax highlighting and live validation (Ctrl+,)
-- **Git Integration** - Current branch in the header, modified files counter, per-file git status badges, auto-updates via file watcher
+- **Multi-Session Tabs** - Multiple concurrent sessions with tab management, context menus, inline rename
+- **Project Selector** - Home screen with recent projects, filesystem browser, and drag-and-drop reorder
+- **Terminal Emulation** - Full PTY via xterm.js with split panes (horizontal/vertical), independent zoom, and copy/paste
+- **File Tree Sidebar** - Collapsible sidebar with lazy-loaded directory tree, file type icons, git status badges, and Ctrl+B toggle
+- **File Preview Pane** - Syntax-highlighted code preview (Shiki), markdown rendering, image viewer, and Monaco editor integration
+- **Git Integration** - Current branch, modified files counter, per-file git status badges, git diff viewer, auto-refresh via file watcher
+- **Embedded Browser** - In-app browser pane with navigation toolbar, auto-opens on localhost URL detection in terminal output
+- **Theme System** - 14+ built-in themes (Catppuccin, Dracula, Nord, Tokyo Night, Monokai Pro, and more) with live switching
+- **Settings Editor** - In-app settings with syntax highlighting, live validation, font/theme/window configuration (Ctrl+,)
 - **Workspaces** - Group multiple projects into named workspaces that open in dedicated windows
-- **Command Palette** - Quick file navigation (Ctrl+P) and command access (Ctrl+Shift+P)
-- **Keyboard Shortcuts** - Comprehensive keyboard shortcuts with customizable bindings
-- **Terminal Zoom** - Independent font size control for terminal (Ctrl+Alt++/-)
+- **Command Palette** - Quick file navigation (Ctrl+P), command access (Ctrl+Shift+P), theme/session switching
+- **Context System** - Context synchronization with import, sync status, and tool registry
+- **Agent Chat** - Chat panel with slash command menu for AI CLI interaction
+- **Keyboard Shortcuts** - Comprehensive shortcuts with customizable bindings, fullscreen toggle (F11)
 - **Font Settings** - Separate font configuration for 3 areas: app UI, editor/preview, and terminal
-- **Window Controls** - Custom titlebar with opacity and zoom level settings
-- **System Metrics** - Real-time CPU, memory, swap, disk, and network metrics in the status bar
-- **Session State** - Visual indicator for "thinking" vs "ready" states
+- **Window Controls** - Custom titlebar with opacity and zoom level settings (hidden on macOS)
+- **System Metrics** - Demand-driven CPU, memory, swap, disk, and network metrics in status bar
+- **Session State** - Visual indicators for "thinking" vs "ready" states with notification support
 - **Error Handling** - Graceful fallback when AI CLI is not installed
 
 ## Stack
 
 | Technology | Purpose |
 |-----------|---------|
-| **Electron** | Desktop framework (Node.js backend + Chromium frontend) |
+| **Electron 32** | Desktop framework (Node.js backend + Chromium frontend) |
 | **React 19 + TypeScript** | UI framework |
 | **Tailwind CSS 4 + shadcn/ui** | Styling and components |
-| **xterm.js + node-pty** | Terminal emulation and PTY management |
-| **Shiki** | Syntax highlighting (Catppuccin Mocha theme) |
+| **xterm.js 6 + node-pty** | Terminal emulation and PTY management |
+| **Monaco Editor** | Code editing and diff viewing |
+| **Shiki** | Syntax highlighting (14+ themes) |
 | **react-markdown + remark-gfm** | Markdown output rendering |
-| **Zustand** | State management |
-| **chokidar** | File watching (.git/ changes, settings) |
-| **electron-store** | Config storage (~/.config/forja/config.json) |
+| **Zustand 5** | State management |
+| **chokidar 4** | File watching (.git/ changes, project files, settings) |
+| **electron-store 10** | Config storage (~/.config/forja/config.json) |
 | **systeminformation** | System metrics (CPU, memory, disk, network) |
 | **Lucide React** | Icon system |
-| **Vitest + React Testing Library** | Testing framework |
+| **@dnd-kit** | Drag-and-drop (project sidebar) |
+| **Vitest + React Testing Library** | Testing framework (1498+ tests) |
 
 ## Architecture
 
@@ -58,16 +63,17 @@ Forja opens directly into Claude Code. The user picks a project directory and th
     +-- PTY Manager (node-pty)
     |   +-- Spawns claude / gemini / codex / terminal processes
     |   +-- Streams output -> Frontend via IPC events
+    +-- File System (reader, writer, tree, cache, watcher)
     +-- File Watcher (chokidar)
     |   +-- Monitors .git/ for changes
-    |   +-- Watches settings.json for live reload
+    |   +-- Watches project files and settings for live reload
     +-- Git Reader (git CLI)
-    |   +-- Branch info (git branch --show-current)
-    |   +-- File status (git status --porcelain)
+    |   +-- Branch info, file status, diff content
+    +-- Context System (hub, sync, tool registry)
+    +-- Agent Chat (IPC-based AI CLI interaction)
     +-- Config Manager (electron-store)
-    |   +-- Recent projects, UI preferences
     +-- User Settings (~/.config/forja/settings.json)
-    +-- System Metrics (systeminformation)
+    +-- System Metrics (systeminformation, demand-driven)
 ```
 
 ### App Layout
@@ -78,7 +84,7 @@ Forja opens directly into Claude Code. The user picks a project directory and th
 +------+--------------------+------------------------+
 |      |                    |                        |
 | File |  Terminal Pane     |  File Preview /        |
-| Tree |  (xterm.js)        |  Settings Editor       |
+| Tree |  (xterm.js)        |  Browser / Settings    |
 | 256px|  ~60% width        |  ~40% width            |
 |      |                    |                        |
 +------+--------------------+------------------------+
@@ -93,10 +99,12 @@ Home Screen (Project Selector)
   -> User selects project directory
   -> Workspace opens
       +-- Tab Bar (multi-session management)
-      +-- Terminal Pane (PTY + xterm.js)
+      +-- Terminal Pane (PTY + xterm.js + split panes)
       +-- File Tree Sidebar (directory structure + git status)
-      +-- File Preview Pane (code + markdown rendering)
-      +-- Status Bar (git branch + metrics)
+      +-- File Preview Pane (code + markdown + images + diffs)
+      +-- Browser Pane (embedded webview, auto-opens on localhost)
+      +-- Chat Panel (agent chat with slash commands)
+      +-- Status Bar (git branch + system metrics)
 ```
 
 ## Inspirations
@@ -112,11 +120,12 @@ Home Screen (Project Selector)
 - **Multi-CLI** - Supports Claude Code, Gemini CLI, Codex CLI, Cursor Agent, and plain terminal in a unified interface
 - **Enhanced Rendering** - Markdown rendered as HTML, code blocks with syntax highlight via Shiki
 - **Project-based** - Each session is isolated per project with automatic context
+- **Theme System** - 14+ built-in editor themes with live switching
 - **Open Source** - Open source from day 1
 
 ## Design
 
-**Theme:** Catppuccin Mocha (dark mode)
+**Theme:** Catppuccin Mocha (default dark), with 14+ built-in themes
 
 **Brand color:** `#cba6f7` (Catppuccin Mauve)
 
@@ -155,6 +164,9 @@ pnpm install
 # Run in development mode
 pnpm dev
 
+# Run tests
+pnpm test
+
 # Build for production
 pnpm build:electron
 ```
@@ -170,6 +182,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 | [MVP Scope](docs/specs/MVP-SCOPE.md) | What's in/out of MVP, timeline, stack decisions |
 | [Design Guidelines](docs/design/DESIGN-GUIDELINES.md) | Complete design system (colors, typography, components) |
 | [Landing Page Spec](docs/design/LANDING-PAGE-SPEC.md) | Landing page structure and design tokens |
+| [CONTRIBUTING](CONTRIBUTING.md) | Development setup, testing, and contribution guide |
+| [CHANGELOG](CHANGELOG.md) | Version history and release notes |
 
 ## License
 
