@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useGitDiffStore } from "../git-diff";
+import { useGitDiffStore, GIT_DIFF_TTL_MS } from "../git-diff";
 
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
@@ -9,6 +9,7 @@ describe("useGitDiffStore", () => {
   beforeEach(() => {
     useGitDiffStore.getState().reset();
     vi.clearAllMocks();
+    vi.useRealTimers();
   });
 
   it("loads changed files and computes project counters", async () => {
@@ -79,6 +80,119 @@ describe("useGitDiffStore", () => {
     expect(state.changedFilesByProject["/repo-a"]).toEqual([]);
     expect(state.error).toBe("git failed");
     expect(state.isLoadingFiles).toBe(false);
+  });
+
+  describe("TTL caching", () => {
+    it("exports GIT_DIFF_TTL_MS constant", () => {
+      expect(GIT_DIFF_TTL_MS).toBe(5000);
+    });
+
+    it("multiple rapid refresh() calls within TTL result in only 1 IPC fetch", async () => {
+      vi.useFakeTimers();
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue([
+        { path: "src/a.ts", status: "M", staged: false, unstaged: true },
+      ]);
+
+      // First call should trigger IPC
+      await useGitDiffStore.getState().refresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Advance time slightly but still within TTL
+      vi.advanceTimersByTime(1000);
+
+      // Second call within TTL should be skipped
+      await useGitDiffStore.getState().refresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Third call within TTL should also be skipped
+      await useGitDiffStore.getState().refresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(1);
+    });
+
+    it("refresh() fetches again after TTL expires", async () => {
+      vi.useFakeTimers();
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue([
+        { path: "src/a.ts", status: "M", staged: false, unstaged: true },
+      ]);
+
+      // First call should trigger IPC
+      await useGitDiffStore.getState().refresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Advance time past TTL
+      vi.advanceTimersByTime(GIT_DIFF_TTL_MS + 100);
+
+      // Call after TTL should trigger IPC again
+      await useGitDiffStore.getState().refresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(2);
+    });
+
+    it("TTL is tracked per project independently", async () => {
+      vi.useFakeTimers();
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke)
+        .mockResolvedValueOnce([{ path: "a.ts", status: "M", staged: false, unstaged: true }])
+        .mockResolvedValueOnce([{ path: "b.ts", status: "A", staged: true, unstaged: false }]);
+
+      // Fetch repo-a
+      await useGitDiffStore.getState().refresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Advance time slightly
+      vi.advanceTimersByTime(500);
+
+      // Fetch repo-b (different project, should trigger IPC)
+      await useGitDiffStore.getState().refresh("/repo-b");
+      expect(invoke).toHaveBeenCalledTimes(2);
+
+      // Advance time slightly more - still within TTL for both
+      vi.advanceTimersByTime(500);
+
+      // Both projects still within TTL, no new IPC calls
+      await useGitDiffStore.getState().refresh("/repo-a");
+      await useGitDiffStore.getState().refresh("/repo-b");
+      expect(invoke).toHaveBeenCalledTimes(2);
+    });
+
+    it("forceRefresh() bypasses TTL and always fetches", async () => {
+      vi.useFakeTimers();
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue([
+        { path: "src/a.ts", status: "M", staged: false, unstaged: true },
+      ]);
+
+      // First call should trigger IPC
+      await useGitDiffStore.getState().refresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Still within TTL, but forceRefresh bypasses it
+      vi.advanceTimersByTime(100);
+      await useGitDiffStore.getState().forceRefresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(2);
+
+      // Another forceRefresh immediately also bypasses TTL
+      await useGitDiffStore.getState().forceRefresh("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(3);
+    });
+
+    it("fetchChangedFiles() also respects TTL", async () => {
+      vi.useFakeTimers();
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue([
+        { path: "src/a.ts", status: "M", staged: false, unstaged: true },
+      ]);
+
+      // First call should trigger IPC
+      await useGitDiffStore.getState().fetchChangedFiles("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Within TTL should be skipped
+      vi.advanceTimersByTime(1000);
+      await useGitDiffStore.getState().fetchChangedFiles("/repo-a");
+      expect(invoke).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("saveDiffForProject", () => {

@@ -1,6 +1,11 @@
-import { memo } from "react";
-import { MonacoEditor } from "./monaco-editor";
+import { lazy, memo, Suspense } from "react";
 import { detectLanguage } from "@/lib/detect-language";
+
+const MonacoEditor = lazy(() =>
+  import("./monaco-editor").then((module) => ({
+    default: module.MonacoEditor,
+  })),
+);
 
 interface CodeViewerProps {
   code: string;
@@ -11,12 +16,14 @@ export const CodeViewer = memo(function CodeViewer({ code, filename }: CodeViewe
   const language = detectLanguage(filename);
 
   return (
-    <MonacoEditor
-      value={code}
-      language={language}
-      readOnly
-      className="h-full w-full"
-    />
+    <Suspense fallback={<div className="h-full w-full bg-ctp-base" />}>
+      <MonacoEditor
+        value={code}
+        language={language}
+        readOnly
+        className="h-full w-full"
+      />
+    </Suspense>
   );
 });
 

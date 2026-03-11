@@ -9,6 +9,8 @@ const mockDispose = vi.fn();
 const mockOnData = vi.fn().mockReturnValue({ dispose: vi.fn() });
 const mockLoadAddon = vi.fn();
 const mockFocus = vi.fn();
+const mockGetSelection = vi.fn().mockReturnValue("");
+let capturedKeyHandler: ((event: KeyboardEvent) => boolean) | undefined;
 
 vi.mock("@xterm/xterm", () => ({
   Terminal: class MockTerminal {
@@ -18,7 +20,12 @@ vi.mock("@xterm/xterm", () => ({
     onData = mockOnData;
     loadAddon = mockLoadAddon;
     focus = mockFocus;
-    attachCustomKeyEventHandler = vi.fn();
+    getSelection = mockGetSelection;
+    attachCustomKeyEventHandler = vi.fn(
+      (handler: (event: KeyboardEvent) => boolean) => {
+        capturedKeyHandler = handler;
+      },
+    );
     options = {};
     rows = 24;
     cols = 80;
@@ -97,6 +104,8 @@ describe("TerminalSession", () => {
     mockClose.mockClear();
     mockRouteLinkClick.mockClear();
     capturedWebLinksHandler = undefined;
+    capturedKeyHandler = undefined;
+    mockGetSelection.mockReset().mockReturnValue("");
     webglInstances.length = 0;
   });
 
@@ -200,45 +209,15 @@ describe("TerminalSession", () => {
       expect(webglInstances).toHaveLength(1);
     });
 
-    it("disposes WebglAddon after 30s when hidden", () => {
+    it("disposes WebglAddon immediately when hidden", () => {
       const { rerender } = render(
         <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
       );
       expect(webglInstances).toHaveLength(1);
       const webgl = webglInstances[0];
 
-      // Hide the terminal
       rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-
-      // Not yet disposed before 30s
-      expect(webgl.dispose).not.toHaveBeenCalled();
-
-      // Advance 30s
-      vi.advanceTimersByTime(30_000);
-
       expect(webgl.dispose).toHaveBeenCalledOnce();
-    });
-
-    it("cancels WebGL disposal if terminal becomes visible before 30s", () => {
-      const { rerender } = render(
-        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
-      );
-      const webgl = webglInstances[0];
-
-      // Hide
-      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-
-      // Advance 15s (before timer fires)
-      vi.advanceTimersByTime(15_000);
-
-      // Show again — should cancel the timer
-      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
-
-      // Advance past original 30s
-      vi.advanceTimersByTime(30_000);
-
-      // WebGL should NOT have been disposed
-      expect(webgl.dispose).not.toHaveBeenCalled();
     });
 
     it("recreates WebglAddon when terminal becomes visible after disposal", () => {
@@ -247,36 +226,117 @@ describe("TerminalSession", () => {
       );
       expect(webglInstances).toHaveLength(1);
 
-      // Hide and wait for disposal
       rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-      vi.advanceTimersByTime(30_000);
       expect(webglInstances[0].dispose).toHaveBeenCalledOnce();
 
-      // Show again — should create a new WebglAddon
       rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
       expect(webglInstances).toHaveLength(2);
     });
 
-    it("clears virtualization timer on unmount", () => {
+    it("does not dispose WebGL twice when unmounting after hide", () => {
       const { unmount, rerender } = render(
         <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
       );
       const webgl = webglInstances[0];
 
-      // Hide to start timer
       rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
+      expect(webgl.dispose).toHaveBeenCalledTimes(1);
 
-      // Unmount before timer fires
       unmount();
+      expect(webgl.dispose).toHaveBeenCalledTimes(1);
+    });
+  });
 
-      // Advance past 30s — should not throw or call dispose on webgl
-      // (terminal.dispose is called on unmount, but webglAddon timer should be cleared)
-      vi.advanceTimersByTime(30_000);
+  describe("copy/paste keyboard shortcuts", () => {
+    const mockClipboardWriteText = vi.fn().mockResolvedValue(undefined);
+    const mockClipboardReadText = vi.fn().mockResolvedValue("");
 
-      // The webgl dispose may or may not be called by terminal.dispose(),
-      // but the timer-based disposal itself should be cleared
-      // We verify no extra calls beyond what unmount cleanup does
-      expect(webgl.dispose).not.toHaveBeenCalled();
+    beforeEach(() => {
+      mockClipboardWriteText.mockClear().mockResolvedValue(undefined);
+      mockClipboardReadText.mockClear().mockResolvedValue("");
+      Object.defineProperty(navigator, "clipboard", {
+        value: {
+          writeText: mockClipboardWriteText,
+          readText: mockClipboardReadText,
+        },
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("Ctrl+Shift+C copies selected terminal text to clipboard", () => {
+      mockGetSelection.mockReturnValue("selected text");
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      expect(capturedKeyHandler).toBeDefined();
+
+      const event = new KeyboardEvent("keydown", {
+        key: "C",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(false);
+      expect(mockClipboardWriteText).toHaveBeenCalledWith("selected text");
+    });
+
+    it("Ctrl+Shift+C does nothing when no text is selected", () => {
+      mockGetSelection.mockReturnValue("");
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      const event = new KeyboardEvent("keydown", {
+        key: "C",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      capturedKeyHandler!(event);
+
+      expect(mockClipboardWriteText).not.toHaveBeenCalled();
+    });
+
+    it("Ctrl+Shift+V pastes clipboard text to terminal PTY", async () => {
+      mockClipboardReadText.mockResolvedValue("pasted text");
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      const event = new KeyboardEvent("keydown", {
+        key: "V",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(false);
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(mockPtyWrite).toHaveBeenCalledWith("pasted text");
+    });
+
+    it("Ctrl+C (without Shift) passes through to xterm for SIGINT", () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      const event = new KeyboardEvent("keydown", {
+        key: "c",
+        ctrlKey: true,
+        shiftKey: false,
+      });
+      const result = capturedKeyHandler!(event);
+
+      expect(result).toBe(true);
+    });
+
+    it("does not trigger copy on keyup events", () => {
+      mockGetSelection.mockReturnValue("some text");
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      const event = new KeyboardEvent("keyup", {
+        key: "C",
+        ctrlKey: true,
+        shiftKey: true,
+      });
+      capturedKeyHandler!(event);
+
+      expect(mockClipboardWriteText).not.toHaveBeenCalled();
     });
   });
 });

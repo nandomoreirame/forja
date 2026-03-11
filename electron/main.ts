@@ -145,6 +145,25 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
   return win;
 }
 
+// Guard webviews: enforce security settings before they are attached.
+// This prevents a compromised renderer from spawning webviews with elevated
+// privileges (nodeIntegration, custom preloads, dangerous partition names).
+app.on("web-contents-created", (_event, contents) => {
+  contents.on("will-attach-webview", (_e, webPreferences, _params) => {
+    // Strip any preload scripts injected by the renderer — the webview must
+    // not have access to Node.js or the contextBridge APIs.
+    delete webPreferences.preload;
+
+    // Enforce hard security boundaries.
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+
+    // Allow sandbox to remain as-is (Electron's default for webviews is false;
+    // enabling it can break some content, but disabling nodeIntegration above
+    // is the critical protection).
+  });
+});
+
 // CSP headers for production
 app.whenReady().then(async () => {
   if (!isDev) {
@@ -169,11 +188,20 @@ app.whenReady().then(async () => {
     return BrowserWindow.getAllWindows().map((w) => w.webContents);
   });
 
-  const appMetricsMod = await getAppMetrics();
-  appMetricsMod.startAppMetricsLoop(
-    () => BrowserWindow.getAllWindows().map((w) => w.webContents),
-    () => BrowserWindow.getAllWindows().some((w) => w.isFocused()),
-  );
+  // Register IPC handlers for demand-driven metrics subscription.
+  // The loop starts only when the frontend registers a subscriber,
+  // avoiding wasted CPU cycles when no component displays metrics.
+  ipcMain.handle("register_metrics_subscriber", async () => {
+    const appMetricsMod = await getAppMetrics();
+    appMetricsMod.registerMetricsSubscriber(
+      () => BrowserWindow.getAllWindows().map((w) => w.webContents),
+    );
+  });
+
+  ipcMain.handle("unregister_metrics_subscriber", async () => {
+    const appMetricsMod = await getAppMetrics();
+    appMetricsMod.unregisterMetricsSubscriber();
+  });
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -182,6 +210,8 @@ app.whenReady().then(async () => {
 
 app.on("window-all-closed", async () => {
   const appMetricsMod = await getAppMetrics();
+  // Force-stop the loop as a safety net when all windows close,
+  // regardless of subscriber count (e.g., renderer crash without cleanup).
   appMetricsMod.stopAppMetricsLoop();
   const userSettings = await getUserSettings();
   userSettings.stopSettingsWatcher();

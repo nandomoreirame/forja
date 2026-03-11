@@ -10,6 +10,18 @@ import type { FSWatcher } from "chokidar";
 interface FontSettings {
   fontFamily: string;
   fontSize: number;
+  lineHeight?: number;
+}
+
+interface ThemeSettings {
+  active: string;
+  custom: Array<{
+    id: string;
+    name: string;
+    type: "dark" | "light";
+    colors: Record<string, string>;
+    terminal: Record<string, string>;
+  }>;
 }
 
 interface UserSettings {
@@ -18,6 +30,7 @@ interface UserSettings {
   terminal: FontSettings;
   window: { zoomLevel: number; opacity: number };
   sessions: Record<string, { args?: string[]; env?: Record<string, string> }>;
+  theme: ThemeSettings;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -29,6 +42,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     fontFamily:
       "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
     fontSize: 13,
+    lineHeight: 1.5,
   },
   terminal: {
     fontFamily:
@@ -42,6 +56,10 @@ const DEFAULT_SETTINGS: UserSettings = {
     codex: { args: ["--full-auto"] },
     opencode: {},
     "gh-copilot": {},
+  },
+  theme: {
+    active: "catppuccin-mocha",
+    custom: [],
   },
 };
 
@@ -85,6 +103,11 @@ function mergeWithDefaults(
       ...DEFAULT_SETTINGS.sessions,
       ...(input.sessions ?? {}),
     },
+    theme: {
+      ...DEFAULT_SETTINGS.theme,
+      ...(input.theme ?? {}),
+      custom: input.theme?.custom ?? DEFAULT_SETTINGS.theme.custom,
+    },
   };
 }
 
@@ -127,6 +150,9 @@ function validateSettings(settings: UserSettings): UserSettings {
     editor: {
       ...settings.editor,
       fontSize: clamp(settings.editor.fontSize, 8, 32),
+      lineHeight: settings.editor.lineHeight
+        ? clamp(settings.editor.lineHeight, 1.0, 3.0)
+        : undefined,
     },
     terminal: {
       ...settings.terminal,

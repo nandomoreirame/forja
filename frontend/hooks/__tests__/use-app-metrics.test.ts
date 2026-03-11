@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
+import { invoke, listen } from "@/lib/ipc";
 
 type ListenCallback = (event: { payload: unknown }) => void;
 let capturedCallbacks: Record<string, ListenCallback> = {};
 
 vi.mock("@/lib/ipc", () => ({
+  invoke: vi.fn(() => Promise.resolve(undefined)),
   listen: vi.fn((event: string, cb: ListenCallback) => {
     capturedCallbacks[event] = cb;
     return Promise.resolve(() => {});
@@ -101,5 +103,36 @@ describe("useAppMetrics", () => {
     // First 5 should have been dropped
     expect(result.current.rssHistory[0]).toBe(5);
     expect(result.current.rssHistory[29]).toBe(34);
+  });
+
+  describe("subscriber lifecycle", () => {
+    it("calls invoke(register_metrics_subscriber) on mount", async () => {
+      const { useAppMetrics } = await import("../use-app-metrics");
+      renderHook(() => useAppMetrics());
+
+      expect(invoke).toHaveBeenCalledWith("register_metrics_subscriber");
+    });
+
+    it("calls invoke(unregister_metrics_subscriber) on unmount", async () => {
+      const { useAppMetrics } = await import("../use-app-metrics");
+      const { unmount } = renderHook(() => useAppMetrics());
+
+      unmount();
+
+      expect(invoke).toHaveBeenCalledWith("unregister_metrics_subscriber");
+    });
+
+    it("registers before listening and unregisters on cleanup", async () => {
+      const { useAppMetrics } = await import("../use-app-metrics");
+      const { unmount } = renderHook(() => useAppMetrics());
+
+      // After mount: register should have been called
+      expect(invoke).toHaveBeenCalledWith("register_metrics_subscriber");
+      expect(listen).toHaveBeenCalledWith("app-metrics", expect.any(Function));
+
+      // After unmount: unregister should have been called
+      unmount();
+      expect(invoke).toHaveBeenCalledWith("unregister_metrics_subscriber");
+    });
   });
 });

@@ -25,6 +25,8 @@ interface FilePreviewState {
   closePreview: () => void;
   loadFile: (path: string) => Promise<void>;
   reloadCurrentFile: () => Promise<void>;
+  reloadCurrentFileForProject: (projectPath: string) => Promise<void>;
+  reloadCurrentFileIfChanged: (projectPath: string, changedPaths: string[]) => Promise<void>;
   clearError: () => void;
   setEditing: (editing: boolean) => void;
   setEditContent: (content: string) => void;
@@ -106,6 +108,47 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
     } catch {
       // Silently ignore reload errors — file may have been deleted
     }
+  },
+
+  reloadCurrentFileForProject: async (projectPath: string) => {
+    const { currentFile } = get();
+    if (!currentFile) return;
+
+    const normalizedProjectPath = projectPath.endsWith("/")
+      ? projectPath
+      : `${projectPath}/`;
+
+    if (!currentFile.startsWith(normalizedProjectPath)) return;
+
+    await get().reloadCurrentFile();
+  },
+
+  reloadCurrentFileIfChanged: async (projectPath: string, changedPaths: string[]) => {
+    const { currentFile } = get();
+    if (!currentFile) return;
+
+    const normalizedProjectPath = projectPath.endsWith("/")
+      ? projectPath
+      : `${projectPath}/`;
+
+    // The current file must belong to the changed project
+    if (!currentFile.startsWith(normalizedProjectPath)) return;
+
+    // If changedPaths is empty, treat it as a full project refresh (reload unconditionally)
+    if (changedPaths.length === 0) {
+      await get().reloadCurrentFile();
+      return;
+    }
+
+    // Check if the current file's relative path is in the changed paths list
+    const relativeCurrentFile = currentFile.slice(normalizedProjectPath.length);
+    const isCurrentFileChanged = changedPaths.some(
+      (p) => p === relativeCurrentFile || relativeCurrentFile.startsWith(`${p}/`),
+    );
+
+    if (!isCurrentFileChanged) return;
+
+    await get().reloadCurrentFile();
   },
 
   clearError: () => set({ error: null }),

@@ -1,6 +1,12 @@
-import { MonacoDiffEditor } from "./monaco-diff-editor";
+import { lazy, Suspense } from "react";
 import { detectLanguage } from "@/lib/detect-language";
 import type { GitDiffResult } from "@/lib/git-diff-types";
+
+const MonacoDiffEditor = lazy(() =>
+  import("./monaco-diff-editor").then((module) => ({
+    default: module.MonacoDiffEditor,
+  })),
+);
 
 interface GitDiffViewerProps {
   diff: GitDiffResult | null;
@@ -76,13 +82,15 @@ export function GitDiffViewer({
       </div>
       <div className="min-h-0 flex-1">
         {hasContent ? (
-          <MonacoDiffEditor
-            original={diff.originalContent ?? ""}
-            modified={diff.modifiedContent ?? ""}
-            language={language}
-            renderSideBySide={isSideBySide}
-            className="h-full w-full"
-          />
+          <Suspense fallback={<div className="h-full w-full bg-ctp-base" />}>
+            <MonacoDiffEditor
+              original={diff.originalContent ?? ""}
+              modified={diff.modifiedContent ?? ""}
+              language={language}
+              renderSideBySide={isSideBySide}
+              className="h-full w-full"
+            />
+          </Suspense>
         ) : (
           <div className="flex h-full items-center justify-center p-4 text-sm text-ctp-overlay1">
             No content available for diff view.

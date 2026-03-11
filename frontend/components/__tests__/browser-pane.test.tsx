@@ -137,7 +137,18 @@ describe("BrowserPane", () => {
     });
 
     it("calls invoke with browser:screenshot when clicked", async () => {
+      // Flush the lazy-mount rAF so webviewRef is populated before clicking.
+      let rafCb: FrameRequestCallback | null = null;
+      const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
+        rafCb = cb;
+        return 1;
+      });
       render(<BrowserPane />);
+      await act(async () => {
+        if (rafCb) rafCb(performance.now());
+      });
+      rafSpy.mockRestore();
+
       const screenshotBtn = screen.getByLabelText(/take screenshot/i);
 
       await act(async () => {
@@ -153,7 +164,19 @@ describe("BrowserPane", () => {
     it("shows success state after successful screenshot", async () => {
       vi.useFakeTimers();
       mockInvoke.mockResolvedValue({ success: true });
+
+      // Flush the lazy-mount rAF so the webview is mounted before clicking.
+      let rafCb: FrameRequestCallback | null = null;
+      const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
+        rafCb = cb;
+        return 1;
+      });
       render(<BrowserPane />);
+      await act(async () => {
+        if (rafCb) rafCb(performance.now());
+      });
+      rafSpy.mockRestore();
+
       const screenshotBtn = screen.getByLabelText(/take screenshot/i);
 
       // Click and flush microtasks
@@ -225,6 +248,56 @@ describe("BrowserPane", () => {
         fireEvent.click(screen.getByRole("button", { name: "Reload" }));
       });
       expect(mockState.clearError).toHaveBeenCalled();
+    });
+  });
+
+  describe("lazy webview mount", () => {
+    it("does not render the webview element on the initial synchronous render", async () => {
+      // Intercept rAF so the callback never fires during this test.
+      const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(() => 0);
+
+      render(<BrowserPane />);
+      // webviewMounted starts false; webview data-testid should not be in the DOM yet
+      expect(screen.queryByTestId("browser-webview")).toBeNull();
+
+      rafSpy.mockRestore();
+    });
+
+    it("renders the webview element once the animation frame fires", async () => {
+      // Collect the rAF callback so we can flush it manually.
+      let rafCb: FrameRequestCallback | null = null;
+      const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
+        rafCb = cb;
+        return 1;
+      });
+
+      render(<BrowserPane />);
+
+      // Fire the rAF callback inside act() so React processes the state update
+      await act(async () => {
+        if (rafCb) rafCb(performance.now());
+      });
+
+      expect(screen.getByTestId("browser-webview")).toBeInTheDocument();
+      rafSpy.mockRestore();
+    });
+  });
+
+  describe("unmount cleanup", () => {
+    it("resets loading and navigation state when the component unmounts", async () => {
+      const { unmount } = render(<BrowserPane />);
+
+      await act(async () => {
+        unmount();
+      });
+
+      // setLoading(false) and setNavigationState({...false}) should be called
+      // on every unmount regardless of current state values.
+      expect(mockState.setLoading).toHaveBeenCalledWith(false);
+      expect(mockState.setNavigationState).toHaveBeenCalledWith({
+        canGoBack: false,
+        canGoForward: false,
+      });
     });
   });
 });

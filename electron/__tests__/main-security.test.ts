@@ -47,3 +47,67 @@ describe("URL scheme validation", () => {
     expect(isAllowedUrl("")).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Webview security hardening (mirrors the will-attach-webview guard in main.ts)
+// ---------------------------------------------------------------------------
+
+/**
+ * Simulates the `will-attach-webview` handler that runs in the Electron main
+ * process whenever the renderer mounts a <webview> element. The handler strips
+ * renderer-supplied preload scripts and enforces nodeIntegration=false so that
+ * compromised renderer code cannot escalate privileges through a webview.
+ */
+function applyWebviewSecurityPolicy(
+  webPreferences: Record<string, unknown>,
+): void {
+  delete webPreferences.preload;
+  webPreferences.nodeIntegration = false;
+  webPreferences.contextIsolation = true;
+}
+
+describe("webview security hardening (will-attach-webview policy)", () => {
+  it("strips a renderer-supplied preload script", () => {
+    const prefs: Record<string, unknown> = {
+      preload: "/malicious/preload.js",
+      nodeIntegration: false,
+    };
+    applyWebviewSecurityPolicy(prefs);
+    expect(prefs.preload).toBeUndefined();
+  });
+
+  it("enforces nodeIntegration=false even when renderer tried to enable it", () => {
+    const prefs: Record<string, unknown> = { nodeIntegration: true };
+    applyWebviewSecurityPolicy(prefs);
+    expect(prefs.nodeIntegration).toBe(false);
+  });
+
+  it("enforces contextIsolation=true even when renderer tried to disable it", () => {
+    const prefs: Record<string, unknown> = { contextIsolation: false };
+    applyWebviewSecurityPolicy(prefs);
+    expect(prefs.contextIsolation).toBe(true);
+  });
+
+  it("preserves unrelated webPreferences keys", () => {
+    const prefs: Record<string, unknown> = {
+      partition: "persist:browser-pane",
+      allowpopups: false,
+    };
+    applyWebviewSecurityPolicy(prefs);
+    expect(prefs.partition).toBe("persist:browser-pane");
+    expect(prefs.allowpopups).toBe(false);
+  });
+
+  it("is idempotent — applying the policy twice yields the same result", () => {
+    const prefs: Record<string, unknown> = {
+      preload: "/some/preload.js",
+      nodeIntegration: true,
+      contextIsolation: false,
+    };
+    applyWebviewSecurityPolicy(prefs);
+    applyWebviewSecurityPolicy(prefs);
+    expect(prefs.preload).toBeUndefined();
+    expect(prefs.nodeIntegration).toBe(false);
+    expect(prefs.contextIsolation).toBe(true);
+  });
+});

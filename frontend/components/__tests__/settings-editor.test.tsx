@@ -28,6 +28,22 @@ vi.mock("monaco-editor", () => {
 vi.mock("@/lib/monaco-theme", () => ({
   catppuccinMochaTheme: { base: "vs-dark", inherit: true, rules: [], colors: {} },
   THEME_NAME: "catppuccin-mocha",
+  getMonacoThemeName: vi.fn(() => "catppuccin-mocha"),
+  getMonacoThemeData: vi.fn(() => ({ base: "vs-dark", inherit: true, rules: [], colors: {} })),
+}));
+
+vi.mock("@/stores/theme", () => ({
+  useThemeStore: Object.assign(
+    vi.fn(() => ({ customThemes: [] })),
+    {
+      getState: vi.fn(() => ({
+        getActiveTheme: vi.fn(() => ({ id: "catppuccin-mocha", type: "dark" })),
+        getAllThemes: vi.fn(() => []),
+        customThemes: [],
+      })),
+      subscribe: vi.fn(() => () => {}),
+    }
+  ),
 }));
 
 describe("SettingsEditor", () => {

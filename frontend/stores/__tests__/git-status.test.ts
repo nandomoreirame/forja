@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { useGitStatusStore } from "../git-status";
+import { useGitStatusStore, GIT_STATUS_TTL_MS } from "../git-status";
 
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
@@ -109,5 +109,71 @@ describe("useGitStatusStore", () => {
 
     expect(useGitStatusStore.getState().statuses).toEqual({});
     expect(useGitStatusStore.getState().projectPath).toBe("/project");
+  });
+
+  describe("TTL caching", () => {
+    beforeEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("fetchStatuses respects TTL and skips fetch within window", async () => {
+      vi.useFakeTimers();
+      const mockResult = { "src/App.tsx": "M" };
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue(mockResult);
+
+      // First call should trigger IPC
+      await useGitStatusStore.getState().fetchStatuses("/project");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Within TTL should be skipped
+      vi.advanceTimersByTime(1000);
+      await useGitStatusStore.getState().fetchStatuses("/project");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      vi.useRealTimers();
+    });
+
+    it("forceFetchStatuses bypasses TTL and always fetches", async () => {
+      vi.useFakeTimers();
+      const mockResult = { "src/App.tsx": "M" };
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue(mockResult);
+
+      // First call
+      await useGitStatusStore.getState().fetchStatuses("/project");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Still within TTL, but forceFetchStatuses bypasses it
+      vi.advanceTimersByTime(100);
+      await useGitStatusStore.getState().forceFetchStatuses("/project");
+      expect(invoke).toHaveBeenCalledTimes(2);
+
+      // Another forceFetchStatuses immediately also bypasses TTL
+      await useGitStatusStore.getState().forceFetchStatuses("/project");
+      expect(invoke).toHaveBeenCalledTimes(3);
+
+      vi.useRealTimers();
+    });
+
+    it("fetchStatuses fetches again after TTL expires", async () => {
+      vi.useFakeTimers();
+      const mockResult = { "src/App.tsx": "M" };
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue(mockResult);
+
+      // First call
+      await useGitStatusStore.getState().fetchStatuses("/project");
+      expect(invoke).toHaveBeenCalledTimes(1);
+
+      // Advance time past TTL
+      vi.advanceTimersByTime(GIT_STATUS_TTL_MS + 100);
+
+      // Call after TTL should trigger IPC again
+      await useGitStatusStore.getState().fetchStatuses("/project");
+      expect(invoke).toHaveBeenCalledTimes(2);
+
+      vi.useRealTimers();
+    });
   });
 });

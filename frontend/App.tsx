@@ -59,6 +59,8 @@ import { useTerminalSplitLayoutStore } from "./stores/terminal-split-layout";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
 import { useUserSettingsStore } from "./stores/user-settings";
+import { useThemeStore } from "./stores/theme";
+import type { ThemeDefinition } from "@/themes";
 import { useProjectsStore } from "./stores/projects";
 import { useAgentChatStore } from "./stores/agent-chat";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
@@ -134,6 +136,11 @@ const ClaudeNotFoundDialog = lazy(() =>
 
 interface GitChangedPayload {
   path: string;
+}
+
+interface FilesChangedPayload {
+  path: string;
+  changedPaths: string[];
 }
 
 function Kbd({ children }: { children: React.ReactNode }) {
@@ -483,7 +490,20 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     // Editor/Preview (monospace areas) font settings
     document.documentElement.style.setProperty("--font-mono", settings.editor.fontFamily);
     document.documentElement.style.setProperty("--editor-font-size", `${settings.editor.fontSize}px`);
+    // Theme settings
+    const themeStore = useThemeStore.getState();
+    if (settings.theme?.active && settings.theme.active !== themeStore.activeThemeId) {
+      themeStore.setActiveTheme(settings.theme.active);
+    }
+    if (settings.theme?.custom) {
+      themeStore.setCustomThemes(settings.theme.custom as ThemeDefinition[]);
+    }
   }, [settings]);
+
+  // Apply initial theme on mount
+  useEffect(() => {
+    useThemeStore.getState().applyCurrentTheme();
+  }, []);
 
   // Auto-open project when launched via query param from a new window
   useEffect(() => {
@@ -512,7 +532,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     return () => cancelIdleCallback(idleId);
   }, [currentPath]);
 
-  // Fetch git file statuses when project changes (deferred)
+  // Fetch git file statuses when project changes (deferred, force to ensure fresh data on switch)
   useEffect(() => {
     if (!currentPath) {
       useGitStatusStore.getState().clearStatuses();
@@ -520,8 +540,8 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       return;
     }
     const idleId = requestIdleCallback(() => {
-      useGitStatusStore.getState().fetchStatuses(currentPath);
-      useGitDiffStore.getState().fetchChangedFiles(currentPath);
+      useGitStatusStore.getState().forceFetchStatuses(currentPath);
+      useGitDiffStore.getState().forceRefresh(currentPath);
     });
     return () => cancelIdleCallback(idleId);
   }, [currentPath]);
@@ -548,33 +568,57 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
 
   // Refresh file tree on filesystem changes (files:changed events)
   useEffect(() => {
-    const unlisten = listen<{ path: string }>("files:changed", (event) => {
-      const changedPath = event.payload?.path;
-      if (changedPath) {
-        useFileTreeStore.getState().refreshTree(changedPath);
-        useFilePreviewStore.getState().reloadCurrentFile();
+    const unlisten = listen<FilesChangedPayload>("files:changed", (event) => {
+      const changedProjectPath = event.payload?.path;
+      const changedPaths = event.payload?.changedPaths ?? [];
+      if (!changedProjectPath) return;
+
+      // Only refresh the file tree if the changed project is the currently active one
+      const activeProjectPath = useFileTreeStore.getState().activeProjectPath;
+      if (activeProjectPath === changedProjectPath) {
+        useFileTreeStore.getState().refreshTree(changedProjectPath);
       }
+
+      // Reload preview only if the currently previewed file is among the changed paths
+      useFilePreviewStore.getState().reloadCurrentFileIfChanged(changedProjectPath, changedPaths);
     });
     return () => {
       unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
 
-  // Refresh git file statuses on git:changed events
+  // Refresh git file statuses on git:changed events (debounced to coalesce rapid events)
   useEffect(() => {
+    const pendingPaths = new Set<string>();
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushPendingPaths = () => {
+      for (const projectPath of pendingPaths) {
+        useGitStatusStore.getState().fetchStatuses(projectPath);
+        useGitDiffStore.getState().refresh(projectPath);
+      }
+      pendingPaths.clear();
+      debounceTimer = null;
+    };
+
     const unlisten = listen<GitChangedPayload>("git:changed", (event) => {
       const changedProjectPath = event.payload?.path;
-      if (changedProjectPath) {
-        useGitStatusStore.getState().fetchStatuses(changedProjectPath);
-        useGitDiffStore.getState().refresh(changedProjectPath);
-        return;
+      const resolvedPath = changedProjectPath || useFileTreeStore.getState().currentPath;
+      if (!resolvedPath) return;
+
+      pendingPaths.add(resolvedPath);
+
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
       }
-      const fallbackPath = useFileTreeStore.getState().currentPath;
-      if (!fallbackPath) return;
-      useGitStatusStore.getState().fetchStatuses(fallbackPath);
-      useGitDiffStore.getState().refresh(fallbackPath);
+      debounceTimer = setTimeout(flushPendingPaths, 250);
     });
+
     return () => {
+      if (debounceTimer !== null) {
+        clearTimeout(debounceTimer);
+      }
+      pendingPaths.clear();
       unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);

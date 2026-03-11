@@ -1,0 +1,40 @@
+{
+  "id": "github-dark",
+  "name": "GitHub Dark",
+  "type": "dark",
+  "colors": {
+    "base": "#0d1117",
+    "mantle": "#010409",
+    "surface": "#161b22",
+    "overlay": "#21262d",
+    "highlight": "#30363d",
+    "text": "#e6edf3",
+    "subtext": "#c9d1d9",
+    "muted": "#8b949e",
+    "accent": "#6ca4f8",
+    "accentHover": "#79acf9",
+    "accentSubtle": "#0d1f35",
+    "success": "#56d364",
+    "warning": "#e3b341",
+    "error": "#f78166",
+    "info": "#6ca4f8"
+  },
+  "terminal": {
+    "black": "#000000",
+    "red": "#f78166",
+    "green": "#56d364",
+    "yellow": "#e3b341",
+    "blue": "#6ca4f8",
+    "magenta": "#db61a2",
+    "cyan": "#2b7489",
+    "white": "#ffffff",
+    "brightBlack": "#4d4d4d",
+    "brightRed": "#f78166",
+    "brightGreen": "#56d364",
+    "brightYellow": "#e3b341",
+    "brightBlue": "#6ca4f8",
+    "brightMagenta": "#db61a2",
+    "brightCyan": "#2b7489",
+    "brightWhite": "#ffffff"
+  }
+}

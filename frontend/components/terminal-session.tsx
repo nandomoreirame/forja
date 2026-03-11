@@ -8,6 +8,8 @@ import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
+import { useThemeStore } from "@/stores/theme";
+import { buildTerminalTheme } from "@/themes/apply";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { TerminalContextMenu } from "./terminal-context-menu";
 
@@ -18,14 +20,11 @@ interface TerminalSessionProps {
   sessionType?: SessionType;
 }
 
-const WEBGL_DISPOSE_DELAY_MS = 30_000;
-
 export const TerminalSession = memo(function TerminalSession({ tabId, path, isVisible, sessionType = "claude" }: TerminalSessionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const webglAddonRef = useRef<WebglAddon | null>(null);
-  const webglTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isVisibleRef = useRef(isVisible);
   isVisibleRef.current = isVisible;
 
@@ -67,7 +66,9 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const terminal = new Terminal(TERMINAL_OPTIONS);
+    const currentTheme = useThemeStore.getState().getActiveTheme();
+    const terminalTheme = buildTerminalTheme(currentTheme);
+    const terminal = new Terminal({ ...TERMINAL_OPTIONS, theme: terminalTheme });
     const fitAddon = new FitAddon();
     const webLinksAddon = new WebLinksAddon((_event, uri) => {
       routeLinkClick(uri);
@@ -91,6 +92,16 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
 
       // Ctrl+Alt: zoom, splits, diff nav -> app
       if (event.altKey) return false;
+      // Ctrl+Shift+C: copy terminal selection
+      if (event.shiftKey && event.key === "C" && event.type === "keydown") {
+        handleCopy();
+        return false;
+      }
+      // Ctrl+Shift+V: paste from clipboard
+      if (event.shiftKey && event.key === "V" && event.type === "keydown") {
+        handlePaste();
+        return false;
+      }
       // Ctrl+Shift: new tab, close tab, command palette, git -> app
       if (event.shiftKey) return false;
       // Ctrl+[number]: tab switching -> app
@@ -152,10 +163,6 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       aborted = true;
       cancelAnimationFrame(rafId);
       clearTimeout(resizeTimeout);
-      if (webglTimerRef.current) {
-        clearTimeout(webglTimerRef.current);
-        webglTimerRef.current = null;
-      }
       resizeObserver.disconnect();
       dataDisposable.dispose();
       close();
@@ -172,6 +179,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
 
       terminal.options.fontSize = state.fontSize;
       terminal.options.fontFamily = state.fontFamily;
+      if (!isVisibleRef.current) return;
       fitAddon.fit();
       const dims = fitAddon.proposeDimensions();
       if (dims) {
@@ -180,17 +188,21 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Apply theme changes reactively
+  useEffect(() => {
+    return useThemeStore.subscribe((state) => {
+      const terminal = terminalRef.current;
+      if (!terminal) return;
+      const theme = state.getActiveTheme();
+      terminal.options.theme = buildTerminalTheme(theme);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // WebGL virtualization: dispose addon after 30s hidden, recreate when visible
   useEffect(() => {
     const terminal = terminalRef.current;
 
     if (isVisible) {
-      // Cancel pending disposal
-      if (webglTimerRef.current) {
-        clearTimeout(webglTimerRef.current);
-        webglTimerRef.current = null;
-      }
-
       // Recreate WebGL if it was disposed
       if (!webglAddonRef.current && terminal) {
         try {
@@ -220,13 +232,12 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         return () => cancelAnimationFrame(id);
       }
     } else {
-      // Schedule WebGL disposal after delay
-      if (webglAddonRef.current && !webglTimerRef.current) {
-        webglTimerRef.current = setTimeout(() => {
-          webglAddonRef.current?.dispose();
+      if (webglAddonRef.current) {
+        try {
+          webglAddonRef.current.dispose();
+        } finally {
           webglAddonRef.current = null;
-          webglTimerRef.current = null;
-        }, WEBGL_DISPOSE_DELAY_MS);
+        }
       }
     }
   }, [isVisible]); // eslint-disable-line react-hooks/exhaustive-deps

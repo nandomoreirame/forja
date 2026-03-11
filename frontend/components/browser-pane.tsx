@@ -26,6 +26,8 @@ declare global {
 export function BrowserPane() {
   const webviewRef = useRef<Electron.WebviewTag | null>(null);
   const [screenshotState, setScreenshotState] = useState<ScreenshotState>("idle");
+  // Track whether the webview has been initialised (lazy mount guard)
+  const [webviewMounted, setWebviewMounted] = useState(false);
 
   const url = useBrowserPaneStore((s) => s.url);
   const committedUrl = useBrowserPaneStore((s) => s.committedUrl);
@@ -43,6 +45,29 @@ export function BrowserPane() {
   const setError = useBrowserPaneStore((s) => s.setError);
   const clearError = useBrowserPaneStore((s) => s.clearError);
 
+  // Lazy-mount: only render the <webview> after the first paint so the
+  // rest of the React tree is not blocked by Electron's webview initialisation.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setWebviewMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Aggressive unmount: reset transient loading state when BrowserPane itself
+  // is removed from the tree (the parent already conditionally renders it only
+  // when isOpen=true, but we also clean up store state on our way out so the
+  // next mount starts fresh).
+  useEffect(() => {
+    return () => {
+      // Synchronously reset transient webview state when the pane unmounts.
+      // Navigation history (canGoBack/canGoForward) is per-webview-instance
+      // and will be rebuilt when a new <webview> is created.
+      // Use the captured store actions (stable refs) to avoid capturing stale
+      // closures in this cleanup effect.
+      setLoading(false);
+      setNavigationState({ canGoBack: false, canGoForward: false });
+    };
+  }, [setLoading, setNavigationState]);
+
   // Inject custom scrollbar CSS into webview to match app theme
   const injectScrollbarCSS = useCallback((wv: Electron.WebviewTag) => {
     wv.insertCSS(`
@@ -53,8 +78,11 @@ export function BrowserPane() {
     `);
   }, []);
 
-  // Wire webview events to store
+  // Wire webview events to store — runs after webviewMounted becomes true.
+  // All listeners are removed in the cleanup function, preventing leaks if the
+  // component is unmounted while the webview is still alive.
   useEffect(() => {
+    if (!webviewMounted) return;
     const wv = webviewRef.current;
     if (!wv) return;
 
@@ -105,7 +133,7 @@ export function BrowserPane() {
       wv.removeEventListener("page-title-updated", handleTitleUpdate);
       wv.removeEventListener("did-fail-load", handleDidFailLoad);
     };
-  }, [setLoading, setNavigationState, setTitle, onDidNavigate, injectScrollbarCSS]);
+  }, [webviewMounted, setLoading, setNavigationState, setTitle, onDidNavigate, injectScrollbarCSS]);
 
   const handleGoBack = useCallback(() => {
     webviewRef.current?.goBack();
@@ -245,15 +273,18 @@ export function BrowserPane() {
         </div>
       )}
 
-      {/* Webview content */}
+      {/* Webview content — deferred one frame to avoid blocking first paint */}
       <div className="relative flex-1 overflow-hidden">
-        <webview
-          ref={webviewRef}
-          src={committedUrl}
-          className="h-full w-full"
-          allowpopups="false"
-          partition="persist:browser-pane"
-        />
+        {webviewMounted && (
+          <webview
+            ref={webviewRef}
+            src={committedUrl}
+            className="h-full w-full"
+            allowpopups="false"
+            partition="persist:browser-pane"
+            data-testid="browser-webview"
+          />
+        )}
 
         {/* Error overlay */}
         {error && (

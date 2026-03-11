@@ -11,6 +11,12 @@ vi.mock("chokidar", () => ({
   },
 }));
 
+// Mock file-cache to avoid actual cache operations during watcher tests
+vi.mock("../file-cache.js", () => ({
+  invalidateFileCache: vi.fn(),
+  invalidateProjectCache: vi.fn(),
+}));
+
 describe("file-watcher", () => {
   let chokidar: typeof import("chokidar");
 
@@ -76,16 +82,221 @@ describe("file-watcher", () => {
       const addCall = mockOn.mock.calls.find(
         (call: unknown[]) => call[0] === "add",
       );
-      const handler = addCall![1] as () => void;
-      handler();
+      const handler = addCall![1] as (...args: unknown[]) => void;
+      handler("/my-project/some-file.ts");
 
       // Not sent immediately
       expect(sender.send).not.toHaveBeenCalled();
 
       // After 1000ms debounce
       vi.advanceTimersByTime(1000);
+      expect(sender.send).toHaveBeenCalledWith("files:changed",
+        expect.objectContaining({ path: "/my-project" }),
+      );
+    });
+
+    it("coalesces multiple filesystem events into a single debounced IPC event", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      expect(addHandler).toBeDefined();
+      expect(changeHandler).toBeDefined();
+
+      addHandler!("/my-project/file-a.ts");
+      vi.advanceTimersByTime(500);
+      changeHandler!("/my-project/file-b.ts");
+      vi.advanceTimersByTime(999);
+
+      expect(sender.send).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+      expect(sender.send).toHaveBeenCalledTimes(1);
+      expect(sender.send).toHaveBeenCalledWith("files:changed",
+        expect.objectContaining({ path: "/my-project" }),
+      );
+    });
+
+    it("coalesces burst filesystem events into a single IPC send", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )![1] as ((...args: unknown[]) => void);
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )![1] as ((...args: unknown[]) => void);
+      const unlinkHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "unlink",
+      )![1] as ((...args: unknown[]) => void);
+
+      addHandler("/my-project/a.ts");
+      vi.advanceTimersByTime(400);
+      changeHandler("/my-project/b.ts");
+      vi.advanceTimersByTime(400);
+      unlinkHandler("/my-project/c.ts");
+
+      expect(sender.send).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1000);
+
+      expect(sender.send).toHaveBeenCalledTimes(1);
+      expect(sender.send).toHaveBeenCalledWith("files:changed",
+        expect.objectContaining({ path: "/my-project" }),
+      );
+    });
+
+    it("coalesces rapid filesystem events into a single refresh", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+      const unlinkHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "unlink",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      addHandler?.("/my-project/src/a.ts");
+      vi.advanceTimersByTime(400);
+      changeHandler?.("/my-project/src/b.ts");
+      vi.advanceTimersByTime(400);
+      unlinkHandler?.("/my-project/src/c.ts");
+
+      expect(sender.send).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(999);
+      expect(sender.send).not.toHaveBeenCalled();
+
+      vi.advanceTimersByTime(1);
+      expect(sender.send).toHaveBeenCalledTimes(1);
       expect(sender.send).toHaveBeenCalledWith("files:changed", {
         path: "/my-project",
+        changedPaths: expect.arrayContaining(["src/a.ts", "src/b.ts", "src/c.ts"]),
+      });
+    });
+
+    it("includes changedPaths as relative paths in the files:changed payload", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      addHandler?.("/my-project/src/index.ts");
+
+      vi.advanceTimersByTime(1000);
+
+      expect(sender.send).toHaveBeenCalledWith("files:changed", {
+        path: "/my-project",
+        changedPaths: ["src/index.ts"],
+      });
+    });
+
+    it("accumulates multiple changed paths during debounce window", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      addHandler?.("/my-project/new-file.ts");
+      vi.advanceTimersByTime(200);
+      changeHandler?.("/my-project/existing-file.ts");
+      vi.advanceTimersByTime(200);
+      addHandler?.("/my-project/another-file.ts");
+
+      vi.advanceTimersByTime(1000);
+
+      const payload = sender.send.mock.calls[0]?.[1] as { path: string; changedPaths: string[] };
+      expect(payload.changedPaths).toHaveLength(3);
+      expect(payload.changedPaths).toContain("new-file.ts");
+      expect(payload.changedPaths).toContain("existing-file.ts");
+      expect(payload.changedPaths).toContain("another-file.ts");
+    });
+
+    it("clears changedPaths after emitting so next event starts fresh", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const addHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "add",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      // First wave
+      addHandler?.("/my-project/file-a.ts");
+      vi.advanceTimersByTime(1000);
+
+      expect(sender.send).toHaveBeenCalledTimes(1);
+      const firstPayload = sender.send.mock.calls[0]?.[1] as { changedPaths: string[] };
+      expect(firstPayload.changedPaths).toEqual(["file-a.ts"]);
+
+      // Second wave — should not include file-a.ts
+      addHandler?.("/my-project/file-b.ts");
+      vi.advanceTimersByTime(1000);
+
+      expect(sender.send).toHaveBeenCalledTimes(2);
+      const secondPayload = sender.send.mock.calls[1]?.[1] as { changedPaths: string[] };
+      expect(secondPayload.changedPaths).toEqual(["file-b.ts"]);
+    });
+
+    it("events from different projects do not mix changedPaths", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const senderA = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      const senderB = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+
+      startFileWatcher(1, "/project-a", senderA as never);
+      const handlersA = [...mockOn.mock.calls];
+
+      vi.clearAllMocks();
+      mockOn.mockReturnThis();
+
+      startFileWatcher(2, "/project-b", senderB as never);
+      const handlersB = [...mockOn.mock.calls];
+
+      const addHandlerA = handlersA.find((c) => c[0] === "add")?.[1] as ((...args: unknown[]) => void) | undefined;
+      const addHandlerB = handlersB.find((c) => c[0] === "add")?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      addHandlerA?.("/project-a/file.ts");
+      addHandlerB?.("/project-b/other.ts");
+
+      vi.advanceTimersByTime(1000);
+
+      expect(senderA.send).toHaveBeenCalledWith("files:changed", {
+        path: "/project-a",
+        changedPaths: ["file.ts"],
+      });
+      expect(senderB.send).toHaveBeenCalledWith("files:changed", {
+        path: "/project-b",
+        changedPaths: ["other.ts"],
       });
     });
 

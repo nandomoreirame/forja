@@ -3,6 +3,8 @@ import type { WebContents } from "electron";
 
 const INTERVAL_MS = 2000;
 let appMetricsInterval: ReturnType<typeof setInterval> | null = null;
+let subscriberCount = 0;
+let cachedGetWindows: (() => WebContents[]) | null = null;
 
 export interface AppMetrics {
   total_rss: number;
@@ -79,4 +81,45 @@ export function stopAppMetricsLoop(): void {
     clearInterval(appMetricsInterval);
     appMetricsInterval = null;
   }
+}
+
+/**
+ * Registers a subscriber for app metrics. When the subscriber count goes from
+ * 0 to 1, the metrics loop is started automatically. The getWindows callback
+ * is stored so the loop knows which windows to broadcast to.
+ */
+export function registerMetricsSubscriber(getWindows: () => WebContents[]): void {
+  cachedGetWindows = getWindows;
+  subscriberCount = Math.max(0, subscriberCount) + 1;
+  if (subscriberCount === 1) {
+    startAppMetricsLoop(getWindows);
+  }
+}
+
+/**
+ * Unregisters a subscriber. When the subscriber count drops to 0, the metrics
+ * loop is stopped automatically.
+ */
+export function unregisterMetricsSubscriber(): void {
+  subscriberCount = Math.max(0, subscriberCount - 1);
+  if (subscriberCount === 0) {
+    stopAppMetricsLoop();
+  }
+}
+
+/**
+ * Returns the current subscriber count (useful for testing and diagnostics).
+ */
+export function getSubscriberCount(): number {
+  return subscriberCount;
+}
+
+/**
+ * Resets subscriber state. Used internally for test isolation.
+ * @internal
+ */
+export function _resetSubscriberState(): void {
+  subscriberCount = 0;
+  cachedGetWindows = null;
+  stopAppMetricsLoop();
 }

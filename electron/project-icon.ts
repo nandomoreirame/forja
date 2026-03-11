@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import * as fsPromises from "fs/promises";
 import * as path from "path";
 
 // Ordered by preference: SVG > PNG > ICO
@@ -28,34 +28,66 @@ const MIME_TYPES: Record<string, string> = {
   ".webp": "image/webp",
 };
 
+// In-session cache: projectPath -> data URL or null
+const iconCache = new Map<string, string | null>();
+
 /**
- * Checks common locations for a project icon.
- * Reads the file and returns a base64 data URL, or null if not found.
+ * Clears the icon cache. Useful for testing or when projects change on disk.
  */
-export function detectProjectIcon(projectPath: string): string | null {
+export function clearIconCache(): void {
+  iconCache.clear();
+}
+
+/**
+ * Checks if a file exists using fs/promises.access (non-blocking).
+ */
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    await fsPromises.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checks common locations for a project icon (async, non-blocking).
+ * Reads the file and returns a base64 data URL, or null if not found.
+ * Result is cached per project path for the session lifetime.
+ */
+export async function detectProjectIcon(projectPath: string): Promise<string | null> {
+  if (iconCache.has(projectPath)) {
+    return iconCache.get(projectPath) ?? null;
+  }
+
   for (const candidate of ICON_CANDIDATES) {
     const fullPath = path.join(projectPath, candidate);
-    if (fs.existsSync(fullPath)) {
+    if (await fileExists(fullPath)) {
       try {
-        const buffer = fs.readFileSync(fullPath);
+        const buffer = await fsPromises.readFile(fullPath);
         const ext = path.extname(fullPath).toLowerCase();
         const mime = MIME_TYPES[ext] ?? "image/png";
-        return `data:${mime};base64,${buffer.toString("base64")}`;
+        const dataUrl = `data:${mime};base64,${buffer.toString("base64")}`;
+        iconCache.set(projectPath, dataUrl);
+        return dataUrl;
       } catch {
+        iconCache.set(projectPath, null);
         return null;
       }
     }
   }
+
+  iconCache.set(projectPath, null);
   return null;
 }
 
 /**
- * Reads a specific image file and returns a base64 data URL.
+ * Reads a specific image file and returns a base64 data URL (async, non-blocking).
  * Used for user-selected custom icons.
  */
-export function readIconAsDataUrl(filePath: string): string | null {
+export async function readIconAsDataUrl(filePath: string): Promise<string | null> {
   try {
-    const buffer = fs.readFileSync(filePath);
+    const buffer = await fsPromises.readFile(filePath);
     const ext = path.extname(filePath).toLowerCase();
     const mime = MIME_TYPES[ext] ?? "image/png";
     return `data:${mime};base64,${buffer.toString("base64")}`;

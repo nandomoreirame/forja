@@ -1,9 +1,13 @@
 import { useRef, useEffect } from "react";
 import * as monaco from "monaco-editor";
-import { catppuccinMochaTheme, THEME_NAME } from "@/lib/monaco-theme";
+import { getMonacoThemeName, getMonacoThemeData } from "@/lib/monaco-theme";
+import { useThemeStore } from "@/stores/theme";
+import { useUserSettingsStore } from "@/stores/user-settings";
 
-function ensureTheme() {
-  monaco.editor.defineTheme(THEME_NAME, catppuccinMochaTheme);
+function ensureTheme(): string {
+  const themeName = getMonacoThemeName();
+  monaco.editor.defineTheme(themeName, getMonacoThemeData());
+  return themeName;
 }
 
 export interface MonacoEditorProps {
@@ -28,6 +32,7 @@ export function MonacoEditor({
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const valueRef = useRef(value);
+  const editorSettings = useUserSettingsStore((s) => s.settings.editor);
 
   useEffect(() => {
     valueRef.current = value;
@@ -36,18 +41,19 @@ export function MonacoEditor({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    ensureTheme();
+    const themeName = ensureTheme();
 
     const editor = monaco.editor.create(containerRef.current, {
       value,
       language,
-      theme: THEME_NAME,
+      theme: themeName,
       readOnly,
       automaticLayout: true,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
-      fontSize: 13,
-      fontFamily: "'JetBrains Mono', 'Fira Code', Menlo, monospace",
+      fontSize: editorSettings.fontSize,
+      lineHeight: Math.round(editorSettings.fontSize * (editorSettings.lineHeight ?? 1.5)),
+      fontFamily: editorSettings.fontFamily,
       lineNumbers: readOnly ? "off" : "on",
       renderLineHighlight: readOnly ? "none" : "line",
       folding: !readOnly,
@@ -83,11 +89,29 @@ export function MonacoEditor({
       );
     }
 
+    // Subscribe to theme changes and re-apply dynamically
+    const unsubTheme = useThemeStore.subscribe(() => {
+      const newThemeName = ensureTheme();
+      monaco.editor.setTheme(newThemeName);
+    });
+
     return () => {
+      unsubTheme();
       editor.dispose();
       editorRef.current = null;
     };
   }, [language, readOnly]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // React to editor settings changes (font, lineHeight)
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    editor.updateOptions({
+      fontSize: editorSettings.fontSize,
+      lineHeight: Math.round(editorSettings.fontSize * (editorSettings.lineHeight ?? 1.5)),
+      fontFamily: editorSettings.fontFamily,
+    });
+  }, [editorSettings.fontSize, editorSettings.lineHeight, editorSettings.fontFamily]);
 
   useEffect(() => {
     const editor = editorRef.current;

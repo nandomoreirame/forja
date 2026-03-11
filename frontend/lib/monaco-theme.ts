@@ -1,7 +1,24 @@
 import type * as monaco from "monaco-editor";
+import { buildMonacoTheme } from "@/themes/apply";
+import { useThemeStore } from "@/stores/theme";
 
+// ─── Dynamic Theme API (new) ──────────────────────────────────────────────────
+
+export function getMonacoThemeName(): string {
+  const theme = useThemeStore.getState().getActiveTheme();
+  return `forja-${theme.id}`;
+}
+
+export function getMonacoThemeData(): monaco.editor.IStandaloneThemeData {
+  const theme = useThemeStore.getState().getActiveTheme();
+  return buildMonacoTheme(theme) as monaco.editor.IStandaloneThemeData;
+}
+
+// ─── Legacy exports (kept for backward compat) ───────────────────────────────
+// @deprecated Use getMonacoThemeName() instead
 export const THEME_NAME = "catppuccin-mocha";
 
+// @deprecated Use getMonacoThemeData() instead
 export const catppuccinMochaTheme: monaco.editor.IStandaloneThemeData = {
   base: "vs-dark",
   inherit: true,

@@ -1,0 +1,40 @@
+{
+  "id": "alucard",
+  "name": "Alucard",
+  "type": "light",
+  "colors": {
+    "base": "#f8f8f2",
+    "mantle": "#ededed",
+    "surface": "#d4d4d4",
+    "overlay": "#c4c4c4",
+    "highlight": "#b0b0b0",
+    "text": "#282a36",
+    "subtext": "#44475a",
+    "muted": "#6272a4",
+    "accent": "#7c3aed",
+    "accentHover": "#6d28d9",
+    "accentSubtle": "#ede9fe",
+    "success": "#2e8b57",
+    "warning": "#b8860b",
+    "error": "#dc2626",
+    "info": "#0284c7"
+  },
+  "terminal": {
+    "black": "#d4d4d4",
+    "red": "#dc2626",
+    "green": "#2e8b57",
+    "yellow": "#b8860b",
+    "blue": "#7c3aed",
+    "magenta": "#db2777",
+    "cyan": "#0284c7",
+    "white": "#44475a",
+    "brightBlack": "#b0b0b0",
+    "brightRed": "#ef4444",
+    "brightGreen": "#16a34a",
+    "brightYellow": "#ca8a04",
+    "brightBlue": "#8b5cf6",
+    "brightMagenta": "#ec4899",
+    "brightCyan": "#0ea5e9",
+    "brightWhite": "#282a36"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "id": "night-owl",
+  "name": "Night Owl",
+  "type": "dark",
+  "colors": {
+    "base": "#011627",
+    "mantle": "#010e1a",
+    "surface": "#0b2942",
+    "overlay": "#0d3a58",
+    "highlight": "#1d3b53",
+    "text": "#d6deeb",
+    "subtext": "#abb2bf",
+    "muted": "#637777",
+    "accent": "#c792ea",
+    "accentHover": "#d6a9f5",
+    "accentSubtle": "#1a1030",
+    "success": "#22da6e",
+    "warning": "#addb67",
+    "error": "#ef5350",
+    "info": "#82aaff"
+  },
+  "terminal": {
+    "black": "#000000",
+    "red": "#ef5350",
+    "green": "#22da6e",
+    "yellow": "#addb67",
+    "blue": "#82aaff",
+    "magenta": "#c792ea",
+    "cyan": "#21c7a8",
+    "white": "#ffffff",
+    "brightBlack": "#575656",
+    "brightRed": "#ef5350",
+    "brightGreen": "#22da6e",
+    "brightYellow": "#ffeb95",
+    "brightBlue": "#82aaff",
+    "brightMagenta": "#c792ea",
+    "brightCyan": "#7fdbca",
+    "brightWhite": "#ffffff"
+  }
+}
