@@ -59,6 +59,8 @@ import { useTerminalSplitLayoutStore } from "./stores/terminal-split-layout";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
 import { useUserSettingsStore } from "./stores/user-settings";
+import { useThemeStore } from "./stores/theme";
+import type { ThemeDefinition } from "@/themes";
 import { useProjectsStore } from "./stores/projects";
 import { useAgentChatStore } from "./stores/agent-chat";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
@@ -483,7 +485,20 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     // Editor/Preview (monospace areas) font settings
     document.documentElement.style.setProperty("--font-mono", settings.editor.fontFamily);
     document.documentElement.style.setProperty("--editor-font-size", `${settings.editor.fontSize}px`);
+    // Theme settings
+    const themeStore = useThemeStore.getState();
+    if (settings.theme?.active && settings.theme.active !== themeStore.activeThemeId) {
+      themeStore.setActiveTheme(settings.theme.active);
+    }
+    if (settings.theme?.custom) {
+      themeStore.setCustomThemes(settings.theme.custom as ThemeDefinition[]);
+    }
   }, [settings]);
+
+  // Apply initial theme on mount
+  useEffect(() => {
+    useThemeStore.getState().applyCurrentTheme();
+  }, []);
 
   // Auto-open project when launched via query param from a new window
   useEffect(() => {
@@ -552,7 +567,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       const changedPath = event.payload?.path;
       if (changedPath) {
         useFileTreeStore.getState().refreshTree(changedPath);
-        useFilePreviewStore.getState().reloadCurrentFile();
+        useFilePreviewStore.getState().reloadCurrentFileForProject(changedPath);
       }
     });
     return () => {

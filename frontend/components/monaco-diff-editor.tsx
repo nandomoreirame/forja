@@ -1,9 +1,12 @@
 import { useRef, useEffect } from "react";
 import * as monaco from "monaco-editor";
-import { catppuccinMochaTheme, THEME_NAME } from "@/lib/monaco-theme";
+import { getMonacoThemeName, getMonacoThemeData } from "@/lib/monaco-theme";
+import { useThemeStore } from "@/stores/theme";
 
-function ensureTheme() {
-  monaco.editor.defineTheme(THEME_NAME, catppuccinMochaTheme);
+function ensureTheme(): string {
+  const themeName = getMonacoThemeName();
+  monaco.editor.defineTheme(themeName, getMonacoThemeData());
+  return themeName;
 }
 
 export interface MonacoDiffEditorProps {
@@ -33,10 +36,10 @@ export function MonacoDiffEditor({
   useEffect(() => {
     if (!containerRef.current) return;
 
-    ensureTheme();
+    const themeName = ensureTheme();
 
     const diffEditor = monaco.editor.createDiffEditor(containerRef.current, {
-      theme: THEME_NAME,
+      theme: themeName,
       automaticLayout: true,
       readOnly: true,
       renderSideBySide,
@@ -63,7 +66,14 @@ export function MonacoDiffEditor({
     editorRef.current = diffEditor;
     modelsRef.current = { original: originalModel, modified: modifiedModel };
 
+    // Subscribe to theme changes and re-apply dynamically
+    const unsubTheme = useThemeStore.subscribe(() => {
+      const newThemeName = ensureTheme();
+      monaco.editor.setTheme(newThemeName);
+    });
+
     return () => {
+      unsubTheme();
       diffEditor.dispose();
       originalModel.dispose();
       modifiedModel.dispose();
