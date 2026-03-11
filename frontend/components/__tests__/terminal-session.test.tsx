@@ -3,7 +3,11 @@ import { render, screen } from "@testing-library/react";
 import { TerminalSession } from "../terminal-session";
 
 // Mock xterm.js
-const mockOpen = vi.fn();
+const mockOpen = vi.fn((container: HTMLElement) => {
+  // xterm.js creates a textarea inside the container for input handling
+  const textarea = document.createElement("textarea");
+  container.appendChild(textarea);
+});
 const mockWrite = vi.fn();
 const mockDispose = vi.fn();
 const mockOnData = vi.fn().mockReturnValue({ dispose: vi.fn() });
@@ -295,7 +299,7 @@ describe("TerminalSession", () => {
       expect(mockClipboardWriteText).not.toHaveBeenCalled();
     });
 
-    it("Ctrl+Shift+V pastes clipboard text to terminal PTY", async () => {
+    it("Ctrl+Shift+V does NOT call handlePaste directly (relies on native paste event)", async () => {
       mockClipboardReadText.mockResolvedValue("pasted text");
       render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
 
@@ -306,10 +310,13 @@ describe("TerminalSession", () => {
       });
       const result = capturedKeyHandler!(event);
 
+      // Should return false (block xterm VT processing)
       expect(result).toBe(false);
 
+      // Should NOT call clipboard.readText — paste handled by native browser event
       await vi.advanceTimersByTimeAsync(0);
-      expect(mockPtyWrite).toHaveBeenCalledWith("pasted text");
+      expect(mockClipboardReadText).not.toHaveBeenCalled();
+      expect(mockPtyWrite).not.toHaveBeenCalled();
     });
 
     it("Ctrl+C (without Shift) passes through to xterm for SIGINT", () => {
@@ -364,6 +371,40 @@ describe("TerminalSession", () => {
       const result = capturedKeyHandler!(event);
 
       expect(result).toBe(false);
+    });
+
+    it("returns false for post-composition keydown on Linux (composingRef flag)", async () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      expect(capturedKeyHandler).toBeDefined();
+
+      // Simulate the Linux IME dead-key sequence:
+      // 1. compositionstart fires on the textarea
+      const container = screen.getByRole("region", { name: /terminal/i });
+      const textarea = container.querySelector("textarea")!;
+      expect(textarea).toBeTruthy();
+
+      textarea.dispatchEvent(new Event("compositionstart"));
+
+      // 2. compositionend fires (character already emitted by xterm's handler)
+      textarea.dispatchEvent(new Event("compositionend"));
+
+      // 3. Post-composition keydown fires with isComposing: false
+      //    This should be blocked because composingRef is still true
+      const postCompEvent = new KeyboardEvent("keydown", {
+        key: "\u00e7", // ç
+        isComposing: false,
+      });
+      const result = capturedKeyHandler!(postCompEvent);
+      expect(result).toBe(false);
+
+      // 4. After the setTimeout(0), composingRef resets and normal keys work again
+      await vi.advanceTimersByTimeAsync(0);
+
+      const normalEvent = new KeyboardEvent("keydown", {
+        key: "a",
+        isComposing: false,
+      });
+      expect(capturedKeyHandler!(normalEvent)).toBe(true);
     });
 
     it("still allows normal key events through", () => {

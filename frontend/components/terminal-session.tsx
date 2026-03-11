@@ -25,6 +25,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const webglAddonRef = useRef<WebglAddon | null>(null);
+  const composingRef = useRef(false);
   const isVisibleRef = useRef(isVisible);
   isVisibleRef.current = isVisible;
 
@@ -86,10 +87,27 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       console.info("[terminal] WebGL unavailable, using canvas renderer:", err);
     }
 
+    // Track composition state via xterm's internal textarea so we can
+    // suppress the post-composition keydown that Linux IMEs fire with
+    // isComposing: false (which would duplicate the composed character).
+    const textarea = containerRef.current.querySelector("textarea");
+    if (textarea) {
+      textarea.addEventListener("compositionstart", () => {
+        composingRef.current = true;
+      });
+      textarea.addEventListener("compositionend", () => {
+        // Keep the flag true until after the post-composition keydown
+        // has been processed (it fires synchronously after compositionend).
+        setTimeout(() => { composingRef.current = false; }, 0);
+      });
+    }
+
     terminal.attachCustomKeyEventHandler((event) => {
       // Let the browser handle dead-key / IME composition events so that
       // composed characters (e.g. ' + c = ç) are not processed twice.
-      if (event.isComposing || event.key === "Dead") return false;
+      // composingRef catches the post-composition keydown on Linux where
+      // isComposing is already false but the character was already emitted.
+      if (event.isComposing || event.key === "Dead" || composingRef.current) return false;
 
       const mod = event.metaKey || event.ctrlKey;
       if (!mod) return true;
@@ -101,9 +119,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         handleCopy();
         return false;
       }
-      // Ctrl+Shift+V: paste from clipboard
+      // Ctrl+Shift+V: let browser's native paste event flow to xterm's handler
       if (event.shiftKey && event.key === "V" && event.type === "keydown") {
-        handlePaste();
         return false;
       }
       // Ctrl+Shift: new tab, close tab, command palette, git -> app
