@@ -1,6 +1,18 @@
 export interface FontSettings {
   fontFamily: string;
   fontSize: number;
+  lineHeight?: number;
+}
+
+export interface ThemeSettings {
+  active: string;
+  custom: Array<{
+    id: string;
+    name: string;
+    type: "dark" | "light";
+    colors: Record<string, string>;
+    terminal: Record<string, string>;
+  }>;
 }
 
 export interface UserSettings {
@@ -9,6 +21,7 @@ export interface UserSettings {
   terminal: FontSettings;
   window: { zoomLevel: number; opacity: number };
   sessions: Record<string, { args?: string[]; env?: Record<string, string> }>;
+  theme: ThemeSettings;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -20,6 +33,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     fontFamily:
       "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
     fontSize: 13,
+    lineHeight: 1.5,
   },
   terminal: {
     fontFamily:
@@ -31,6 +45,10 @@ export const DEFAULT_SETTINGS: UserSettings = {
     claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
     gemini: { args: ["--yolo"] },
     codex: { args: ["--full-auto"] },
+  },
+  theme: {
+    active: "catppuccin-mocha",
+    custom: [],
   },
 };
 
@@ -74,6 +92,11 @@ export function mergeWithDefaults(
       ...DEFAULT_SETTINGS.sessions,
       ...(input.sessions ?? {}),
     },
+    theme: {
+      ...DEFAULT_SETTINGS.theme,
+      ...(input.theme ?? {}),
+      custom: input.theme?.custom ?? DEFAULT_SETTINGS.theme.custom,
+    },
   };
 }
 
@@ -87,6 +110,9 @@ export function validateSettings(settings: UserSettings): UserSettings {
     editor: {
       ...settings.editor,
       fontSize: clamp(settings.editor.fontSize, 8, 32),
+      lineHeight: settings.editor.lineHeight
+        ? clamp(settings.editor.lineHeight, 1.0, 3.0)
+        : undefined,
     },
     terminal: {
       ...settings.terminal,

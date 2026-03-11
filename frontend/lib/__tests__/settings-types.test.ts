@@ -17,6 +17,7 @@ describe("DEFAULT_SETTINGS", () => {
         fontFamily:
           "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
         fontSize: 13,
+        lineHeight: 1.5,
       },
       terminal: {
         fontFamily:
@@ -28,6 +29,10 @@ describe("DEFAULT_SETTINGS", () => {
         claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
         gemini: { args: ["--yolo"] },
         codex: { args: ["--full-auto"] },
+      },
+      theme: {
+        active: "catppuccin-mocha",
+        custom: [],
       },
     });
   });
