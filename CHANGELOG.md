@@ -55,6 +55,10 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Fixed
 - Show spinner only when project is actively thinking.---
 
+## [1.4.13] - 2026-03-10
+### Added
+- Add context menu and inline rename to terminal tabs.---
+
 ## [Unreleased]
 
 ## [1.4.7] - 2026-03-10
