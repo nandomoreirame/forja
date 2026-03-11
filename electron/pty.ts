@@ -5,7 +5,7 @@ import type { IPty } from "node-pty";
 import type { WebContents } from "electron";
 import { RingBuffer } from "./ring-buffer.js";
 
-const PTY_BUFFER_MAX_BYTES = 2 * 1024 * 1024; // 2MB
+const PTY_BUFFER_MAX_BYTES = 512 * 1024; // 512KB
 
 interface PtySession {
   process: IPty;

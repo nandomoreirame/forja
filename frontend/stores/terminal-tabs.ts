@@ -23,6 +23,7 @@ interface TerminalTabsState {
   isTerminalPaneOpen: boolean;
   isTerminalFullscreen: boolean;
   activeTabIdByProject: Record<string, string>;
+  tabLastActiveAt: Record<string, number>;
 
   nextTabId: () => string;
   addTab: (id: string, path: string, sessionType?: SessionType) => void;
@@ -51,6 +52,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   isTerminalPaneOpen: true,
   isTerminalFullscreen: false,
   activeTabIdByProject: {},
+  tabLastActiveAt: {},
 
   nextTabId: () => {
     const newCounter = get().counter + 1;
@@ -70,6 +72,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     set((state) => ({
       tabs: [...state.tabs, tab],
       activeTabId: id,
+      tabLastActiveAt: { ...state.tabLastActiveAt, [id]: Date.now() },
     }));
   },
 
@@ -96,7 +99,11 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     set({ tabs: newTabs, activeTabId: newActiveTabId });
   },
 
-  setActiveTab: (id: string) => set({ activeTabId: id }),
+  setActiveTab: (id: string) =>
+    set((state) => ({
+      activeTabId: id,
+      tabLastActiveAt: { ...state.tabLastActiveAt, [id]: Date.now() },
+    })),
 
   markTabExited: (id: string) =>
     set((state) => ({

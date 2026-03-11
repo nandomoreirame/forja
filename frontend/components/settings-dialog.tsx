@@ -18,12 +18,13 @@ import {
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useThemeStore } from "@/stores/theme";
 import { useFilePreviewStore } from "@/stores/file-preview";
+import { usePerformanceStore } from "@/stores/performance";
 import { invoke, getVersion } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { ContextSection } from "./context-settings-section";
 import type { UserSettings } from "@/lib/settings-types";
 
-type SettingsSection = "appearance" | "shortcuts" | "sessions" | "context";
+type SettingsSection = "appearance" | "shortcuts" | "sessions" | "context" | "performance";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -58,6 +59,11 @@ const NAV_ITEMS: NavItem[] = [
     id: "context",
     label: "Context",
     icon: <FolderSync className="h-3.5 w-3.5" strokeWidth={1.5} />,
+  },
+  {
+    id: "performance",
+    label: "Performance",
+    icon: <Monitor className="h-3.5 w-3.5" strokeWidth={1.5} />,
   },
 ];
 
@@ -402,8 +408,8 @@ const SHORTCUTS = [
   { label: "Switch Tab 1-9", keys: [mod, "1-9"] },
   { label: "File Search", keys: [mod, "P"] },
   { label: "Command Palette", keys: [mod, "Shift", "P"] },
-  { label: "Open Project", keys: [mod, "O"] },
-  { label: "Toggle Sidebar", keys: [mod, "B"] },
+  { label: "Open Project", keys: [mod, "Shift", "O"] },
+  { label: "Toggle Sidebar", keys: [mod, "Shift", "B"] },
   { label: "Toggle Preview", keys: [mod, "E"] },
   { label: "Toggle Terminal", keys: [mod, "J"] },
   { label: "Keyboard Shortcuts", keys: [mod, "?"] },
@@ -521,6 +527,50 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
   );
 }
 
+// ─── Performance Section ──────────────────────────────────────────────────────
+
+function PerformanceSection({ settings, onSave }: { settings: UserSettings; onSave: (s: UserSettings) => void }) {
+  const resolved = usePerformanceStore((s) => s.resolved);
+
+  return (
+    <div data-testid="settings-section-performance">
+      <SectionHeader
+        title="Performance"
+        icon={<Monitor className="h-3.5 w-3.5 text-ctp-mauve" strokeWidth={1.5} />}
+      />
+
+      <SettingItem
+        category="Performance"
+        label="Mode"
+        description="Controls resource usage. Auto detects your hardware and adjusts accordingly. Lite reduces GPU, metrics, watchers, and hibernates inactive tabs."
+      >
+        <select
+          value={settings.performance.mode}
+          onChange={(e) => {
+            const mode = e.target.value as "auto" | "full" | "lite";
+            onSave({ ...settings, performance: { mode } });
+          }}
+          aria-label="Performance mode"
+          className={cn(inputClass, "w-56")}
+        >
+          <option value="auto">Auto (detect hardware)</option>
+          <option value="full">Full (all features enabled)</option>
+          <option value="lite">Lite (reduced resources)</option>
+        </select>
+      </SettingItem>
+
+      {resolved === "lite" && (
+        <div className="mt-3 rounded-md border border-ctp-yellow/20 bg-ctp-yellow/5 p-3">
+          <p className="text-xs text-ctp-yellow">
+            Lite mode is active. GPU acceleration is disabled, metrics polling is reduced,
+            file watchers are shallow, and inactive tabs will be hibernated after 60 seconds.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Dialog ──────────────────────────────────────────────────────────────
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
@@ -611,6 +661,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                 />
               )}
               {activeSection === "context" && <ContextSection />}
+              {activeSection === "performance" && (
+                <PerformanceSection
+                  settings={settings}
+                  onSave={handleSaveSettings}
+                />
+              )}
             </div>
           </div>
         </div>

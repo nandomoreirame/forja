@@ -16,7 +16,7 @@ Forja opens directly into Claude Code. The user picks a project directory and th
 - **Multi-Session Tabs** - Multiple concurrent sessions with tab management, context menus, inline rename
 - **Project Selector** - Home screen with recent projects, filesystem browser, and drag-and-drop reorder
 - **Terminal Emulation** - Full PTY via xterm.js with split panes (horizontal/vertical), independent zoom, and copy/paste
-- **File Tree Sidebar** - Collapsible sidebar with lazy-loaded directory tree, file type icons, git status badges, and Ctrl+B toggle
+- **File Tree Sidebar** - Collapsible sidebar with lazy-loaded directory tree, file type icons, git status badges, and Ctrl+Shift+B toggle
 - **File Preview Pane** - Syntax-highlighted code preview (Shiki), markdown rendering, image viewer, and Monaco editor integration
 - **Git Integration** - Current branch, modified files counter, per-file git status badges, git diff viewer, auto-refresh via file watcher
 - **Embedded Browser** - In-app browser pane with navigation toolbar, auto-opens on localhost URL detection in terminal output

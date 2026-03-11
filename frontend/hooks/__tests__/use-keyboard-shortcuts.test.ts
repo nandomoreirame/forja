@@ -24,6 +24,14 @@ const tabStoreActions = {
   getTabsForProject: vi.fn(() => []),
 };
 
+const fileTreeActions = {
+  currentPath: "/project",
+  tree: null,
+  trees: {} as Record<string, unknown>,
+  openProject: vi.fn(),
+  toggleSidebar: vi.fn(),
+};
+
 vi.mock("@/stores/terminal-tabs", () => ({
   useTerminalTabsStore: {
     getState: () => tabStoreActions,
@@ -32,7 +40,7 @@ vi.mock("@/stores/terminal-tabs", () => ({
 
 vi.mock("@/stores/file-tree", () => ({
   useFileTreeStore: {
-    getState: () => ({ currentPath: "/project", tree: null, trees: {} }),
+    getState: () => fileTreeActions,
   },
 }));
 
@@ -110,6 +118,10 @@ describe("useKeyboardShortcuts split", () => {
     splitActions.closeSplit.mockReset();
     splitActions.setFocusedPane.mockReset();
     splitActions.orientation = "none";
+    fileTreeActions.openProject.mockReset();
+    fileTreeActions.toggleSidebar.mockReset();
+    fileTreeActions.tree = null;
+    fileTreeActions.trees = {};
   });
 
   it("creates vertical split with sessionType from active tab (no addTab)", () => {
@@ -344,7 +356,21 @@ describe("useKeyboardShortcuts browser pane toggle", () => {
     browserPaneActions.toggleOpen.mockReset();
   });
 
-  it("Ctrl+Shift+B toggles browser pane", () => {
+  it("Ctrl+Alt+B toggles browser pane", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "B",
+        ctrlKey: true,
+        altKey: true,
+      }),
+    );
+
+    expect(browserPaneActions.toggleOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("Ctrl+Shift+B does NOT toggle browser pane", () => {
     setupHook();
 
     window.dispatchEvent(
@@ -355,10 +381,64 @@ describe("useKeyboardShortcuts browser pane toggle", () => {
       }),
     );
 
-    expect(browserPaneActions.toggleOpen).toHaveBeenCalledTimes(1);
+    expect(browserPaneActions.toggleOpen).not.toHaveBeenCalled();
+  });
+});
+
+describe("useKeyboardShortcuts project and sidebar shortcuts", () => {
+  beforeEach(() => {
+    fileTreeActions.openProject.mockReset();
+    fileTreeActions.toggleSidebar.mockReset();
+    fileTreeActions.tree = null;
+    fileTreeActions.trees = {};
+    browserPaneActions.toggleOpen.mockReset();
   });
 
-  it("Ctrl+B (without shift) does NOT toggle browser pane", () => {
+  it("Ctrl+Shift+O opens project picker", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "O",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(fileTreeActions.openProject).toHaveBeenCalledTimes(1);
+  });
+
+  it("Ctrl+O (without shift) does NOT open project picker", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "o",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(fileTreeActions.openProject).not.toHaveBeenCalled();
+  });
+
+  it("Ctrl+Shift+B toggles sidebar when a tree is loaded", () => {
+    fileTreeActions.tree = { root: {} };
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "B",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(fileTreeActions.toggleSidebar).toHaveBeenCalledTimes(1);
+    expect(browserPaneActions.toggleOpen).not.toHaveBeenCalled();
+  });
+
+  it("Ctrl+B (without shift) does NOT toggle sidebar", () => {
+    fileTreeActions.tree = { root: {} };
     setupHook();
 
     window.dispatchEvent(
@@ -368,7 +448,7 @@ describe("useKeyboardShortcuts browser pane toggle", () => {
       }),
     );
 
-    expect(browserPaneActions.toggleOpen).not.toHaveBeenCalled();
+    expect(fileTreeActions.toggleSidebar).not.toHaveBeenCalled();
   });
 });
 

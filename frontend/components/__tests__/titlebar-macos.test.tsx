@@ -22,6 +22,7 @@ vi.mock("@/lib/ipc", () => {
     getVersion: vi.fn().mockResolvedValue("0.1.0"),
     getElectronVersion: vi.fn().mockResolvedValue("32.0.0"),
     isTilingDesktop: vi.fn().mockResolvedValue(false),
+    isDev: vi.fn().mockResolvedValue(false),
     listen: vi.fn().mockResolvedValue(() => {}),
   };
 });

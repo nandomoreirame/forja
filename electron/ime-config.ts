@@ -11,9 +11,12 @@ export function resolveImeConfig(
 
   if (platform !== "linux") return config;
 
-  if (env.WAYLAND_DISPLAY) {
-    config.switches.push(["enable-wayland-ime"]);
-  }
+  // On Wayland, dead keys are handled by the compositor's XKB compose
+  // sequences (e.g. Hyprland kb_variant=intl). Enabling the Wayland
+  // text-input protocol (enable-wayland-ime) would allow the IM daemon
+  // (fcitx5/ibus) to ALSO compose the character, and Chromium's ozone
+  // backend processes both paths — duplicating every accented character.
+  // We therefore skip the flag and rely on XKB compose alone.
 
   const lang = env.LANG || env.LC_ALL || "";
   if (lang.startsWith("pt_BR") && !env.GTK_IM_MODULE) {

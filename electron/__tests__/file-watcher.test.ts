@@ -330,6 +330,30 @@ describe("file-watcher", () => {
     });
   });
 
+  describe("configurable depth", () => {
+    it("uses provided depth instead of default", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/project", sender as never, { depth: 1 });
+
+      expect(chokidar.default.watch).toHaveBeenCalledWith("/project", expect.objectContaining({
+        depth: 1,
+      }));
+    });
+
+    it("defaults to depth 3 when no options provided", async () => {
+      const { startFileWatcher } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/project", sender as never);
+
+      expect(chokidar.default.watch).toHaveBeenCalledWith("/project", expect.objectContaining({
+        depth: 3,
+      }));
+    });
+  });
+
   describe("stopFileWatcher", () => {
     it("closes the watcher for the given project", async () => {
       const { startFileWatcher, stopFileWatcher } = await import(

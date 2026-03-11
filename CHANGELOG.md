@@ -8,6 +8,28 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.5.3] - 2026-03-11
+
+### Added
+- Add dev-only lite mode toggle in titlebar.
+- Remap sidebar/project/browser shortcuts to avoid terminal conflicts.
+- Initialize performance store on app mount.
+- Add Performance section to settings dialog.
+- Add tab hibernation for lite mode (unmount inactive xterm).
+- Add performance Zustand store for lite mode state.
+- Expose performance mode via IPC for frontend.
+- Add performance settings to UserSettings type.
+- Make file watcher depth configurable for lite mode.
+- Make metrics polling interval configurable for lite mode.
+- Add lite-mode detection with hardware-aware startup.
+
+### Changed
+- Reduce PTY ring buffer from 2MB to 512KB.
+
+### Fixed
+- Remove enable-wayland-ime to prevent duplicate dead-key input.
+---
+
 ## [1.5.2] - 2026-03-11
 
 ### Fixed

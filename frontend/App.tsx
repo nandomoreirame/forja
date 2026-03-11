@@ -61,6 +61,7 @@ import { useTerminalZoomStore } from "./stores/terminal-zoom";
 import { useUserSettingsStore } from "./stores/user-settings";
 import { useThemeStore } from "./stores/theme";
 import type { ThemeDefinition } from "@/themes";
+import { usePerformanceStore } from "./stores/performance";
 import { useProjectsStore } from "./stores/projects";
 import { useAgentChatStore } from "./stores/agent-chat";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
@@ -372,6 +373,11 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   // Load projects on mount for ProjectSidebar
   useEffect(() => {
     useProjectsStore.getState().loadProjects();
+  }, []);
+
+  // Load performance mode on mount (lite-mode detection)
+  useEffect(() => {
+    usePerformanceStore.getState().loadPerformanceMode();
   }, []);
 
   // Restore previous user session when opening app without explicit route params

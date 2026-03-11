@@ -34,6 +34,7 @@ describe("DEFAULT_SETTINGS", () => {
         active: "catppuccin-mocha",
         custom: [],
       },
+      performance: { mode: "auto" },
     });
   });
 });
@@ -116,6 +117,23 @@ describe("mergeWithDefaults", () => {
     const result = mergeWithDefaults(input);
     expect(result.terminal.fontSize).toBe(20);
     expect(result.terminal.fontFamily).toBe("Another Font, monospace");
+  });
+});
+
+describe("performance settings", () => {
+  it("defaults performance.mode to auto", () => {
+    const result = mergeWithDefaults({});
+    expect(result.performance).toEqual({ mode: "auto" });
+  });
+
+  it("preserves explicit performance mode", () => {
+    const result = mergeWithDefaults({ performance: { mode: "lite" } } as Partial<UserSettings>);
+    expect(result.performance.mode).toBe("lite");
+  });
+
+  it("defaults performance when given undefined", () => {
+    const result = mergeWithDefaults(undefined as unknown as Partial<UserSettings>);
+    expect(result.performance).toEqual({ mode: "auto" });
   });
 });
 

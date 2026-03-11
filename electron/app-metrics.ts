@@ -1,7 +1,7 @@
 import { app } from "electron";
 import type { WebContents } from "electron";
 
-const INTERVAL_MS = 2000;
+const DEFAULT_INTERVAL_MS = 2000;
 let appMetricsInterval: ReturnType<typeof setInterval> | null = null;
 let subscriberCount = 0;
 let cachedGetWindows: (() => WebContents[]) | null = null;
@@ -60,6 +60,7 @@ export function collectAppMetrics(): AppMetrics {
 export function startAppMetricsLoop(
   getWindows: () => WebContents[],
   isAnyWindowFocused?: () => boolean,
+  intervalMs: number = DEFAULT_INTERVAL_MS,
 ): void {
   if (appMetricsInterval) return;
 
@@ -73,7 +74,7 @@ export function startAppMetricsLoop(
         win.send("app-metrics", metrics);
       }
     }
-  }, INTERVAL_MS);
+  }, intervalMs);
 }
 
 export function stopAppMetricsLoop(): void {
@@ -88,11 +89,11 @@ export function stopAppMetricsLoop(): void {
  * 0 to 1, the metrics loop is started automatically. The getWindows callback
  * is stored so the loop knows which windows to broadcast to.
  */
-export function registerMetricsSubscriber(getWindows: () => WebContents[]): void {
+export function registerMetricsSubscriber(getWindows: () => WebContents[], intervalMs?: number): void {
   cachedGetWindows = getWindows;
   subscriberCount = Math.max(0, subscriberCount) + 1;
   if (subscriberCount === 1) {
-    startAppMetricsLoop(getWindows);
+    startAppMetricsLoop(getWindows, undefined, intervalMs);
   }
 }
 

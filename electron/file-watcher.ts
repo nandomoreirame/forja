@@ -13,6 +13,11 @@ interface FileWatcherSession {
 
 const fileWatchers = new Map<string, FileWatcherSession>();
 const DEBOUNCE_MS = 1000;
+const DEFAULT_DEPTH = 3;
+
+export interface FileWatcherOptions {
+  depth?: number;
+}
 
 const IGNORED_PATTERNS = [
   "**/node_modules/**",
@@ -30,19 +35,17 @@ export function startFileWatcher(
   windowId: number,
   projectPath: string,
   sender: WebContents,
+  options?: FileWatcherOptions,
 ): void {
   const key = `${windowId}:${projectPath}`;
   stopFileWatcherByKey(key);
 
-  // depth: 3 matches FILE_TREE_MAX_DEPTH (2) + 1 to catch changes
-  // one level below the visible tree. Deeper changes are picked up
-  // when the user expands a subdirectory (lazy load).
-  // Using Infinity here would create inotify watchers for every file
-  // in the project, consuming GBs of memory.
+  const depth = options?.depth ?? DEFAULT_DEPTH;
+
   const watcher = chokidar.watch(projectPath, {
     ignoreInitial: true,
     persistent: true,
-    depth: 3,
+    depth,
     ignored: IGNORED_PATTERNS,
   });
 
