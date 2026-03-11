@@ -6,9 +6,11 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ---
 
-## [Unreleased]
+## [1.5.1] - 2026-03-11
+### Fixed
+- Add IME dead-key support for cedilla on Linux.---
 
----
+## [Unreleased]
 
 ## [1.5.0] - 2026-03-11
 
