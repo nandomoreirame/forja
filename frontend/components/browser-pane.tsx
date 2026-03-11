@@ -1,7 +1,10 @@
-import { useRef, useCallback, useEffect } from "react";
-import { ArrowLeft, ArrowRight, RefreshCw, X, Globe, XCircle, AlertCircle } from "lucide-react";
+import { useRef, useCallback, useEffect, useState } from "react";
+import { ArrowLeft, ArrowRight, RefreshCw, X, Globe, XCircle, AlertCircle, Camera, Check } from "lucide-react";
 import { useBrowserPaneStore } from "@/stores/browser-pane";
+import { invoke } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
+
+type ScreenshotState = "idle" | "success" | "error";
 
 // Electron's <webview> is not in @types/react; extend JSX
 declare global {
@@ -22,6 +25,7 @@ declare global {
 
 export function BrowserPane() {
   const webviewRef = useRef<Electron.WebviewTag | null>(null);
+  const [screenshotState, setScreenshotState] = useState<ScreenshotState>("idle");
 
   const url = useBrowserPaneStore((s) => s.url);
   const committedUrl = useBrowserPaneStore((s) => s.committedUrl);
@@ -123,6 +127,20 @@ export function BrowserPane() {
     [navigate],
   );
 
+  const handleScreenshot = useCallback(async () => {
+    const wv = webviewRef.current;
+    if (!wv) return;
+    try {
+      const webContentsId = wv.getWebContentsId();
+      await invoke("browser:screenshot", { webContentsId });
+      setScreenshotState("success");
+      setTimeout(() => setScreenshotState("idle"), 2000);
+    } catch (err) {
+      console.error("[BrowserPane] Screenshot failed:", err);
+      setScreenshotState("idle");
+    }
+  }, []);
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-ctp-base">
       {/* Browser toolbar */}
@@ -191,6 +209,24 @@ export function BrowserPane() {
             className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-brand border-t-transparent"
           />
         )}
+
+        {/* Screenshot button */}
+        <button
+          onClick={handleScreenshot}
+          aria-label={screenshotState === "success" ? "Screenshot copied" : "Take screenshot"}
+          className={cn(
+            "inline-flex h-7 w-7 items-center justify-center rounded transition-colors",
+            screenshotState === "success"
+              ? "text-ctp-green"
+              : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text",
+          )}
+        >
+          {screenshotState === "success" ? (
+            <Check className="h-3.5 w-3.5" strokeWidth={1.5} />
+          ) : (
+            <Camera className="h-3.5 w-3.5" strokeWidth={1.5} />
+          )}
+        </button>
 
         {/* Close button */}
         <button

@@ -19,6 +19,7 @@ interface TerminalTabsState {
   activeTabId: string | null;
   counter: number;
   isTerminalPaneOpen: boolean;
+  isTerminalFullscreen: boolean;
   activeTabIdByProject: Record<string, string>;
 
   nextTabId: () => string;
@@ -27,6 +28,7 @@ interface TerminalTabsState {
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
   toggleTerminalPane: () => void;
+  toggleTerminalFullscreen: () => void;
   /** Returns a map of tabId -> computed display name based on current open tabs. */
   getTabDisplayNames: () => Record<string, string>;
   /** Returns tabs belonging to a specific project path. */
@@ -43,6 +45,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   activeTabId: null,
   counter: 0,
   isTerminalPaneOpen: true,
+  isTerminalFullscreen: false,
   activeTabIdByProject: {},
 
   nextTabId: () => {
@@ -101,7 +104,16 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   getTabDisplayNames: () => computeTabDisplayNames(get().tabs),
 
   toggleTerminalPane: () =>
-    set((state) => ({ isTerminalPaneOpen: !state.isTerminalPaneOpen })),
+    set((state) => ({
+      isTerminalPaneOpen: !state.isTerminalPaneOpen,
+      isTerminalFullscreen: !state.isTerminalPaneOpen ? state.isTerminalFullscreen : false,
+    })),
+
+  toggleTerminalFullscreen: () =>
+    set((state) => ({
+      isTerminalFullscreen: !state.isTerminalFullscreen,
+      isTerminalPaneOpen: !state.isTerminalFullscreen ? true : state.isTerminalPaneOpen,
+    })),
 
   getTabsForProject: (projectPath: string) => {
     return get().tabs.filter((t) => t.path === projectPath);

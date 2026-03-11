@@ -353,10 +353,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 onRemoveRequest={handleRemoveRequest}
                 initial={getProjectInitial(project.name)}
                 color={getProjectColor(project.name)}
-                isThinking={
-                  sessionStates?.[project.path] === "running" ||
-                  thinkingProjects?.has(project.path)
-                }
+                isThinking={thinkingProjects?.has(project.path)}
                 isNotified={notifiedProjects?.has(project.path)}
                 shortcutIndex={altPressed && index < 9 ? index + 1 : null}
               />

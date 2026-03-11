@@ -8,6 +8,7 @@ const mockWrite = vi.fn();
 const mockDispose = vi.fn();
 const mockOnData = vi.fn().mockReturnValue({ dispose: vi.fn() });
 const mockLoadAddon = vi.fn();
+const mockFocus = vi.fn();
 
 vi.mock("@xterm/xterm", () => ({
   Terminal: class MockTerminal {
@@ -16,6 +17,7 @@ vi.mock("@xterm/xterm", () => ({
     dispose = mockDispose;
     onData = mockOnData;
     loadAddon = mockLoadAddon;
+    focus = mockFocus;
     attachCustomKeyEventHandler = vi.fn();
     options = {};
     rows = 24;
@@ -89,6 +91,7 @@ describe("TerminalSession", () => {
     mockDispose.mockClear();
     mockOnData.mockClear().mockReturnValue({ dispose: vi.fn() });
     mockLoadAddon.mockClear();
+    mockFocus.mockClear();
     mockPtyWrite.mockClear();
     mockResize.mockClear();
     mockClose.mockClear();
@@ -147,6 +150,47 @@ describe("TerminalSession", () => {
       capturedWebLinksHandler!(new MouseEvent("click"), "http://localhost:3000");
 
       expect(mockRouteLinkClick).toHaveBeenCalledWith("http://localhost:3000");
+    });
+  });
+
+  describe("autofocus", () => {
+    it("focuses terminal on initial mount", async () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      // The focus happens inside a requestAnimationFrame (~16ms)
+      await vi.advanceTimersByTimeAsync(16);
+
+      expect(mockFocus).toHaveBeenCalled();
+    });
+
+    it("focuses terminal when becoming visible (tab switch)", async () => {
+      const { rerender } = render(
+        <TerminalSession tabId="tab-1" path="/test" isVisible={false} />
+      );
+      await vi.advanceTimersByTimeAsync(16);
+      mockFocus.mockClear();
+
+      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+
+      // The focus happens inside a double-RAF (~32ms)
+      await vi.advanceTimersByTimeAsync(32);
+
+      expect(mockFocus).toHaveBeenCalled();
+    });
+
+    it("does not focus terminal when becoming hidden", async () => {
+      const { rerender } = render(
+        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
+      );
+
+      // Clear the focus from initial mount (single RAF + double RAF)
+      await vi.advanceTimersByTimeAsync(32);
+      mockFocus.mockClear();
+
+      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
+      await vi.advanceTimersByTimeAsync(32);
+
+      expect(mockFocus).not.toHaveBeenCalled();
     });
   });
 

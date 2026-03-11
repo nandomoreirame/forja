@@ -40,6 +40,7 @@ declare global {
         goBack: () => Promise<void>;
         goForward: () => Promise<void>;
         reload: () => Promise<void>;
+        screenshot: (webContentsId: number) => Promise<{ success: boolean }>;
       };
     };
   }

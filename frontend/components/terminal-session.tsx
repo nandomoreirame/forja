@@ -118,6 +118,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     const rafId = requestAnimationFrame(() => {
       if (aborted) return;
       fitAddon.fit();
+      terminal.focus();
       const dims = fitAddon.proposeDimensions();
       const rows = dims?.rows ?? 24;
       const cols = dims?.cols ?? 80;
@@ -201,14 +202,15 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         }
       }
 
-      // Re-fit after becoming visible.  Use double-RAF so the browser
-      // has finished layout after removing the hidden class/attribute.
+      // Re-fit and focus after becoming visible.  Use double-RAF so the
+      // browser has finished layout after removing the hidden class/attribute.
       // The ResizeObserver should also fire, but this acts as a safety
       // net for edge-cases where the container size hasn't changed.
       if (fitAddonRef.current) {
         const id = requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             fitAddonRef.current?.fit();
+            terminal?.focus();
             const dims = fitAddonRef.current?.proposeDimensions();
             if (dims) {
               resize(dims.rows, dims.cols);

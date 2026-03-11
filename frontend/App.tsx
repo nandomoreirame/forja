@@ -213,6 +213,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const isBrowserOpen = useBrowserPaneStore((s) => s.isOpen);
   const {
     isTerminalPaneOpen,
+    isTerminalFullscreen,
     tabs,
     activeTabId,
     nextTabId,
@@ -222,6 +223,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   } = useTerminalTabsStore(
     useShallow((s) => ({
       isTerminalPaneOpen: s.isTerminalPaneOpen,
+      isTerminalFullscreen: s.isTerminalFullscreen,
       tabs: s.tabs,
       activeTabId: s.activeTabId,
       nextTabId: s.nextTabId,
@@ -294,13 +296,18 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     });
   }, [panelPrefsLoaded, splitOrientation, splitRatio, saveTerminalSplit]);
 
-  // Sync sidebar panel collapse with store
+  // Sync sidebar panel collapse with store (and fullscreen)
   useEffect(() => {
     const panel = sidebarPanelRef.current;
     if (!panel) return;
-    if (isSidebarOpen && panel.isCollapsed()) panel.expand();
-    else if (!isSidebarOpen && !panel.isCollapsed()) panel.collapse();
-  }, [isSidebarOpen]);
+    if (isTerminalFullscreen) {
+      if (!panel.isCollapsed()) panel.collapse();
+    } else if (isSidebarOpen && panel.isCollapsed()) {
+      panel.expand();
+    } else if (!isSidebarOpen && !panel.isCollapsed()) {
+      panel.collapse();
+    }
+  }, [isSidebarOpen, isTerminalFullscreen]);
 
   // Expand sidebar when chat opens (chat lives inside the sidebar panel)
   useEffect(() => {
@@ -327,6 +334,10 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   useEffect(() => {
     const panel = previewPanelRef.current;
     if (!panel) return;
+    if (isTerminalFullscreen) {
+      if (!panel.isCollapsed()) panel.collapse();
+      return;
+    }
     if (previewPaneVisible) {
       if (panel.isCollapsed()) panel.expand();
       // If terminal is hidden, preview takes full width
@@ -335,19 +346,21 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     } else if (!panel.isCollapsed()) {
       panel.collapse();
     }
-  }, [previewPaneVisible, savedPreviewSize, isTerminalPaneOpen]);
+  }, [previewPaneVisible, savedPreviewSize, isTerminalPaneOpen, isTerminalFullscreen]);
 
   // Sync terminal panel visibility with store via resize
   useEffect(() => {
     const terminal = terminalPanelRef.current;
     if (!terminal) return;
     if (isTerminalPaneOpen) {
-      const targetSize = previewPaneVisible ? 100 - savedPreviewSize : 100;
+      const targetSize = isTerminalFullscreen
+        ? 100
+        : previewPaneVisible ? 100 - savedPreviewSize : 100;
       terminal.resize(`${targetSize}%`);
     } else {
       terminal.resize("0%");
     }
-  }, [isTerminalPaneOpen, previewPaneVisible, savedPreviewSize]);
+  }, [isTerminalPaneOpen, isTerminalFullscreen, previewPaneVisible, savedPreviewSize]);
 
   // Load projects on mount for ProjectSidebar
   useEffect(() => {
@@ -739,6 +752,8 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               collapsedSize="0%"
               order={1}
               onResize={(size) => {
+                // Skip store sync when fullscreen is controlling the collapse
+                if (useTerminalTabsStore.getState().isTerminalFullscreen) return;
                 const isCollapsed = size.asPercentage === 0;
                 const storeIsOpen = useFileTreeStore.getState().isOpen;
                 if (isCollapsed && storeIsOpen) {
@@ -766,8 +781,8 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               )}
             </ResizablePanel>
             <ResizableHandle
-              disabled={!isSidebarOpen}
-              className={isSidebarOpen ? "" : "opacity-0 w-0"}
+              disabled={!isSidebarOpen || isTerminalFullscreen}
+              className={isSidebarOpen && !isTerminalFullscreen ? "" : "opacity-0 w-0"}
             />
             <ResizablePanel
               defaultSize={`${100 - effectivePanelSizes.sidebarSize}%`}
@@ -784,6 +799,8 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                       collapsedSize="0%"
                       order={1}
                       onResize={(size) => {
+                        // Skip store sync when fullscreen is controlling the collapse
+                        if (useTerminalTabsStore.getState().isTerminalFullscreen) return;
                         // Only sync drag-to-collapse; preview opens only via file click
                         if (size.asPercentage === 0) {
                           if (useFilePreviewStore.getState().isOpen) {
@@ -805,8 +822,8 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                       </Suspense>
                     </ResizablePanel>
                     <ResizableHandle
-                      disabled={!previewPaneVisible || !isTerminalPaneOpen}
-                      className={previewPaneVisible && isTerminalPaneOpen ? "" : "opacity-0 w-0"}
+                      disabled={!previewPaneVisible || !isTerminalPaneOpen || isTerminalFullscreen}
+                      className={previewPaneVisible && isTerminalPaneOpen && !isTerminalFullscreen ? "" : "opacity-0 w-0"}
                     />
                     <ResizablePanel
                       panelRef={terminalPanelRef}

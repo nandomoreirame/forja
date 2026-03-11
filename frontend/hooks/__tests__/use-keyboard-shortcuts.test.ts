@@ -18,6 +18,7 @@ vi.mock("@/stores/terminal-split-layout", () => ({
 const tabStoreActions = {
   setActiveTab: vi.fn(),
   toggleTerminalPane: vi.fn(),
+  toggleTerminalFullscreen: vi.fn(),
   nextTabId: vi.fn(() => "new-tab-1"),
   addTab: vi.fn(),
   getTabsForProject: vi.fn(() => []),
@@ -85,6 +86,14 @@ vi.mock("@/stores/user-settings", () => ({
       saveEditorContent: vi.fn(),
     }),
   },
+}));
+
+const browserPaneActions = {
+  toggleOpen: vi.fn(),
+};
+
+vi.mock("@/stores/browser-pane", () => ({
+  useBrowserPaneStore: { getState: () => browserPaneActions },
 }));
 
 function setupHook() {
@@ -307,6 +316,59 @@ describe("useKeyboardShortcuts tab management", () => {
     );
 
     expect(closeTab).not.toHaveBeenCalled();
+  });
+});
+
+describe("useKeyboardShortcuts fullscreen toggle", () => {
+  beforeEach(() => {
+    tabStoreActions.toggleTerminalFullscreen.mockReset();
+  });
+
+  it("Ctrl+Shift+F toggles terminal fullscreen", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "F",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tabStoreActions.toggleTerminalFullscreen).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("useKeyboardShortcuts browser pane toggle", () => {
+  beforeEach(() => {
+    browserPaneActions.toggleOpen.mockReset();
+  });
+
+  it("Ctrl+Shift+B toggles browser pane", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "B",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(browserPaneActions.toggleOpen).toHaveBeenCalledTimes(1);
+  });
+
+  it("Ctrl+B (without shift) does NOT toggle browser pane", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "b",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(browserPaneActions.toggleOpen).not.toHaveBeenCalled();
   });
 });
 
