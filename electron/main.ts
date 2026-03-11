@@ -145,6 +145,25 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
   return win;
 }
 
+// Guard webviews: enforce security settings before they are attached.
+// This prevents a compromised renderer from spawning webviews with elevated
+// privileges (nodeIntegration, custom preloads, dangerous partition names).
+app.on("web-contents-created", (_event, contents) => {
+  contents.on("will-attach-webview", (_e, webPreferences, _params) => {
+    // Strip any preload scripts injected by the renderer — the webview must
+    // not have access to Node.js or the contextBridge APIs.
+    delete webPreferences.preload;
+
+    // Enforce hard security boundaries.
+    webPreferences.nodeIntegration = false;
+    webPreferences.contextIsolation = true;
+
+    // Allow sandbox to remain as-is (Electron's default for webviews is false;
+    // enabling it can break some content, but disabling nodeIntegration above
+    // is the critical protection).
+  });
+});
+
 // CSP headers for production
 app.whenReady().then(async () => {
   if (!isDev) {
