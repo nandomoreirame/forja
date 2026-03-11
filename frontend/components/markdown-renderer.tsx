@@ -2,7 +2,32 @@ import { memo, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
+import type { Root, Content } from "mdast";
 import { routeLinkClick } from "@/lib/link-router";
+
+const HTML_COMMENT_REGEX = /^<!--[\s\S]*-->$/;
+
+/**
+ * Remark plugin that strips HTML comments (<!-- ... -->) from the AST.
+ * HTML comments are parsed as `html` type nodes by remark-parse. Without
+ * this plugin, react-markdown converts them to visible text nodes since
+ * it uses allowDangerousHtml internally and then renders raw nodes as text.
+ */
+function remarkStripHtmlComments() {
+  return function stripHtmlComments(tree: Root) {
+    function filterChildren(node: { children?: Content[] }) {
+      if (!node.children) return;
+      node.children = node.children.filter((child) => {
+        if (child.type === "html" && HTML_COMMENT_REGEX.test(child.value.trim())) {
+          return false;
+        }
+        filterChildren(child as { children?: Content[] });
+        return true;
+      });
+    }
+    filterChildren(tree);
+  };
+}
 
 interface MarkdownRendererProps {
   content: string;
@@ -112,7 +137,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
 
   return (
     <div className="markdown prose text-sm leading-relaxed text-ctp-text">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkStripHtmlComments]} components={components}>
         {content}
       </ReactMarkdown>
     </div>
