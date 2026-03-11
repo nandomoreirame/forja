@@ -8,6 +8,7 @@ import { useAgentChatStore } from "@/stores/agent-chat";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useGitStatusStore } from "@/stores/git-status";
+import { useThemeStore } from "@/stores/theme";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
 import {
   ChevronsDownUp,
@@ -16,6 +17,7 @@ import {
   Keyboard,
   Loader2,
   MessageSquare,
+  Palette,
   PanelBottom,
   PanelLeft,
   PanelRight,
@@ -50,6 +52,12 @@ export function CommandPalette() {
   const { isOpen, mode, close, open } = useCommandPaletteStore();
   const { tree, currentPath } = useFileTreeStore();
   const { installedClis, loading: clisLoading } = useInstalledClis();
+  const { customThemes: themeCustom } = useThemeStore();
+  const allThemes = useMemo(
+    () => useThemeStore.getState().getAllThemes(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [themeCustom],
+  );
 
   const flatFiles = useMemo(() => {
     if (!tree || !currentPath) return [];
@@ -58,6 +66,18 @@ export function CommandPalette() {
 
   const handleFileSelect = (filePath: string) => {
     useFilePreviewStore.getState().loadFile(filePath);
+    close();
+  };
+
+  const handleThemeSelect = (themeId: string) => {
+    useThemeStore.getState().setActiveTheme(themeId);
+    const settingsStore = useUserSettingsStore.getState();
+    const updated = {
+      ...settingsStore.settings,
+      theme: { ...settingsStore.settings.theme, active: themeId },
+    };
+    settingsStore.setEditorContent(JSON.stringify(updated, null, 2));
+    settingsStore.saveEditorContent();
     close();
   };
 
@@ -151,7 +171,9 @@ export function CommandPalette() {
             ? "Search files..."
             : mode === "sessions"
               ? "Select session type..."
-              : "Type a command..."
+              : mode === "themes"
+                ? "Select theme..."
+                : "Type a command..."
         }
       />
       <CommandList>
@@ -160,7 +182,9 @@ export function CommandPalette() {
             ? "No files found."
             : mode === "sessions"
               ? "No session types found."
-              : "No commands found."}
+              : mode === "themes"
+                ? "No themes found."
+                : "No commands found."}
         </CommandEmpty>
 
         {mode === "files" && (
@@ -209,6 +233,27 @@ export function CommandPalette() {
                 </CommandItem>
               </>
             )}
+          </CommandGroup>
+        )}
+
+        {mode === "themes" && (
+          <CommandGroup heading="Theme">
+            {allThemes.map((theme) => (
+              <CommandItem
+                key={theme.id}
+                value={theme.name}
+                onSelect={() => handleThemeSelect(theme.id)}
+              >
+                <span
+                  className="h-3 w-3 rounded-full border border-current"
+                  style={{ backgroundColor: theme.colors.accent }}
+                />
+                {theme.name}
+                {theme.type === "light" && (
+                  <span className="ml-auto text-xs text-ctp-overlay1">Light</span>
+                )}
+              </CommandItem>
+            ))}
           </CommandGroup>
         )}
 
@@ -327,6 +372,13 @@ export function CommandPalette() {
             </CommandGroup>
 
             <CommandGroup heading="Settings & Help">
+              <CommandItem
+                value="Change Theme"
+                onSelect={() => open("themes")}
+              >
+                <Palette className="h-4 w-4" strokeWidth={1.5} />
+                Change Theme
+              </CommandItem>
               <CommandItem
                 value="Open Settings"
                 onSelect={() => handleCommand("open-settings")}
