@@ -295,7 +295,7 @@ describe("TerminalSession", () => {
       expect(mockClipboardWriteText).not.toHaveBeenCalled();
     });
 
-    it("Ctrl+Shift+V pastes clipboard text to terminal PTY", async () => {
+    it("Ctrl+Shift+V does NOT call handlePaste directly (relies on native paste event)", async () => {
       mockClipboardReadText.mockResolvedValue("pasted text");
       render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
 
@@ -306,10 +306,13 @@ describe("TerminalSession", () => {
       });
       const result = capturedKeyHandler!(event);
 
+      // Should return false (block xterm VT processing)
       expect(result).toBe(false);
 
+      // Should NOT call clipboard.readText — paste handled by native browser event
       await vi.advanceTimersByTimeAsync(0);
-      expect(mockPtyWrite).toHaveBeenCalledWith("pasted text");
+      expect(mockClipboardReadText).not.toHaveBeenCalled();
+      expect(mockPtyWrite).not.toHaveBeenCalled();
     });
 
     it("Ctrl+C (without Shift) passes through to xterm for SIGINT", () => {

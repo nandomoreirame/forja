@@ -101,9 +101,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         handleCopy();
         return false;
       }
-      // Ctrl+Shift+V: paste from clipboard
+      // Ctrl+Shift+V: let browser's native paste event flow to xterm's handler
       if (event.shiftKey && event.key === "V" && event.type === "keydown") {
-        handlePaste();
         return false;
       }
       // Ctrl+Shift: new tab, close tab, command palette, git -> app
