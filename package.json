@@ -1,7 +1,7 @@
 {
   "name": "@forja/app",
   "private": true,
-  "version": "1.4.12",
+  "version": "1.4.13",
   "description": "Desktop GUI client for Vibe Coders and other AI coding CLIs",
   "author": {
     "name": "Fernando Moreira",

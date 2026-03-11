@@ -12,6 +12,8 @@ export interface TerminalTab {
   path: string;
   isRunning: boolean;
   sessionType: SessionType;
+  /** User-defined custom name for the tab. When set, overrides the auto-generated display name. */
+  customName?: string;
 }
 
 interface TerminalTabsState {
@@ -27,6 +29,8 @@ interface TerminalTabsState {
   removeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
+  /** Renames a tab with a custom user-defined name. Empty string clears the custom name. */
+  renameTab: (id: string, name: string) => void;
   toggleTerminalPane: () => void;
   toggleTerminalFullscreen: () => void;
   /** Returns a map of tabId -> computed display name based on current open tabs. */
@@ -99,6 +103,20 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
       tabs: state.tabs.map((t) =>
         t.id === id ? { ...t, isRunning: false } : t
       ),
+    })),
+
+  renameTab: (id: string, name: string) =>
+    set((state) => ({
+      tabs: state.tabs.map((t) => {
+        if (t.id !== id) return t;
+        const trimmed = name.trim();
+        if (!trimmed) {
+          // Empty name clears customName
+          const { customName: _removed, ...rest } = t;
+          return rest;
+        }
+        return { ...t, customName: trimmed };
+      }),
     })),
 
   getTabDisplayNames: () => computeTabDisplayNames(get().tabs),

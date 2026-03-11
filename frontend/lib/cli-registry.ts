@@ -95,26 +95,36 @@ export function getSessionDisplayName(
  * grouping by sessionType.
  *
  * Rules:
- * - If only 1 tab of a given sessionType exists: show name without number.
- * - If 2+ tabs of the same sessionType exist: show name with per-type sequential
- *   counter (#1, #2, ...) based on position in the provided list.
+ * - If a tab has a `customName`, it is always shown as-is.
+ * - If only 1 tab of a given sessionType exists (excluding custom-named tabs): show name without number.
+ * - If 2+ tabs of the same sessionType exist (excluding custom-named tabs): show name with per-type
+ *   sequential counter (#1, #2, ...) based on position in the provided list.
  *
  * Returns a map of tabId -> display name.
  */
-export function computeTabDisplayNames<T extends { id: string; sessionType: SessionType }>(
+export function computeTabDisplayNames<T extends { id: string; sessionType: SessionType; customName?: string }>(
   tabs: T[]
 ): Record<string, string> {
-  // First pass: count tabs per type
+  // Only consider tabs without a customName for auto-numbering
+  const autoTabs = tabs.filter((t) => !t.customName);
+
+  // First pass: count auto-named tabs per type
   const countByType = new Map<SessionType, number>();
-  for (const tab of tabs) {
+  for (const tab of autoTabs) {
     countByType.set(tab.sessionType, (countByType.get(tab.sessionType) ?? 0) + 1);
   }
 
-  // Second pass: assign names with per-type counter when needed
+  // Second pass: assign names
   const indexByType = new Map<SessionType, number>();
   const result: Record<string, string> = {};
 
   for (const tab of tabs) {
+    // Custom name takes priority
+    if (tab.customName) {
+      result[tab.id] = tab.customName;
+      continue;
+    }
+
     const typeCount = countByType.get(tab.sessionType) ?? 1;
     if (typeCount === 1) {
       result[tab.id] = getSessionDisplayName(tab.sessionType);

@@ -853,6 +853,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                               onSelectTab={handleSelectTab}
                               onCloseTab={closeTab}
                               onSessionTypeSelect={handleNewSessionType}
+                              onRenameTab={(id, name) => useTerminalTabsStore.getState().renameTab(id, name)}
                             />
                             {projectTabs.length === 0 && (
                               <NoSessionsState

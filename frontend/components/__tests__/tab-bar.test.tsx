@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { TabBar } from "../tab-bar";
 import type { TerminalTab } from "@/stores/terminal-tabs";
@@ -336,5 +336,125 @@ describe("TabBar", () => {
 
     expect(screen.getByRole("tablist")).toBeInTheDocument();
     expect(screen.getAllByRole("tab")).toHaveLength(3);
+  });
+
+  describe("context menu", () => {
+    const onRenameTab = vi.fn();
+
+    beforeEach(() => {
+      onRenameTab.mockClear();
+    });
+
+    it("shows context menu on right-click with 'Edit tab' and 'Fechar tab' options", async () => {
+      const user = userEvent.setup();
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+          onRenameTab={onRenameTab}
+        />
+      );
+
+      await user.pointer({ target: screen.getByRole("tab"), keys: "[MouseRight]" });
+
+      expect(screen.getByText("Edit tab")).toBeInTheDocument();
+      expect(screen.getByText("Fechar tab")).toBeInTheDocument();
+    });
+
+    it("calls onCloseTab when 'Fechar tab' is clicked in context menu", async () => {
+      const user = userEvent.setup();
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+          onRenameTab={onRenameTab}
+        />
+      );
+
+      await user.pointer({ target: screen.getByRole("tab"), keys: "[MouseRight]" });
+      await user.click(screen.getByText("Fechar tab"));
+
+      expect(onCloseTab).toHaveBeenCalledWith("tab-1");
+    });
+
+    it("activates inline edit when 'Edit tab' is clicked in context menu", async () => {
+      const user = userEvent.setup();
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+          onRenameTab={onRenameTab}
+        />
+      );
+
+      fireEvent.contextMenu(screen.getByRole("tab"));
+      const editItem = await screen.findByText("Edit tab");
+      fireEvent.click(editItem);
+
+      // After clicking Edit tab, the input should be shown
+      await waitFor(() => expect(screen.getByRole("textbox")).toBeInTheDocument());
+    });
+
+    it("calls onRenameTab when user confirms a new name via double-click", async () => {
+      const user = userEvent.setup();
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+          onRenameTab={onRenameTab}
+        />
+      );
+
+      await user.dblClick(screen.getByText("Claude Code"));
+
+      const input = await screen.findByRole("textbox");
+      await user.tripleClick(input);
+      await user.keyboard("My Build{Enter}");
+
+      expect(onRenameTab).toHaveBeenCalledWith("tab-1", "My Build");
+    });
+
+    it("shows custom tab name when tab has customName", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude", customName: "My Build" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+          onRenameTab={onRenameTab}
+        />
+      );
+
+      expect(screen.getByText("My Build")).toBeInTheDocument();
+      expect(screen.queryByText("Claude Code")).not.toBeInTheDocument();
+    });
   });
 });
