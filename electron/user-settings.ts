@@ -24,6 +24,10 @@ interface ThemeSettings {
   }>;
 }
 
+interface PerformanceSettings {
+  mode: "auto" | "full" | "lite";
+}
+
 interface UserSettings {
   app: FontSettings;
   editor: FontSettings;
@@ -31,6 +35,7 @@ interface UserSettings {
   window: { zoomLevel: number; opacity: number };
   sessions: Record<string, { args?: string[]; env?: Record<string, string> }>;
   theme: ThemeSettings;
+  performance: PerformanceSettings;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -61,6 +66,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     active: "catppuccin-mocha",
     custom: [],
   },
+  performance: { mode: "auto" },
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -107,6 +113,10 @@ function mergeWithDefaults(
       ...DEFAULT_SETTINGS.theme,
       ...(input.theme ?? {}),
       custom: input.theme?.custom ?? DEFAULT_SETTINGS.theme.custom,
+    },
+    performance: {
+      ...DEFAULT_SETTINGS.performance,
+      ...(input.performance ?? {}),
     },
   };
 }
