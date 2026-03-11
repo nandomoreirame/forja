@@ -25,6 +25,11 @@ function computeCounters(files: GitChangedFile[]): GitProjectCounters {
   return counters;
 }
 
+interface DiffSelectionSnapshot {
+  selectedPath: string;
+  selectedDiff: GitDiffResult | null;
+}
+
 interface GitDiffState {
   changedFilesByProject: Record<string, GitChangedFile[]>;
   projectCountersByPath: Record<string, GitProjectCounters>;
@@ -35,12 +40,15 @@ interface GitDiffState {
   isLoadingFiles: boolean;
   isLoadingDiff: boolean;
   error: string | null;
+  diffByProject: Record<string, DiffSelectionSnapshot | null>;
 
   fetchChangedFiles: (projectPath: string) => Promise<void>;
   selectChangedFile: (projectPath: string, relativePath: string) => Promise<void>;
   setDiffMode: (mode: "split" | "unified") => void;
   refresh: (projectPath: string) => Promise<void>;
   clearSelection: () => void;
+  saveDiffForProject: (projectPath: string) => void;
+  restoreDiffForProject: (projectPath: string) => void;
   reset: () => void;
 }
 
@@ -54,6 +62,7 @@ export const useGitDiffStore = create<GitDiffState>((set, get) => ({
   isLoadingFiles: false,
   isLoadingDiff: false,
   error: null,
+  diffByProject: {},
 
   fetchChangedFiles: async (projectPath: string) => {
     set({ isLoadingFiles: true, error: null });
@@ -144,6 +153,47 @@ export const useGitDiffStore = create<GitDiffState>((set, get) => ({
       error: null,
     }),
 
+  saveDiffForProject: (projectPath: string) => {
+    const { selectedPath, selectedDiff, diffByProject } = get();
+    if (selectedPath) {
+      set({
+        diffByProject: {
+          ...diffByProject,
+          [projectPath]: { selectedPath, selectedDiff },
+        },
+      });
+    } else {
+      set({
+        diffByProject: {
+          ...diffByProject,
+          [projectPath]: null,
+        },
+      });
+    }
+  },
+
+  restoreDiffForProject: (projectPath: string) => {
+    const { diffByProject } = get();
+    const saved = diffByProject[projectPath];
+    if (saved) {
+      set({
+        selectedProjectPath: projectPath,
+        selectedPath: saved.selectedPath,
+        selectedDiff: saved.selectedDiff,
+        isLoadingDiff: false,
+        error: null,
+      });
+    } else {
+      set({
+        selectedProjectPath: null,
+        selectedPath: null,
+        selectedDiff: null,
+        isLoadingDiff: false,
+        error: null,
+      });
+    }
+  },
+
   reset: () =>
     set({
       changedFilesByProject: {},
@@ -155,5 +205,6 @@ export const useGitDiffStore = create<GitDiffState>((set, get) => ({
       isLoadingFiles: false,
       isLoadingDiff: false,
       error: null,
+      diffByProject: {},
     }),
 }));
