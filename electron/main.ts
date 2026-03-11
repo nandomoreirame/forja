@@ -14,7 +14,7 @@ import { fileURLToPath, pathToFileURL } from "url";
 import { execFile } from "child_process";
 import { assertPathWithinScope } from "./path-validation.js";
 import { resolveImeConfig } from "./ime-config.js";
-import { readSettingsModeSync, resolveModeSyncFromHardware } from "./lite-mode.js";
+import { readSettingsModeSync, resolveModeSyncFromHardware, getLiteModeConfig } from "./lite-mode.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -209,8 +209,10 @@ app.whenReady().then(async () => {
   // avoiding wasted CPU cycles when no component displays metrics.
   ipcMain.handle("register_metrics_subscriber", async () => {
     const appMetricsMod = await getAppMetrics();
+    const liteModeConfig = getLiteModeConfig(resolvedPerfMode);
     appMetricsMod.registerMetricsSubscriber(
       () => BrowserWindow.getAllWindows().map((w) => w.webContents),
+      liteModeConfig.metricsIntervalMs,
     );
   });
 

@@ -573,4 +573,70 @@ describe("app-metrics", () => {
       stopAppMetricsLoop();
     });
   });
+
+  describe("configurable interval", () => {
+    it("uses custom interval when provided to startAppMetricsLoop", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      startAppMetricsLoop(getWindows, undefined, 10000);
+
+      // Should NOT fire at default 2s interval
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).not.toHaveBeenCalled();
+
+      // Should fire at 10s
+      vi.advanceTimersByTime(8000);
+      expect(mockSend).toHaveBeenCalledTimes(1);
+
+      stopAppMetricsLoop();
+    });
+
+    it("uses custom interval when provided to registerMetricsSubscriber", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { registerMetricsSubscriber, unregisterMetricsSubscriber } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      registerMetricsSubscriber(getWindows, 10000);
+
+      // Should NOT fire at default 2s interval
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).not.toHaveBeenCalled();
+
+      // Should fire at 10s
+      vi.advanceTimersByTime(8000);
+      expect(mockSend).toHaveBeenCalledTimes(1);
+
+      unregisterMetricsSubscriber();
+    });
+
+    it("defaults to 2000ms when no interval is provided", async () => {
+      const { app } = await import("electron");
+      vi.mocked(app.getAppMetrics).mockReturnValue([]);
+
+      const { startAppMetricsLoop, stopAppMetricsLoop } = await import("../app-metrics");
+
+      const mockSend = vi.fn();
+      const mockWebContents = { send: mockSend, isDestroyed: () => false };
+      const getWindows = () => [mockWebContents as unknown as Electron.WebContents];
+
+      startAppMetricsLoop(getWindows);
+
+      vi.advanceTimersByTime(2000);
+      expect(mockSend).toHaveBeenCalledTimes(1);
+
+      stopAppMetricsLoop();
+    });
+  });
 });
