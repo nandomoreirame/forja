@@ -161,6 +161,12 @@ export function useKeyboardShortcuts({
         }
         return;
       }
+      // Ctrl/Cmd+Shift+F — toggle terminal fullscreen
+      if (mod && event.shiftKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        useTerminalTabsStore.getState().toggleTerminalFullscreen();
+        return;
+      }
       if (mod && event.key === "j") {
         event.preventDefault();
         useTerminalTabsStore.getState().toggleTerminalPane();
