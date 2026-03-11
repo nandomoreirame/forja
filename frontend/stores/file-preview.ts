@@ -1,5 +1,6 @@
 import { invoke } from "@/lib/ipc";
 import { create } from "zustand";
+import { useGitDiffStore } from "./git-diff";
 
 export interface FileContent {
   path: string;
@@ -47,7 +48,8 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
 
   openPreview: () => set({ isOpen: true }),
 
-  closePreview: () =>
+  closePreview: () => {
+    useGitDiffStore.getState().clearSelection();
     set({
       isOpen: true,
       currentFile: null,
@@ -56,7 +58,8 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
       isEditing: false,
       editContent: null,
       editDirty: false,
-    }),
+    });
+  },
 
   loadFile: async (path: string) => {
     set({ isLoading: true, currentFile: path, error: null, isEditing: false, editContent: null, editDirty: false });
