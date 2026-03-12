@@ -5,6 +5,7 @@ const STORAGE_KEY = "forja:session:v1";
 export interface PersistedSessionTab {
   path: string;
   sessionType: SessionType;
+  customName?: string;
 }
 
 export interface PersistedSessionState {
@@ -49,7 +50,11 @@ function parse(input: unknown): PersistedSessionState | null {
     .map((tab) => {
       const t = tab as Record<string, unknown>;
       if (typeof t.path !== "string" || !isSessionType(t.sessionType)) return null;
-      return { path: t.path, sessionType: t.sessionType };
+      const parsed: PersistedSessionTab = { path: t.path, sessionType: t.sessionType };
+      if (typeof t.customName === "string" && t.customName.length > 0) {
+        parsed.customName = t.customName;
+      }
+      return parsed;
     })
     .filter((tab): tab is PersistedSessionTab => tab !== null);
 

@@ -127,6 +127,55 @@ describe("session-persistence", () => {
     expect(restored?.terminal.split.secondarySessionType).toBe("gemini");
   });
 
+  it("saves and loads tabs with customName", () => {
+    const state: PersistedSessionState = {
+      activeWorkspaceId: null,
+      activeProjectPath: "/repo",
+      preview: { isOpen: false, currentFile: null },
+      terminal: {
+        activeTabIndex: 0,
+        split: {
+          isEnabled: false,
+          orientation: "vertical",
+          ratio: 50,
+          splitTabIndex: 0,
+          secondarySessionType: null,
+        },
+        tabs: [
+          { path: "/repo", sessionType: "claude", customName: "My Build" },
+          { path: "/repo", sessionType: "terminal" },
+        ],
+      },
+    };
+
+    savePersistedSessionState(state);
+    const restored = loadPersistedSessionState();
+
+    expect(restored?.terminal.tabs[0].customName).toBe("My Build");
+    expect(restored?.terminal.tabs[1].customName).toBeUndefined();
+  });
+
+  it("ignores non-string customName values during parse", () => {
+    window.localStorage.setItem(
+      "forja:session:v1",
+      JSON.stringify({
+        activeProjectPath: "/repo",
+        preview: { isOpen: false, currentFile: null },
+        terminal: {
+          activeTabIndex: 0,
+          tabs: [
+            { path: "/repo", sessionType: "claude", customName: 123 },
+            { path: "/repo", sessionType: "terminal", customName: "" },
+          ],
+        },
+      }),
+    );
+
+    const restored = loadPersistedSessionState();
+    expect(restored?.terminal.tabs[0].customName).toBeUndefined();
+    expect(restored?.terminal.tabs[1].customName).toBeUndefined();
+  });
+
   it("handles legacy format with primaryTabIndex/secondaryTabIndex gracefully", () => {
     window.localStorage.setItem(
       "forja:session:v1",

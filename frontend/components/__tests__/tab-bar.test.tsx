@@ -320,6 +320,74 @@ describe("TabBar", () => {
     expect(screen.getAllByRole("tab")).toHaveLength(3);
   });
 
+  describe("drag-and-drop reorder", () => {
+    const onReorderTab = vi.fn();
+
+    beforeEach(() => {
+      onReorderTab.mockClear();
+    });
+
+    it("wraps tabs in SortableContext", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+        { id: "tab-2", name: "Terminal", path: "/b", isRunning: true, sessionType: "terminal" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+          onReorderTab={onReorderTab}
+        />
+      );
+
+      // Each tab should be wrapped in a sortable container with data-sortable attribute
+      const sortables = screen.getAllByTestId("sortable-tab");
+      expect(sortables).toHaveLength(2);
+    });
+
+    it("accepts onReorderTab prop without crashing", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+      ];
+      expect(() =>
+        render(
+          <TabBar
+            tabs={tabs}
+            activeTabId="tab-1"
+            onSelectTab={onSelectTab}
+            onCloseTab={onCloseTab}
+            onSessionTypeSelect={onSessionTypeSelect}
+            onReorderTab={onReorderTab}
+          />
+        )
+      ).not.toThrow();
+    });
+
+    it("still renders tabs correctly with DnD wrappers", () => {
+      const tabs: TerminalTab[] = [
+        { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
+        { id: "tab-2", name: "Claude Code", path: "/b", isRunning: true, sessionType: "claude" },
+      ];
+      render(
+        <TabBar
+          tabs={tabs}
+          activeTabId="tab-1"
+          onSelectTab={onSelectTab}
+          onCloseTab={onCloseTab}
+          onSessionTypeSelect={onSessionTypeSelect}
+          onReorderTab={onReorderTab}
+        />
+      );
+
+      expect(screen.getByText("Claude Code #1")).toBeInTheDocument();
+      expect(screen.getByText("Claude Code #2")).toBeInTheDocument();
+      expect(screen.getAllByRole("tab")).toHaveLength(2);
+    });
+  });
+
   describe("context menu", () => {
     const onRenameTab = vi.fn();
 
