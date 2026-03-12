@@ -8,6 +8,17 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.5.6] - 2026-03-12
+
+### Added
+- Limit file tree sidebar max width to 500px.
+- Add per-project UI state save/restore.
+- Add per-project UI state persistence.
+
+### Fixed
+- Only open localhost links from terminal clicks.
+---
+
 ## [1.5.5] - 2026-03-12
 
 ### Added
