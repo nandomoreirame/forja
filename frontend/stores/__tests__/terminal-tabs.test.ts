@@ -22,7 +22,6 @@ describe("useTerminalTabsStore", () => {
       tabs: [],
       activeTabId: null,
       counter: 0,
-      isTerminalPaneOpen: true,
       isTerminalFullscreen: false,
       tabLastActiveAt: {},
     });
@@ -419,22 +418,6 @@ describe("useTerminalTabsStore", () => {
       expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(false);
     });
 
-    it("toggling fullscreen also opens terminal pane if closed", () => {
-      useTerminalTabsStore.getState().toggleTerminalPane(); // close it
-      expect(useTerminalTabsStore.getState().isTerminalPaneOpen).toBe(false);
-
-      useTerminalTabsStore.getState().toggleTerminalFullscreen();
-      expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(true);
-      expect(useTerminalTabsStore.getState().isTerminalPaneOpen).toBe(true);
-    });
-
-    it("toggling terminal pane off exits fullscreen", () => {
-      useTerminalTabsStore.getState().toggleTerminalFullscreen();
-      expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(true);
-
-      useTerminalTabsStore.getState().toggleTerminalPane(); // hide terminal
-      expect(useTerminalTabsStore.getState().isTerminalFullscreen).toBe(false);
-    });
   });
 
   describe("tabLastActiveAt tracking", () => {
