@@ -246,7 +246,7 @@ describe("PluginHost", () => {
   it("handles IPC bridge request and sends response back to webview", async () => {
     mockInvoke.mockImplementation((channel: string, args?: unknown) => {
       if (channel === "plugin:get-preload-path") return Promise.resolve("/mock/preload.js");
-      if (channel === "plugin:bridge") return Promise.resolve({ branch: "main" });
+      if (channel === "plugin:bridge") return Promise.resolve({ success: true, data: { branch: "main" } });
       return Promise.resolve(null);
     });
 
@@ -275,6 +275,7 @@ describe("PluginHost", () => {
         pluginName: "test-plugin",
         method: "git.status",
         args: {},
+        projectPath: null,
       });
     } else {
       expect(document.body).toBeTruthy();

@@ -109,5 +109,7 @@ async function handleDenyPermissions(_event: unknown, args: unknown): Promise<vo
 async function handleGetPreloadPath(): Promise<string> {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  return path.join(__dirname, "plugins", "plugin-preload.cjs");
+  // This file is already inside the plugins/ directory, so the preload
+  // script is a sibling file — no extra "plugins" segment needed.
+  return path.join(__dirname, "plugin-preload.cjs");
 }
