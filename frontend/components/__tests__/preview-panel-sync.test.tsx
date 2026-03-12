@@ -65,6 +65,7 @@ vi.mock("@/lib/ipc", () => ({
 // Stub heavy child components to keep the test focused
 vi.mock("../file-tree-sidebar", () => ({
   FileTreeSidebar: () => <div data-testid="file-tree-sidebar" />,
+  SIDEBAR_MAX_WIDTH: "500px",
 }));
 vi.mock("../file-preview-pane", () => ({
   FilePreviewPane: () => <div data-testid="file-preview-pane" />,

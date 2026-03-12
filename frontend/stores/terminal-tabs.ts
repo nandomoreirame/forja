@@ -23,6 +23,7 @@ interface TerminalTabsState {
   isTerminalFullscreen: boolean;
   activeTabIdByProject: Record<string, string>;
   tabLastActiveAt: Record<string, number>;
+  isFullscreenByProject: Record<string, boolean>;
 
   nextTabId: () => string;
   addTab: (id: string, path: string, sessionType?: SessionType) => void;
@@ -41,6 +42,10 @@ interface TerminalTabsState {
   saveActiveTabForProject: (projectPath: string) => void;
   /** Restores activeTabId for the given project path (falls back to first tab or null). */
   restoreActiveTabForProject: (projectPath: string) => void;
+  /** Saves terminal fullscreen state for the given project path. */
+  saveFullscreenForProject: (projectPath: string) => void;
+  /** Restores terminal fullscreen state for the given project path. */
+  restoreFullscreenForProject: (projectPath: string) => void;
 }
 
 export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
@@ -50,6 +55,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   isTerminalFullscreen: false,
   activeTabIdByProject: {},
   tabLastActiveAt: {},
+  isFullscreenByProject: {},
 
   nextTabId: () => {
     const newCounter = get().counter + 1;
@@ -159,5 +165,18 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     } else {
       set({ activeTabId: null });
     }
+  },
+
+  saveFullscreenForProject: (projectPath: string) => {
+    const { isTerminalFullscreen, isFullscreenByProject } = get();
+    set({
+      isFullscreenByProject: { ...isFullscreenByProject, [projectPath]: isTerminalFullscreen },
+    });
+  },
+
+  restoreFullscreenForProject: (projectPath: string) => {
+    const { isFullscreenByProject } = get();
+    const saved = isFullscreenByProject[projectPath];
+    set({ isTerminalFullscreen: saved ?? false });
   },
 }));

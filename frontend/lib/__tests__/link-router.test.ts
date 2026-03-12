@@ -38,24 +38,29 @@ describe("routeLinkClick", () => {
     expect(navigateToUrl).toHaveBeenCalledWith("http://127.0.0.1:5173");
   });
 
-  it("opens external URL via IPC", async () => {
+  it("ignores external URL (does not open in browser)", async () => {
     const { openUrl } = await import("@/lib/ipc");
-
-    routeLinkClick("https://example.com");
-
-    expect(openUrl).toHaveBeenCalledWith("https://example.com");
-  });
-
-  it("opens external URL and does not navigate browser pane", async () => {
     const navigateToUrl = vi.spyOn(
       useBrowserPaneStore.getState(),
       "navigateToUrl"
     );
+
+    routeLinkClick("https://example.com");
+
+    expect(openUrl).not.toHaveBeenCalled();
+    expect(navigateToUrl).not.toHaveBeenCalled();
+  });
+
+  it("ignores github URL (does not open in browser)", async () => {
     const { openUrl } = await import("@/lib/ipc");
+    const navigateToUrl = vi.spyOn(
+      useBrowserPaneStore.getState(),
+      "navigateToUrl"
+    );
 
     routeLinkClick("https://github.com/repo");
 
-    expect(openUrl).toHaveBeenCalledWith("https://github.com/repo");
+    expect(openUrl).not.toHaveBeenCalled();
     expect(navigateToUrl).not.toHaveBeenCalled();
   });
 });
