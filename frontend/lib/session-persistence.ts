@@ -15,7 +15,6 @@ export interface PersistedSessionState {
     currentFile: string | null;
   };
   terminal: {
-    isPaneOpen: boolean;
     activeTabIndex: number;
     split: {
       isEnabled: boolean;
@@ -64,7 +63,6 @@ function parse(input: unknown): PersistedSessionState | null {
       currentFile: typeof preview.currentFile === "string" ? preview.currentFile : null,
     },
     terminal: {
-      isPaneOpen: terminal.isPaneOpen !== false,
       activeTabIndex:
         typeof terminal.activeTabIndex === "number" && terminal.activeTabIndex >= 0
           ? Math.floor(terminal.activeTabIndex)
