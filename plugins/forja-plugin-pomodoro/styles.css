@@ -17,6 +17,8 @@
 
 :root {
   --radius: 8px;
+  --radius-lg: 12px;
+  --radius-full: 999px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,71 +27,183 @@ body {
   font-family: "Geist Sans", "Inter", system-ui, -apple-system, sans-serif;
   background: var(--forja-bg-base);
   color: var(--forja-text);
-  padding: 16px;
   font-size: 13px;
   line-height: 1.5;
-  overflow-y: auto;
+  overflow: hidden;
   height: 100vh;
+  padding: 0;
+  margin: 0;
 }
 
-.plugin-header {
-  margin-bottom: 20px;
-}
-
-.plugin-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--forja-text);
-  margin-bottom: 2px;
-}
-
-.plugin-subtitle {
-  font-size: 11px;
-  color: var(--forja-text-muted);
-}
-
-.timer-container {
-  text-align: center;
-  padding: 24px 0;
-  border-bottom: 1px solid var(--forja-bg-overlay);
-  margin-bottom: 16px;
-}
-
-.timer-display {
-  font-size: 48px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--forja-text);
-  letter-spacing: -1px;
-}
-
-.timer-display.running { color: var(--forja-success); }
-.timer-display.paused { color: var(--forja-warning); }
-.timer-display.break { color: var(--forja-accent); }
-
-.timer-label {
-  font-size: 12px;
-  color: var(--forja-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  margin-top: 4px;
-}
-
-.timer-controls {
+#app {
   display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 16px;
+  flex-direction: column;
+  height: 100vh;
+  padding: 12px 12px 16px;
 }
 
-.btn {
-  padding: 6px 16px;
+/* ── Layout sections ── */
+.plugin-header {
+  flex-shrink: 0;
+}
+
+.plugin-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 0;
+}
+
+.plugin-footer {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ── Mode tabs ── */
+.mode-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--forja-bg-surface);
+  border-radius: var(--radius-lg);
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 6px 4px;
+  border: none;
   border-radius: var(--radius);
-  border: 1px solid transparent;
-  font-size: 12px;
+  background: transparent;
+  color: var(--forja-text-muted);
+  font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.mode-tab:hover {
+  color: var(--forja-text-sub);
+  background: var(--forja-bg-overlay);
+}
+
+.mode-tab.active {
+  background: var(--forja-bg-overlay);
+  color: var(--forja-text);
+  font-weight: 600;
+}
+
+/* ── Timer area (inside plugin-content) ── */
+
+.timer-state-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--forja-text-muted);
+  transition: color 0.25s ease;
+}
+
+.timer-state-label.running {
+  color: var(--forja-magenta);
+}
+
+.timer-state-label.break-running {
+  color: var(--forja-cyan);
+}
+
+.timer-display {
+  font-size: 76px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -3px;
+  line-height: 1;
+  color: var(--forja-text-sub);
+  transition: color 0.25s ease;
+  user-select: none;
+}
+
+.timer-display.running {
+  color: var(--forja-magenta);
+}
+
+.timer-display.break-running {
+  color: var(--forja-cyan);
+}
+
+.timer-display.paused {
+  color: var(--forja-warning);
+}
+
+/* ── Progress bar ── */
+.progress-bar-track {
+  width: 80%;
+  max-width: 280px;
+  height: 8px;
+  background: var(--forja-bg-overlay);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--forja-magenta);
+  border-radius: 3px;
+  transition: width 1s linear, background 0.25s ease;
+}
+
+.progress-bar-fill.break-mode {
+  background: var(--forja-cyan);
+}
+
+/* ── Session dots ── */
+.session-dots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  min-height: 10px;
+}
+
+.session-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--forja-bg-overlay);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.session-dot.completed {
+  background: var(--forja-magenta);
+  transform: scale(1.1);
+}
+
+.session-dot.current {
+  background: var(--forja-magenta);
+  opacity: 0.45;
+}
+
+/* ── Controls ── */
+.controls-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn {
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.5px;
 }
 
 .btn:disabled {
@@ -97,102 +211,179 @@ body {
   cursor: not-allowed;
 }
 
-.btn-primary {
+.btn-start {
   background: var(--forja-accent);
   color: var(--forja-bg-base);
-  border-color: var(--forja-accent);
+  font-size: 14px;
+  padding: 10px 48px;
+  min-width: 140px;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--forja-accent) 30%, transparent);
 }
 
-.btn-primary:hover:not(:disabled) {
+.btn-start:hover:not(:disabled) {
   background: var(--forja-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--forja-accent) 40%, transparent);
 }
 
-.btn-secondary {
-  background: var(--forja-bg-surface);
-  color: var(--forja-text);
-  border-color: var(--forja-bg-overlay);
+.btn-start:active:not(:disabled) {
+  transform: translateY(0);
 }
 
-.btn-secondary:hover:not(:disabled) {
-  background: var(--forja-bg-overlay);
+.btn-start.is-running {
+  background: var(--forja-magenta);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--forja-magenta) 30%, transparent);
 }
 
-.btn-ghost {
+.btn-start.is-running:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--forja-magenta) 85%, white);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--forja-magenta) 40%, transparent);
+}
+
+.btn-start.is-break {
+  background: var(--forja-cyan);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--forja-cyan) 30%, transparent);
+}
+
+.btn-start.is-break:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--forja-cyan) 85%, white);
+}
+
+.btn-clear {
   background: transparent;
+  color: var(--forja-text-muted);
+  font-size: 11px;
+  padding: 4px 16px;
+  border: 1px solid var(--forja-bg-overlay);
+  border-radius: var(--radius-full);
+}
+
+.btn-clear:hover:not(:disabled) {
+  background: var(--forja-bg-surface);
   color: var(--forja-text-sub);
 }
 
-.btn-ghost:hover:not(:disabled) {
-  background: var(--forja-bg-surface);
-}
-
-.section-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--forja-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 10px;
-}
-
-.settings-section {
-  padding-bottom: 16px;
+/* ── Stats ── */
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0;
+  border-top: 1px solid var(--forja-bg-overlay);
   border-bottom: 1px solid var(--forja-bg-overlay);
-  margin-bottom: 16px;
 }
 
-.setting-row {
+.stat-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
-}
-
-.setting-row label {
-  font-size: 12px;
-  color: var(--forja-text-sub);
-}
-
-.input-field {
-  width: 60px;
-  padding: 4px 8px;
-  border-radius: var(--radius);
-  border: 1px solid var(--forja-bg-overlay);
-  background: var(--forja-bg-surface);
-  color: var(--forja-text);
-  font-size: 12px;
-  text-align: center;
-}
-
-.input-field:focus {
-  outline: none;
-  border-color: var(--forja-accent);
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.stat-item {
-  text-align: center;
-  padding: 12px;
-  background: var(--forja-bg-surface);
-  border-radius: var(--radius);
-}
-
-.stat-value {
-  display: block;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--forja-accent);
 }
 
 .stat-label {
-  display: block;
-  font-size: 10px;
+  font-size: 11px;
   color: var(--forja-text-muted);
-  text-transform: uppercase;
-  margin-top: 2px;
+}
+
+.stat-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--forja-text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Settings toggle ── */
+.settings-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--forja-text-muted);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.settings-toggle:hover {
+  color: var(--forja-text-sub);
+}
+
+.settings-toggle .settings-icon,
+.settings-toggle .arrow-icon {
+  flex-shrink: 0;
+}
+
+.settings-toggle .arrow-icon {
+  transition: transform 0.2s ease;
+}
+
+.settings-toggle[aria-expanded="true"] .arrow-icon {
+  transform: rotate(180deg);
+}
+
+/* ── Session config ── */
+.config-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-section[hidden] {
+  display: none;
+}
+
+.config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.config-label {
+  font-size: 11px;
+  color: var(--forja-text-sub);
+}
+
+.config-counter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.counter-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--forja-bg-overlay);
+  background: var(--forja-bg-surface);
+  color: var(--forja-text-sub);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.counter-btn:hover {
+  background: var(--forja-bg-overlay);
+  color: var(--forja-text);
+}
+
+.counter-btn:active {
+  transform: scale(0.9);
+}
+
+.counter-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--forja-text);
+  min-width: 20px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }

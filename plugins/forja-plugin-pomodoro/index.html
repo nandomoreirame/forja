@@ -8,51 +8,103 @@
 </head>
 <body>
   <div id="app">
+
+    <!-- HEADER: Mode tabs -->
     <header class="plugin-header">
-      <h2 class="plugin-title">Pomodoro</h2>
-      <span id="project-name" class="plugin-subtitle">No project</span>
+      <nav class="mode-tabs" role="tablist">
+        <button class="mode-tab active" data-mode="focus" role="tab" aria-selected="true">Pomodoro</button>
+        <button class="mode-tab" data-mode="break" role="tab" aria-selected="false">Short Break</button>
+        <button class="mode-tab" data-mode="longBreak" role="tab" aria-selected="false">Long Break</button>
+      </nav>
     </header>
 
-    <main class="timer-container">
+    <!-- CONTENT: Timer + controls (centered) -->
+    <main class="plugin-content">
+      <span id="timer-state-label" class="timer-state-label">IDLE</span>
       <div id="timer-display" class="timer-display">25:00</div>
-      <div id="timer-label" class="timer-label">Focus</div>
 
-      <div class="timer-controls">
-        <button id="btn-start" class="btn btn-primary">Start</button>
-        <button id="btn-pause" class="btn btn-secondary" disabled>Pause</button>
-        <button id="btn-reset" class="btn btn-ghost">Reset</button>
+      <!-- Session dots -->
+      <div id="session-dots" class="session-dots" aria-label="Pomodoros in session"></div>
+
+      <!-- Progress bar -->
+      <div class="progress-bar-track">
+        <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-area">
+        <button id="btn-start" class="btn btn-start">Start</button>
+        <button id="btn-clear" class="btn btn-clear" style="display: none">Clear</button>
       </div>
     </main>
 
-    <section class="settings-section">
-      <h3 class="section-title">Settings</h3>
-      <div class="setting-row">
-        <label for="focus-duration">Focus (min)</label>
-        <input type="number" id="focus-duration" value="25" min="1" max="90" class="input-field" />
-      </div>
-      <div class="setting-row">
-        <label for="break-duration">Break (min)</label>
-        <input type="number" id="break-duration" value="5" min="1" max="30" class="input-field" />
-      </div>
-      <div class="setting-row">
-        <label for="long-break-duration">Long break (min)</label>
-        <input type="number" id="long-break-duration" value="15" min="5" max="60" class="input-field" />
-      </div>
-    </section>
+    <!-- FOOTER: Stats + Settings -->
+    <footer class="plugin-footer">
+      <!-- Stats -->
+      <section class="stats-section">
+        <div class="stat-row">
+          <span class="stat-label">Pomodoros</span>
+          <span id="stat-pomodoros" class="stat-value">0 / <span id="session-target">8</span></span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Finish At</span>
+          <span id="stat-finish" class="stat-value">--:-- (--)</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Total focus</span>
+          <span id="stat-total-focus" class="stat-value">0h 0m</span>
+        </div>
+      </section>
 
-    <section class="stats-section">
-      <h3 class="section-title">Today</h3>
-      <div class="stats-grid">
-        <div class="stat-item">
-          <span id="completed-count" class="stat-value">0</span>
-          <span class="stat-label">Sessions</span>
+      <!-- Settings toggle -->
+      <button id="btn-settings-toggle" class="settings-toggle" type="button" aria-expanded="false" aria-controls="config-panel">
+        <svg class="settings-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+        Settings
+        <svg class="arrow-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="18 15 12 9 6 15"/>
+        </svg>
+      </button>
+
+      <!-- Session configuration (hidden by default) -->
+      <section id="config-panel" class="config-section" hidden>
+        <div class="config-row">
+          <span class="config-label">Pomodoros per session</span>
+          <div class="config-counter">
+            <button class="counter-btn" data-action="dec" data-target="session-pomodoros">-</button>
+            <span id="session-pomodoros-display" class="counter-value">8</span>
+            <button class="counter-btn" data-action="inc" data-target="session-pomodoros">+</button>
+          </div>
         </div>
-        <div class="stat-item">
-          <span id="total-focus" class="stat-value">0m</span>
-          <span class="stat-label">Focus time</span>
+        <div class="config-row">
+          <span class="config-label">Focus (min)</span>
+          <div class="config-counter">
+            <button class="counter-btn" data-action="dec" data-target="focus-duration">-</button>
+            <span id="focus-duration-display" class="counter-value">25</span>
+            <button class="counter-btn" data-action="inc" data-target="focus-duration">+</button>
+          </div>
         </div>
-      </div>
-    </section>
+        <div class="config-row">
+          <span class="config-label">Short break (min)</span>
+          <div class="config-counter">
+            <button class="counter-btn" data-action="dec" data-target="break-duration">-</button>
+            <span id="break-duration-display" class="counter-value">5</span>
+            <button class="counter-btn" data-action="inc" data-target="break-duration">+</button>
+          </div>
+        </div>
+        <div class="config-row">
+          <span class="config-label">Long break (min)</span>
+          <div class="config-counter">
+            <button class="counter-btn" data-action="dec" data-target="long-break-duration">-</button>
+            <span id="long-break-duration-display" class="counter-value">15</span>
+            <button class="counter-btn" data-action="inc" data-target="long-break-duration">+</button>
+          </div>
+        </div>
+      </section>
+    </footer>
+
   </div>
 
   <script src="app.js"></script>
