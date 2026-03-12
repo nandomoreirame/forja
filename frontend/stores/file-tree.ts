@@ -64,6 +64,7 @@ interface FileTreeState {
   expandedPaths: Record<string, boolean>;
   trees: Record<string, DirectoryTree>;
   activeProjectPath: string | null;
+  isOpenByProject: Record<string, boolean>;
 
   toggleSidebar: () => void;
   openProject: () => Promise<void>;
@@ -78,6 +79,8 @@ interface FileTreeState {
   isExpanded: (path: string) => boolean;
   collapseAll: () => void;
   selectFile: (path: string) => Promise<void>;
+  saveSidebarStateForProject: (projectPath: string) => void;
+  restoreSidebarStateForProject: (projectPath: string) => void;
 }
 
 export const useFileTreeStore = create<FileTreeState>((set, get) => {
@@ -108,6 +111,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     expandedPaths: {},
     trees: {},
     activeProjectPath: null,
+    isOpenByProject: {},
 
     toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
 
@@ -287,6 +291,21 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     selectFile: async (path: string) => {
       useGitDiffStore.getState().clearSelection();
       await useFilePreviewStore.getState().loadFile(path);
+    },
+
+    saveSidebarStateForProject: (projectPath: string) => {
+      const { isOpen, isOpenByProject } = get();
+      set({
+        isOpenByProject: { ...isOpenByProject, [projectPath]: isOpen },
+      });
+    },
+
+    restoreSidebarStateForProject: (projectPath: string) => {
+      const { isOpenByProject } = get();
+      const saved = isOpenByProject[projectPath];
+      if (saved !== undefined) {
+        set({ isOpen: saved });
+      }
     },
   };
 });

@@ -32,7 +32,7 @@ const BrowserPane = lazy(() =>
     default: m.BrowserPane,
   }))
 );
-import { FileTreeSidebar } from "./components/file-tree-sidebar";
+import { FileTreeSidebar, SIDEBAR_MAX_WIDTH } from "./components/file-tree-sidebar";
 import { NewSessionDropdown } from "./components/new-session-dropdown";
 import { ProjectSidebar } from "./components/project-sidebar";
 import { RightSidebar } from "./components/right-sidebar";
@@ -283,6 +283,41 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       store.toggleSidebar();
     }
   }, [panelPrefsLoaded, persistedSidebarOpen]);
+
+  // Load per-project UI state from disk on initial project load
+  // This overrides the global sidebar preference above with per-project state when available
+  const perProjectStateLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!sessionRestoreDone || !currentPath || perProjectStateLoadedRef.current) return;
+    perProjectStateLoadedRef.current = true;
+
+    invoke<{
+      sidebarOpen?: boolean;
+      rightPanelOpen?: boolean;
+      terminalFullscreen?: boolean;
+      previewFile?: string | null;
+      browserOpen?: boolean;
+      browserUrl?: string;
+    } | null>("get_project_ui_state", { path: currentPath })
+      .then((savedState) => {
+        if (!savedState) return;
+        if (savedState.sidebarOpen !== undefined) {
+          const store = useFileTreeStore.getState();
+          if (store.isOpen !== savedState.sidebarOpen) {
+            store.toggleSidebar();
+          }
+        }
+        if (savedState.rightPanelOpen !== undefined) {
+          useRightPanelStore.setState({ isOpen: savedState.rightPanelOpen });
+        }
+        if (savedState.terminalFullscreen !== undefined) {
+          useTerminalTabsStore.setState({ isTerminalFullscreen: savedState.terminalFullscreen });
+        }
+      })
+      .catch(() => {
+        // Non-fatal: disk state load failure
+      });
+  }, [sessionRestoreDone, currentPath]);
 
   const splitPrefsSyncedRef = useRef(false);
   useEffect(() => {
@@ -802,7 +837,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               panelRef={sidebarPanelRef}
               defaultSize={`${effectivePanelSizes.sidebarSize}%`}
               minSize="10%"
-              maxSize="40%"
+              maxSize={SIDEBAR_MAX_WIDTH}
               collapsible
               collapsedSize="0%"
               order={1}
@@ -915,9 +950,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                     />
                     <ResizablePanel
                       panelRef={rightPanelRef}
-                      defaultSize={isRightPanelOpen ? "350px" : "0%"}
+                      defaultSize={isRightPanelOpen ? "400px" : "0%"}
                       minSize="10%"
-                      maxSize="350px"
+                      maxSize="400px"
                       collapsible
                       collapsedSize="0%"
                       order={3}

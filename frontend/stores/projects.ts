@@ -158,8 +158,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     const tabsStore = useTerminalTabsStore.getState();
     if (previousPath && previousPath !== projectPath) {
       tabsStore.saveActiveTabForProject(previousPath);
+      tabsStore.saveFullscreenForProject(previousPath);
     }
     tabsStore.restoreActiveTabForProject(projectPath);
+    tabsStore.restoreFullscreenForProject(projectPath);
 
     // Save/restore browser pane state per project
     const { useBrowserPaneStore } = await import("./browser-pane");
@@ -169,8 +171,71 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
     browserStore.restoreBrowserStateForProject(projectPath);
 
+    // Save/restore right panel state per project
+    const { useRightPanelStore } = await import("./right-panel");
+    const rightPanelStore = useRightPanelStore.getState();
+    if (previousPath && previousPath !== projectPath) {
+      rightPanelStore.saveStateForProject(previousPath);
+    }
+    rightPanelStore.restoreStateForProject(projectPath);
+
+    // Save/restore file tree sidebar state per project
     const { useFileTreeStore } = await import("./file-tree");
-    await useFileTreeStore.getState().openProjectPath(projectPath);
+    const fileTreeStore = useFileTreeStore.getState();
+    if (previousPath && previousPath !== projectPath) {
+      fileTreeStore.saveSidebarStateForProject(previousPath);
+    }
+    fileTreeStore.restoreSidebarStateForProject(projectPath);
+
+    await fileTreeStore.openProjectPath(projectPath);
+
+    // Persist previous project's UI state to disk
+    if (previousPath && previousPath !== projectPath) {
+      const prevPreviewStore = (await import("./file-preview")).useFilePreviewStore.getState();
+      const prevPreview = prevPreviewStore.previewByProject[previousPath];
+      invoke("save_project_ui_state", {
+        path: previousPath,
+        state: {
+          sidebarOpen: fileTreeStore.isOpenByProject[previousPath] ?? true,
+          rightPanelOpen: rightPanelStore.isOpenByProject[previousPath] ?? false,
+          terminalFullscreen: tabsStore.isFullscreenByProject[previousPath] ?? false,
+          previewFile: prevPreview?.currentFile ?? null,
+          browserOpen: browserStore.browserStateByProject[previousPath]?.isOpen ?? false,
+          browserUrl: browserStore.browserStateByProject[previousPath]?.committedUrl ?? "http://localhost:3000",
+        },
+      }).catch(() => {});
+    }
+
+    // Load persisted UI state for the new project from disk
+    try {
+      const savedState = await invoke<{
+        sidebarOpen?: boolean;
+        rightPanelOpen?: boolean;
+        terminalFullscreen?: boolean;
+        previewFile?: string | null;
+        browserOpen?: boolean;
+        browserUrl?: string;
+      } | null>("get_project_ui_state", { path: projectPath });
+
+      if (savedState) {
+        // Only apply disk state if we don't have in-memory state yet
+        const hasInMemoryFileTree = fileTreeStore.isOpenByProject[projectPath] !== undefined;
+        if (!hasInMemoryFileTree) {
+          if (savedState.sidebarOpen !== undefined) {
+            useFileTreeStore.setState({ isOpen: savedState.sidebarOpen });
+          }
+          if (savedState.rightPanelOpen !== undefined) {
+            useRightPanelStore.setState({ isOpen: savedState.rightPanelOpen });
+          }
+          if (savedState.terminalFullscreen !== undefined) {
+            useTerminalTabsStore.setState({ isTerminalFullscreen: savedState.terminalFullscreen });
+          }
+        }
+      }
+    } catch {
+      // Non-fatal: disk state load failure
+    }
+
     // Load icon if not already loaded
     const project = get().projects.find((p) => p.path === projectPath);
     if (project && project.iconPath === null) {

@@ -10,7 +10,11 @@ vi.mock("@/stores/file-tree", () => ({
   useFileTreeStore: {
     getState: vi.fn(() => ({
       openProjectPath: vi.fn(),
+      saveSidebarStateForProject: vi.fn(),
+      restoreSidebarStateForProject: vi.fn(),
+      isOpenByProject: {},
     })),
+    setState: vi.fn(),
   },
 }));
 
@@ -21,6 +25,7 @@ vi.mock("@/stores/file-preview", () => ({
     getState: vi.fn(() => ({
       savePreviewForProject: mockSavePreviewForProject,
       restorePreviewForProject: mockRestorePreviewForProject,
+      previewByProject: {},
     })),
   },
 }));
@@ -102,6 +107,9 @@ describe("useProjectsStore", () => {
     const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useFileTreeStore.getState).mockReturnValue({
       openProjectPath: mockOpenProjectPath,
+      saveSidebarStateForProject: vi.fn(),
+      restoreSidebarStateForProject: vi.fn(),
+      isOpenByProject: {},
     } as never);
 
     useProjectsStore.setState({
@@ -380,6 +388,9 @@ describe("useProjectsStore", () => {
     const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useFileTreeStore.getState).mockReturnValue({
       openProjectPath: mockOpenProjectPath,
+      saveSidebarStateForProject: vi.fn(),
+      restoreSidebarStateForProject: vi.fn(),
+      isOpenByProject: {},
     } as never);
 
     useProjectsStore.setState({
@@ -400,6 +411,9 @@ describe("useProjectsStore", () => {
     const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useFileTreeStore.getState).mockReturnValue({
       openProjectPath: mockOpenProjectPath,
+      saveSidebarStateForProject: vi.fn(),
+      restoreSidebarStateForProject: vi.fn(),
+      isOpenByProject: {},
     } as never);
 
     useProjectsStore.setState({
@@ -464,6 +478,9 @@ describe("useProjectsStore", () => {
     const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useFileTreeStore.getState).mockReturnValue({
       openProjectPath: mockOpenProjectPath,
+      saveSidebarStateForProject: vi.fn(),
+      restoreSidebarStateForProject: vi.fn(),
+      isOpenByProject: {},
     } as never);
 
     useProjectsStore.setState({
