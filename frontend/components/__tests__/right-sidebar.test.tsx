@@ -49,6 +49,7 @@ vi.mock("@/stores/app-dialogs", () => ({
 }));
 
 const mockSetActivePlugin = vi.fn();
+const mockReorderPlugins = vi.fn();
 let mockPlugins: Array<{
   manifest: { name: string; displayName: string; icon: string; permissions: string[] };
   enabled: boolean;
@@ -58,20 +59,28 @@ let mockPlugins: Array<{
 let mockActivePluginName: string | null = null;
 
 vi.mock("@/stores/plugins", () => ({
+  getOrderedEnabledPlugins: (state: { plugins: typeof mockPlugins }) =>
+    state.plugins.filter((p) => p.enabled),
   usePluginsStore: Object.assign(
     (selector?: (s: unknown) => unknown) => {
       const state = {
         plugins: mockPlugins,
+        pluginOrder: mockPlugins.map((p) => p.manifest.name),
         activePluginName: mockActivePluginName,
+        pluginBadges: {} as Record<string, string>,
         setActivePlugin: mockSetActivePlugin,
+        reorderPlugins: mockReorderPlugins,
       };
       return selector ? selector(state) : state;
     },
     {
       getState: () => ({
         plugins: mockPlugins,
+        pluginOrder: mockPlugins.map((p) => p.manifest.name),
         activePluginName: mockActivePluginName,
+        pluginBadges: {} as Record<string, string>,
         setActivePlugin: mockSetActivePlugin,
+        reorderPlugins: mockReorderPlugins,
       }),
       setState: vi.fn(),
       subscribe: vi.fn(() => () => {}),
