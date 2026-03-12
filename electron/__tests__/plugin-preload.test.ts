@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock electron module before any imports
@@ -48,6 +50,9 @@ describe("plugin-preload", () => {
         }),
         notifications: expect.objectContaining({
           show: expect.any(Function),
+        }),
+        sidebar: expect.objectContaining({
+          setBadge: expect.any(Function),
         }),
         on: expect.any(Function),
       })
@@ -202,6 +207,62 @@ describe("plugin-preload", () => {
 
     // Callback should NOT have been called after unsubscription
     expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("CTS preload exposes the same API namespaces as the impl", () => {
+    // Both files must expose identical top-level API keys in the forja object.
+    // This catches drift where sidebar (or any other API) is added to the
+    // impl but forgotten in the actual .cts preload loaded by Electron.
+    const implPath = resolve(__dirname, "../plugins/plugin-preload-impl.ts");
+    const ctsPath = resolve(__dirname, "../plugins/plugin-preload.cts");
+
+    const implSource = readFileSync(implPath, "utf-8");
+    const ctsSource = readFileSync(ctsPath, "utf-8");
+
+    // Extract top-level keys from exposeInMainWorld("forja", { ... })
+    // Pattern: word followed by colon and opening brace or arrow/function
+    const extractApiKeys = (source: string): string[] => {
+      // Find the exposeInMainWorld block
+      const match = source.match(/exposeInMainWorld\("forja",\s*\{([\s\S]*)\}\s*\)/);
+      if (!match) return [];
+      const body = match[1];
+      // Extract top-level property names (key: { or key: () =>)
+      const keys: string[] = [];
+      const re = /^\s{2,4}(\w+)\s*:/gm;
+      let m;
+      while ((m = re.exec(body)) !== null) {
+        keys.push(m[1]);
+      }
+      return [...new Set(keys)];
+    };
+
+    const implKeys = extractApiKeys(implSource);
+    const ctsKeys = extractApiKeys(ctsSource);
+
+    expect(implKeys.length).toBeGreaterThan(0);
+    expect(ctsKeys).toEqual(expect.arrayContaining(implKeys));
+    expect(implKeys).toEqual(expect.arrayContaining(ctsKeys));
+  });
+
+  it("sends sidebar.setBadge request via sendToHost", async () => {
+    const { contextBridge } = await import("electron");
+    await import("../plugins/plugin-preload-impl.js");
+
+    const exposedApi = vi.mocked(contextBridge.exposeInMainWorld).mock
+      .calls[0][1] as {
+      sidebar: { setBadge: (text: string) => Promise<unknown> };
+    };
+
+    void exposedApi.sidebar.setBadge("12:30");
+
+    expect(mockSendToHost).toHaveBeenCalledWith(
+      "plugin:request",
+      expect.objectContaining({
+        id: expect.any(Number),
+        method: "sidebar.setBadge",
+        args: { text: "12:30" },
+      })
+    );
   });
 
   it("ignores plugin:response with unknown request id", async () => {
