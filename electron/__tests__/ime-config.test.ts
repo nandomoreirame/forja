@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { resolveImeConfig } from "../ime-config.js";
+import { resolveImeConfig, remapDeadKeyResult } from "../ime-config.js";
 
 describe("resolveImeConfig", () => {
   test("does not return wayland IME switch (avoids double dead-key input)", () => {
@@ -110,5 +110,25 @@ describe("resolveImeConfig", () => {
 
     expect(result.composeContent).toBeDefined();
     expect(result.composeContent).toContain("ccedilla");
+  });
+});
+
+describe("remapDeadKeyResult", () => {
+  test("remaps ć to ç (c-acute to c-cedilla)", () => {
+    expect(remapDeadKeyResult("ć")).toBe("ç");
+  });
+
+  test("remaps Ć to Ç (uppercase)", () => {
+    expect(remapDeadKeyResult("Ć")).toBe("Ç");
+  });
+
+  test("returns undefined for non-remapped characters", () => {
+    expect(remapDeadKeyResult("a")).toBeUndefined();
+    expect(remapDeadKeyResult("é")).toBeUndefined();
+    expect(remapDeadKeyResult("ç")).toBeUndefined();
+  });
+
+  test("returns undefined for empty string", () => {
+    expect(remapDeadKeyResult("")).toBeUndefined();
   });
 });

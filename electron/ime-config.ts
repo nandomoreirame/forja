@@ -44,3 +44,16 @@ export function resolveImeConfig(
 
   return config;
 }
+
+// Chromium's Wayland/Ozone backend composes dead_acute+c as ć (c-acute,
+// en_US default) and ignores ~/.XCompose and XCOMPOSEFILE. This function
+// provides application-level remapping so the renderer can intercept the
+// wrong character and replace it with the correct one.
+const DEAD_KEY_REMAP: Record<string, string> = {
+  "\u0107": "\u00E7", // ć → ç
+  "\u0106": "\u00C7", // Ć → Ç
+};
+
+export function remapDeadKeyResult(key: string): string | undefined {
+  return DEAD_KEY_REMAP[key];
+}
