@@ -8,6 +8,24 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.5.7] - 2026-03-12
+
+### Added
+- Add forja-plugin-tasks example plugin.
+- Add project events, permissions check, and bridge improvements to PluginHost.
+- Add tab drag-and-drop reorder with dnd-kit.
+- Add pomodoro timer as example plugin and scaffolding template.
+- Add PluginHost webview, permission dialog, and UI integration.
+- Add frontend plugin store, types, and theme utility.
+- Add IPC handlers, webview preload, and config schema.
+- Add permission system and secure bridge API.
+- Add plugin types, manifest validation, and directory loader.
+
+### Fixed
+- Make plugin-preload self-contained and fix preload path.
+- Prevent PTY kill on tab reorder.
+---
+
 ## [1.5.6] - 2026-03-12
 
 ### Added

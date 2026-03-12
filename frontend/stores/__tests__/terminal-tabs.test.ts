@@ -404,6 +404,60 @@ describe("useTerminalTabsStore", () => {
     });
   });
 
+  describe("reorderTabs", () => {
+    it("swaps two tabs by their IDs", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+      const id3 = createTab("/c", "gemini");
+
+      useTerminalTabsStore.getState().reorderTabs(id1, id3);
+
+      const ids = useTerminalTabsStore.getState().tabs.map((t) => t.id);
+      expect(ids).toEqual([id2, id3, id1]);
+    });
+
+    it("no-op when activeId equals overId", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+
+      useTerminalTabsStore.getState().reorderTabs(id1, id1);
+
+      const ids = useTerminalTabsStore.getState().tabs.map((t) => t.id);
+      expect(ids).toEqual([id1, id2]);
+    });
+
+    it("no-op when activeId is unknown", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+
+      useTerminalTabsStore.getState().reorderTabs("unknown", id2);
+
+      const ids = useTerminalTabsStore.getState().tabs.map((t) => t.id);
+      expect(ids).toEqual([id1, id2]);
+    });
+
+    it("no-op when overId is unknown", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+
+      useTerminalTabsStore.getState().reorderTabs(id1, "unknown");
+
+      const ids = useTerminalTabsStore.getState().tabs.map((t) => t.id);
+      expect(ids).toEqual([id1, id2]);
+    });
+
+    it("moves last tab to first position", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+      const id3 = createTab("/c", "gemini");
+
+      useTerminalTabsStore.getState().reorderTabs(id3, id1);
+
+      const ids = useTerminalTabsStore.getState().tabs.map((t) => t.id);
+      expect(ids).toEqual([id3, id1, id2]);
+    });
+  });
+
   describe("terminal fullscreen", () => {
     it("starts with isTerminalFullscreen as false", () => {
       const state = useTerminalTabsStore.getState();

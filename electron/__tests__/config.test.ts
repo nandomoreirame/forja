@@ -640,4 +640,86 @@ describe("config module", () => {
       expect(prefs.sidebarSize).toBe(20); // other defaults preserved
     });
   });
+
+  // ─── Plugin Config tests ───────────────────────────────────────────────────
+
+  describe("plugin config", () => {
+    it("returns empty array for plugin permissions by default", async () => {
+      vi.resetModules();
+      const { getPluginPermissions } = await import("../config.js");
+      expect(getPluginPermissions()).toEqual([]);
+    });
+
+    it("saves and retrieves plugin permission grants", async () => {
+      vi.resetModules();
+      const { getPluginPermissions, setPluginPermission } = await import("../config.js");
+      const grant = {
+        pluginName: "test-plugin",
+        grantedPermissions: ["project.active"] as const,
+        deniedPermissions: [] as const,
+        grantedAt: new Date().toISOString(),
+      };
+      setPluginPermission(grant);
+      const perms = getPluginPermissions();
+      expect(perms).toContainEqual(grant);
+    });
+
+    it("updates existing plugin permission grant", async () => {
+      vi.resetModules();
+      const { getPluginPermissions, setPluginPermission } = await import("../config.js");
+      const grant1 = {
+        pluginName: "test-plugin",
+        grantedPermissions: ["project.active"] as const,
+        deniedPermissions: [] as const,
+        grantedAt: new Date().toISOString(),
+      };
+      setPluginPermission(grant1);
+      const grant2 = {
+        pluginName: "test-plugin",
+        grantedPermissions: ["project.active", "git.status"] as const,
+        deniedPermissions: [] as const,
+        grantedAt: new Date().toISOString(),
+      };
+      setPluginPermission(grant2);
+      const perms = getPluginPermissions();
+      expect(perms.filter((p) => p.pluginName === "test-plugin")).toHaveLength(1);
+      expect(perms.find((p) => p.pluginName === "test-plugin")?.grantedPermissions).toContain("git.status");
+    });
+
+    it("removes plugin permission", async () => {
+      vi.resetModules();
+      const { getPluginPermissions, setPluginPermission, removePluginPermission } = await import("../config.js");
+      setPluginPermission({
+        pluginName: "test-plugin",
+        grantedPermissions: ["project.active"] as const,
+        deniedPermissions: [] as const,
+        grantedAt: new Date().toISOString(),
+      });
+      removePluginPermission("test-plugin");
+      expect(getPluginPermissions()).toEqual([]);
+    });
+
+    it("returns empty array for enabled plugins by default", async () => {
+      vi.resetModules();
+      const { getEnabledPlugins } = await import("../config.js");
+      expect(getEnabledPlugins()).toEqual([]);
+    });
+
+    it("enables and disables plugins", async () => {
+      vi.resetModules();
+      const { getEnabledPlugins, setPluginEnabled } = await import("../config.js");
+      setPluginEnabled("test-plugin", true);
+      expect(getEnabledPlugins()).toContain("test-plugin");
+      setPluginEnabled("test-plugin", false);
+      expect(getEnabledPlugins()).not.toContain("test-plugin");
+    });
+
+    it("does not duplicate enabled plugin names", async () => {
+      vi.resetModules();
+      const { getEnabledPlugins, setPluginEnabled } = await import("../config.js");
+      setPluginEnabled("test-plugin", true);
+      setPluginEnabled("test-plugin", true);
+      expect(getEnabledPlugins().filter((n) => n === "test-plugin")).toHaveLength(1);
+    });
+  });
 });

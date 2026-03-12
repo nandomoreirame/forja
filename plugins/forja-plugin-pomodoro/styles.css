@@ -1,0 +1,198 @@
+/* =============================================
+ * Forja Plugin: Pomodoro Timer
+ *
+ * MANDATORY: Plugins MUST use --forja-* CSS variables for all colors.
+ * Forja injects these variables automatically via the PluginHost.
+ * Do NOT define your own color variables or hardcode color values.
+ *
+ * Available variables:
+ *   --forja-bg-base, --forja-bg-mantle, --forja-bg-surface,
+ *   --forja-bg-overlay, --forja-bg-highlight
+ *   --forja-text, --forja-text-sub, --forja-text-muted
+ *   --forja-accent, --forja-accent-hover, --forja-accent-subtle
+ *   --forja-success, --forja-warning, --forja-error, --forja-info
+ *   --forja-red, --forja-green, --forja-yellow, --forja-blue,
+ *   --forja-magenta, --forja-cyan
+ * ============================================= */
+
+:root {
+  --radius: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: "Geist Sans", "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--forja-bg-base);
+  color: var(--forja-text);
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.plugin-header {
+  margin-bottom: 20px;
+}
+
+.plugin-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--forja-text);
+  margin-bottom: 2px;
+}
+
+.plugin-subtitle {
+  font-size: 11px;
+  color: var(--forja-text-muted);
+}
+
+.timer-container {
+  text-align: center;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--forja-bg-overlay);
+  margin-bottom: 16px;
+}
+
+.timer-display {
+  font-size: 48px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--forja-text);
+  letter-spacing: -1px;
+}
+
+.timer-display.running { color: var(--forja-success); }
+.timer-display.paused { color: var(--forja-warning); }
+.timer-display.break { color: var(--forja-accent); }
+
+.timer-label {
+  font-size: 12px;
+  color: var(--forja-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+.timer-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.btn {
+  padding: 6px 16px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--forja-accent);
+  color: var(--forja-bg-base);
+  border-color: var(--forja-accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--forja-accent-hover);
+}
+
+.btn-secondary {
+  background: var(--forja-bg-surface);
+  color: var(--forja-text);
+  border-color: var(--forja-bg-overlay);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--forja-bg-overlay);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--forja-text-sub);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--forja-bg-surface);
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--forja-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.settings-section {
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--forja-bg-overlay);
+  margin-bottom: 16px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.setting-row label {
+  font-size: 12px;
+  color: var(--forja-text-sub);
+}
+
+.input-field {
+  width: 60px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--forja-bg-overlay);
+  background: var(--forja-bg-surface);
+  color: var(--forja-text);
+  font-size: 12px;
+  text-align: center;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--forja-accent);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 12px;
+  background: var(--forja-bg-surface);
+  border-radius: var(--radius);
+}
+
+.stat-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--forja-accent);
+}
+
+.stat-label {
+  display: block;
+  font-size: 10px;
+  color: var(--forja-text-muted);
+  text-transform: uppercase;
+  margin-top: 2px;
+}

@@ -227,6 +227,37 @@ export async function getFileContentAtHead(
   }
 }
 
+export interface GitLogEntry {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
+export async function getGitLog(
+  projectPath: string,
+  opts?: { limit?: number }
+): Promise<GitLogEntry[]> {
+  const limit = opts?.limit ?? 20;
+  try {
+    const { stdout } = await execFileAsync(
+      "git",
+      ["log", `--max-count=${limit}`, "--format=%H|%s|%an|%aI"],
+      { cwd: projectPath }
+    );
+    if (!stdout.trim()) return [];
+    return stdout
+      .trim()
+      .split("\n")
+      .map((line) => {
+        const [hash, message, author, date] = line.split("|");
+        return { hash, message, author, date };
+      });
+  } catch {
+    return [];
+  }
+}
+
 export async function getGitFileDiff(
   projectPath: string,
   relativePath: string,

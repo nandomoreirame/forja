@@ -67,6 +67,16 @@ vi.mock("@xterm/addon-webgl", () => ({
 
 vi.mock("@xterm/xterm/css/xterm.css", () => ({}));
 
+// Mock terminal-tabs store for hasTab guard
+const mockHasTab = vi.fn().mockReturnValue(true);
+vi.mock("@/stores/terminal-tabs", () => ({
+  useTerminalTabsStore: Object.assign(vi.fn(), {
+    getState: () => ({
+      hasTab: mockHasTab,
+    }),
+  }),
+}));
+
 const mockRouteLinkClick = vi.fn();
 vi.mock("@/lib/link-router", () => ({
   routeLinkClick: (...args: unknown[]) => mockRouteLinkClick(...args),
@@ -107,6 +117,7 @@ describe("TerminalSession", () => {
     mockResize.mockClear();
     mockClose.mockClear();
     mockRouteLinkClick.mockClear();
+    mockHasTab.mockReset().mockReturnValue(true);
     capturedWebLinksHandler = undefined;
     capturedKeyHandler = undefined;
     mockGetSelection.mockReset().mockReturnValue("");
@@ -140,12 +151,25 @@ describe("TerminalSession", () => {
     expect(mockOpen).toHaveBeenCalled();
   });
 
-  it("disposes terminal and calls close on unmount", () => {
+  it("disposes terminal and calls close on unmount when tab is removed", () => {
     const { unmount } = render(
       <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
     );
+    // Tab no longer exists in store (intentional close)
+    mockHasTab.mockReturnValue(false);
     unmount();
     expect(mockClose).toHaveBeenCalled();
+    expect(mockDispose).toHaveBeenCalled();
+  });
+
+  it("does NOT call close on unmount when tab still exists in store (reorder/remount)", () => {
+    const { unmount } = render(
+      <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
+    );
+    // Tab still exists (reorder or React remount)
+    mockHasTab.mockReturnValue(true);
+    unmount();
+    expect(mockClose).not.toHaveBeenCalled();
     expect(mockDispose).toHaveBeenCalled();
   });
 

@@ -37,6 +37,8 @@ interface TerminalTabsState {
   getTabDisplayNames: () => Record<string, string>;
   /** Returns tabs belonging to a specific project path. */
   getTabsForProject: (projectPath: string) => TerminalTab[];
+  /** Reorders tabs by moving the tab with activeId to the position of overId. */
+  reorderTabs: (activeId: string, overId: string) => void;
   hasTab: (tabId: string) => boolean;
   /** Saves current activeTabId for the given project path. */
   saveActiveTabForProject: (projectPath: string) => void;
@@ -138,6 +140,17 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
 
   getTabsForProject: (projectPath: string) => {
     return get().tabs.filter((t) => t.path === projectPath);
+  },
+
+  reorderTabs: (activeId: string, overId: string) => {
+    const { tabs } = get();
+    const oldIndex = tabs.findIndex((t) => t.id === activeId);
+    const newIndex = tabs.findIndex((t) => t.id === overId);
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
+    const newTabs = [...tabs];
+    const [moved] = newTabs.splice(oldIndex, 1);
+    newTabs.splice(newIndex, 0, moved);
+    set({ tabs: newTabs });
   },
 
   hasTab: (tabId: string) => {

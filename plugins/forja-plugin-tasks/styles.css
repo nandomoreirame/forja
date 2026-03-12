@@ -1,0 +1,357 @@
+/* =============================================
+ * Forja Plugin: Tasks
+ *
+ * MANDATORY: Uses --forja-* CSS variables for all colors.
+ * Forja injects these variables automatically via the PluginHost.
+ * ============================================= */
+
+:root {
+  --radius: 6px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* Custom scrollbar matching the main app */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--forja-bg-overlay);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--forja-text-muted);
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  font-family: "Geist Sans", "Inter", system-ui, -apple-system, sans-serif;
+  background: var(--forja-bg-base);
+  color: var(--forja-text);
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  height: 100%;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* --- Header --- */
+
+.plugin-header {
+  margin-bottom: 16px;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.plugin-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--forja-text);
+  margin-bottom: 2px;
+}
+
+.plugin-subtitle {
+  font-size: 11px;
+  color: var(--forja-text-muted);
+}
+
+.stats-badge {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--forja-text-muted);
+  background: var(--forja-bg-surface);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.stats-badge.visible {
+  display: flex;
+}
+
+.progress-bar {
+  width: 48px;
+  height: 4px;
+  background: var(--forja-bg-overlay);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--forja-accent);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+  width: 0%;
+}
+
+/* --- Empty States --- */
+
+.empty-state {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 8px;
+  opacity: 0.6;
+}
+
+.empty-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--forja-text-sub);
+  margin-bottom: 4px;
+}
+
+.empty-description {
+  font-size: 11px;
+  color: var(--forja-text-muted);
+}
+
+/* --- Task List --- */
+
+.task-list {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.section {
+  margin-bottom: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--forja-bg-overlay);
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--forja-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.section-count {
+  font-size: 10px;
+  color: var(--forja-text-muted);
+}
+
+/* --- Task Item --- */
+
+.task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  transition: background 0.1s ease;
+}
+
+.task-item:hover {
+  background: var(--forja-bg-surface);
+}
+
+.task-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 1.5px solid var(--forja-bg-overlay);
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  margin-top: 2px;
+  transition: all 0.15s ease;
+}
+
+.task-checkbox:checked {
+  background: var(--forja-accent);
+  border-color: var(--forja-accent);
+}
+
+.task-checkbox:checked::after {
+  content: "";
+  display: block;
+  width: 4px;
+  height: 8px;
+  border: solid var(--forja-bg-base);
+  border-width: 0 2px 2px 0;
+  margin: 1px auto 0;
+  transform: rotate(45deg);
+}
+
+.task-checkbox:hover {
+  border-color: var(--forja-accent-subtle);
+}
+
+.task-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.task-title {
+  font-size: 13px;
+  color: var(--forja-text);
+  word-break: break-word;
+}
+
+.task-item.completed .task-title {
+  text-decoration: line-through;
+  color: var(--forja-text-muted);
+}
+
+.task-description {
+  font-size: 11px;
+  color: var(--forja-text-muted);
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+.task-item.completed .task-description {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.task-delete {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--forja-text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: all 0.1s ease;
+}
+
+.task-item:hover .task-delete {
+  opacity: 1;
+}
+
+.task-delete:hover {
+  color: var(--forja-error);
+  background: var(--forja-bg-surface);
+}
+
+/* --- Add Form --- */
+
+.add-form {
+  border-top: 1px solid var(--forja-bg-overlay);
+  padding-top: 12px;
+  margin-top: 8px;
+}
+
+.form-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.input-field {
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  border: 1px solid var(--forja-bg-overlay);
+  background: var(--forja-bg-surface);
+  color: var(--forja-text);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input-field:focus {
+  border-color: var(--forja-accent);
+}
+
+.input-field::placeholder {
+  color: var(--forja-text-muted);
+}
+
+.input-title {
+  flex: 1;
+}
+
+.input-description {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.input-section {
+  flex: 1;
+}
+
+/* --- Buttons --- */
+
+.btn {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--forja-accent);
+  color: var(--forja-bg-base);
+  border-color: var(--forja-accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--forja-accent-hover);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--forja-text-sub);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--forja-bg-surface);
+}
+
+.btn-small {
+  padding: 4px 10px;
+  font-size: 11px;
+}

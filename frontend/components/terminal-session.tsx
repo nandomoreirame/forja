@@ -10,6 +10,7 @@ import "@xterm/xterm/css/xterm.css";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useThemeStore } from "@/stores/theme";
 import { buildTerminalTheme } from "@/themes/apply";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { TerminalContextMenu } from "./terminal-context-menu";
 
@@ -195,7 +196,12 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       clearTimeout(resizeTimeout);
       resizeObserver.disconnect();
       dataDisposable.dispose();
-      close();
+      // Only kill the PTY if the tab was actually removed from the store.
+      // During reorder or React remount the tab still exists, so we must
+      // not close the underlying process.
+      if (!useTerminalTabsStore.getState().hasTab(tabId)) {
+        close();
+      }
       terminal.dispose();
     };
   }, [tabId]); // eslint-disable-line react-hooks/exhaustive-deps
