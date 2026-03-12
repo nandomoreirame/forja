@@ -981,7 +981,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                     <ResizablePanel
                       panelRef={rightPanelRef}
                       defaultSize={isRightPanelOpen ? "400px" : "0%"}
-                      minSize="10%"
+                      minSize="300px"
                       maxSize="40%"
                       collapsible
                       collapsedSize="0%"
