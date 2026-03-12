@@ -110,6 +110,21 @@ export function PluginHost({ pluginName }: PluginHostProps) {
         return;
       }
 
+      // Intercept sidebar.setBadge — frontend-only, no backend roundtrip
+      if (data.method === "sidebar.setBadge") {
+        const text = typeof data.args.text === "string" ? data.args.text : "";
+        usePluginsStore.getState().setPluginBadge(pluginName, text);
+        const wv = webviewRef.current as unknown as {
+          send: (channel: string, data: unknown) => void;
+        } | null;
+        wv?.send("plugin:response", {
+          id: data.id,
+          success: true,
+          result: { updated: true },
+        });
+        return;
+      }
+
       // Intercept theme.getCurrent to return full theme payload from frontend store
       if (data.method === "theme.getCurrent") {
         const theme = useThemeStore.getState().getActiveTheme();
