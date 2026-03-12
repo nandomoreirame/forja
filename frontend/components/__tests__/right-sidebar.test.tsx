@@ -8,6 +8,7 @@ vi.mock("@/lib/ipc", () => ({
 }));
 
 const mockTogglePanel = vi.fn();
+const mockSetActiveView = vi.fn();
 let mockIsOpen = false;
 
 vi.mock("@/stores/right-panel", () => ({
@@ -16,6 +17,7 @@ vi.mock("@/stores/right-panel", () => ({
       const state = {
         isOpen: mockIsOpen,
         togglePanel: mockTogglePanel,
+        setActiveView: mockSetActiveView,
       };
       return selector ? selector(state) : state;
     },
@@ -23,6 +25,7 @@ vi.mock("@/stores/right-panel", () => ({
       getState: () => ({
         isOpen: mockIsOpen,
         togglePanel: mockTogglePanel,
+        setActiveView: mockSetActiveView,
       }),
       setState: vi.fn(),
       subscribe: vi.fn(() => () => {}),
@@ -45,20 +48,48 @@ vi.mock("@/stores/app-dialogs", () => ({
   ),
 }));
 
+const mockSetActivePlugin = vi.fn();
+let mockPlugins: Array<{
+  manifest: { name: string; displayName: string; icon: string; permissions: string[] };
+  enabled: boolean;
+  path: string;
+  entryUrl: string;
+}> = [];
+let mockActivePluginName: string | null = null;
+
+vi.mock("@/stores/plugins", () => ({
+  usePluginsStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = {
+        plugins: mockPlugins,
+        activePluginName: mockActivePluginName,
+        setActivePlugin: mockSetActivePlugin,
+      };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({
+        plugins: mockPlugins,
+        activePluginName: mockActivePluginName,
+        setActivePlugin: mockSetActivePlugin,
+      }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    }
+  ),
+}));
+
 describe("RightSidebar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsOpen = false;
+    mockPlugins = [];
+    mockActivePluginName = null;
   });
 
   it("renders the sidebar container", () => {
     render(<RightSidebar />);
     expect(screen.getByTestId("right-sidebar")).toBeTruthy();
-  });
-
-  it("renders panel toggle button", () => {
-    render(<RightSidebar />);
-    expect(screen.getByLabelText("Toggle panel")).toBeTruthy();
   });
 
   it("renders settings button", () => {
@@ -71,29 +102,99 @@ describe("RightSidebar", () => {
     expect(screen.getByLabelText("Help")).toBeTruthy();
   });
 
-  it("calls togglePanel when panel toggle is clicked", () => {
-    render(<RightSidebar />);
-    fireEvent.click(screen.getByLabelText("Toggle panel"));
-    expect(mockTogglePanel).toHaveBeenCalledOnce();
-  });
-
   it("opens settings dialog when settings button is clicked", () => {
     render(<RightSidebar />);
     fireEvent.click(screen.getByLabelText("Settings"));
     expect(mockSetSettingsOpen).toHaveBeenCalledWith(true);
   });
 
-  it("shows close icon when panel is open", () => {
-    mockIsOpen = true;
-    render(<RightSidebar />);
-    const btn = screen.getByLabelText("Toggle panel");
-    expect(btn.getAttribute("aria-pressed")).toBe("true");
+  it("renders plugin icon buttons for enabled plugins", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "test-plugin", displayName: "Test Plugin", icon: "Sparkles", permissions: [] },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar hasProject />);
+    expect(screen.getByLabelText("Test Plugin")).toBeTruthy();
   });
 
-  it("shows open icon when panel is closed", () => {
-    mockIsOpen = false;
+  it("does not render plugin icons when no project is active", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "test-plugin", displayName: "Test Plugin", icon: "Sparkles", permissions: [] },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
     render(<RightSidebar />);
-    const btn = screen.getByLabelText("Toggle panel");
-    expect(btn.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.queryByLabelText("Test Plugin")).toBeNull();
+  });
+
+  it("does not render disabled plugins", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "disabled-plugin", displayName: "Disabled", icon: "Sparkles", permissions: [] },
+        enabled: false,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar hasProject />);
+    expect(screen.queryByLabelText("Disabled")).toBeNull();
+  });
+
+  it("highlights active plugin icon", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "my-plugin", displayName: "My Plugin", icon: "Sparkles", permissions: [] },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    mockActivePluginName = "my-plugin";
+    render(<RightSidebar hasProject />);
+    const btn = screen.getByLabelText("My Plugin");
+    expect(btn.className).toContain("bg-ctp-surface0");
+    expect(btn.className).toContain("text-ctp-mauve");
+  });
+
+  it("activates plugin and opens panel when plugin icon is clicked", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "click-plugin", displayName: "Click Plugin", icon: "Sparkles", permissions: [] },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    mockActivePluginName = null;
+    render(<RightSidebar hasProject />);
+    fireEvent.click(screen.getByLabelText("Click Plugin"));
+    expect(mockSetActivePlugin).toHaveBeenCalledWith("click-plugin");
+    expect(mockSetActiveView).toHaveBeenCalledWith("plugin");
+    expect(mockTogglePanel).toHaveBeenCalledOnce();
+  });
+
+  it("deactivates plugin and closes panel when active plugin icon is clicked", () => {
+    mockIsOpen = true;
+    mockPlugins = [
+      {
+        manifest: { name: "active-plugin", displayName: "Active Plugin", icon: "Sparkles", permissions: [] },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    mockActivePluginName = "active-plugin";
+    render(<RightSidebar hasProject />);
+    fireEvent.click(screen.getByLabelText("Active Plugin"));
+    expect(mockSetActivePlugin).toHaveBeenCalledWith(null);
+    expect(mockSetActiveView).toHaveBeenCalledWith("empty");
+    expect(mockTogglePanel).toHaveBeenCalledOnce();
   });
 });

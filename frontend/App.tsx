@@ -3,7 +3,7 @@ import { invoke, listen } from "@/lib/ipc";
 import {
   AlertCircle,
   Anvil,
-  PanelRight,
+  Loader2,
   Plus,
   TerminalSquare,
 } from "lucide-react";
@@ -66,6 +66,8 @@ import type { ThemeDefinition } from "@/themes";
 import { usePerformanceStore } from "./stores/performance";
 import { useProjectsStore } from "./stores/projects";
 import { useAgentChatStore } from "./stores/agent-chat";
+import { usePluginsStore } from "./stores/plugins";
+import { PluginPermissionDialog } from "./components/plugin-permission-dialog";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
 import { useBrowserAutoOpen } from "./hooks/use-browser-auto-open";
 import {
@@ -134,6 +136,11 @@ const ChatPanel = lazy(() =>
 const ClaudeNotFoundDialog = lazy(() =>
   import("./components/claude-not-found-dialog").then((m) => ({
     default: m.ClaudeNotFoundDialog,
+  }))
+);
+const PluginHost = lazy(() =>
+  import("./components/plugin-host").then((m) => ({
+    default: m.PluginHost,
   }))
 );
 
@@ -270,6 +277,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   } =
     usePanelPreferences();
   const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
+  const activePluginName = usePluginsStore((s) => s.activePluginName);
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
   const effectivePanelSizes = getPanelSizesForLayout(hasProject, panelSizes);
 
@@ -318,6 +326,10 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         // Non-fatal: disk state load failure
       });
   }, [sessionRestoreDone, currentPath]);
+
+  useEffect(() => {
+    void usePluginsStore.getState().loadPlugins();
+  }, []);
 
   const splitPrefsSyncedRef = useRef(false);
   useEffect(() => {
@@ -407,7 +419,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     if (!panel) return;
     if (isRightPanelOpen) {
       if (panel.isCollapsed()) panel.expand();
-      panel.resize("350px");
+      panel.resize(400);
     } else if (!panel.isCollapsed()) {
       panel.collapse();
     }
@@ -469,6 +481,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         const tabPath = tab.path || effectiveProjectPath || snapshot.activeProjectPath || "";
         if (!tabPath) continue;
         tabsStore.addTab(id, tabPath, tab.sessionType);
+        if (tab.customName) {
+          tabsStore.renameTab(id, tab.customName);
+        }
         restoredTabIds.push(id);
       }
 
@@ -796,9 +811,23 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         tabs: tabs.map((tab) => ({
           path: tab.path,
           sessionType: tab.sessionType,
+          ...(tab.customName ? { customName: tab.customName } : {}),
         })),
       },
     });
+
+    // Also persist tab data (session types + custom names) to config.json per project
+    if (currentPath) {
+      invoke("save_project_ui_state", {
+        path: currentPath,
+        state: {
+          tabs: tabs.map((tab) => ({
+            sessionType: tab.sessionType,
+            ...(tab.customName ? { customName: tab.customName } : {}),
+          })),
+        },
+      }).catch((err: unknown) => console.warn("[App] Failed to save project tab state:", err));
+    }
   }, [
     sessionRestoreDone,
     currentPath,
@@ -931,6 +960,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                               onCloseTab={closeTab}
                               onSessionTypeSelect={handleNewSessionType}
                               onRenameTab={(id, name) => useTerminalTabsStore.getState().renameTab(id, name)}
+                              onReorderTab={(activeId, overId) => useTerminalTabsStore.getState().reorderTabs(activeId, overId)}
                             />
                             {projectTabs.length === 0 && (
                               <NoSessionsState
@@ -952,7 +982,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                       panelRef={rightPanelRef}
                       defaultSize={isRightPanelOpen ? "400px" : "0%"}
                       minSize="10%"
-                      maxSize="400px"
+                      maxSize="40%"
                       collapsible
                       collapsedSize="0%"
                       order={3}
@@ -962,15 +992,17 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                         }
                       }}
                     >
-                      <div className="flex h-full flex-col items-center justify-center gap-3 border-l border-ctp-surface0 bg-ctp-base px-4">
-                        <PanelRight className="h-8 w-8 text-ctp-overlay0" strokeWidth={1.5} />
-                        <p className="text-center text-sm text-ctp-overlay1">
-                          No content yet
-                        </p>
-                        <p className="text-center text-xs text-ctp-overlay0">
-                          This panel will host extensions and tools in future updates.
-                        </p>
-                      </div>
+                      {activePluginName && (
+                        <Suspense
+                          fallback={
+                            <div className="flex h-full items-center justify-center border-l border-ctp-surface0 bg-ctp-base">
+                              <Loader2 className="h-5 w-5 animate-spin text-ctp-overlay0" />
+                            </div>
+                          }
+                        >
+                          <PluginHost pluginName={activePluginName} />
+                        </Suspense>
+                      )}
                     </ResizablePanel>
                   </ResizablePanelGroup>
                 </div>
@@ -981,7 +1013,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               <EmptyState />
             )}
             </div>
-            <RightSidebar />
+            <RightSidebar hasProject={hasProject} />
           </div>
         )}
         <Suspense fallback={null}>
@@ -995,6 +1027,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
             />
           )}
         </Suspense>
+        <PluginPermissionDialog />
       </div>
     </AppErrorBoundary>
   );
