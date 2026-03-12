@@ -1,6 +1,7 @@
 import Store from "electron-store";
 import * as path from "path";
 import * as os from "os";
+import type { PluginPermissionGrant } from "./plugins/types.js";
 
 const MAX_RECENT = 10;
 
@@ -13,6 +14,10 @@ export interface ProjectUiState {
   browserUrl?: string;
   sidebarSize?: number;
   previewSize?: number;
+  tabs?: Array<{
+    sessionType: string;
+    customName?: string;
+  }>;
 }
 
 interface RecentProject {
@@ -45,6 +50,8 @@ interface ConfigSchema {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
   uiPreferences: UiPreferences;
+  pluginPermissions: PluginPermissionGrant[];
+  enabledPlugins: string[];
 }
 
 const DEFAULT_UI_PREFERENCES: UiPreferences = {
@@ -71,6 +78,8 @@ const store = new Store<ConfigSchema>({
     workspaces: [],
     activeWorkspaceId: null,
     uiPreferences: DEFAULT_UI_PREFERENCES,
+    pluginPermissions: [],
+    enabledPlugins: [],
   },
 }) as TypedConfigStore;
 
@@ -288,4 +297,34 @@ export function getUiPreferences(): UiPreferences {
 export function saveUiPreferences(prefs: Partial<UiPreferences>): void {
   const current = getUiPreferences();
   store.set("uiPreferences", { ...current, ...prefs });
+}
+
+// ─── Plugin Config ──────────────────────────────────────────────────────────
+
+export function getPluginPermissions(): PluginPermissionGrant[] {
+  return store.get("pluginPermissions");
+}
+
+export function setPluginPermission(grant: PluginPermissionGrant): void {
+  const existing = store.get("pluginPermissions");
+  const filtered = existing.filter((p) => p.pluginName !== grant.pluginName);
+  store.set("pluginPermissions", [...filtered, grant]);
+}
+
+export function removePluginPermission(pluginName: string): void {
+  const existing = store.get("pluginPermissions");
+  store.set("pluginPermissions", existing.filter((p) => p.pluginName !== pluginName));
+}
+
+export function getEnabledPlugins(): string[] {
+  return store.get("enabledPlugins");
+}
+
+export function setPluginEnabled(name: string, enabled: boolean): void {
+  const existing = store.get("enabledPlugins");
+  if (enabled && !existing.includes(name)) {
+    store.set("enabledPlugins", [...existing, name]);
+  } else if (!enabled) {
+    store.set("enabledPlugins", existing.filter((n) => n !== name));
+  }
 }
