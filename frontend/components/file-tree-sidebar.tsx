@@ -10,6 +10,9 @@ import { ErrorBoundary } from "./error-boundary";
 import { FileTreeNode } from "./file-tree-node";
 import { GitChangesPane } from "./git-changes-pane";
 
+/** Maximum pixel width for the file tree sidebar resizable panel. */
+export const SIDEBAR_MAX_WIDTH = "500px";
+
 interface FlatNode {
   node: FileNode;
   depth: number;

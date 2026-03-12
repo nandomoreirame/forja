@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { FileTreeSidebar } from "../file-tree-sidebar";
+import { FileTreeSidebar, SIDEBAR_MAX_WIDTH } from "../file-tree-sidebar";
 
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
@@ -11,6 +11,10 @@ vi.mock("@/lib/ipc", () => ({
 describe("FileTreeSidebar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("exports SIDEBAR_MAX_WIDTH as '500px' to limit the resizable panel", () => {
+    expect(SIDEBAR_MAX_WIDTH).toBe("500px");
   });
 
   it("renders nothing when closed", async () => {
