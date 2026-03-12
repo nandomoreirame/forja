@@ -22,6 +22,8 @@ vi.mock("../config.js", () => ({
   setPluginPermission: vi.fn(),
   getEnabledPlugins: vi.fn(() => []),
   setPluginEnabled: vi.fn(),
+  getPluginOrder: vi.fn(() => []),
+  setPluginOrder: vi.fn(),
 }));
 
 describe("createPluginHandlers", () => {
@@ -78,5 +80,32 @@ describe("createPluginHandlers", () => {
     const result = await preloadHandler!({}, undefined);
     expect(typeof result).toBe("string");
     expect(result).toContain("plugin-preload");
+  });
+
+  it("registers plugin:get-plugin-order and plugin:set-plugin-order channels", async () => {
+    const { createPluginHandlers } = await import("../plugins/plugin-ipc.js");
+    const handlers = createPluginHandlers();
+    const channels = handlers.map(([ch]) => ch);
+    expect(channels).toContain("plugin:get-plugin-order");
+    expect(channels).toContain("plugin:set-plugin-order");
+  });
+
+  it("plugin:get-plugin-order handler returns persisted order", async () => {
+    const config = await import("../config.js");
+    vi.mocked(config.getPluginOrder).mockReturnValue(["b", "a", "c"]);
+    const { createPluginHandlers } = await import("../plugins/plugin-ipc.js");
+    const handlers = createPluginHandlers();
+    const handler = handlers.find(([ch]) => ch === "plugin:get-plugin-order")?.[1];
+    const result = await handler!({}, undefined);
+    expect(result).toEqual(["b", "a", "c"]);
+  });
+
+  it("plugin:set-plugin-order handler persists order", async () => {
+    const config = await import("../config.js");
+    const { createPluginHandlers } = await import("../plugins/plugin-ipc.js");
+    const handlers = createPluginHandlers();
+    const handler = handlers.find(([ch]) => ch === "plugin:set-plugin-order")?.[1];
+    await handler!({}, { names: ["c", "a", "b"] });
+    expect(config.setPluginOrder).toHaveBeenCalledWith(["c", "a", "b"]);
   });
 });
