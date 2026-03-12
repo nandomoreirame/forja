@@ -7,22 +7,22 @@ vi.mock("@/lib/ipc", () => ({
   listen: vi.fn(() => Promise.resolve(() => {})),
 }));
 
-const mockToggleTerminalPane = vi.fn();
-let mockIsTerminalPaneOpen = true;
+const mockTogglePanel = vi.fn();
+let mockIsOpen = false;
 
-vi.mock("@/stores/terminal-tabs", () => ({
-  useTerminalTabsStore: Object.assign(
+vi.mock("@/stores/right-panel", () => ({
+  useRightPanelStore: Object.assign(
     (selector?: (s: unknown) => unknown) => {
       const state = {
-        isTerminalPaneOpen: mockIsTerminalPaneOpen,
-        toggleTerminalPane: mockToggleTerminalPane,
+        isOpen: mockIsOpen,
+        togglePanel: mockTogglePanel,
       };
       return selector ? selector(state) : state;
     },
     {
       getState: () => ({
-        isTerminalPaneOpen: mockIsTerminalPaneOpen,
-        toggleTerminalPane: mockToggleTerminalPane,
+        isOpen: mockIsOpen,
+        togglePanel: mockTogglePanel,
       }),
       setState: vi.fn(),
       subscribe: vi.fn(() => () => {}),
@@ -48,7 +48,7 @@ vi.mock("@/stores/app-dialogs", () => ({
 describe("RightSidebar", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsTerminalPaneOpen = true;
+    mockIsOpen = false;
   });
 
   it("renders the sidebar container", () => {
@@ -56,9 +56,9 @@ describe("RightSidebar", () => {
     expect(screen.getByTestId("right-sidebar")).toBeTruthy();
   });
 
-  it("renders terminal toggle button", () => {
+  it("renders panel toggle button", () => {
     render(<RightSidebar />);
-    expect(screen.getByLabelText("Toggle terminal")).toBeTruthy();
+    expect(screen.getByLabelText("Toggle panel")).toBeTruthy();
   });
 
   it("renders settings button", () => {
@@ -71,10 +71,10 @@ describe("RightSidebar", () => {
     expect(screen.getByLabelText("Help")).toBeTruthy();
   });
 
-  it("calls toggleTerminalPane when terminal toggle is clicked", () => {
+  it("calls togglePanel when panel toggle is clicked", () => {
     render(<RightSidebar />);
-    fireEvent.click(screen.getByLabelText("Toggle terminal"));
-    expect(mockToggleTerminalPane).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByLabelText("Toggle panel"));
+    expect(mockTogglePanel).toHaveBeenCalledOnce();
   });
 
   it("opens settings dialog when settings button is clicked", () => {
@@ -83,17 +83,17 @@ describe("RightSidebar", () => {
     expect(mockSetSettingsOpen).toHaveBeenCalledWith(true);
   });
 
-  it("shows hide icon when terminal is open", () => {
-    mockIsTerminalPaneOpen = true;
+  it("shows close icon when panel is open", () => {
+    mockIsOpen = true;
     render(<RightSidebar />);
-    const btn = screen.getByLabelText("Toggle terminal");
+    const btn = screen.getByLabelText("Toggle panel");
     expect(btn.getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("shows show icon when terminal is closed", () => {
-    mockIsTerminalPaneOpen = false;
+  it("shows open icon when panel is closed", () => {
+    mockIsOpen = false;
     render(<RightSidebar />);
-    const btn = screen.getByLabelText("Toggle terminal");
+    const btn = screen.getByLabelText("Toggle panel");
     expect(btn.getAttribute("aria-pressed")).toBe("false");
   });
 });

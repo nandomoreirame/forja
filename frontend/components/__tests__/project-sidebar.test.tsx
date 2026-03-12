@@ -119,14 +119,14 @@ describe("ProjectSidebar", () => {
     expect(screen.getByLabelText("Add project")).toBeTruthy();
   });
 
-  it("renders Settings, Chat, and Help placeholder icons", () => {
+  it("renders Chat icon but not Settings or Help (moved to right sidebar)", () => {
     mockUseProjectsStore.mockReturnValue(createMockStore());
 
     render(<ProjectSidebar onOpenProject={vi.fn()} />);
 
-    expect(screen.getByLabelText("Settings")).toBeTruthy();
     expect(screen.getByLabelText("Chat")).toBeTruthy();
-    expect(screen.getByLabelText("Help")).toBeTruthy();
+    expect(screen.queryByLabelText("Settings")).toBeNull();
+    expect(screen.queryByLabelText("Help")).toBeNull();
   });
 
   it("shows context menu on right-click of a project icon", async () => {

@@ -155,7 +155,7 @@ describe("CommandPalette", () => {
     // Panels & View group
     expect(screen.getByText("Toggle Sidebar")).toBeInTheDocument();
     expect(screen.getByText("Toggle File Preview")).toBeInTheDocument();
-    expect(screen.getByText("Toggle Terminal")).toBeInTheDocument();
+    expect(screen.getByText("Toggle Right Panel")).toBeInTheDocument();
     expect(screen.getByText("Toggle Chat Panel")).toBeInTheDocument();
     expect(screen.getByText("Collapse All Folders")).toBeInTheDocument();
 

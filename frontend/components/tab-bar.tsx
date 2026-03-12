@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Maximize, Minimize, PanelRightClose, Pencil, X } from "lucide-react";
+import { Maximize, Minimize, Pencil, X } from "lucide-react";
 import { useSessionStateStore } from "@/stores/session-state";
 import { useTerminalTabsStore, type TerminalTab } from "@/stores/terminal-tabs";
 import { computeTabDisplayNames, type SessionType } from "@/lib/cli-registry";
@@ -192,20 +192,6 @@ export function TabBar({
           </TooltipTrigger>
           <TooltipContent side="bottom">
             <p>{isFullscreen ? "Exit fullscreen" : "Fullscreen"} <kbd className="ml-1 text-[10px] opacity-70">Ctrl+Shift+F</kbd></p>
-          </TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => useTerminalTabsStore.getState().toggleTerminalPane()}
-              className="inline-flex h-9 items-center justify-center rounded-md px-2 text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-              aria-label="Hide terminal"
-            >
-              <PanelRightClose className="h-4 w-4" strokeWidth={1.5} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">
-            <p>Hide terminal <kbd className="ml-1 text-[10px] opacity-70">Ctrl+J</kbd></p>
           </TooltipContent>
         </Tooltip>
       </div>
