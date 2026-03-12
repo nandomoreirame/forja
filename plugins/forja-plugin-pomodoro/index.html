@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pomodoro Timer</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="plugin-header">
+      <h2 class="plugin-title">Pomodoro</h2>
+      <span id="project-name" class="plugin-subtitle">No project</span>
+    </header>
+
+    <main class="timer-container">
+      <div id="timer-display" class="timer-display">25:00</div>
+      <div id="timer-label" class="timer-label">Focus</div>
+
+      <div class="timer-controls">
+        <button id="btn-start" class="btn btn-primary">Start</button>
+        <button id="btn-pause" class="btn btn-secondary" disabled>Pause</button>
+        <button id="btn-reset" class="btn btn-ghost">Reset</button>
+      </div>
+    </main>
+
+    <section class="settings-section">
+      <h3 class="section-title">Settings</h3>
+      <div class="setting-row">
+        <label for="focus-duration">Focus (min)</label>
+        <input type="number" id="focus-duration" value="25" min="1" max="90" class="input-field" />
+      </div>
+      <div class="setting-row">
+        <label for="break-duration">Break (min)</label>
+        <input type="number" id="break-duration" value="5" min="1" max="30" class="input-field" />
+      </div>
+      <div class="setting-row">
+        <label for="long-break-duration">Long break (min)</label>
+        <input type="number" id="long-break-duration" value="15" min="5" max="60" class="input-field" />
+      </div>
+    </section>
+
+    <section class="stats-section">
+      <h3 class="section-title">Today</h3>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span id="completed-count" class="stat-value">0</span>
+          <span class="stat-label">Sessions</span>
+        </div>
+        <div class="stat-item">
+          <span id="total-focus" class="stat-value">0m</span>
+          <span class="stat-label">Focus time</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
