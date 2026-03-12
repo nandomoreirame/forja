@@ -9,11 +9,12 @@ import {
   webContents,
 } from "electron";
 import * as path from "path";
+import * as fs from "fs";
 import * as os from "os";
 import { fileURLToPath, pathToFileURL } from "url";
 import { execFile } from "child_process";
 import { assertPathWithinScope } from "./path-validation.js";
-import { resolveImeConfig } from "./ime-config.js";
+import { resolveImeConfig, remapDeadKeyResult } from "./ime-config.js";
 import { readSettingsModeSync, resolveModeSyncFromHardware, getLiteModeConfig } from "./lite-mode.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -93,10 +94,23 @@ if (resolvedPerfMode !== "lite") {
 
 // IME / dead-key support (cedilla on pt_BR, Wayland IME)
 const imeConfig = resolveImeConfig(process.platform, process.env);
+console.log("[IME] platform=%s LANG=%s composeContent=%s", process.platform, process.env.LANG, !!imeConfig.composeContent);
 for (const sw of imeConfig.switches) {
   app.commandLine.appendSwitch(...sw);
 }
+if (imeConfig.composeContent) {
+  const runtimeDir = process.env.XDG_RUNTIME_DIR || os.tmpdir();
+  const composePath = path.join(runtimeDir, "forja-compose");
+  try {
+    fs.writeFileSync(composePath, imeConfig.composeContent + "\n", "utf-8");
+    imeConfig.env.XCOMPOSEFILE = composePath;
+    console.log("[IME] Wrote compose file to %s", composePath);
+  } catch (err) {
+    console.error("[IME] Failed to write compose file:", err);
+  }
+}
 Object.assign(process.env, imeConfig.env);
+console.log("[IME] env XCOMPOSEFILE=%s GTK_IM_MODULE=%s", process.env.XCOMPOSEFILE, process.env.GTK_IM_MODULE);
 
 // V8 GC: smaller semi-space in lite mode
 const semiSpaceSize = resolvedPerfMode === "lite" ? 32 : 64;
@@ -133,10 +147,23 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
   if (!isDev) {
     win.webContents.on("before-input-event", (_event, input) => {
       const isReload =
-        (input.key === "r" && (input.control || input.meta)) ||
+        (input.key.toLowerCase() === "r" && (input.control || input.meta)) ||
         input.key === "F5";
       if (isReload) {
         _event.preventDefault();
+      }
+    });
+  }
+
+  // Cedilla fix: Chromium/Ozone on Wayland composes dead_acute+c as ć
+  // instead of ç. Intercept at the application level and remap.
+  if (process.platform === "linux" && process.env.WAYLAND_DISPLAY) {
+    win.webContents.on("before-input-event", (event, input) => {
+      if (input.type !== "keyDown") return;
+      const replacement = remapDeadKeyResult(input.key);
+      if (replacement) {
+        event.preventDefault();
+        win.webContents.insertText(replacement);
       }
     });
   }

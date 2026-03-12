@@ -6,6 +6,7 @@ import { useFileTreeStore } from "@/stores/file-tree";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useProjectsStore } from "@/stores/projects";
 import { useTerminalSplitLayoutStore } from "@/stores/terminal-split-layout";
+import { useRightPanelStore } from "@/stores/right-panel";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
@@ -169,7 +170,7 @@ export function useKeyboardShortcuts({
       }
       if (mod && event.key === "j") {
         event.preventDefault();
-        useTerminalTabsStore.getState().toggleTerminalPane();
+        useRightPanelStore.getState().togglePanel();
         return;
       }
       if (mod && event.key === "e") {

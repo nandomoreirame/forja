@@ -17,11 +17,14 @@ vi.mock("@/stores/terminal-split-layout", () => ({
 
 const tabStoreActions = {
   setActiveTab: vi.fn(),
-  toggleTerminalPane: vi.fn(),
   toggleTerminalFullscreen: vi.fn(),
   nextTabId: vi.fn(() => "new-tab-1"),
   addTab: vi.fn(),
   getTabsForProject: vi.fn(() => []),
+};
+
+const rightPanelActions = {
+  togglePanel: vi.fn(),
 };
 
 const fileTreeActions = {
@@ -35,6 +38,12 @@ const fileTreeActions = {
 vi.mock("@/stores/terminal-tabs", () => ({
   useTerminalTabsStore: {
     getState: () => tabStoreActions,
+  },
+}));
+
+vi.mock("@/stores/right-panel", () => ({
+  useRightPanelStore: {
+    getState: () => rightPanelActions,
   },
 }));
 
@@ -348,6 +357,25 @@ describe("useKeyboardShortcuts fullscreen toggle", () => {
     );
 
     expect(tabStoreActions.toggleTerminalFullscreen).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("useKeyboardShortcuts right panel toggle", () => {
+  beforeEach(() => {
+    rightPanelActions.togglePanel.mockReset();
+  });
+
+  it("Ctrl+J toggles right panel", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "j",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(rightPanelActions.togglePanel).toHaveBeenCalledTimes(1);
   });
 });
 

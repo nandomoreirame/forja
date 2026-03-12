@@ -8,14 +8,19 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
-## [1.5.4] - 2026-03-11
+## [1.5.5] - 2026-03-12
+
+### Added
+- Add XCompose cedilla fallback for pt_BR locale.
+- Add collapsible right panel to main layout.
+- Add right panel store and remove terminal collapse state.
+- Add XCompose cedilla support for pt_BR locale.
+- Add right sidebar component.
+- Strip HTML comments from markdown renderer.
 
 ### Fixed
-- Prevent dead key character duplication on Linux.
-- Delegate Ctrl+Shift+V paste to native browser event.
-
-### Security
-- Block reload shortcuts in production builds.
+- Remap c-acute to c-cedilla in terminal input.
+- Handle Ctrl+Shift+R in reload shortcut block.
 ---
 
 ## [1.5.4] - 2026-03-11

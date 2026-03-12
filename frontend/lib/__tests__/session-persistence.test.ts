@@ -16,7 +16,6 @@ describe("session-persistence", () => {
       activeProjectPath: "/repo",
       preview: { isOpen: true, currentFile: "/repo/src/a.ts" },
       terminal: {
-        isPaneOpen: true,
         activeTabIndex: 1,
         split: {
           isEnabled: true,
@@ -49,7 +48,6 @@ describe("session-persistence", () => {
         activeProjectPath: "/repo",
         preview: { isOpen: true, currentFile: "/repo/src/a.ts" },
         terminal: {
-          isPaneOpen: true,
           activeTabIndex: 99,
           tabs: [
             { path: "/repo", sessionType: "claude" },
@@ -65,7 +63,6 @@ describe("session-persistence", () => {
       activeProjectPath: "/repo",
       preview: { isOpen: true, currentFile: "/repo/src/a.ts" },
       terminal: {
-        isPaneOpen: true,
         activeTabIndex: 99,
         split: {
           isEnabled: false,
@@ -86,7 +83,7 @@ describe("session-persistence", () => {
         activeWorkspaceId: "old-ws",
         activeProjectPath: "/home/user/proj",
         preview: { isOpen: false, currentFile: null },
-        terminal: { isPaneOpen: true, activeTabIndex: 0, tabs: [] },
+        terminal: { activeTabIndex: 0, tabs: [] },
       }),
     );
 
@@ -109,7 +106,6 @@ describe("session-persistence", () => {
         activeProjectPath: "/repo",
         preview: { isOpen: false, currentFile: null },
         terminal: {
-          isPaneOpen: true,
           activeTabIndex: 0,
           split: {
             isEnabled: true,
@@ -138,7 +134,6 @@ describe("session-persistence", () => {
         activeProjectPath: "/repo",
         preview: { isOpen: false, currentFile: null },
         terminal: {
-          isPaneOpen: true,
           activeTabIndex: 0,
           split: {
             isEnabled: true,

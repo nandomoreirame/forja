@@ -3,6 +3,7 @@ import { useCommandPaletteStore } from "@/stores/command-palette";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
+import { useRightPanelStore } from "@/stores/right-panel";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useAgentChatStore } from "@/stores/agent-chat";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
@@ -18,7 +19,6 @@ import {
   Loader2,
   MessageSquare,
   Palette,
-  PanelBottom,
   PanelLeft,
   PanelRight,
   Plus,
@@ -115,8 +115,8 @@ export function CommandPalette() {
         useUserSettingsStore.getState().openSettingsEditor();
         useFilePreviewStore.getState().openPreview();
         break;
-      case "toggle-terminal":
-        useTerminalTabsStore.getState().toggleTerminalPane();
+      case "toggle-right-panel":
+        useRightPanelStore.getState().togglePanel();
         break;
       case "toggle-chat":
         useAgentChatStore.getState().togglePanel();
@@ -296,11 +296,11 @@ export function CommandPalette() {
                 <CommandShortcut>{mod}+E</CommandShortcut>
               </CommandItem>
               <CommandItem
-                value="Toggle Terminal"
-                onSelect={() => handleCommand("toggle-terminal")}
+                value="Toggle Right Panel"
+                onSelect={() => handleCommand("toggle-right-panel")}
               >
-                <PanelBottom className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Terminal
+                <PanelRight className="h-4 w-4" strokeWidth={1.5} />
+                Toggle Right Panel
                 <CommandShortcut>{mod}+J</CommandShortcut>
               </CommandItem>
               <CommandItem

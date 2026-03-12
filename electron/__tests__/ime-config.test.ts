@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { resolveImeConfig } from "../ime-config.js";
+import { resolveImeConfig, remapDeadKeyResult } from "../ime-config.js";
 
 describe("resolveImeConfig", () => {
   test("does not return wayland IME switch (avoids double dead-key input)", () => {
@@ -58,5 +58,77 @@ describe("resolveImeConfig", () => {
     expect(result.env).toEqual(
       expect.objectContaining({ GTK_IM_MODULE: "cedilla" }),
     );
+  });
+
+  test("returns composeContent with cedilla overrides for pt_BR on linux", () => {
+    const result = resolveImeConfig("linux", {
+      LANG: "pt_BR.UTF-8",
+    });
+
+    expect(result.composeContent).toBeDefined();
+    expect(result.composeContent).toContain('<dead_acute> <c>');
+    expect(result.composeContent).toContain("ccedilla");
+    expect(result.composeContent).toContain('<dead_acute> <C>');
+    expect(result.composeContent).toContain("Ccedilla");
+  });
+
+  test("compose overrides appear before include directive", () => {
+    const result = resolveImeConfig("linux", {
+      LANG: "pt_BR.UTF-8",
+    });
+
+    const content = result.composeContent!;
+    const overrideIdx = content.indexOf("<dead_acute>");
+    const includeIdx = content.indexOf("include");
+
+    expect(overrideIdx).toBeGreaterThan(-1);
+    expect(includeIdx).toBeGreaterThan(-1);
+    expect(overrideIdx).toBeLessThan(includeIdx);
+  });
+
+  test("does not return composeContent for non pt_BR locale", () => {
+    const result = resolveImeConfig("linux", {
+      LANG: "en_US.UTF-8",
+    });
+
+    expect(result.composeContent).toBeUndefined();
+  });
+
+  test("does not return composeContent on non-linux platforms", () => {
+    const result = resolveImeConfig("darwin", {
+      LANG: "pt_BR.UTF-8",
+    });
+
+    expect(result.composeContent).toBeUndefined();
+  });
+
+  test("still returns composeContent even when XCOMPOSEFILE is already set (Chromium ignores it on Wayland)", () => {
+    const result = resolveImeConfig("linux", {
+      LANG: "pt_BR.UTF-8",
+      XCOMPOSEFILE: "/custom/Compose",
+    });
+
+    expect(result.composeContent).toBeDefined();
+    expect(result.composeContent).toContain("ccedilla");
+  });
+});
+
+describe("remapDeadKeyResult", () => {
+  test("remaps ć to ç (c-acute to c-cedilla)", () => {
+    expect(remapDeadKeyResult("ć")).toBe("ç");
+  });
+
+  test("remaps Ć to Ç (uppercase)", () => {
+    expect(remapDeadKeyResult("Ć")).toBe("Ç");
+  });
+
+  test("returns undefined for non-remapped characters", () => {
+    expect(remapDeadKeyResult("a")).toBeUndefined();
+    expect(remapDeadKeyResult("é")).toBeUndefined();
+    expect(remapDeadKeyResult("ç")).toBeUndefined();
+  });
+
+  test("returns undefined for empty string", () => {
+    expect(remapDeadKeyResult("")).toBeUndefined();
   });
 });

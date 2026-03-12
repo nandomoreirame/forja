@@ -1,11 +1,9 @@
 import {
-  CircleHelp,
   FolderOpen,
   Loader2,
   MessageSquare,
   Pencil,
   Plus,
-  Settings,
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -30,7 +28,6 @@ import { useFileTreeStore } from "@/stores/file-tree";
 import { invoke, open } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { useAgentChatStore } from "@/stores/agent-chat";
-import { useAppDialogsStore } from "@/stores/app-dialogs";
 import {
   Tooltip,
   TooltipContent,
@@ -235,7 +232,6 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
 
   const toggleChat = useAgentChatStore((s) => s.togglePanel);
   const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
-  const setSettingsOpen = useAppDialogsStore((s) => s.setSettingsOpen);
 
   const [altPressed, setAltPressed] = useState(false);
 
@@ -400,36 +396,6 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
             </TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Settings"
-                onClick={() => setSettingsOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-              >
-                <Settings className="h-4 w-4" strokeWidth={1.5} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Settings</p>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Help"
-                className="flex h-9 w-9 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-              >
-                <CircleHelp className="h-4 w-4" strokeWidth={1.5} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              <p>Help</p>
-            </TooltipContent>
-          </Tooltip>
         </div>
       </div>
 

@@ -99,6 +99,72 @@ describe("MarkdownRenderer", () => {
     expect(wrapper?.className).toContain("prose");
   });
 
+  describe("HTML comments", () => {
+    it("does not render inline HTML comments as visible text", () => {
+      const { container } = render(
+        <MarkdownRenderer content="<!-- This is a hidden comment -->" />
+      );
+      expect(container.textContent).not.toContain("<!--");
+      expect(container.textContent).not.toContain("-->");
+      expect(container.textContent).not.toContain("This is a hidden comment");
+    });
+
+    it("does not render block-level HTML comments as visible text", () => {
+      const content = [
+        "<!-- Formato: - [ ] [OL-XXX](https://example.com) | Status | Cliente | Descrição -->",
+        "",
+        "Texto normal",
+      ].join("\n");
+      const { container } = render(<MarkdownRenderer content={content} />);
+      expect(container.textContent).not.toContain("<!--");
+      expect(container.textContent).not.toContain("-->");
+      expect(container.textContent).not.toContain("Formato:");
+      expect(screen.getByText("Texto normal")).toBeDefined();
+    });
+
+    it("does not render multiline HTML comments as visible text", () => {
+      const content = [
+        "<!-- Ordenar por prioridade:",
+        "Highest > High > Medium > Low > Lowest -->",
+        "",
+        "# Title",
+      ].join("\n");
+      const { container } = render(<MarkdownRenderer content={content} />);
+      expect(container.textContent).not.toContain("<!--");
+      expect(container.textContent).not.toContain("Ordenar por prioridade");
+      expect(container.textContent).not.toContain("Highest > High");
+    });
+
+    it("renders content around HTML comments correctly", () => {
+      const content = [
+        "# My Title",
+        "",
+        "<!-- hidden comment -->",
+        "",
+        "Normal paragraph text",
+      ].join("\n");
+      render(<MarkdownRenderer content={content} />);
+      expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("My Title");
+      expect(screen.getByText("Normal paragraph text")).toBeDefined();
+    });
+
+    it("renders multiple HTML comments without showing any", () => {
+      const content = [
+        "<!-- First comment -->",
+        "",
+        "Text between",
+        "",
+        "<!-- Second comment -->",
+        "",
+        "More text",
+      ].join("\n");
+      const { container } = render(<MarkdownRenderer content={content} />);
+      expect(container.textContent).not.toContain("<!--");
+      expect(container.textContent).toContain("Text between");
+      expect(container.textContent).toContain("More text");
+    });
+  });
+
   describe("link routing", () => {
     it("calls routeLinkClick with href when link is clicked", async () => {
       const user = userEvent.setup();

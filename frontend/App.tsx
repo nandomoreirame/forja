@@ -35,6 +35,7 @@ const BrowserPane = lazy(() =>
 import { FileTreeSidebar } from "./components/file-tree-sidebar";
 import { NewSessionDropdown } from "./components/new-session-dropdown";
 import { ProjectSidebar } from "./components/project-sidebar";
+import { RightSidebar } from "./components/right-sidebar";
 import { TabBar } from "./components/tab-bar";
 import { TerminalPane } from "./components/terminal-pane";
 import { Titlebar } from "./components/titlebar";
@@ -56,6 +57,7 @@ import { useGitStatusStore } from "./stores/git-status";
 import { useGitDiffStore } from "./stores/git-diff";
 import { useSessionStateStore } from "./stores/session-state";
 import { useTerminalSplitLayoutStore } from "./stores/terminal-split-layout";
+import { useRightPanelStore } from "./stores/right-panel";
 import { useTerminalTabsStore } from "./stores/terminal-tabs";
 import { useTerminalZoomStore } from "./stores/terminal-zoom";
 import { useUserSettingsStore } from "./stores/user-settings";
@@ -220,7 +222,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const previewCurrentFile = useFilePreviewStore((s) => s.currentFile);
   const isBrowserOpen = useBrowserPaneStore((s) => s.isOpen);
   const {
-    isTerminalPaneOpen,
     isTerminalFullscreen,
     tabs,
     activeTabId,
@@ -230,7 +231,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     setActiveTab,
   } = useTerminalTabsStore(
     useShallow((s) => ({
-      isTerminalPaneOpen: s.isTerminalPaneOpen,
       isTerminalFullscreen: s.isTerminalFullscreen,
       tabs: s.tabs,
       activeTabId: s.activeTabId,
@@ -258,6 +258,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   const sidebarPanelRef = usePanelRef();
   const previewPanelRef = usePanelRef();
   const terminalPanelRef = usePanelRef();
+  const rightPanelRef = usePanelRef();
   const {
     panelSizes,
     sidebarOpen: persistedSidebarOpen,
@@ -348,27 +349,34 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     }
     if (previewPaneVisible) {
       if (panel.isCollapsed()) panel.expand();
-      // If terminal is hidden, preview takes full width
-      const size = isTerminalPaneOpen ? savedPreviewSize : 100;
-      panel.resize(`${size}%`);
+      panel.resize(`${savedPreviewSize}%`);
     } else if (!panel.isCollapsed()) {
       panel.collapse();
     }
-  }, [previewPaneVisible, savedPreviewSize, isTerminalPaneOpen, isTerminalFullscreen]);
+  }, [previewPaneVisible, savedPreviewSize, isTerminalFullscreen]);
 
-  // Sync terminal panel visibility with store via resize
+  // Sync terminal panel size with fullscreen state
   useEffect(() => {
     const terminal = terminalPanelRef.current;
     if (!terminal) return;
-    if (isTerminalPaneOpen) {
-      const targetSize = isTerminalFullscreen
-        ? 100
-        : previewPaneVisible ? 100 - savedPreviewSize : 100;
-      terminal.resize(`${targetSize}%`);
-    } else {
-      terminal.resize("0%");
+    const targetSize = isTerminalFullscreen
+      ? 100
+      : previewPaneVisible ? 100 - savedPreviewSize : 100;
+    terminal.resize(`${targetSize}%`);
+  }, [isTerminalFullscreen, previewPaneVisible, savedPreviewSize]);
+
+  // Sync right panel collapse with store
+  const isRightPanelOpen = useRightPanelStore((s) => s.isOpen);
+  useEffect(() => {
+    const panel = rightPanelRef.current;
+    if (!panel) return;
+    if (isRightPanelOpen) {
+      if (panel.isCollapsed()) panel.expand();
+      panel.resize("350px");
+    } else if (!panel.isCollapsed()) {
+      panel.collapse();
     }
-  }, [isTerminalPaneOpen, isTerminalFullscreen, previewPaneVisible, savedPreviewSize]);
+  }, [isRightPanelOpen]);
 
   // Load projects on mount for ProjectSidebar
   useEffect(() => {
@@ -414,11 +422,10 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         await previewStore.loadFile(snapshot.preview.currentFile);
       }
 
-      // 3) Restore terminal pane + tabs
+      // 3) Restore terminal tabs
       useTerminalTabsStore.setState({
         tabs: [],
         activeTabId: null,
-        isTerminalPaneOpen: snapshot.terminal.isPaneOpen,
       });
 
       const restoredTabIds: string[] = [];
@@ -742,7 +749,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
         currentFile: previewCurrentFile,
       },
       terminal: {
-        isPaneOpen: isTerminalPaneOpen,
         activeTabIndex: activeTabIndex >= 0 ? activeTabIndex : 0,
         split: {
           isEnabled: splitOrientation !== "none" && splitTabIndex >= 0,
@@ -763,7 +769,6 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     currentPath,
     isPreviewOpen,
     previewCurrentFile,
-    isTerminalPaneOpen,
     splitOrientation,
     splitRatio,
     splitTabId,
@@ -787,7 +792,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
             <ProjectSidebar
               onOpenProject={() => useFileTreeStore.getState().openProject()}
             />
-            <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-tl-xl border-l border-t border-ctp-surface0 bg-ctp-base">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-ctp-surface0 bg-ctp-base">
             {hasProject ? (
           <ResizablePanelGroup
             orientation="horizontal"
@@ -843,7 +848,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                   <ResizablePanelGroup orientation="horizontal">
                     <ResizablePanel
                       panelRef={previewPanelRef}
-                      defaultSize={previewPaneVisible ? `${isTerminalPaneOpen ? savedPreviewSize : 100}%` : "0%"}
+                      defaultSize={previewPaneVisible ? `${savedPreviewSize}%` : "0%"}
                       minSize="20%"
                       collapsible
                       collapsedSize="0%"
@@ -860,9 +865,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                             useBrowserPaneStore.getState().closePane();
                           }
                         }
-                        // Only persist the split ratio when both panels are visible
-                        // (avoids saving 100% when terminal is hidden)
-                        if (size.asPercentage > 0 && useTerminalTabsStore.getState().isTerminalPaneOpen) {
+                        if (size.asPercentage > 0) {
                           savePanelSize("previewSize", size.asPercentage);
                         }
                       }}
@@ -872,25 +875,14 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                       </Suspense>
                     </ResizablePanel>
                     <ResizableHandle
-                      disabled={!previewPaneVisible || !isTerminalPaneOpen || isTerminalFullscreen}
-                      className={previewPaneVisible && isTerminalPaneOpen && !isTerminalFullscreen ? "" : "opacity-0 w-0"}
+                      disabled={!previewPaneVisible || isTerminalFullscreen}
+                      className={previewPaneVisible && !isTerminalFullscreen ? "" : "opacity-0 w-0"}
                     />
                     <ResizablePanel
                       panelRef={terminalPanelRef}
-                      defaultSize={
-                        isTerminalPaneOpen
-                          ? previewPaneVisible ? `${100 - savedPreviewSize}%` : "100%"
-                          : "0%"
-                      }
-                      minSize="0%"
+                      defaultSize={previewPaneVisible ? `${100 - savedPreviewSize}%` : "100%"}
+                      minSize="40%"
                       order={2}
-                      onResize={(size) => {
-                        const storeIsOpen = useTerminalTabsStore.getState().isTerminalPaneOpen;
-                        // Snap-to-close: if user drags terminal very small, hide it
-                        if (size.asPercentage < 5 && storeIsOpen) {
-                          useTerminalTabsStore.getState().toggleTerminalPane();
-                        }
-                      }}
                     >
                       <div className="flex h-full min-w-0 flex-col overflow-hidden">
                         {!hasProject ? (
@@ -917,28 +909,36 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                         )}
                       </div>
                     </ResizablePanel>
-                  </ResizablePanelGroup>
-                  {!isTerminalPaneOpen && !previewPaneVisible && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ctp-base">
-                      <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
-                      <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
-                      <p className="text-sm text-ctp-overlay1">
-                        A dedicated desktop client for vibe coders
-                      </p>
-                    </div>
-                  )}
-                </div>
-                {!isTerminalPaneOpen && (
-                  <div className="flex shrink-0 flex-col items-center border-l border-ctp-surface0 bg-ctp-mantle pt-1">
-                    <button
-                      onClick={() => useTerminalTabsStore.getState().toggleTerminalPane()}
-                      className="inline-flex h-8 w-10 items-center justify-center text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-                      aria-label="Show terminal"
+                    <ResizableHandle
+                      disabled={!isRightPanelOpen || isTerminalFullscreen}
+                      className={isRightPanelOpen && !isTerminalFullscreen ? "" : "opacity-0 w-0"}
+                    />
+                    <ResizablePanel
+                      panelRef={rightPanelRef}
+                      defaultSize={isRightPanelOpen ? "350px" : "0%"}
+                      minSize="10%"
+                      maxSize="350px"
+                      collapsible
+                      collapsedSize="0%"
+                      order={3}
+                      onResize={(size) => {
+                        if (size.asPercentage === 0 && useRightPanelStore.getState().isOpen) {
+                          useRightPanelStore.getState().togglePanel();
+                        }
+                      }}
                     >
-                      <PanelRight className="h-4 w-4" strokeWidth={1.5} />
-                    </button>
-                  </div>
-                )}
+                      <div className="flex h-full flex-col items-center justify-center gap-3 border-l border-ctp-surface0 bg-ctp-base px-4">
+                        <PanelRight className="h-8 w-8 text-ctp-overlay0" strokeWidth={1.5} />
+                        <p className="text-center text-sm text-ctp-overlay1">
+                          No content yet
+                        </p>
+                        <p className="text-center text-xs text-ctp-overlay0">
+                          This panel will host extensions and tools in future updates.
+                        </p>
+                      </div>
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </div>
               </div>
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -946,6 +946,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               <EmptyState />
             )}
             </div>
+            <RightSidebar />
           </div>
         )}
         <Suspense fallback={null}>
