@@ -30,8 +30,23 @@ vi.mock("@/stores/file-preview", () => ({
   },
 }));
 
+const mockSaveActivePluginForProject = vi.fn();
+const mockRestoreActivePluginForProject = vi.fn();
+vi.mock("@/stores/plugins", () => ({
+  usePluginsStore: {
+    getState: vi.fn(() => ({
+      saveActivePluginForProject: mockSaveActivePluginForProject,
+      restoreActivePluginForProject: mockRestoreActivePluginForProject,
+      activePluginName: null,
+    })),
+    setState: vi.fn(),
+  },
+}));
+
 import { invoke } from "@/lib/ipc";
 import { useFileTreeStore } from "@/stores/file-tree";
+import { usePluginsStore } from "@/stores/plugins";
+import { useRightPanelStore } from "@/stores/right-panel";
 
 describe("useProjectsStore", () => {
   beforeEach(() => {
@@ -492,5 +507,97 @@ describe("useProjectsStore", () => {
 
     expect(mockSavePreviewForProject).not.toHaveBeenCalled();
     expect(mockRestorePreviewForProject).toHaveBeenCalledWith("/project-a");
+  });
+
+  describe("switchToProject plugin and right panel guard", () => {
+    beforeEach(() => {
+      // Reset right panel store to defaults
+      useRightPanelStore.setState({
+        isOpen: false,
+        isOpenByProject: {},
+        activeView: "empty",
+        activeViewByProject: {},
+      });
+    });
+
+    it("saves active plugin for previous project and restores for new project", async () => {
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      expect(mockSaveActivePluginForProject).toHaveBeenCalledWith("/project-a");
+      expect(mockRestoreActivePluginForProject).toHaveBeenCalledWith("/project-b");
+    });
+
+    it("does not open right panel from disk state when no active plugin", async () => {
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") return { rightPanelOpen: true };
+        return undefined;
+      });
+
+      vi.mocked(usePluginsStore.getState).mockReturnValue({
+        saveActivePluginForProject: mockSaveActivePluginForProject,
+        restoreActivePluginForProject: mockRestoreActivePluginForProject,
+        activePluginName: null,
+      } as never);
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [{ path: "/my-project", name: "my-project", lastOpened: "" }],
+        activeProjectPath: null,
+      });
+
+      await useProjectsStore.getState().switchToProject("/my-project");
+
+      expect(useRightPanelStore.getState().isOpen).toBe(false);
+    });
+
+    it("opens right panel from disk state when an active plugin exists", async () => {
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") return { rightPanelOpen: true };
+        return undefined;
+      });
+
+      vi.mocked(usePluginsStore.getState).mockReturnValue({
+        saveActivePluginForProject: mockSaveActivePluginForProject,
+        restoreActivePluginForProject: mockRestoreActivePluginForProject,
+        activePluginName: "my-plugin",
+      } as never);
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [{ path: "/my-project", name: "my-project", lastOpened: "" }],
+        activeProjectPath: null,
+      });
+
+      await useProjectsStore.getState().switchToProject("/my-project");
+
+      expect(useRightPanelStore.getState().isOpen).toBe(true);
+    });
   });
 });
