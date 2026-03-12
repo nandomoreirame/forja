@@ -4,11 +4,23 @@ import * as os from "os";
 
 const MAX_RECENT = 10;
 
+export interface ProjectUiState {
+  sidebarOpen?: boolean;
+  rightPanelOpen?: boolean;
+  terminalFullscreen?: boolean;
+  previewFile?: string | null;
+  browserOpen?: boolean;
+  browserUrl?: string;
+  sidebarSize?: number;
+  previewSize?: number;
+}
+
 interface RecentProject {
   path: string;
   name: string;
   last_opened: string;
   icon_path?: string | null;
+  ui_state?: ProjectUiState | null;
 }
 
 export interface Workspace {
@@ -76,7 +88,7 @@ export function addRecentProject(projectPath: string): void {
 
   const filtered = existing.filter((p) => p.path !== projectPath);
   const updated: RecentProject[] = [
-    { path: projectPath, name, last_opened: lastOpened, icon_path: prev?.icon_path ?? undefined },
+    { path: projectPath, name, last_opened: lastOpened, icon_path: prev?.icon_path ?? undefined, ui_state: prev?.ui_state ?? undefined },
     ...filtered,
   ].slice(0, MAX_RECENT);
 
@@ -119,6 +131,30 @@ export function reorderRecentProjects(orderedPaths: string[]): void {
   }
 
   store.set("recentProjects", ordered);
+}
+
+// ─── Project UI State ────────────────────────────────────────────────────────
+
+export function getProjectUiState(projectPath: string): ProjectUiState | null {
+  const projects = store.get("recentProjects");
+  const project = projects.find((p) => p.path === projectPath);
+  if (!project || !project.ui_state) return null;
+  return project.ui_state;
+}
+
+export function saveProjectUiState(
+  projectPath: string,
+  state: Partial<ProjectUiState>
+): void {
+  const existing = store.get("recentProjects");
+  const index = existing.findIndex((p) => p.path === projectPath);
+  if (index === -1) return;
+
+  const current = existing[index].ui_state ?? {};
+  const merged: ProjectUiState = { ...current, ...state };
+  const updated = [...existing];
+  updated[index] = { ...existing[index], ui_state: merged };
+  store.set("recentProjects", updated);
 }
 
 // ─── Workspaces ──────────────────────────────────────────────────────────────

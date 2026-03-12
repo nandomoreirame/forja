@@ -24,7 +24,7 @@ const __dirname = path.dirname(__filename);
 import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow, getSessionBuffer } from "./pty.js";
 
 // Type-only imports for signatures
-import type { UiPreferences } from "./config.js";
+import type { UiPreferences, ProjectUiState } from "./config.js";
 
 // Lazy module loaders (cached after first import)
 const lazyImport = <T>(factory: () => Promise<T>) => {
@@ -393,6 +393,17 @@ ipcMain.handle("get_ui_preferences", async () => {
 ipcMain.handle("save_ui_preferences", async (_event, args: Partial<UiPreferences>) => {
   const config = await getConfig();
   config.saveUiPreferences(args);
+});
+
+// Project UI State (per-project layout persistence)
+ipcMain.handle("get_project_ui_state", async (_event, args: { path: string }) => {
+  const config = await getConfig();
+  return config.getProjectUiState(args.path);
+});
+
+ipcMain.handle("save_project_ui_state", async (_event, args: { path: string; state: Partial<ProjectUiState> }) => {
+  const config = await getConfig();
+  config.saveProjectUiState(args.path, args.state);
 });
 
 // Open workspace in a new window

@@ -453,6 +453,112 @@ describe("config module", () => {
     expect(projects[0].icon_path).toBe("/icons/custom.svg");
   });
 
+  // ─── Project UI State tests ──────────────────────────────────────────────────
+
+  describe("projectUiState", () => {
+    it("returns null for a project with no UI state", async () => {
+      const { addRecentProject, getProjectUiState } = await import("../config");
+      addRecentProject("/home/user/my-app");
+      expect(getProjectUiState("/home/user/my-app")).toBeNull();
+    });
+
+    it("returns null for an unknown project path", async () => {
+      const { getProjectUiState } = await import("../config");
+      expect(getProjectUiState("/home/user/non-existent")).toBeNull();
+    });
+
+    it("saves and retrieves UI state for a project", async () => {
+      const { addRecentProject, saveProjectUiState, getProjectUiState } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      saveProjectUiState("/home/user/my-app", {
+        sidebarOpen: false,
+        rightPanelOpen: true,
+        terminalFullscreen: true,
+      });
+
+      const state = getProjectUiState("/home/user/my-app");
+      expect(state).not.toBeNull();
+      expect(state!.sidebarOpen).toBe(false);
+      expect(state!.rightPanelOpen).toBe(true);
+      expect(state!.terminalFullscreen).toBe(true);
+    });
+
+    it("merges partial updates into existing UI state", async () => {
+      const { addRecentProject, saveProjectUiState, getProjectUiState } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      saveProjectUiState("/home/user/my-app", { sidebarOpen: false });
+      saveProjectUiState("/home/user/my-app", { rightPanelOpen: true });
+
+      const state = getProjectUiState("/home/user/my-app");
+      expect(state!.sidebarOpen).toBe(false);
+      expect(state!.rightPanelOpen).toBe(true);
+    });
+
+    it("is a no-op for an unknown project path", async () => {
+      const { saveProjectUiState, getProjectUiState } = await import("../config");
+      saveProjectUiState("/home/user/non-existent", { sidebarOpen: false });
+      expect(getProjectUiState("/home/user/non-existent")).toBeNull();
+    });
+
+    it("preserves UI state when project is re-added", async () => {
+      const { addRecentProject, saveProjectUiState, getProjectUiState } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+      saveProjectUiState("/home/user/my-app", { sidebarOpen: false });
+
+      // Re-add same project (simulates user opening it again)
+      addRecentProject("/home/user/my-app");
+
+      const state = getProjectUiState("/home/user/my-app");
+      expect(state).not.toBeNull();
+      expect(state!.sidebarOpen).toBe(false);
+    });
+
+    it("stores all ProjectUiState fields", async () => {
+      const { addRecentProject, saveProjectUiState, getProjectUiState } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+
+      saveProjectUiState("/home/user/my-app", {
+        sidebarOpen: true,
+        rightPanelOpen: false,
+        terminalFullscreen: true,
+        previewFile: "/src/main.ts",
+        browserOpen: true,
+        browserUrl: "http://localhost:3000",
+        sidebarSize: 25,
+        previewSize: 40,
+      });
+
+      const state = getProjectUiState("/home/user/my-app");
+      expect(state).toEqual({
+        sidebarOpen: true,
+        rightPanelOpen: false,
+        terminalFullscreen: true,
+        previewFile: "/src/main.ts",
+        browserOpen: true,
+        browserUrl: "http://localhost:3000",
+        sidebarSize: 25,
+        previewSize: 40,
+      });
+    });
+
+    it("clears previewFile with null", async () => {
+      const { addRecentProject, saveProjectUiState, getProjectUiState } =
+        await import("../config");
+      addRecentProject("/home/user/my-app");
+      saveProjectUiState("/home/user/my-app", { previewFile: "/src/main.ts" });
+      saveProjectUiState("/home/user/my-app", { previewFile: null });
+
+      const state = getProjectUiState("/home/user/my-app");
+      expect(state!.previewFile).toBeNull();
+    });
+  });
+
   // ─── UI Preferences tests ──────────────────────────────────────────────────
 
   describe("uiPreferences", () => {
