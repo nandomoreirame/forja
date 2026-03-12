@@ -14,7 +14,7 @@ import * as os from "os";
 import { fileURLToPath, pathToFileURL } from "url";
 import { execFile } from "child_process";
 import { assertPathWithinScope } from "./path-validation.js";
-import { resolveImeConfig } from "./ime-config.js";
+import { resolveImeConfig, remapDeadKeyResult } from "./ime-config.js";
 import { readSettingsModeSync, resolveModeSyncFromHardware, getLiteModeConfig } from "./lite-mode.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -151,6 +151,19 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
         input.key === "F5";
       if (isReload) {
         _event.preventDefault();
+      }
+    });
+  }
+
+  // Cedilla fix: Chromium/Ozone on Wayland composes dead_acute+c as ć
+  // instead of ç. Intercept at the application level and remap.
+  if (process.platform === "linux" && process.env.WAYLAND_DISPLAY) {
+    win.webContents.on("before-input-event", (event, input) => {
+      if (input.type !== "keyDown") return;
+      const replacement = remapDeadKeyResult(input.key);
+      if (replacement) {
+        event.preventDefault();
+        win.webContents.insertText(replacement);
       }
     });
   }
