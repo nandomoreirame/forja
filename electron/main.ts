@@ -9,6 +9,7 @@ import {
   webContents,
 } from "electron";
 import * as path from "path";
+import * as fs from "fs";
 import * as os from "os";
 import { fileURLToPath, pathToFileURL } from "url";
 import { execFile } from "child_process";
@@ -93,10 +94,23 @@ if (resolvedPerfMode !== "lite") {
 
 // IME / dead-key support (cedilla on pt_BR, Wayland IME)
 const imeConfig = resolveImeConfig(process.platform, process.env);
+console.log("[IME] platform=%s LANG=%s composeContent=%s", process.platform, process.env.LANG, !!imeConfig.composeContent);
 for (const sw of imeConfig.switches) {
   app.commandLine.appendSwitch(...sw);
 }
+if (imeConfig.composeContent) {
+  const runtimeDir = process.env.XDG_RUNTIME_DIR || os.tmpdir();
+  const composePath = path.join(runtimeDir, "forja-compose");
+  try {
+    fs.writeFileSync(composePath, imeConfig.composeContent + "\n", "utf-8");
+    imeConfig.env.XCOMPOSEFILE = composePath;
+    console.log("[IME] Wrote compose file to %s", composePath);
+  } catch (err) {
+    console.error("[IME] Failed to write compose file:", err);
+  }
+}
 Object.assign(process.env, imeConfig.env);
+console.log("[IME] env XCOMPOSEFILE=%s GTK_IM_MODULE=%s", process.env.XCOMPOSEFILE, process.env.GTK_IM_MODULE);
 
 // V8 GC: smaller semi-space in lite mode
 const semiSpaceSize = resolvedPerfMode === "lite" ? 32 : 64;
