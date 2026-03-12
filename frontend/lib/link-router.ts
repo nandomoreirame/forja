@@ -1,15 +1,12 @@
 import { isLocalhostUrl } from "./localhost-detector";
 import { useBrowserPaneStore } from "@/stores/browser-pane";
-import { openUrl } from "./ipc";
 
 /**
- * Routes a link click: localhost URLs open in the browser pane,
- * external URLs open in the system browser.
+ * Routes a link click: only localhost URLs are opened in the browser pane.
+ * External URLs are ignored (no automatic browser opening).
  */
 export function routeLinkClick(url: string): void {
   if (isLocalhostUrl(url)) {
     useBrowserPaneStore.getState().navigateToUrl(url);
-  } else {
-    openUrl(url);
   }
 }
