@@ -156,7 +156,8 @@ describe("RightSidebar", () => {
     expect(screen.queryByLabelText("Disabled")).toBeNull();
   });
 
-  it("highlights active plugin icon", () => {
+  it("highlights active plugin icon only when panel is open", () => {
+    mockIsOpen = true;
     mockPlugins = [
       {
         manifest: { name: "my-plugin", displayName: "My Plugin", icon: "Sparkles", permissions: [] },
@@ -170,6 +171,25 @@ describe("RightSidebar", () => {
     const btn = screen.getByLabelText("My Plugin");
     expect(btn.className).toContain("bg-ctp-surface0");
     expect(btn.className).toContain("text-ctp-mauve");
+  });
+
+  it("does not highlight active plugin icon when panel is closed", () => {
+    mockIsOpen = false;
+    mockPlugins = [
+      {
+        manifest: { name: "my-plugin", displayName: "My Plugin", icon: "Sparkles", permissions: [] },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    mockActivePluginName = "my-plugin";
+    render(<RightSidebar hasProject />);
+    const btn = screen.getByLabelText("My Plugin");
+    // Use split to avoid matching "hover:bg-ctp-surface0" as a false positive
+    const classes = btn.className.split(" ");
+    expect(classes).not.toContain("bg-ctp-surface0");
+    expect(classes).not.toContain("text-ctp-mauve");
   });
 
   it("activates plugin and opens panel when plugin icon is clicked", () => {
@@ -189,7 +209,7 @@ describe("RightSidebar", () => {
     expect(mockTogglePanel).toHaveBeenCalledOnce();
   });
 
-  it("deactivates plugin and closes panel when active plugin icon is clicked", () => {
+  it("closes panel but keeps plugin active when active plugin icon is clicked", () => {
     mockIsOpen = true;
     mockPlugins = [
       {
@@ -202,7 +222,8 @@ describe("RightSidebar", () => {
     mockActivePluginName = "active-plugin";
     render(<RightSidebar hasProject />);
     fireEvent.click(screen.getByLabelText("Active Plugin"));
-    expect(mockSetActivePlugin).toHaveBeenCalledWith(null);
+    // Plugin stays active (webview keeps running for badge updates)
+    expect(mockSetActivePlugin).not.toHaveBeenCalled();
     expect(mockSetActiveView).toHaveBeenCalledWith("empty");
     expect(mockTogglePanel).toHaveBeenCalledOnce();
   });

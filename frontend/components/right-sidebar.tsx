@@ -71,6 +71,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
   const pluginOrder = usePluginsStore((s) => s.pluginOrder);
   const activePluginName = usePluginsStore((s) => s.activePluginName);
   const pluginBadges = usePluginsStore((s) => s.pluginBadges);
+  const isRightPanelOpen = useRightPanelStore((s) => s.isOpen);
 
   const orderedPlugins = useMemo(
     () => getOrderedEnabledPlugins({ plugins, pluginOrder }),
@@ -113,7 +114,10 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
             >
               {orderedPlugins.map((plugin) => {
                 const Icon = getPluginIcon(plugin.manifest.icon) ?? Puzzle;
-                const isActive = activePluginName === plugin.manifest.name;
+                // Only visually "active" when the panel is open with this plugin.
+                // When the panel is closed, the plugin stays mounted (webview keeps
+                // running) so background features like badges continue to work.
+                const isActive = isRightPanelOpen && activePluginName === plugin.manifest.name;
                 const badge = pluginBadges[plugin.manifest.name];
                 return (
                   <SortablePluginIcon key={plugin.manifest.name} id={plugin.manifest.name}>
@@ -124,11 +128,12 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                           aria-label={plugin.manifest.displayName}
                           onClick={() => {
                             if (isActive) {
-                              usePluginsStore.getState().setActivePlugin(null);
+                              // Close panel but keep activePluginName set so the
+                              // webview (PluginHost) stays mounted. This allows
+                              // background plugins (e.g., Pomodoro timer) to keep
+                              // updating the sidebar badge while the panel is closed.
                               useRightPanelStore.getState().setActiveView("empty");
-                              if (useRightPanelStore.getState().isOpen) {
-                                useRightPanelStore.getState().togglePanel();
-                              }
+                              useRightPanelStore.getState().togglePanel();
                             } else {
                               usePluginsStore.getState().setActivePlugin(plugin.manifest.name);
                               useRightPanelStore.getState().setActiveView("plugin");
