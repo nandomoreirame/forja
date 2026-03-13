@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { usePluginsStore } from "./plugins";
 
-type ActiveView = "empty" | "plugin";
+type ActiveView = "empty" | "plugin" | "marketplace";
 
 interface RightPanelState {
   isOpen: boolean;
