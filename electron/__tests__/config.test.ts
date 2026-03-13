@@ -575,6 +575,7 @@ describe("config module", () => {
         terminalSplitEnabled: false,
         terminalSplitOrientation: "vertical",
         terminalSplitRatio: 50,
+        rightPanelWidth: 400,
       });
     });
 
@@ -596,6 +597,7 @@ describe("config module", () => {
         terminalSplitEnabled: true,
         terminalSplitOrientation: "horizontal",
         terminalSplitRatio: 65,
+        rightPanelWidth: 400,
       });
     });
 
