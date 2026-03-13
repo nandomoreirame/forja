@@ -319,7 +319,7 @@ export function AboutDialog({ open, onOpenChange }: AboutDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-105 gap-0 overflow-hidden border-ctp-surface0 bg-ctp-base p-0"
+        className="max-w-105 gap-0 overflow-hidden border-ctp-surface0 bg-overlay-base p-0"
       >
         <DialogTitle className="sr-only">About Forja</DialogTitle>
         <DialogDescription className="sr-only">

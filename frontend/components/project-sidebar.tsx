@@ -147,7 +147,7 @@ function ProjectIcon({
             {iconButton}
           </TooltipTrigger>
         </ContextMenuTrigger>
-        <ContextMenuContent className="min-w-44 border-ctp-surface1 bg-ctp-mantle">
+        <ContextMenuContent className="min-w-44 border-ctp-surface1 bg-overlay-mantle">
           <ContextMenuItem
             className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
             onSelect={() => onEditRequest(project)}
@@ -416,7 +416,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
 
       {/* Edit Project Dialog */}
       <Dialog open={!!editingProject} onOpenChange={(open) => !open && setEditingProject(null)}>
-        <DialogContent className="border-ctp-surface1 bg-ctp-mantle sm:max-w-sm">
+        <DialogContent className="border-ctp-surface1 bg-overlay-mantle sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-ctp-text">Edit Project</DialogTitle>
             <DialogDescription className="text-ctp-subtext0">
@@ -444,7 +444,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="rounded-md border border-ctp-surface1 bg-ctp-base px-3 py-1.5 text-sm text-ctp-text outline-none focus:border-ctp-mauve"
+                className="rounded-md border border-ctp-surface1 bg-overlay-base px-3 py-1.5 text-sm text-ctp-text outline-none focus:border-ctp-mauve"
               />
             </label>
             <label className="flex flex-col gap-1">
@@ -455,7 +455,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                   value={editIconPath}
                   onChange={(e) => setEditIconPath(e.target.value)}
                   placeholder="/path/to/icon.svg"
-                  className="min-w-0 flex-1 rounded-md border border-ctp-surface1 bg-ctp-base px-3 py-1.5 text-sm text-ctp-text placeholder:text-ctp-overlay0 outline-none focus:border-ctp-mauve"
+                  className="min-w-0 flex-1 rounded-md border border-ctp-surface1 bg-overlay-base px-3 py-1.5 text-sm text-ctp-text placeholder:text-ctp-overlay0 outline-none focus:border-ctp-mauve"
                 />
                 <Button
                   variant="outline"
@@ -492,7 +492,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
 
       {/* Remove Project Confirmation Dialog */}
       <Dialog open={!!removingProject} onOpenChange={(open) => !open && setRemovingProject(null)}>
-        <DialogContent className="border-ctp-surface1 bg-ctp-mantle sm:max-w-sm">
+        <DialogContent className="border-ctp-surface1 bg-overlay-mantle sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-ctp-text">
               Remove project {removingProject?.name}?

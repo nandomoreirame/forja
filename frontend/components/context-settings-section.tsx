@@ -142,7 +142,7 @@ export function ContextSection() {
             Import
           </button>
           {importMenuOpen && (
-            <div className="absolute left-0 top-full z-10 mt-1 w-40 rounded-md border border-ctp-surface0 bg-ctp-base py-1 shadow-lg">
+            <div className="absolute left-0 top-full z-10 mt-1 w-40 rounded-md border border-ctp-surface0 bg-overlay-base py-1 shadow-lg">
               {(["skill", "agent", "doc"] as const).map((type) => (
                 <button
                   key={type}
@@ -221,7 +221,7 @@ export function ContextSection() {
             <textarea
               value={displayContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[300px] w-full resize-y rounded-md border border-ctp-surface0 bg-ctp-mantle p-3 font-mono text-xs text-ctp-text placeholder-ctp-overlay0 outline-none focus:border-ctp-mauve"
+              className="min-h-[300px] w-full resize-y rounded-md border border-ctp-surface0 bg-overlay-mantle p-3 font-mono text-xs text-ctp-text placeholder-ctp-overlay0 outline-none focus:border-ctp-mauve"
             />
           </div>
         )}

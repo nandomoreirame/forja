@@ -55,7 +55,7 @@ export function PluginPermissionDialog() {
       }}
     >
       <DialogContent
-        className="bg-ctp-base border-ctp-surface0 sm:max-w-md"
+        className="bg-overlay-base border-ctp-surface0 sm:max-w-md"
         showCloseButton={false}
       >
         <DialogHeader>
@@ -78,7 +78,7 @@ export function PluginPermissionDialog() {
             return (
               <div
                 key={perm}
-                className="flex items-start gap-3 rounded-md border border-ctp-surface0 bg-ctp-mantle px-3 py-2"
+                className="flex items-start gap-3 rounded-md border border-ctp-surface0 bg-overlay-mantle px-3 py-2"
                 data-testid={`permission-${perm}`}
               >
                 <RiskIcon
