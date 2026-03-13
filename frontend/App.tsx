@@ -316,7 +316,9 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
           }
         }
         if (savedState.rightPanelOpen !== undefined) {
-          useRightPanelStore.setState({ isOpen: savedState.rightPanelOpen });
+          // Only open right panel if there is an active plugin to show
+          const hasActivePlugin = usePluginsStore.getState().activePluginName !== null;
+          useRightPanelStore.setState({ isOpen: savedState.rightPanelOpen && hasActivePlugin });
         }
         if (savedState.terminalFullscreen !== undefined) {
           useTerminalTabsStore.setState({ isTerminalFullscreen: savedState.terminalFullscreen });

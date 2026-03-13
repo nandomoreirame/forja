@@ -52,6 +52,7 @@ interface ConfigSchema {
   uiPreferences: UiPreferences;
   pluginPermissions: PluginPermissionGrant[];
   enabledPlugins: string[];
+  pluginOrder: string[];
 }
 
 const DEFAULT_UI_PREFERENCES: UiPreferences = {
@@ -80,6 +81,7 @@ const store = new Store<ConfigSchema>({
     uiPreferences: DEFAULT_UI_PREFERENCES,
     pluginPermissions: [],
     enabledPlugins: [],
+    pluginOrder: [],
   },
 }) as TypedConfigStore;
 
@@ -327,4 +329,14 @@ export function setPluginEnabled(name: string, enabled: boolean): void {
   } else if (!enabled) {
     store.set("enabledPlugins", existing.filter((n) => n !== name));
   }
+}
+
+// ─── Plugin Order ────────────────────────────────────────────────────────────
+
+export function getPluginOrder(): string[] {
+  return store.get("pluginOrder");
+}
+
+export function setPluginOrder(names: string[]): void {
+  store.set("pluginOrder", names);
 }

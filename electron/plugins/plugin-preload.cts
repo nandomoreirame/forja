@@ -79,6 +79,9 @@ contextBridge.exposeInMainWorld("forja", {
     show: (opts: { title?: string; body?: string }) =>
       request("notifications.show", opts),
   },
+  sidebar: {
+    setBadge: (text: string) => request("sidebar.setBadge", { text }),
+  },
   on: (event: string, callback: (data: unknown) => void) => {
     if (!eventListeners.has(event)) {
       eventListeners.set(event, new Set());

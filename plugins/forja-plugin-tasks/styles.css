@@ -13,8 +13,8 @@
 
 /* Custom scrollbar matching the main app */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -138,10 +138,28 @@ body {
   flex: 1;
   overflow-y: auto;
   padding-bottom: 8px;
+  padding-right: 4px;
+  margin-right: -4px;
 }
 
 .section {
   margin-bottom: 16px;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  transition: opacity 0.15s ease, border-color 0.1s ease;
+}
+
+.section.section-dragging {
+  opacity: 0.3;
+  background: var(--forja-bg-overlay);
+}
+
+.section.section-drop-above {
+  border-top-color: var(--forja-accent);
+}
+
+.section.section-drop-below {
+  border-bottom-color: var(--forja-accent);
 }
 
 .section-header {
@@ -149,8 +167,47 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 4px 0;
+  padding-right: 10px;
   margin-bottom: 6px;
   border-bottom: 1px solid var(--forja-bg-overlay);
+  cursor: grab;
+}
+
+.section-header:active {
+  cursor: grabbing;
+}
+
+/* Section drag handle */
+
+.section-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  min-width: 10px;
+  height: 14px;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  margin-right: 4px;
+  color: var(--forja-text-muted);
+}
+
+.section-drag-handle::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 10px;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 3px 3.5px;
+  background-repeat: repeat;
+}
+
+.section-header:hover .section-drag-handle {
+  opacity: 0.4;
+}
+
+.section-drag-handle:hover {
+  opacity: 1 !important;
 }
 
 .section-title {
@@ -159,11 +216,49 @@ body {
   color: var(--forja-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 6px;
 }
 
 .section-count {
   font-size: 10px;
   color: var(--forja-text-muted);
+  flex-shrink: 0;
+}
+
+.section-delete-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--forja-text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  border-radius: 3px;
+  opacity: 0;
+  transition: all 0.1s ease;
+}
+
+.section-header:hover .section-delete-btn {
+  opacity: 0.6;
+}
+
+.section-delete-btn:hover {
+  opacity: 1 !important;
+  color: var(--forja-error);
+  background: var(--forja-bg-surface);
 }
 
 /* --- Task Item --- */
@@ -171,15 +266,94 @@ body {
 .task-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
+  gap: 6px;
   padding: 6px 8px;
   border-radius: var(--radius);
-  transition: background 0.1s ease;
+  transition: background 0.1s ease, opacity 0.15s ease, border-color 0.1s ease;
+  border: 2px solid transparent;
+  cursor: default;
 }
 
 .task-item:hover {
   background: var(--forja-bg-surface);
 }
+
+/* Drag handle */
+
+.drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 10px;
+  min-width: 10px;
+  height: 18px;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  margin-top: 1px;
+  color: var(--forja-text-muted);
+}
+
+.drag-handle::before {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 10px;
+  background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
+  background-size: 3px 3.5px;
+  background-repeat: repeat;
+}
+
+.task-item:hover .drag-handle {
+  opacity: 0.4;
+}
+
+.drag-handle:hover {
+  opacity: 1 !important;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Dragging state */
+
+.task-item.dragging {
+  opacity: 0.3;
+  background: var(--forja-bg-overlay);
+}
+
+/* Drop indicators */
+
+.task-item.drop-above {
+  border-top-color: var(--forja-accent);
+}
+
+.task-item.drop-below {
+  border-bottom-color: var(--forja-accent);
+}
+
+/* Section drop zone (appears only while dragging) */
+
+.section-drop-zone {
+  height: 0;
+  border-radius: var(--radius);
+  transition: height 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  border: 2px dashed transparent;
+  overflow: hidden;
+}
+
+body.is-dragging-task .section-drop-zone {
+  height: 28px;
+  border-color: var(--forja-bg-overlay);
+}
+
+.section-drop-zone-active {
+  background: var(--forja-bg-surface) !important;
+  border-color: var(--forja-accent) !important;
+}
+
+/* --- Checkbox --- */
 
 .task-checkbox {
   appearance: none;
@@ -224,11 +398,25 @@ body {
   font-size: 13px;
   color: var(--forja-text);
   word-break: break-word;
+  cursor: text;
+  border-radius: 3px;
+  padding: 1px 2px;
+  margin: -1px -2px;
+  transition: background 0.1s ease;
+}
+
+.task-title:hover {
+  background: var(--forja-bg-overlay);
 }
 
 .task-item.completed .task-title {
   text-decoration: line-through;
   color: var(--forja-text-muted);
+  cursor: default;
+}
+
+.task-item.completed .task-title:hover {
+  background: transparent;
 }
 
 .task-description {
@@ -236,12 +424,76 @@ body {
   color: var(--forja-text-muted);
   margin-top: 2px;
   word-break: break-word;
+  cursor: text;
+  border-radius: 3px;
+  padding: 1px 2px;
+  margin-left: -2px;
+  transition: background 0.1s ease;
+}
+
+.task-description:hover {
+  background: var(--forja-bg-overlay);
 }
 
 .task-item.completed .task-description {
   text-decoration: line-through;
   opacity: 0.6;
+  cursor: default;
 }
+
+.task-item.completed .task-description:hover {
+  background: transparent;
+}
+
+/* Placeholder shown when a task has no description */
+.task-description-placeholder {
+  font-size: 11px;
+  color: var(--forja-text-muted);
+  margin-top: 2px;
+  cursor: text;
+  border-radius: 3px;
+  padding: 1px 2px;
+  margin-left: -2px;
+  opacity: 0;
+  transition: opacity 0.1s ease, background 0.1s ease;
+  font-style: italic;
+}
+
+.task-item:hover .task-description-placeholder {
+  opacity: 0.5;
+}
+
+.task-description-placeholder:hover {
+  background: var(--forja-bg-overlay);
+  opacity: 0.8 !important;
+}
+
+.task-item.completed .task-description-placeholder {
+  display: none;
+}
+
+/* --- Inline Editing --- */
+
+.task-inline-input {
+  width: 100%;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid var(--forja-accent);
+  background: var(--forja-bg-surface);
+  color: var(--forja-text);
+  font-size: inherit;
+  font-family: inherit;
+  line-height: 1.5;
+  outline: none;
+  resize: none;
+}
+
+.task-inline-textarea {
+  resize: vertical;
+  min-height: 40px;
+}
+
+/* --- Delete button --- */
 
 .task-delete {
   appearance: none;
@@ -266,18 +518,76 @@ body {
   background: var(--forja-bg-surface);
 }
 
-/* --- Add Form --- */
+/* --- Inline Add Task Button --- */
+
+.btn-add-inline {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--forja-text-muted);
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  opacity: 0.4;
+  transition: opacity 0.1s ease, background 0.1s ease, color 0.1s ease;
+  margin-top: 2px;
+}
+
+.section:hover .btn-add-inline {
+  opacity: 0.7;
+}
+
+.btn-add-inline:hover {
+  opacity: 1;
+  background: var(--forja-bg-surface);
+  color: var(--forja-accent);
+}
+
+/* Hide add-inline button while dragging */
+body.is-dragging .btn-add-inline {
+  display: none;
+}
+
+/* Hide section drop zones during section drag */
+body.is-dragging-section .section-drop-zone {
+  display: none;
+}
+
+/* --- Inline Add Form (inside section) --- */
+
+.inline-add-form {
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  background: var(--forja-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.inline-add-form .input-field {
+  width: 100%;
+  font-size: 12px;
+  margin: 0;
+}
+
+.inline-add-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* --- Add Form (Footer) --- */
 
 .add-form {
   border-top: 1px solid var(--forja-bg-overlay);
-  padding-top: 12px;
+  padding-top: 10px;
   margin-top: 8px;
-}
-
-.form-row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 6px;
 }
 
 .input-field {
@@ -309,8 +619,8 @@ body {
   margin-bottom: 6px;
 }
 
-.input-section {
-  flex: 1;
+.input-section-name {
+  width: 100%;
 }
 
 /* --- Buttons --- */

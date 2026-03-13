@@ -28,7 +28,11 @@ describe("usePluginsStore", () => {
     const mockPlugins = [
       { manifest: { name: "test" }, path: "/test", entryUrl: "file:///test", enabled: true },
     ];
-    vi.mocked(invoke).mockResolvedValue(mockPlugins);
+    vi.mocked(invoke).mockImplementation(async (ch: string) => {
+      if (ch === "plugin:list") return mockPlugins;
+      if (ch === "plugin:get-plugin-order") return [];
+      return undefined;
+    });
     await usePluginsStore.getState().loadPlugins();
     expect(invoke).toHaveBeenCalledWith("plugin:list");
     expect(usePluginsStore.getState().plugins).toEqual(mockPlugins);
@@ -47,14 +51,22 @@ describe("usePluginsStore", () => {
   });
 
   it("enablePlugin calls IPC and reloads", async () => {
-    vi.mocked(invoke).mockResolvedValue([]);
+    vi.mocked(invoke).mockImplementation(async (ch: string) => {
+      if (ch === "plugin:list") return [];
+      if (ch === "plugin:get-plugin-order") return [];
+      return undefined;
+    });
     await usePluginsStore.getState().enablePlugin("test-plugin");
     expect(invoke).toHaveBeenCalledWith("plugin:enable", { name: "test-plugin" });
     expect(invoke).toHaveBeenCalledWith("plugin:list");
   });
 
   it("disablePlugin clears active if same plugin", async () => {
-    vi.mocked(invoke).mockResolvedValue([]);
+    vi.mocked(invoke).mockImplementation(async (ch: string) => {
+      if (ch === "plugin:list") return [];
+      if (ch === "plugin:get-plugin-order") return [];
+      return undefined;
+    });
     usePluginsStore.getState().setActivePlugin("test-plugin");
     await usePluginsStore.getState().disablePlugin("test-plugin");
     expect(usePluginsStore.getState().activePluginName).toBeNull();

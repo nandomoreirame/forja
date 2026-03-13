@@ -722,4 +722,37 @@ describe("config module", () => {
       expect(getEnabledPlugins().filter((n) => n === "test-plugin")).toHaveLength(1);
     });
   });
+
+  // ─── Plugin Order tests ───────────────────────────────────────────────────
+
+  describe("pluginOrder", () => {
+    it("returns empty array by default", async () => {
+      vi.resetModules();
+      const { getPluginOrder } = await import("../config.js");
+      expect(getPluginOrder()).toEqual([]);
+    });
+
+    it("saves and retrieves plugin order", async () => {
+      vi.resetModules();
+      const { getPluginOrder, setPluginOrder } = await import("../config.js");
+      setPluginOrder(["plugin-b", "plugin-a", "plugin-c"]);
+      expect(getPluginOrder()).toEqual(["plugin-b", "plugin-a", "plugin-c"]);
+    });
+
+    it("overwrites previous order", async () => {
+      vi.resetModules();
+      const { getPluginOrder, setPluginOrder } = await import("../config.js");
+      setPluginOrder(["a", "b"]);
+      setPluginOrder(["b", "a"]);
+      expect(getPluginOrder()).toEqual(["b", "a"]);
+    });
+
+    it("accepts empty array to clear order", async () => {
+      vi.resetModules();
+      const { getPluginOrder, setPluginOrder } = await import("../config.js");
+      setPluginOrder(["a", "b"]);
+      setPluginOrder([]);
+      expect(getPluginOrder()).toEqual([]);
+    });
+  });
 });

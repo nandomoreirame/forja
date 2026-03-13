@@ -1,4 +1,5 @@
 import {
+  Code,
   FolderOpen,
   Loader2,
   MessageSquare,
@@ -153,6 +154,20 @@ function ProjectIcon({
           >
             <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
             Edit Project...
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+            onSelect={() => invoke("shell:openPath", { path: project.path })}
+          >
+            <FolderOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Open in Files...
+          </ContextMenuItem>
+          <ContextMenuItem
+            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+            onSelect={() => invoke("shell:openInEditor", { path: project.path })}
+          >
+            <Code className="h-3.5 w-3.5" strokeWidth={1.5} />
+            Open in Editor...
           </ContextMenuItem>
           <ContextMenuSeparator className="bg-ctp-surface0" />
           <ContextMenuItem

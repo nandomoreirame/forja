@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { scanPlugins } from "./plugin-loader.js";
 import { executeBridgeCall } from "./plugin-bridge.js";
 import { grantPermissions, denyPermissions } from "./plugin-permissions.js";
-import { getPluginPermissions, setPluginEnabled } from "../config.js";
+import { getPluginPermissions, setPluginEnabled, getPluginOrder, setPluginOrder } from "../config.js";
 import type { PluginPermission } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -31,6 +31,10 @@ interface PluginNameArgs {
 interface PermissionArgs {
   name?: string;
   permissions?: PluginPermission[];
+}
+
+interface PluginOrderArgs {
+  names?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -55,6 +59,8 @@ export function createPluginHandlers(): Array<[string, IpcHandler]> {
     ["plugin:grant-permissions", handleGrantPermissions],
     ["plugin:deny-permissions", handleDenyPermissions],
     ["plugin:get-preload-path", handleGetPreloadPath],
+    ["plugin:get-plugin-order", handleGetPluginOrder],
+    ["plugin:set-plugin-order", handleSetPluginOrder],
   ];
 }
 
@@ -104,6 +110,16 @@ async function handleDenyPermissions(_event: unknown, args: unknown): Promise<vo
   if (!name) throw new Error("name is required");
   if (!permissions) throw new Error("permissions is required");
   denyPermissions(name, permissions);
+}
+
+async function handleGetPluginOrder(): Promise<string[]> {
+  return getPluginOrder();
+}
+
+async function handleSetPluginOrder(_event: unknown, args: unknown): Promise<void> {
+  const { names } = (args ?? {}) as PluginOrderArgs;
+  if (!names) throw new Error("names is required");
+  setPluginOrder(names);
 }
 
 async function handleGetPreloadPath(): Promise<string> {

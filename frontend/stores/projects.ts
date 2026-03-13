@@ -179,6 +179,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
     rightPanelStore.restoreStateForProject(projectPath);
 
+    // Save/restore active plugin per project
+    const { usePluginsStore } = await import("./plugins");
+    const pluginsStore = usePluginsStore.getState();
+    if (previousPath && previousPath !== projectPath) {
+      pluginsStore.saveActivePluginForProject(previousPath);
+    }
+    pluginsStore.restoreActivePluginForProject(projectPath);
+
     // Save/restore file tree sidebar state per project
     const { useFileTreeStore } = await import("./file-tree");
     const fileTreeStore = useFileTreeStore.getState();
@@ -225,7 +233,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
             useFileTreeStore.setState({ isOpen: savedState.sidebarOpen });
           }
           if (savedState.rightPanelOpen !== undefined) {
-            useRightPanelStore.setState({ isOpen: savedState.rightPanelOpen });
+            // Only open right panel if there is an active plugin to show
+            const { usePluginsStore } = await import("./plugins");
+            const hasActivePlugin = usePluginsStore.getState().activePluginName !== null;
+            useRightPanelStore.setState({ isOpen: savedState.rightPanelOpen && hasActivePlugin });
           }
           if (savedState.terminalFullscreen !== undefined) {
             useTerminalTabsStore.setState({ isTerminalFullscreen: savedState.terminalFullscreen });
