@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { CircleHelp, Pin, PinOff, Plus, Puzzle, Settings } from "lucide-react";
+import { CircleHelp, Pin, PinOff, Plus, Puzzle, Settings, Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -150,6 +150,10 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
     usePluginsStore.getState().unpinPlugin();
   }, []);
 
+  const handleUninstallPlugin = useCallback((pluginName: string) => {
+    usePluginsStore.getState().uninstallPlugin(pluginName);
+  }, []);
+
   const activeView = useRightPanelStore((s) => s.activeView);
 
   const handleMarketplaceClick = useCallback(() => {
@@ -233,7 +237,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                           </p>
                         </TooltipContent>
                       </Tooltip>
-                      <ContextMenuContent className="min-w-48 border-ctp-surface1 bg-ctp-mantle">
+                      <ContextMenuContent className="min-w-48 border-ctp-surface1 bg-overlay-mantle">
                         {isPinned ? (
                           <ContextMenuItem
                             className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
@@ -263,6 +267,14 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                             </ContextMenuItem>
                           </>
                         )}
+                        <ContextMenuSeparator className="bg-ctp-surface0" />
+                        <ContextMenuItem
+                          className="gap-2 text-xs text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
+                          onSelect={() => handleUninstallPlugin(plugin.manifest.name)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          Uninstall plugin
+                        </ContextMenuItem>
                       </ContextMenuContent>
                     </ContextMenu>
                   </SortablePluginIcon>

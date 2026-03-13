@@ -21,6 +21,7 @@ interface PluginsState {
   setActivePlugin: (name: string | null) => void;
   enablePlugin: (name: string) => Promise<void>;
   disablePlugin: (name: string) => Promise<void>;
+  uninstallPlugin: (name: string) => Promise<void>;
   reorderPlugins: (activeId: string, overId: string) => void;
   requestPermissions: (pluginName: string, permissions: PluginPermission[]) => void;
   grantPermissions: (pluginName: string, permissions: PluginPermission[]) => Promise<void>;
@@ -122,6 +123,18 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
     const { activePluginName } = get();
     if (activePluginName === name) {
       set({ activePluginName: null });
+    }
+    await get().loadPlugins();
+  },
+
+  uninstallPlugin: async (name: string) => {
+    await invoke("plugin:uninstall", { name });
+    const { activePluginName, pinnedPluginName } = get();
+    if (activePluginName === name) {
+      set({ activePluginName: null });
+    }
+    if (pinnedPluginName === name) {
+      set({ pinnedPluginName: null });
     }
     await get().loadPlugins();
   },
