@@ -8,6 +8,12 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-03-13
+
+### Added
+- Add uninstall plugin option to right sidebar context menu.
+---
+
 ## [1.6.0] - 2026-03-13
 
 ### Added
