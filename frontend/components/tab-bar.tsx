@@ -225,7 +225,7 @@ export function TabBar({
                         </div>
                       </ContextMenuTrigger>
                       <ContextMenuContent
-                        className="w-40 bg-ctp-mantle border-ctp-surface0 text-ctp-text"
+                        className="w-40 bg-overlay-mantle border-ctp-surface0 text-ctp-text"
                         onCloseAutoFocus={(e) => {
                           // When "Edit tab" was selected, prevent Radix from restoring focus to the
                           // trigger so the InlineEdit input can maintain focus without being blurred.

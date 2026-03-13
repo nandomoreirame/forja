@@ -65,7 +65,7 @@ export const SlashCommandMenu = forwardRef<
     return (
       <div
         data-testid="slash-command-menu"
-        className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-lg border border-ctp-surface0 bg-ctp-base shadow-lg"
+        className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-lg border border-ctp-surface0 bg-overlay-base shadow-lg"
       >
         <div className="py-6 text-center text-sm text-ctp-overlay1">
           No commands found
@@ -79,7 +79,7 @@ export const SlashCommandMenu = forwardRef<
   return (
     <div
       data-testid="slash-command-menu"
-      className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-lg border border-ctp-surface0 bg-ctp-base shadow-lg"
+      className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-lg border border-ctp-surface0 bg-overlay-base shadow-lg"
     >
       <div className="max-h-72 overflow-y-auto overflow-x-hidden p-1">
         {groups.map(([groupName, commands]) => (

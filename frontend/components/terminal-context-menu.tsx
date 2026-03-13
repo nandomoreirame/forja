@@ -71,7 +71,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
         {/* ContextMenuTrigger requires a single child element */}
         <div className="h-full w-full">{children}</div>
       </ContextMenuTrigger>
-      <ContextMenuContent className="min-w-48 border-ctp-surface1 bg-ctp-mantle">
+      <ContextMenuContent className="min-w-48 border-ctp-surface1 bg-overlay-mantle">
         {/* Copy / Paste */}
         <ContextMenuItem
           className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
