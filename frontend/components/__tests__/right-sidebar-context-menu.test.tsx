@@ -53,6 +53,7 @@ const mockSetActivePlugin = vi.fn();
 const mockReorderPlugins = vi.fn();
 const mockPinPlugin = vi.fn();
 const mockUnpinPlugin = vi.fn();
+const mockUninstallPlugin = vi.fn();
 let mockPlugins: Array<{
   manifest: { name: string; displayName: string; icon: string; permissions: string[] };
   enabled: boolean;
@@ -77,6 +78,7 @@ vi.mock("@/stores/plugins", () => ({
         reorderPlugins: mockReorderPlugins,
         pinPlugin: mockPinPlugin,
         unpinPlugin: mockUnpinPlugin,
+        uninstallPlugin: mockUninstallPlugin,
       };
       return selector ? selector(state) : state;
     },
@@ -91,6 +93,7 @@ vi.mock("@/stores/plugins", () => ({
         reorderPlugins: mockReorderPlugins,
         pinPlugin: mockPinPlugin,
         unpinPlugin: mockUnpinPlugin,
+        uninstallPlugin: mockUninstallPlugin,
       }),
       setState: vi.fn(),
       subscribe: vi.fn(() => () => {}),
@@ -114,6 +117,7 @@ describe("RightSidebar - Plugin Context Menu", () => {
     mockPlugins = [];
     mockActivePluginName = null;
     mockPinnedPluginName = null;
+    mockUninstallPlugin.mockResolvedValue(undefined);
   });
 
   it("shows context menu on right-click of a plugin icon", async () => {
@@ -253,5 +257,57 @@ describe("RightSidebar - Plugin Context Menu", () => {
 
     // Should not show a context menu
     expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("shows 'Uninstall plugin' option in context menu", async () => {
+    const user = userEvent.setup();
+    mockPlugins = [makePlugin("pomodoro", "Pomodoro")];
+    render(<RightSidebar hasProject />);
+
+    const btn = screen.getByLabelText("Pomodoro");
+    await user.pointer({ target: btn, keys: "[MouseRight]" });
+
+    expect(await screen.findByText("Uninstall plugin")).toBeInTheDocument();
+  });
+
+  it("calls uninstallPlugin when 'Uninstall plugin' is clicked", async () => {
+    const user = userEvent.setup();
+    mockPlugins = [makePlugin("pomodoro", "Pomodoro")];
+    render(<RightSidebar hasProject />);
+
+    const btn = screen.getByLabelText("Pomodoro");
+    await user.pointer({ target: btn, keys: "[MouseRight]" });
+
+    const uninstallOption = await screen.findByText("Uninstall plugin");
+    await user.click(uninstallOption);
+
+    expect(mockUninstallPlugin).toHaveBeenCalledWith("pomodoro");
+  });
+
+  it("shows separator before 'Uninstall plugin' option", async () => {
+    const user = userEvent.setup();
+    mockPlugins = [makePlugin("pomodoro", "Pomodoro")];
+    render(<RightSidebar hasProject />);
+
+    const btn = screen.getByLabelText("Pomodoro");
+    await user.pointer({ target: btn, keys: "[MouseRight]" });
+
+    // Menu should contain both pin option and uninstall option
+    expect(await screen.findByText("Pin Pomodoro")).toBeInTheDocument();
+    expect(await screen.findByText("Uninstall plugin")).toBeInTheDocument();
+  });
+
+  it("shows 'Uninstall plugin' even for pinned plugin", async () => {
+    const user = userEvent.setup();
+    mockPlugins = [makePlugin("pomodoro", "Pomodoro")];
+    mockPinnedPluginName = "pomodoro";
+    render(<RightSidebar hasProject />);
+
+    const btn = screen.getByLabelText("Pomodoro");
+    await user.pointer({ target: btn, keys: "[MouseRight]" });
+
+    // Should show unpin AND uninstall options
+    expect(await screen.findByText("Unpin Pomodoro")).toBeInTheDocument();
+    expect(await screen.findByText("Uninstall plugin")).toBeInTheDocument();
   });
 });
