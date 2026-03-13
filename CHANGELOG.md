@@ -8,6 +8,17 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.5.10] - 2026-03-13
+
+### Added
+- Add plugin pin with context menu and panel persistence.
+- Add IPC handlers for plugin pin persistence.
+
+### Fixed
+- Preserve project icon and order on session restore.
+
+---
+
 ## [1.5.9] - 2026-03-12
 
 ### Fixed
