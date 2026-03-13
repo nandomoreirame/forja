@@ -109,8 +109,11 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       set((state) => ({ projects: [newProject, ...state.projects] }));
     }
     set({ activeProjectPath: projectPath });
-    // Load icon asynchronously (non-blocking)
-    get().loadProjectIcon(projectPath).catch(() => {});
+    // Load icon only if the project has no custom icon already set
+    const current = get().projects.find((p) => p.path === projectPath);
+    if (!current?.iconPath) {
+      get().loadProjectIcon(projectPath).catch(() => {});
+    }
   },
 
   removeProject: (projectPath: string) => {
@@ -186,6 +189,15 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       pluginsStore.saveActivePluginForProject(previousPath);
     }
     pluginsStore.restoreActivePluginForProject(projectPath);
+
+    // If there is a pinned plugin, ensure the right panel stays open regardless
+    // of per-project saved state (pinned plugin is always visible across all projects)
+    const afterRestoreStore = usePluginsStore.getState();
+    const { pinnedPluginName } = afterRestoreStore;
+    if (pinnedPluginName) {
+      afterRestoreStore.setActivePlugin(pinnedPluginName);
+      useRightPanelStore.setState({ isOpen: true, activeView: "plugin" });
+    }
 
     // Save/restore file tree sidebar state per project
     const { useFileTreeStore } = await import("./file-tree");
