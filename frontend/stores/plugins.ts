@@ -15,6 +15,7 @@ interface PluginsState {
   permissionPrompt: PermissionPrompt | null;
   pluginBadges: Record<string, string>;
   loading: boolean;
+  pinnedPluginName: string | null;
 
   loadPlugins: () => Promise<void>;
   setActivePlugin: (name: string | null) => void;
@@ -28,6 +29,8 @@ interface PluginsState {
   saveActivePluginForProject: (projectPath: string) => void;
   restoreActivePluginForProject: (projectPath: string) => void;
   setPluginBadge: (pluginName: string, text: string) => void;
+  pinPlugin: (name: string) => Promise<void>;
+  unpinPlugin: () => Promise<void>;
 }
 
 export function getOrderedEnabledPlugins(state: Pick<PluginsState, "plugins" | "pluginOrder">): LoadedPlugin[] {
@@ -48,13 +51,15 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
   permissionPrompt: null,
   pluginBadges: {},
   loading: false,
+  pinnedPluginName: null,
 
   loadPlugins: async () => {
     set({ loading: true });
     try {
-      const [plugins, persistedOrder] = await Promise.all([
+      const [plugins, persistedOrder, pinnedPlugin] = await Promise.all([
         invoke<LoadedPlugin[]>("plugin:list"),
         invoke<string[]>("plugin:get-plugin-order"),
+        invoke<string | null>("plugin:get-pinned"),
       ]);
       const loaded = plugins ?? [];
       const loadedNames = new Set(loaded.map((p) => p.manifest.name));
@@ -71,7 +76,21 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
         .map((p) => p.manifest.name)
         .filter((n) => !preservedSet.has(n));
 
-      set({ plugins: loaded, pluginOrder: [...preserved, ...newNames], loading: false });
+      // On fresh startup (activePluginName is null), activate the pinned plugin automatically
+      // so the right panel can open with the correct plugin visible.
+      const currentActivePlugin = get().activePluginName;
+      const resolvedActivePlugin =
+        currentActivePlugin === null && pinnedPlugin
+          ? pinnedPlugin
+          : currentActivePlugin;
+
+      set({
+        plugins: loaded,
+        pluginOrder: [...preserved, ...newNames],
+        loading: false,
+        pinnedPluginName: pinnedPlugin ?? null,
+        activePluginName: resolvedActivePlugin,
+      });
     } catch {
       set({ loading: false });
     }
@@ -136,7 +155,12 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
   },
 
   restoreActivePluginForProject: (projectPath: string) => {
-    const { activePluginNameByProject } = get();
+    const { activePluginNameByProject, pinnedPluginName } = get();
+    // Pinned plugin always takes priority: it should be visible in every project
+    if (pinnedPluginName) {
+      set({ activePluginName: pinnedPluginName });
+      return;
+    }
     const saved = activePluginNameByProject[projectPath];
     set({ activePluginName: saved ?? null });
   },
@@ -145,5 +169,15 @@ export const usePluginsStore = create<PluginsState>((set, get) => ({
     const { pluginBadges } = get();
     if (pluginBadges[pluginName] === text) return;
     set({ pluginBadges: { ...pluginBadges, [pluginName]: text } });
+  },
+
+  pinPlugin: async (name: string) => {
+    await invoke("plugin:pin", { name });
+    set({ pinnedPluginName: name });
+  },
+
+  unpinPlugin: async () => {
+    await invoke("plugin:pin", { name: null });
+    set({ pinnedPluginName: null });
   },
 }));
