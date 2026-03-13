@@ -1,4 +1,5 @@
 import type { ThemeDefinition, ThemeColors, TerminalColors } from "@/themes/schema";
+import { hexToRgba } from "@/themes/apply";
 
 /**
  * Maps --forja-* CSS custom properties to ThemeDefinition values.
@@ -42,6 +43,26 @@ export function buildPluginThemeCSS(theme: ThemeDefinition): string {
     .map(([name, getter]) => `${name}:${getter(theme)}`)
     .join(";");
   return `:root{${vars}}`;
+}
+
+const PLUGIN_BG_VARS = ["--forja-bg-base", "--forja-bg-mantle", "--forja-bg-surface", "--forja-bg-overlay", "--forja-bg-highlight"];
+
+/**
+ * Builds CSS that overrides --forja-bg-* variables with rgba values for opacity.
+ * Also forces html/body to transparent so the webview background shows through.
+ * Returns empty string when opacity >= 1.0 (no override needed).
+ */
+export function buildPluginOpacityCSS(theme: ThemeDefinition, opacity: number): string {
+  if (opacity >= 1.0) return "";
+  const vars = PLUGIN_BG_VARS
+    .map((name) => {
+      const getter = PLUGIN_CSS_VAR_MAP[name];
+      if (!getter) return "";
+      return `${name}:${hexToRgba(getter(theme), opacity)}`;
+    })
+    .filter(Boolean)
+    .join(";");
+  return `:root{${vars}}html,body{background:transparent!important}`;
 }
 
 export interface PluginThemePayload {
