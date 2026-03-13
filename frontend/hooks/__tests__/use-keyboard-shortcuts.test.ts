@@ -285,6 +285,21 @@ describe("useKeyboardShortcuts tab management", () => {
     expect(tabStoreActions.addTab).not.toHaveBeenCalled();
   });
 
+  it("Ctrl+Shift+L opens command palette in projects mode", () => {
+    commandPaletteActions.open.mockReset();
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "L",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(commandPaletteActions.open).toHaveBeenCalledWith("projects");
+  });
+
   it("Ctrl+T (without shift) does NOT create a new tab", () => {
     setupHook();
 

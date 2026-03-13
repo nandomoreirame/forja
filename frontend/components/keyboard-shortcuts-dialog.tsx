@@ -26,6 +26,8 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
     items: [
       { label: "File Search", keys: [mod, "P"] },
       { label: "Command Palette", keys: [mod, "Shift", "P"] },
+      { label: "Go to Project", keys: [mod, "Shift", "L"] },
+      { label: "Switch Project 1-9", keys: [mod, "Shift", "1-9"] },
       { label: "Add Project", keys: [mod, "Shift", "O"] },
       { label: "Toggle Sidebar", keys: [mod, "Shift", "B"] },
       { label: "Toggle Browser", keys: [mod, "Alt", "B"] },
@@ -79,7 +81,7 @@ export function KeyboardShortcutsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-105 gap-0 border-ctp-surface0 bg-ctp-base p-0"
+        className="max-w-105 gap-0 border-ctp-surface0 bg-overlay-base p-0"
       >
         <DialogHeader className="gap-0 border-b border-ctp-surface0 px-5 py-4">
           <div className="flex items-center gap-3">
