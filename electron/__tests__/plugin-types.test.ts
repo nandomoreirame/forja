@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { validateManifest, VALID_PERMISSIONS, satisfiesMinVersion } from "../plugins/types.js";
+import {
+  validateManifest,
+  validateRegistryData,
+  VALID_PERMISSIONS,
+  satisfiesMinVersion,
+} from "../plugins/types.js";
+import type { RegistryData } from "../plugins/types.js";
 
 describe("validateManifest", () => {
   const validManifest = {
@@ -61,6 +67,78 @@ describe("VALID_PERMISSIONS", () => {
     expect(VALID_PERMISSIONS).toContain("terminal.execute");
     expect(VALID_PERMISSIONS).toContain("theme.current");
     expect(VALID_PERMISSIONS).toContain("notifications");
+  });
+});
+
+describe("validateRegistryData", () => {
+  const validRegistry: RegistryData = {
+    version: 1,
+    plugins: [
+      {
+        name: "git-graph",
+        displayName: "Git Graph",
+        description: "Visualize git history",
+        author: "nandomoreira",
+        icon: "GitBranch",
+        version: "1.2.0",
+        downloadUrl:
+          "https://github.com/forja-plugins/git-graph/releases/download/v1.2.0/git-graph-1.2.0.tar.gz",
+        sha256: "",
+        tags: ["git", "visualization"],
+        downloads: 1420,
+        permissions: ["project.active", "git.status"],
+      },
+    ],
+  };
+
+  it("accepts valid registry data", () => {
+    const result = validateRegistryData(validRegistry);
+    expect(result.valid).toBe(true);
+    expect(result.data).toEqual(validRegistry);
+  });
+
+  it("rejects non-object input", () => {
+    const result = validateRegistryData(null);
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects missing version field", () => {
+    const result = validateRegistryData({ ...validRegistry, version: undefined });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects missing plugins array", () => {
+    const result = validateRegistryData({ ...validRegistry, plugins: "not-array" });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects plugin with invalid name format", () => {
+    const badPlugin = { ...validRegistry.plugins[0], name: "Bad Name" };
+    const result = validateRegistryData({ ...validRegistry, plugins: [badPlugin] });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects plugin with invalid version", () => {
+    const badPlugin = { ...validRegistry.plugins[0], version: "bad" };
+    const result = validateRegistryData({ ...validRegistry, plugins: [badPlugin] });
+    expect(result.valid).toBe(false);
+  });
+
+  it("rejects plugin with invalid permission", () => {
+    const badPlugin = { ...validRegistry.plugins[0], permissions: ["hack.system"] };
+    const result = validateRegistryData({ ...validRegistry, plugins: [badPlugin] });
+    expect(result.valid).toBe(false);
+  });
+
+  it("accepts registry with empty plugins array", () => {
+    const result = validateRegistryData({ ...validRegistry, plugins: [] });
+    expect(result.valid).toBe(true);
+  });
+
+  it("accepts plugin with optional minForjaVersion", () => {
+    const plugin = { ...validRegistry.plugins[0], minForjaVersion: "1.5.0" };
+    const result = validateRegistryData({ ...validRegistry, plugins: [plugin] });
+    expect(result.valid).toBe(true);
   });
 });
 

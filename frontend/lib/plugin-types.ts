@@ -114,6 +114,34 @@ export const PERMISSION_INFO: Record<PluginPermission, PermissionInfo> = {
   },
 };
 
+// Mirror types from electron/plugins/types.ts (registry / marketplace)
+export interface RegistryPlugin {
+  name: string;
+  displayName: string;
+  description: string;
+  author: string;
+  icon: string;
+  version: string;
+  downloadUrl: string;
+  sha256: string;
+  tags: string[];
+  downloads: number;
+  minForjaVersion?: string;
+  permissions: PluginPermission[];
+}
+
+export interface RegistryData {
+  version: number;
+  plugins: RegistryPlugin[];
+}
+
+export type InstallProgress =
+  | { stage: "downloading"; percent: number }
+  | { stage: "verifying" }
+  | { stage: "extracting" }
+  | { stage: "done" }
+  | { stage: "error"; message: string };
+
 export function getPluginIcon(iconName: string): LucideIcon | null {
   const icon = (icons as Record<string, unknown>)[iconName];
   if (icon === null || icon === undefined) return null;
