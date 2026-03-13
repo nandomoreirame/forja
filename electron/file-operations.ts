@@ -3,11 +3,21 @@ import * as path from "path";
 
 import { assertPathWithinScope } from "./path-validation.js";
 
-const FORBIDDEN_PREFIXES = ["/etc", "/usr", "/bin", "/sbin", "/var", "/sys", "/proc"];
+const UNIX_FORBIDDEN = ["/etc", "/usr", "/bin", "/sbin", "/var", "/sys", "/proc"];
+const WIN_FORBIDDEN = [
+  "C:\\Windows",
+  "C:\\Program Files",
+  "C:\\Program Files (x86)",
+  "C:\\ProgramData",
+];
+
+export function getForbiddenPrefixes(): string[] {
+  return process.platform === "win32" ? WIN_FORBIDDEN : UNIX_FORBIDDEN;
+}
 
 function assertNotSystemPath(resolvedPath: string): void {
-  for (const prefix of FORBIDDEN_PREFIXES) {
-    if (resolvedPath.startsWith(prefix + "/") || resolvedPath === prefix) {
+  for (const prefix of getForbiddenPrefixes()) {
+    if (resolvedPath.startsWith(prefix + path.sep) || resolvedPath === prefix) {
       throw new Error(`Path traversal blocked: ${resolvedPath} is a system path`);
     }
   }
