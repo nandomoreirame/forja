@@ -66,6 +66,25 @@ describe("buildTerminalTheme", () => {
     expect(result.background).toBe("#282a36");
     expect(result.red).toBe("#ff5555");
   });
+
+  it("ignores opacity and always returns opaque background", () => {
+    const result = buildTerminalTheme(mocha, 0.85);
+    // WebGL renderer does not support rgba — always opaque
+    expect(result.background).toBe("#1e1e2e");
+    expect(result.foreground).toBe("#cdd6f4");
+    expect(result.cursor).toBe("#cdd6f4");
+    expect(result.red).toBe("#f38ba8");
+  });
+
+  it("keeps hex background when opacity is 1.0", () => {
+    const result = buildTerminalTheme(mocha, 1.0);
+    expect(result.background).toBe("#1e1e2e");
+  });
+
+  it("keeps hex background when opacity is undefined", () => {
+    const result = buildTerminalTheme(mocha);
+    expect(result.background).toBe("#1e1e2e");
+  });
 });
 
 describe("hexToRgba", () => {
@@ -139,6 +158,16 @@ describe("applyBackgroundOpacity", () => {
     expect(style.getPropertyValue("--color-accent")).toBe("#313244");
   });
 
+  it("does not apply opacity to popover/dropdown CSS variables", () => {
+    applyTheme(mocha);
+    applyBackgroundOpacity(0.5);
+
+    const style = document.documentElement.style;
+    // Popover background is used by shadcn dropdowns, tooltips, context menus
+    // Must remain opaque for readability
+    expect(style.getPropertyValue("--color-popover")).toBe("#181825");
+  });
+
   it("updates correctly when theme changes", () => {
     applyTheme(mocha);
     applyBackgroundOpacity(0.8);
@@ -149,6 +178,46 @@ describe("applyBackgroundOpacity", () => {
     const style = document.documentElement.style;
     // Dracula base is #282a36
     expect(style.getPropertyValue("--bg-base")).toBe("rgba(40, 42, 54, 0.8)");
+  });
+});
+
+describe("overlay CSS variables (always opaque)", () => {
+  beforeEach(() => {
+    document.documentElement.className = "";
+    document.documentElement.style.cssText = "";
+  });
+
+  it("sets --color-overlay-base to theme base color", () => {
+    applyTheme(mocha);
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--color-overlay-base")).toBe("#1e1e2e");
+  });
+
+  it("sets --color-overlay-mantle to theme mantle color", () => {
+    applyTheme(mocha);
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--color-overlay-mantle")).toBe("#181825");
+  });
+
+  it("keeps overlay-base opaque when background opacity is applied", () => {
+    applyTheme(mocha);
+    applyBackgroundOpacity(0.5);
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--color-overlay-base")).toBe("#1e1e2e");
+  });
+
+  it("keeps overlay-mantle opaque when background opacity is applied", () => {
+    applyTheme(mocha);
+    applyBackgroundOpacity(0.5);
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--color-overlay-mantle")).toBe("#181825");
+  });
+
+  it("updates overlay colors when theme changes", () => {
+    applyTheme(mocha);
+    applyTheme(draculaTheme);
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--color-overlay-base")).toBe("#282a36");
   });
 });
 
