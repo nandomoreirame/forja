@@ -9,6 +9,7 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useThemeStore } from "@/stores/theme";
+import { useUserSettingsStore } from "@/stores/user-settings";
 import { buildTerminalTheme } from "@/themes/apply";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { memo, useCallback, useEffect, useRef } from "react";
@@ -69,7 +70,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     if (!containerRef.current) return;
 
     const currentTheme = useThemeStore.getState().getActiveTheme();
-    const terminalTheme = buildTerminalTheme(currentTheme);
+    const currentOpacity = useUserSettingsStore.getState().settings.window.opacity;
+    const terminalTheme = buildTerminalTheme(currentTheme, currentOpacity);
     const terminal = new Terminal({ ...TERMINAL_OPTIONS, theme: terminalTheme });
     const fitAddon = new FitAddon();
     const webLinksAddon = new WebLinksAddon((_event, uri) => {
@@ -224,13 +226,25 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Apply theme changes reactively
+  // Apply theme changes reactively (including opacity)
   useEffect(() => {
     return useThemeStore.subscribe((state) => {
       const terminal = terminalRef.current;
       if (!terminal) return;
       const theme = state.getActiveTheme();
-      terminal.options.theme = buildTerminalTheme(theme);
+      const opacity = useUserSettingsStore.getState().settings.window.opacity;
+      terminal.options.theme = buildTerminalTheme(theme, opacity);
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Apply background opacity changes to terminal
+  useEffect(() => {
+    return useUserSettingsStore.subscribe((state) => {
+      const terminal = terminalRef.current;
+      if (!terminal) return;
+      const theme = useThemeStore.getState().getActiveTheme();
+      const opacity = state.settings.window.opacity;
+      terminal.options.theme = buildTerminalTheme(theme, opacity);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -282,7 +296,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     <div
       role="region"
       aria-label="Claude Code Terminal"
-      className={`h-full w-full bg-ctp-base ${!isVisible ? "hidden" : ""}`}
+      className={`h-full w-full bg-overlay-base ${!isVisible ? "hidden" : ""}`}
     >
       <TerminalContextMenu tabId={tabId} onCopy={handleCopy} onPaste={handlePaste}>
         <div className="h-full w-full pt-3 pl-4 pb-3">
