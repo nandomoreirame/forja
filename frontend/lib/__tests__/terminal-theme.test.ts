@@ -44,4 +44,8 @@ describe("TERMINAL_OPTIONS", () => {
   it("includes the theme", () => {
     expect(TERMINAL_OPTIONS.theme).toBe(TERMINAL_THEME);
   });
+
+  it("does not enable transparency (WebGL incompatible)", () => {
+    expect(TERMINAL_OPTIONS.allowTransparency).toBeUndefined();
+  });
 });

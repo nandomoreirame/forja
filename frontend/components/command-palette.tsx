@@ -10,9 +10,11 @@ import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useGitStatusStore } from "@/stores/git-status";
 import { useThemeStore } from "@/stores/theme";
+import { useProjectsStore } from "@/stores/projects";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
 import {
   ChevronsDownUp,
+  FolderOpen,
   GitCompareArrows,
   Info,
   Keyboard,
@@ -53,6 +55,7 @@ export function CommandPalette() {
   const { tree, currentPath } = useFileTreeStore();
   const { installedClis, loading: clisLoading } = useInstalledClis();
   const { customThemes: themeCustom } = useThemeStore();
+  const { projects, activeProjectPath, getProjectInitial, getProjectColor } = useProjectsStore();
   const allThemes = useMemo(
     () => useThemeStore.getState().getAllThemes(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -91,10 +94,18 @@ export function CommandPalette() {
     close();
   };
 
+  const handleProjectSelect = (projectPath: string) => {
+    useProjectsStore.getState().switchToProject(projectPath);
+    close();
+  };
+
   const handleCommand = (command: string) => {
     switch (command) {
       case "new-session":
         open("sessions");
+        return; // return early to avoid close()
+      case "go-to-project":
+        open("projects");
         return; // return early to avoid close()
       case "open-project":
         useFileTreeStore.getState().openProject();
@@ -173,7 +184,9 @@ export function CommandPalette() {
               ? "Select session type..."
               : mode === "themes"
                 ? "Select theme..."
-                : "Type a command..."
+                : mode === "projects"
+                  ? "Go to project..."
+                  : "Type a command..."
         }
       />
       <CommandList>
@@ -184,7 +197,9 @@ export function CommandPalette() {
               ? "No session types found."
               : mode === "themes"
                 ? "No themes found."
-                : "No commands found."}
+                : mode === "projects"
+                  ? "No projects found."
+                  : "No commands found."}
         </CommandEmpty>
 
         {mode === "files" && (
@@ -257,6 +272,43 @@ export function CommandPalette() {
           </CommandGroup>
         )}
 
+        {mode === "projects" && (
+          <CommandGroup heading="Open Projects">
+            {projects.map((project) => {
+              const initial = getProjectInitial(project.name);
+              const color = getProjectColor(project.name);
+              const isActive = project.path === activeProjectPath;
+              return (
+                <CommandItem
+                  key={project.path}
+                  value={project.name}
+                  onSelect={() => handleProjectSelect(project.path)}
+                >
+                  {project.iconPath ? (
+                    <img
+                      src={project.iconPath}
+                      alt={project.name}
+                      className="h-4 w-4 shrink-0 rounded object-contain"
+                    />
+                  ) : (
+                    <span
+                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-bold"
+                      style={{ backgroundColor: `${color}22`, color }}
+                    >
+                      {initial}
+                    </span>
+                  )}
+                  <span className="flex-1 truncate">{project.name}</span>
+                  <span className="ml-2 truncate text-xs text-ctp-overlay1">{project.path}</span>
+                  {isActive && (
+                    <FolderOpen className="ml-2 h-3.5 w-3.5 shrink-0 text-ctp-mauve" strokeWidth={1.5} />
+                  )}
+                </CommandItem>
+              );
+            })}
+          </CommandGroup>
+        )}
+
         {mode === "commands" && (
           <>
             <CommandGroup heading="Session">
@@ -267,6 +319,14 @@ export function CommandPalette() {
                 <Plus className="h-4 w-4" strokeWidth={1.5} />
                 New Session
                 <CommandShortcut>{mod}+Shift+T</CommandShortcut>
+              </CommandItem>
+              <CommandItem
+                value="Go to Project"
+                onSelect={() => handleCommand("go-to-project")}
+              >
+                <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
+                Go to Project
+                <CommandShortcut>{mod}+Shift+L</CommandShortcut>
               </CommandItem>
               <CommandItem
                 value="Add Project"

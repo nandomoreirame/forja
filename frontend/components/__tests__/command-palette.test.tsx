@@ -3,6 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { CommandPalette } from "../command-palette";
 import { useCommandPaletteStore } from "@/stores/command-palette";
+import type { Project } from "@/stores/projects";
 
 // cmdk calls scrollIntoView which jsdom doesn't implement
 beforeAll(() => {
@@ -118,6 +119,22 @@ const mockInstalledClis = {
 
 vi.mock("@/hooks/use-installed-clis", () => ({
   useInstalledClis: () => mockInstalledClis,
+}));
+
+const mockSwitchToProject = vi.fn();
+const mockProjectsState = {
+  projects: [] as Project[],
+  activeProjectPath: null as string | null,
+  switchToProject: mockSwitchToProject,
+  getProjectInitial: (nameOrPath: string) => nameOrPath[0]?.toUpperCase() ?? "?",
+  getProjectColor: () => "#cba6f7",
+};
+
+vi.mock("@/stores/projects", () => ({
+  useProjectsStore: Object.assign(
+    () => mockProjectsState,
+    { getState: () => mockProjectsState }
+  ),
 }));
 
 describe("CommandPalette", () => {
@@ -314,6 +331,85 @@ describe("CommandPalette", () => {
       const state = useCommandPaletteStore.getState();
       expect(state.mode).toBe("sessions");
       expect(state.isOpen).toBe(true);
+    });
+  });
+
+  describe("projects mode", () => {
+    beforeEach(() => {
+      mockProjectsState.projects = [];
+      mockProjectsState.activeProjectPath = null;
+      mockSwitchToProject.mockClear();
+    });
+
+    it("renders projects mode with correct placeholder", () => {
+      useCommandPaletteStore.setState({ isOpen: true, mode: "projects" });
+      render(<CommandPalette />);
+      expect(screen.getByPlaceholderText("Go to project...")).toBeInTheDocument();
+    });
+
+    it("shows empty state when no projects available", () => {
+      mockProjectsState.projects = [];
+      useCommandPaletteStore.setState({ isOpen: true, mode: "projects" });
+      render(<CommandPalette />);
+      expect(screen.getByText("No projects found.")).toBeInTheDocument();
+    });
+
+    it("lists projects in projects mode", () => {
+      mockProjectsState.projects = [
+        { path: "/home/user/project-a", name: "project-a", lastOpened: "", iconPath: null },
+        { path: "/home/user/project-b", name: "project-b", lastOpened: "", iconPath: null },
+      ];
+      useCommandPaletteStore.setState({ isOpen: true, mode: "projects" });
+      render(<CommandPalette />);
+      expect(screen.getByText("project-a")).toBeInTheDocument();
+      expect(screen.getByText("project-b")).toBeInTheDocument();
+    });
+
+    it("highlights active project with indicator", () => {
+      mockProjectsState.projects = [
+        { path: "/home/user/project-a", name: "project-a", lastOpened: "", iconPath: null },
+        { path: "/home/user/project-b", name: "project-b", lastOpened: "", iconPath: null },
+      ];
+      mockProjectsState.activeProjectPath = "/home/user/project-a";
+      useCommandPaletteStore.setState({ isOpen: true, mode: "projects" });
+      render(<CommandPalette />);
+      // The active project item should have aria-selected=true (cmdk sets this)
+      const activeItem = screen.getByText("project-a").closest("[cmdk-item]") as HTMLElement;
+      expect(activeItem).toBeInTheDocument();
+    });
+
+    it("calls switchToProject and closes palette when selecting a project", async () => {
+      const user = userEvent.setup();
+      mockProjectsState.projects = [
+        { path: "/home/user/project-a", name: "project-a", lastOpened: "", iconPath: null },
+      ];
+      useCommandPaletteStore.setState({ isOpen: true, mode: "projects" });
+      render(<CommandPalette />);
+
+      await user.click(screen.getByText("project-a"));
+      expect(mockSwitchToProject).toHaveBeenCalledWith("/home/user/project-a");
+      const state = useCommandPaletteStore.getState();
+      expect(state.isOpen).toBe(false);
+    });
+
+    it("'Go to Project' command in commands mode switches to projects mode", async () => {
+      const user = userEvent.setup();
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+
+      await user.click(screen.getByText("Go to Project"));
+      const state = useCommandPaletteStore.getState();
+      expect(state.mode).toBe("projects");
+      expect(state.isOpen).toBe(true);
+    });
+
+    it("shows project path as secondary text", () => {
+      mockProjectsState.projects = [
+        { path: "/home/user/my-project", name: "my-project", lastOpened: "", iconPath: null },
+      ];
+      useCommandPaletteStore.setState({ isOpen: true, mode: "projects" });
+      render(<CommandPalette />);
+      expect(screen.getByText("/home/user/my-project")).toBeInTheDocument();
     });
   });
 });

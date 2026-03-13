@@ -32,7 +32,7 @@ export function NewSessionDropdown({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="min-w-44 border-ctp-surface0 bg-ctp-base"
+        className="min-w-44 border-ctp-surface0 bg-overlay-base"
       >
         {loading ? (
           <div className="flex items-center justify-center py-3">

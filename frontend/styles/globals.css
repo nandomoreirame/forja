@@ -80,6 +80,10 @@
   --color-input: #313244;
   --color-ring: #cba6f7;
   --radius: 0.5rem;
+
+  /* Overlay backgrounds (always opaque, used by dialogs/tooltips/command palette) */
+  --color-overlay-base: #1e1e2e;
+  --color-overlay-mantle: #181825;
 }
 
 :root {

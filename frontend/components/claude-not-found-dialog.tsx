@@ -46,7 +46,7 @@ export function ClaudeNotFoundDialog({
     <Dialog open={open} onOpenChange={() => {}}>
       <DialogContent
         showCloseButton={false}
-        className="max-w-md gap-0 overflow-hidden border-ctp-surface0 bg-ctp-base p-0"
+        className="max-w-md gap-0 overflow-hidden border-ctp-surface0 bg-overlay-base p-0"
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogTitle className="sr-only">Claude Code CLI not found</DialogTitle>
@@ -70,7 +70,7 @@ export function ClaudeNotFoundDialog({
             could not be found in your system PATH. Install Claude Code to continue.
           </p>
 
-          <div className="mt-6 w-full rounded-lg bg-ctp-mantle p-4">
+          <div className="mt-6 w-full rounded-lg bg-overlay-mantle p-4">
             <div className="flex items-center gap-2 text-xs text-ctp-overlay1">
               <Terminal className="h-3.5 w-3.5" strokeWidth={1.5} />
               <span>Install via npm:</span>

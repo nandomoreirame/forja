@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { TerminalSession } from "../terminal-session";
 
-// Mock xterm.js
+// Mock xterm.js — track all created instances for assertion
 const mockOpen = vi.fn((container: HTMLElement) => {
   // xterm.js creates a textarea inside the container for input handling
   const textarea = document.createElement("textarea");
@@ -15,6 +15,8 @@ const mockLoadAddon = vi.fn();
 const mockFocus = vi.fn();
 const mockGetSelection = vi.fn().mockReturnValue("");
 let capturedKeyHandler: ((event: KeyboardEvent) => boolean) | undefined;
+
+const terminalInstances: Array<{ options: Record<string, unknown> }> = [];
 
 vi.mock("@xterm/xterm", () => ({
   Terminal: class MockTerminal {
@@ -30,9 +32,12 @@ vi.mock("@xterm/xterm", () => ({
         capturedKeyHandler = handler;
       },
     );
-    options = {};
+    options: Record<string, unknown> = {};
     rows = 24;
     cols = 80;
+    constructor() {
+      terminalInstances.push(this);
+    }
   },
 }));
 
@@ -122,6 +127,7 @@ describe("TerminalSession", () => {
     capturedKeyHandler = undefined;
     mockGetSelection.mockReset().mockReturnValue("");
     webglInstances.length = 0;
+    terminalInstances.length = 0;
   });
 
   afterEach(() => {
@@ -368,6 +374,52 @@ describe("TerminalSession", () => {
       capturedKeyHandler!(event);
 
       expect(mockClipboardWriteText).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("background opacity", () => {
+    it("keeps terminal background opaque even when opacity changes", async () => {
+      const { useUserSettingsStore } = await import("@/stores/user-settings");
+      render(<TerminalSession tabId="tab-opacity" path="/test" isVisible={true} />);
+
+      const terminal = terminalInstances[terminalInstances.length - 1];
+      expect(terminal).toBeDefined();
+
+      // Trigger opacity change via the real store
+      const current = useUserSettingsStore.getState().settings;
+      useUserSettingsStore.getState().setSettings({
+        ...current,
+        window: { ...current.window, opacity: 0.7 },
+      });
+
+      // WebGL renderer does not support rgba — background stays opaque
+      const theme = terminal.options.theme as { background?: string };
+      expect(theme).toBeDefined();
+      expect(theme.background).not.toContain("rgba(");
+      expect(theme.background).toBe("#1e1e2e");
+    });
+
+    it("keeps hex background regardless of opacity value", async () => {
+      const { useUserSettingsStore } = await import("@/stores/user-settings");
+      render(<TerminalSession tabId="tab-opacity2" path="/test" isVisible={true} />);
+
+      const terminal = terminalInstances[terminalInstances.length - 1];
+      const current = useUserSettingsStore.getState().settings;
+
+      // Set opacity < 1
+      useUserSettingsStore.getState().setSettings({
+        ...current,
+        window: { ...current.window, opacity: 0.5 },
+      });
+
+      // Set opacity back to 1
+      useUserSettingsStore.getState().setSettings({
+        ...current,
+        window: { ...current.window, opacity: 1.0 },
+      });
+
+      const theme = terminal.options.theme as { background?: string };
+      expect(theme.background).not.toContain("rgba(");
     });
   });
 

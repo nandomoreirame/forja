@@ -53,7 +53,7 @@ export function CreateWorkspaceDialog() {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md border-ctp-surface0 bg-ctp-base">
+      <DialogContent className="max-w-md border-ctp-surface0 bg-overlay-base">
         <DialogHeader>
           <DialogTitle className="text-ctp-text">
             {isRenameMode ? "Rename Workspace" : "Create Workspace"}
@@ -80,7 +80,7 @@ export function CreateWorkspaceDialog() {
             }}
             placeholder="My Workspace"
             autoFocus
-            className="w-full rounded-md border border-ctp-surface0 bg-ctp-mantle px-3 py-2 text-sm text-ctp-text placeholder:text-ctp-overlay0 focus:border-brand focus:outline-none"
+            className="w-full rounded-md border border-ctp-surface0 bg-overlay-mantle px-3 py-2 text-sm text-ctp-text placeholder:text-ctp-overlay0 focus:border-brand focus:outline-none"
           />
         </div>
         <DialogFooter>

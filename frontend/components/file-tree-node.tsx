@@ -265,7 +265,7 @@ export const FileTreeNode = memo(function FileTreeNode({
         <ContextMenuTrigger asChild>
           {nodeButton}
         </ContextMenuTrigger>
-        <ContextMenuContent className="min-w-44 border-ctp-surface1 bg-ctp-mantle">
+        <ContextMenuContent className="min-w-44 border-ctp-surface1 bg-overlay-mantle">
           <ContextMenuItem
             className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
             onSelect={handleRenameStart}
@@ -300,7 +300,7 @@ export const FileTreeNode = memo(function FileTreeNode({
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="border-ctp-surface1 bg-ctp-mantle sm:max-w-sm">
+        <DialogContent className="border-ctp-surface1 bg-overlay-mantle sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-ctp-text">
               Delete {node.isDir ? "folder" : "file"}

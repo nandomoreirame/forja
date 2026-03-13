@@ -76,7 +76,7 @@ interface SidebarProps {
 
 function Sidebar({ activeSection, onSelect, onOpenSettingsFile, version }: SidebarProps) {
   return (
-    <div className="flex w-44 shrink-0 flex-col border-r border-ctp-surface0 bg-ctp-mantle">
+    <div className="flex w-44 shrink-0 flex-col border-r border-ctp-surface0 bg-overlay-mantle">
       {/* Logo area */}
       <div className="flex items-center gap-2 border-b border-ctp-surface0 px-3 py-3">
         <Settings className="h-4 w-4 text-ctp-mauve" strokeWidth={1.5} />
@@ -165,10 +165,10 @@ function SectionHeader({ title, icon }: { title: string; icon: React.ReactNode }
 // ─── Inputs ──────────────────────────────────────────────────────────────────
 
 const inputClass =
-  "h-7 w-72 rounded-sm border border-ctp-surface1 bg-ctp-mantle px-2 text-sm text-ctp-text placeholder-ctp-overlay0 focus:border-ctp-mauve focus:outline-none";
+  "h-7 w-72 rounded-sm border border-ctp-surface1 bg-overlay-mantle px-2 text-sm text-ctp-text placeholder-ctp-overlay0 focus:border-ctp-mauve focus:outline-none";
 
 const numberInputClass =
-  "h-7 w-24 rounded-sm border border-ctp-surface1 bg-ctp-mantle px-2 text-sm text-ctp-text focus:border-ctp-mauve focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "h-7 w-24 rounded-sm border border-ctp-surface1 bg-overlay-mantle px-2 text-sm text-ctp-text focus:border-ctp-mauve focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 // ─── Appearance Section ───────────────────────────────────────────────────────
 
@@ -433,7 +433,7 @@ function ShortcutsSection() {
         title="Keyboard Shortcuts"
         icon={<Keyboard className="h-3.5 w-3.5 text-ctp-mauve" strokeWidth={1.5} />}
       />
-      <div className="divide-y divide-ctp-surface0 rounded-lg border border-ctp-surface0 bg-ctp-mantle">
+      <div className="divide-y divide-ctp-surface0 rounded-lg border border-ctp-surface0 bg-overlay-mantle">
         {SHORTCUTS.map((shortcut) => (
           <div
             key={shortcut.label}
@@ -498,7 +498,7 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
         {sessionEntries.map(([name, config]) => (
           <div
             key={name}
-            className="rounded-lg border border-ctp-surface0 bg-ctp-mantle p-4"
+            className="rounded-lg border border-ctp-surface0 bg-overlay-mantle p-4"
           >
             <div className="mb-3 flex items-center gap-2">
               <span className="font-mono text-sm font-medium text-ctp-text">
@@ -519,14 +519,14 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
                   value={(config.args ?? []).join(" ")}
                   onChange={(e) => updateArgs(name, e.target.value)}
                   placeholder="--arg1 --arg2"
-                  className="h-7 w-full rounded-md border border-ctp-surface0 bg-ctp-base px-2 font-mono text-xs text-ctp-text placeholder-ctp-overlay0 focus:border-ctp-mauve focus:outline-none"
+                  className="h-7 w-full rounded-md border border-ctp-surface0 bg-overlay-base px-2 font-mono text-xs text-ctp-text placeholder-ctp-overlay0 focus:border-ctp-mauve focus:outline-none"
                 />
               </div>
             </div>
           </div>
         ))}
         {sessionEntries.length === 0 && (
-          <div className="rounded-lg border border-ctp-surface0 bg-ctp-mantle px-4 py-8 text-center">
+          <div className="rounded-lg border border-ctp-surface0 bg-overlay-mantle px-4 py-8 text-center">
             <p className="text-sm text-ctp-overlay1">No sessions configured</p>
           </div>
         )}
@@ -621,7 +621,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         showCloseButton={false}
-        className="h-[80vh] gap-0 overflow-hidden border-ctp-surface0 bg-ctp-base p-0 sm:max-w-[900px]"
+        className="h-[80vh] gap-0 overflow-hidden border-ctp-surface0 bg-overlay-base p-0 sm:max-w-[900px]"
       >
         <DialogTitle className="sr-only">Settings</DialogTitle>
         <DialogDescription className="sr-only">

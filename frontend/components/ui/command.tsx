@@ -12,7 +12,7 @@ function Command({
     <CommandPrimitive
       data-slot="command"
       className={cn(
-        "flex h-full w-full flex-col overflow-hidden rounded-lg bg-ctp-base text-ctp-text",
+        "flex h-full w-full flex-col overflow-hidden rounded-lg bg-overlay-base text-ctp-text",
         className
       )}
       {...props}
@@ -28,7 +28,7 @@ function CommandDialog({
     <Dialog {...props}>
       <DialogContent
         showCloseButton={false}
-        className="overflow-hidden border-ctp-surface0 bg-ctp-base p-0 top-[20%] translate-y-0 sm:max-w-lg"
+        className="overflow-hidden border-ctp-surface0 bg-overlay-base p-0 top-[20%] translate-y-0 sm:max-w-lg"
       >
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <DialogDescription className="sr-only">

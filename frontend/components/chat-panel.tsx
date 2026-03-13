@@ -200,7 +200,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
           {cliSwitcherOpen && switchableClis.length > 0 && (
             <div
               data-testid="cli-switcher-dropdown"
-              className="absolute bottom-full left-3 right-3 z-50 mb-1 rounded-lg border border-ctp-surface0 bg-ctp-base shadow-lg"
+              className="absolute bottom-full left-3 right-3 z-50 mb-1 rounded-lg border border-ctp-surface0 bg-overlay-base shadow-lg"
             >
               <div className="p-1">
                 {switchableClis.map((cli) => (

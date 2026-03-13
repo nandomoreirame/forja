@@ -125,7 +125,7 @@ function SplitPaneHeader({ label = "Split", onClose }: SplitPaneHeaderProps) {
 
 function HibernatedTabPlaceholder({ onWake }: { onWake: () => void }) {
   return (
-    <div className="flex h-full w-full items-center justify-center bg-ctp-base">
+    <div className="flex h-full w-full items-center justify-center bg-overlay-base">
       <div className="text-center">
         <p className="mb-2 text-sm text-ctp-overlay1">Session hibernated</p>
         <button

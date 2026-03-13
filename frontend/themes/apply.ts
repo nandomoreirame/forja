@@ -21,7 +21,6 @@ const BG_CSS_VARS = new Set([
   "--color-ctp-mantle",
   "--color-ctp-crust",
   "--color-background",
-  "--color-popover",
 ]);
 
 /** Stores original hex values from last applyTheme call for background variables. */
@@ -123,6 +122,10 @@ const CSS_VAR_MAP: Record<string, (t: ThemeDefinition) => string> = {
   "--color-border": (t) => t.colors.surface,
   "--color-input": (t) => t.colors.surface,
   "--color-ring": (t) => t.colors.accent,
+  // Overlay backgrounds: always opaque (never in BG_CSS_VARS).
+  // Used by dialogs, command palette, tooltips, and other floating UI.
+  "--color-overlay-base": (t) => t.colors.base,
+  "--color-overlay-mantle": (t) => t.colors.mantle,
 };
 
 export function applyTheme(theme: ThemeDefinition): void {
@@ -141,7 +144,10 @@ export function applyTheme(theme: ThemeDefinition): void {
   root.style.colorScheme = theme.type;
 }
 
-export function buildTerminalTheme(theme: ThemeDefinition): ITheme {
+export function buildTerminalTheme(theme: ThemeDefinition, _opacity?: number): ITheme {
+  // Always use opaque background — xterm.js WebGL renderer does not
+  // support rgba backgrounds reliably.  The terminal container is
+  // also opaque (bg-overlay-base) so the padding matches.
   return {
     background: theme.colors.base,
     foreground: theme.colors.text,

@@ -8,6 +8,13 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-03-13
+
+### Added
+- Add Go to Project command palette and keyboard shortcuts.
+- Add terminal background opacity reactivity.
+---
+
 ## [1.6.1] - 2026-03-13
 
 ### Added

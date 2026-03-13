@@ -121,6 +121,12 @@ export function useKeyboardShortcuts({
         useCommandPaletteStore.getState().open("commands");
         return;
       }
+      // Ctrl/Cmd+Shift+L — go to project (project switcher)
+      if (mod && event.shiftKey && event.key.toLowerCase() === "l") {
+        event.preventDefault();
+        useCommandPaletteStore.getState().open("projects");
+        return;
+      }
       if (mod && event.shiftKey && event.key.toLowerCase() === "g") {
         event.preventDefault();
         const projectPath = useFileTreeStore.getState().currentPath;
@@ -205,8 +211,8 @@ export function useKeyboardShortcuts({
         }
         return;
       }
-      // Alt+1..9: switch projects by position
-      if (event.altKey && !mod && !event.shiftKey && event.key >= "1" && event.key <= "9") {
+      // Ctrl/Cmd+Shift+1..9: switch projects by position
+      if (mod && event.shiftKey && !event.altKey && event.key >= "1" && event.key <= "9") {
         event.preventDefault();
         const index = parseInt(event.key, 10) - 1;
         const { projects, switchToProject: swp } = useProjectsStore.getState();
