@@ -182,12 +182,16 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
   const [lineHeightText, setLineHeightText] = useState(
     String(settings.editor.lineHeight ?? 1.5),
   );
+  const [opacityText, setOpacityText] = useState(
+    String(settings.window.opacity),
+  );
   const { activeThemeId, setActiveTheme } = useThemeStore();
   const allThemes = useThemeStore.getState().getAllThemes();
 
   useEffect(() => {
     setLocalSettings(settings);
     setLineHeightText(String(settings.editor.lineHeight ?? 1.5));
+    setOpacityText(String(settings.window.opacity));
   }, [settings]);
 
   function update(partial: Partial<UserSettings>) {
@@ -357,16 +361,20 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Window"
         label="Opacity"
-        description="Main window opacity. Value between 30 and 100."
+        description="Background opacity. Value between 0.3 and 1.0."
       >
         <input
           type="number"
-          value={Math.round(localSettings.window.opacity * 100)}
-          min={30}
-          max={100}
+          value={opacityText}
+          min={0.3}
+          max={1}
+          step={0.01}
           onChange={(e) => {
+            setOpacityText(e.target.value);
             const v = Number(e.target.value);
-            if (v >= 30 && v <= 100) update({ window: { ...localSettings.window, opacity: v / 100 } });
+            if (!Number.isNaN(v) && v >= 0.3 && v <= 1.0) {
+              update({ window: { ...localSettings.window, opacity: v } });
+            }
           }}
           aria-label="Window opacity"
           className={numberInputClass}

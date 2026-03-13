@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { CircleHelp, Pin, PinOff, Puzzle, Settings } from "lucide-react";
+import { CircleHelp, Pin, PinOff, Plus, Puzzle, Settings } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -150,6 +150,22 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
     usePluginsStore.getState().unpinPlugin();
   }, []);
 
+  const activeView = useRightPanelStore((s) => s.activeView);
+
+  const handleMarketplaceClick = useCallback(() => {
+    const panel = useRightPanelStore.getState();
+    if (panel.isOpen && panel.activeView === "marketplace") {
+      // Already showing marketplace — close it
+      useRightPanelStore.getState().setActiveView("empty");
+      useRightPanelStore.getState().togglePanel();
+    } else {
+      useRightPanelStore.getState().setActiveView("marketplace");
+      if (!panel.isOpen) {
+        useRightPanelStore.getState().togglePanel();
+      }
+    }
+  }, []);
+
   return (
     <TooltipProvider delayDuration={500}>
       <div
@@ -254,6 +270,30 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
               })}
             </SortableContext>
           </DndContext>
+        )}
+
+        {/* Marketplace button */}
+        {hasProject && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Marketplace"
+                onClick={handleMarketplaceClick}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+                  isRightPanelOpen && activeView === "marketplace"
+                    ? "bg-ctp-surface0 text-ctp-mauve"
+                    : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
+                )}
+              >
+                <Plus className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <p>Marketplace</p>
+            </TooltipContent>
+          </Tooltip>
         )}
 
         {/* Utility buttons */}

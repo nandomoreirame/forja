@@ -21,6 +21,17 @@ mac:
         - arm64
   icon: assets/icons/icon.icns
 
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: assets/icons/icon.ico
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+
 linux:
   target:
     - target: AppImage
@@ -34,7 +45,3 @@ linux:
 
 deb:
   artifactName: "forja_${version}_${arch}.${ext}"
-
-nsis:
-  oneClick: false
-  allowToChangeInstallationDirectory: true

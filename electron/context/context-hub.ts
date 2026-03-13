@@ -10,6 +10,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 import { createHash } from "crypto";
+import { getForjaContextDir } from "../paths.js";
 
 // ---------------------------------------------------------------------------
 // Types (local, singular form — separate from tool-registry types)
@@ -59,7 +60,7 @@ const DEFAULT_INDEX: HubIndex = {
 // ---------------------------------------------------------------------------
 
 function contextRoot(): string {
-  return path.join(os.homedir(), ".config", "forja", "context");
+  return getForjaContextDir();
 }
 
 function indexPath(): string {

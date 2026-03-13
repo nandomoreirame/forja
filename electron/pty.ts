@@ -35,6 +35,20 @@ const SAFE_ENV_KEYS = new Set([
   "DBUS_SESSION_BUS_ADDRESS", "SSH_AUTH_SOCK", "MISE_SHELL",
 ]);
 
+if (process.platform === "win32") {
+  for (const key of [
+    "USERPROFILE", "APPDATA", "LOCALAPPDATA", "COMSPEC",
+    "TEMP", "TMP", "PATHEXT", "USERNAME", "SystemRoot",
+    "SystemDrive", "ProgramFiles", "ProgramFiles(x86)", "CommonProgramFiles",
+  ]) {
+    SAFE_ENV_KEYS.add(key);
+  }
+}
+
+export function getSafeEnvKeys(): string[] {
+  return Array.from(SAFE_ENV_KEYS);
+}
+
 function buildSafeEnv(extraEnv?: Record<string, string>): Record<string, string> {
   const safe: Record<string, string> = {};
   for (const key of SAFE_ENV_KEYS) {
@@ -170,13 +184,23 @@ function getUserShell(): string {
 }
 
 export function resolveShellPath(): string {
-  const extraPaths = [
-    path.join(os.homedir(), ".local", "bin"),
-    "/usr/local/bin",
-    "/opt/homebrew/bin",
-    "/usr/bin",
-    "/bin",
-  ];
+  const extraPaths: string[] = [];
+
+  if (process.platform === "win32") {
+    extraPaths.push(
+      path.join(os.homedir(), "AppData", "Roaming", "npm"),
+      path.join(os.homedir(), "AppData", "Local", "Programs", "Python"),
+      path.join(os.homedir(), ".local", "bin"),
+    );
+  } else {
+    extraPaths.push(
+      path.join(os.homedir(), ".local", "bin"),
+      "/usr/local/bin",
+      "/opt/homebrew/bin",
+      "/usr/bin",
+      "/bin",
+    );
+  }
 
   const currentPath = process.env.PATH || "";
   const pathParts = currentPath.split(path.delimiter);

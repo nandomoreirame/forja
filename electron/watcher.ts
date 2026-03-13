@@ -1,3 +1,4 @@
+import * as path from "path";
 import chokidar from "chokidar";
 import type { FSWatcher } from "chokidar";
 import type { WebContents } from "electron";
@@ -19,7 +20,7 @@ export function startWatcher(
   const key = `${windowId}:${projectPath}`;
   stopWatcherByKey(key);
 
-  const gitPath = `${projectPath}/.git`;
+  const gitPath = path.join(projectPath, ".git");
 
   const watcher = chokidar.watch(gitPath, {
     ignoreInitial: true,

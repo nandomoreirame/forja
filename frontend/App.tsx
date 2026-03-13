@@ -63,6 +63,7 @@ import { useTerminalZoomStore } from "./stores/terminal-zoom";
 import { useUserSettingsStore } from "./stores/user-settings";
 import { useThemeStore } from "./stores/theme";
 import type { ThemeDefinition } from "@/themes";
+import { applyBackgroundOpacity } from "@/themes/apply";
 import { usePerformanceStore } from "./stores/performance";
 import { useProjectsStore } from "./stores/projects";
 import { useAgentChatStore } from "./stores/agent-chat";
@@ -143,6 +144,11 @@ const PluginHost = lazy(() =>
     default: m.PluginHost,
   }))
 );
+const MarketplacePane = lazy(() =>
+  import("./components/marketplace-pane").then((m) => ({
+    default: m.MarketplacePane,
+  }))
+);
 
 interface GitChangedPayload {
   path: string;
@@ -198,7 +204,7 @@ function NoSessionsState({
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-6">
-      <TerminalSquare className="h-12 w-12 text-ctp-surface1" strokeWidth={1.5} />
+      <TerminalSquare className="h-12 w-12 text-ctp-overlay1" strokeWidth={1.5} />
       <div className="flex flex-col items-center gap-2">
         <p className="text-sm text-ctp-overlay1">No active sessions</p>
         <div className="mt-2 flex items-center gap-2">
@@ -278,6 +284,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     usePanelPreferences();
   const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
   const activePluginName = usePluginsStore((s) => s.activePluginName);
+  const activeView = useRightPanelStore((s) => s.activeView);
   const pinnedPluginName = usePluginsStore((s) => s.pinnedPluginName);
   const hasPinnedPlugin = Boolean(pinnedPluginName);
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
@@ -549,15 +556,25 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       },
     );
 
+    // Apply background-only opacity via CSS variables (not whole-window opacity).
+    // BrowserWindow.setOpacity() is not supported on Linux and makes text
+    // transparent on other platforms, so we use CSS background alpha instead.
+    const unlistenOpacity = listen<number>("window:apply-opacity", (event) => {
+      applyBackgroundOpacity(event.payload);
+    });
+
     return () => {
       unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
+      unlistenOpacity.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
 
   // Apply settings effects when they change
   const settings = useUserSettingsStore((s) => s.settings);
   useEffect(() => {
-    // Apply window opacity
+    // Apply background-only opacity (CSS variables with alpha channel)
+    applyBackgroundOpacity(settings.window.opacity);
+    // Notify main process for transparent window support
     invoke("set_window_opacity", { opacity: settings.window.opacity }).catch((err) => console.warn("[App] IPC call failed:", err));
     // Apply zoom level
     invoke("set_zoom_level", { level: settings.window.zoomLevel }).catch((err) => console.warn("[App] IPC call failed:", err));
@@ -1014,7 +1031,17 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                         }
                       }}
                     >
-                      {activePluginName && (
+                      {activeView === "marketplace" ? (
+                        <Suspense
+                          fallback={
+                            <div className="flex h-full items-center justify-center border-l border-ctp-surface0 bg-ctp-base">
+                              <Loader2 className="h-5 w-5 animate-spin text-ctp-overlay0" />
+                            </div>
+                          }
+                        >
+                          <MarketplacePane />
+                        </Suspense>
+                      ) : activePluginName ? (
                         <Suspense
                           fallback={
                             <div className="flex h-full items-center justify-center border-l border-ctp-surface0 bg-ctp-base">
@@ -1024,7 +1051,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                         >
                           <PluginHost pluginName={activePluginName} />
                         </Suspense>
-                      )}
+                      ) : null}
                     </ResizablePanel>
                   </ResizablePanelGroup>
                 </div>

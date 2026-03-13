@@ -17,6 +17,31 @@ describe("editor-detector", () => {
     expect(EDITOR_CANDIDATES).toContain("cursor");
   });
 
+  it("uses 'where.exe' on Windows and 'which' on Unix", async () => {
+    const { execFile } = await import("child_process");
+    const mockExecFile = vi.mocked(execFile);
+
+    mockExecFile.mockImplementation((_cmd, args, _opts, cb) => {
+      const binary = (args as string[])[0];
+      const callback = cb as (err: Error | null) => void;
+      if (binary === "code") {
+        callback(null);
+      } else {
+        callback(new Error("not found"));
+      }
+      return undefined as never;
+    });
+
+    await detectEditor();
+
+    const cmd = mockExecFile.mock.calls[0][0];
+    if (process.platform === "win32") {
+      expect(cmd).toBe("where.exe");
+    } else {
+      expect(cmd).toBe("which");
+    }
+  });
+
   it("returns the first editor found in PATH", async () => {
     const { execFile } = await import("child_process");
     const mockExecFile = vi.mocked(execFile);

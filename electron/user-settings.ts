@@ -3,6 +3,7 @@ import * as path from "path";
 import * as os from "os";
 import chokidar from "chokidar";
 import type { FSWatcher } from "chokidar";
+import { getForjaSettingsPath as resolveSettingsPath } from "./paths.js";
 
 // Inline settings types and helpers to avoid cross-rootDir import from frontend/
 // These must stay in sync with frontend/lib/settings-types.ts
@@ -181,7 +182,7 @@ let cachedSettings: UserSettings = { ...DEFAULT_SETTINGS };
 let watcher: FSWatcher | null = null;
 
 export function getUserSettingsPath(): string {
-  return path.join(os.homedir(), ".config", "forja", "settings.json");
+  return resolveSettingsPath();
 }
 
 export async function loadUserSettings(): Promise<UserSettings> {

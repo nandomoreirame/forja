@@ -43,4 +43,36 @@ describe("file-writer", () => {
     await writeFile("/home/user/project/file.ts", "content");
     expect(fs.writeFile).toHaveBeenCalled();
   });
+
+  describe("Windows forbidden prefixes", () => {
+    it("should export getForbiddenPrefixes with Windows paths on win32", async () => {
+      vi.resetModules();
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, "platform", { value: "win32" });
+      try {
+        const mod = await import("../file-writer");
+        const prefixes = mod.getForbiddenPrefixes();
+        expect(prefixes).toContain("C:\\Windows");
+        expect(prefixes).toContain("C:\\Program Files");
+        expect(prefixes).toContain("C:\\Program Files (x86)");
+      } finally {
+        Object.defineProperty(process, "platform", { value: originalPlatform });
+      }
+    });
+
+    it("should export getForbiddenPrefixes with Unix paths on linux", async () => {
+      vi.resetModules();
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, "platform", { value: "linux" });
+      try {
+        const mod = await import("../file-writer");
+        const prefixes = mod.getForbiddenPrefixes();
+        expect(prefixes).toContain("/etc");
+        expect(prefixes).toContain("/usr");
+        expect(prefixes).not.toContain("C:\\Windows");
+      } finally {
+        Object.defineProperty(process, "platform", { value: originalPlatform });
+      }
+    });
+  });
 });

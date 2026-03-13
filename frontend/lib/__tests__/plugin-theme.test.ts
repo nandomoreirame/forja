@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildPluginThemeCSS, buildPluginThemePayload, PLUGIN_CSS_VAR_MAP } from "../plugin-theme";
+import { buildPluginThemeCSS, buildPluginThemePayload, buildPluginOpacityCSS, PLUGIN_CSS_VAR_MAP } from "../plugin-theme";
 import type { ThemeDefinition } from "@/themes/schema";
 
 const MOCK_THEME: ThemeDefinition = {
@@ -102,6 +102,35 @@ describe("buildPluginThemeCSS", () => {
     for (const key of Object.keys(PLUGIN_CSS_VAR_MAP)) {
       expect(css).toContain(key + ":");
     }
+  });
+});
+
+describe("buildPluginOpacityCSS", () => {
+  it("returns CSS with rgba background variables when opacity < 1", () => {
+    const css = buildPluginOpacityCSS(MOCK_THEME, 0.85);
+    expect(css).toContain(":root{");
+    expect(css).toContain("--forja-bg-base:rgba(30, 30, 46, 0.85)");
+    expect(css).toContain("--forja-bg-mantle:rgba(24, 24, 37, 0.85)");
+    expect(css).toContain("--forja-bg-surface:rgba(49, 50, 68, 0.85)");
+    expect(css).toContain("--forja-bg-overlay:rgba(69, 71, 90, 0.85)");
+    expect(css).toContain("--forja-bg-highlight:rgba(88, 91, 112, 0.85)");
+  });
+
+  it("does not include non-background variables", () => {
+    const css = buildPluginOpacityCSS(MOCK_THEME, 0.85);
+    expect(css).not.toContain("--forja-text");
+    expect(css).not.toContain("--forja-accent");
+    expect(css).not.toContain("--forja-error");
+  });
+
+  it("returns empty string when opacity is 1.0", () => {
+    const css = buildPluginOpacityCSS(MOCK_THEME, 1.0);
+    expect(css).toBe("");
+  });
+
+  it("includes html/body transparent background when opacity < 1", () => {
+    const css = buildPluginOpacityCSS(MOCK_THEME, 0.7);
+    expect(css).toContain("html,body{background:transparent");
   });
 });
 

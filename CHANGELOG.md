@@ -8,6 +8,27 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-03-13
+
+### Added
+- Integrate marketplace view in right sidebar and panel.
+- Add plugin marketplace UI with store and components.
+- Add plugin installer and marketplace IPC handlers.
+- Add plugin registry client.
+- Add registry and marketplace plugin types.
+- Add window opacity IPC handler.
+- Integrate background opacity and fix terminal icon.
+- Inject opacity CSS in plugin webview and fix settings input.
+- Add plugin webview opacity CSS builder.
+- Add background opacity via CSS variables.
+- Add Windows forbidden paths and fix watcher path join.
+- Centralize config paths for cross-platform support.
+- Add cross-platform binary detection and PTY support.
+
+### Fixed
+- Open external links in system browser from markdown preview.
+---
+
 ## [1.5.10] - 2026-03-13
 
 ### Added

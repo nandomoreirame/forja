@@ -1,7 +1,17 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 
-const FORBIDDEN_PREFIXES = ["/etc", "/usr", "/bin", "/sbin", "/var", "/sys", "/proc"];
+const UNIX_FORBIDDEN = ["/etc", "/usr", "/bin", "/sbin", "/var", "/sys", "/proc"];
+const WIN_FORBIDDEN = [
+  "C:\\Windows",
+  "C:\\Program Files",
+  "C:\\Program Files (x86)",
+  "C:\\ProgramData",
+];
+
+export function getForbiddenPrefixes(): string[] {
+  return process.platform === "win32" ? WIN_FORBIDDEN : UNIX_FORBIDDEN;
+}
 
 export async function writeFile(filePath: string, content: string): Promise<void> {
   const resolved = path.resolve(filePath);
@@ -11,8 +21,8 @@ export async function writeFile(filePath: string, content: string): Promise<void
     throw new Error(`Invalid file path: ${filePath}`);
   }
 
-  for (const prefix of FORBIDDEN_PREFIXES) {
-    if (normalized.startsWith(prefix + "/") || normalized === prefix) {
+  for (const prefix of getForbiddenPrefixes()) {
+    if (normalized.startsWith(prefix + path.sep) || normalized === prefix) {
       throw new Error(`Cannot write to system path: ${normalized}`);
     }
   }

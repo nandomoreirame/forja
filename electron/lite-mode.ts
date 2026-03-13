@@ -2,6 +2,7 @@ import { readFile } from "fs/promises";
 import { readFileSync, existsSync } from "fs";
 import * as path from "path";
 import * as os from "os";
+import { getForjaSettingsPath } from "./paths.js";
 
 export type PerformanceMode = "auto" | "full" | "lite";
 
@@ -39,7 +40,7 @@ const LITE_CONFIG: Omit<LiteModeConfig, "mode" | "resolved"> = {
 let cachedConfig: LiteModeConfig | null = null;
 
 function getSettingsPath(): string {
-  return path.join(os.homedir(), ".config", "forja", "settings.json");
+  return getForjaSettingsPath();
 }
 
 function isLowResourceMachine(): boolean {

@@ -15,7 +15,8 @@ export const EDITOR_CANDIDATES = [
 
 function isAvailable(binary: string): Promise<boolean> {
   return new Promise((resolve) => {
-    execFile("which", [binary], { timeout: 3000 }, (err) => {
+    const cmd = process.platform === "win32" ? "where.exe" : "which";
+    execFile(cmd, [binary], { timeout: 3000 }, (err) => {
       resolve(!err);
     });
   });

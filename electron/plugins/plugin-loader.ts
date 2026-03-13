@@ -6,8 +6,9 @@ import chokidar from "chokidar";
 import type { FSWatcher } from "chokidar";
 import { validateManifest } from "./types.js";
 import type { LoadedPlugin } from "./types.js";
+import { getForjaPluginsDir } from "../paths.js";
 
-export const PLUGINS_DIR = path.join(os.homedir(), ".config", "forja", "plugins");
+export const PLUGINS_DIR = getForjaPluginsDir();
 
 export async function ensurePluginsDir(): Promise<void> {
   await fs.mkdir(PLUGINS_DIR, { recursive: true });
