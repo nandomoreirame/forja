@@ -9,6 +9,42 @@ interface MonacoThemeData {
   colors: Record<string, string>;
 }
 
+/**
+ * CSS variables that represent background colors.
+ * These receive alpha channel when background opacity is applied,
+ * while text/foreground variables remain fully opaque.
+ */
+const BG_CSS_VARS = new Set([
+  "--bg-base",
+  "--bg-elevated",
+  "--color-ctp-base",
+  "--color-ctp-mantle",
+  "--color-ctp-crust",
+  "--color-background",
+  "--color-popover",
+]);
+
+/** Stores original hex values from last applyTheme call for background variables. */
+const originalBgColors = new Map<string, string>();
+
+export function hexToRgba(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function applyBackgroundOpacity(opacity: number): void {
+  const root = document.documentElement;
+  for (const [varName, hex] of originalBgColors) {
+    if (opacity < 1) {
+      root.style.setProperty(varName, hexToRgba(hex, opacity));
+    } else {
+      root.style.setProperty(varName, hex);
+    }
+  }
+}
+
 const CSS_VAR_MAP: Record<string, (t: ThemeDefinition) => string> = {
   "--bg-base": (t) => t.colors.base,
   "--bg-elevated": (t) => t.colors.mantle,
@@ -93,7 +129,11 @@ export function applyTheme(theme: ThemeDefinition): void {
   const root = document.documentElement;
 
   for (const [varName, getter] of Object.entries(CSS_VAR_MAP)) {
-    root.style.setProperty(varName, getter(theme));
+    const value = getter(theme);
+    root.style.setProperty(varName, value);
+    if (BG_CSS_VARS.has(varName)) {
+      originalBgColors.set(varName, value);
+    }
   }
 
   root.classList.remove("dark", "light");
