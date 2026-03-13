@@ -6,6 +6,7 @@ import {
   closeChatSession,
   type StreamEvent,
 } from "./agent-chat.js";
+import { getForjaConfigDir } from "./paths.js";
 
 type IpcHandler = (event: unknown, args: unknown) => Promise<unknown>;
 
@@ -36,7 +37,7 @@ async function handleSpawn(event: unknown, args: unknown): Promise<unknown> {
   const { sessionId, cliId, projectPath } = args as SpawnArgs;
   const sender = (event as { sender?: { send: (ch: string, data: unknown) => void } })?.sender;
 
-  const effectiveCwd = projectPath || path.join(os.homedir(), ".config", "forja");
+  const effectiveCwd = projectPath || getForjaConfigDir();
 
   const onEvent = (streamEvent: StreamEvent) => {
     sender?.send("chat:event", { sessionId, event: streamEvent });

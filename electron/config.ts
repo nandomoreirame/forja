@@ -2,6 +2,7 @@ import Store from "electron-store";
 import * as path from "path";
 import * as os from "os";
 import type { PluginPermissionGrant } from "./plugins/types.js";
+import { getForjaConfigDir } from "./paths.js";
 
 const MAX_RECENT = 10;
 
@@ -72,11 +73,11 @@ type TypedConfigStore = Store<ConfigSchema> & {
   set<Key extends keyof ConfigSchema>(key: Key, value: ConfigSchema[Key]): void;
 };
 
-// Force config location to ~/.config/forja for XDG compliance and
-// compatibility with previous TOML-based config path.
+// Force config location to platform-appropriate directory.
+// Linux/macOS: ~/.config/forja, Windows: %APPDATA%/forja
 const store = new Store<ConfigSchema>({
   name: "config",
-  cwd: path.join(os.homedir(), ".config", "forja"),
+  cwd: getForjaConfigDir(),
   defaults: {
     recentProjects: [],
     workspaces: [],

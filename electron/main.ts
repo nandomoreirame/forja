@@ -17,6 +17,8 @@ import { assertPathWithinScope } from "./path-validation.js";
 import { resolveImeConfig, remapDeadKeyResult } from "./ime-config.js";
 import { readSettingsModeSync, resolveModeSyncFromHardware, getLiteModeConfig } from "./lite-mode.js";
 import { detectEditor } from "./editor-detector.js";
+import { applyWindowOpacity, getWindowTransparencyOptions } from "./window-opacity.js";
+import { getForjaConfigDir } from "./paths.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -139,11 +141,22 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
     },
     icon: path.join(__dirname, "..", "assets", "icons", "icon.png"),
     show: false,
+    ...getWindowTransparencyOptions(),
   });
+
+  // Apply initial background opacity after page loads (CSS variable alpha)
+  const initialSettings = (await getUserSettings()).getCachedSettings();
+  const initialOpacity = initialSettings.window.opacity;
 
   win.once("ready-to-show", () => {
     win.show();
   });
+
+  if (initialOpacity < 1.0) {
+    win.webContents.once("did-finish-load", () => {
+      applyWindowOpacity(win, initialOpacity);
+    });
+  }
 
   // Block reload shortcuts (Ctrl+R, Cmd+R, F5, Ctrl+Shift+R) in production builds
   if (!isDev) {
@@ -441,8 +454,7 @@ ipcMain.handle("save_user_settings", async (_event, args: { content: string }) =
 ipcMain.handle("set_window_opacity", (event, args: { opacity: number }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return;
-  const clamped = Math.min(Math.max(args.opacity, 0.3), 1.0);
-  win.setOpacity(clamped);
+  applyWindowOpacity(win, args.opacity);
 });
 
 ipcMain.handle("set_zoom_level", (event, args: { level: number }) => {
@@ -699,6 +711,11 @@ ipcMain.handle("shell:openExternal", (_event, url: string) => {
 // We use spawn + detach instead of shell.openPath because the latter blocks
 // the Electron main process event loop on Linux until the file manager exits.
 ipcMain.handle("shell:openPath", (_event, args: { path: string }) => {
+  if (process.platform === "win32") {
+    const child = spawn("explorer.exe", [args.path], { detached: true, stdio: "ignore" });
+    child.unref();
+    return;
+  }
   const cmd = process.platform === "darwin" ? "open" : "xdg-open";
   const child = spawn(cmd, [args.path], { detached: true, stdio: "ignore" });
   child.unref();
@@ -724,9 +741,7 @@ ipcMain.handle("app:getVersion", () => app.getVersion());
 ipcMain.handle("app:getElectronVersion", () => process.versions.electron);
 ipcMain.handle("app:is_tiling_desktop", () => isTilingDesktopSession());
 ipcMain.handle("app:isDev", () => isDev);
-ipcMain.handle("app:getForjaConfigPath", () =>
-  path.join(os.homedir(), ".config", "forja")
-);
+ipcMain.handle("app:getForjaConfigPath", () => getForjaConfigDir());
 
 ipcMain.handle("get_performance_mode", () => {
   const config = getLiteModeConfig(resolvedPerfMode);
