@@ -56,14 +56,16 @@ describe("config module", () => {
     expect(projects[1].path).toBe("/home/user/project-a");
   });
 
-  it("deduplicates projects on re-add", async () => {
+  it("keeps position on re-add of existing project", async () => {
     const { addRecentProject, getRecentProjects } = await import("../config");
     addRecentProject("/home/user/project-a");
     addRecentProject("/home/user/project-b");
     addRecentProject("/home/user/project-a"); // re-add A
     const projects = getRecentProjects();
     expect(projects).toHaveLength(2);
-    expect(projects[0].path).toBe("/home/user/project-a"); // A moved to front
+    // A stays in its original position (second), not moved to front
+    expect(projects[0].path).toBe("/home/user/project-b");
+    expect(projects[1].path).toBe("/home/user/project-a");
   });
 
   it("limits to 10 recent projects", async () => {
