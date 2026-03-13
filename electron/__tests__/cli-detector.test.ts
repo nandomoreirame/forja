@@ -36,6 +36,23 @@ describe("cli-detector", () => {
       const result = await detectCli("claude");
       expect(result).toBe(false);
     });
+
+    it("uses 'where.exe' on Windows and 'which' on Unix", async () => {
+      mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
+        (cb as (err: null) => void)(null);
+        return {} as ReturnType<typeof execFile>;
+      });
+
+      const { detectCli } = await import("../cli-detector");
+      await detectCli("claude");
+
+      const cmd = mockExecFile.mock.calls[0][0];
+      if (process.platform === "win32") {
+        expect(cmd).toBe("where.exe");
+      } else {
+        expect(cmd).toBe("which");
+      }
+    });
   });
 
   describe("detectGhCopilot", () => {
