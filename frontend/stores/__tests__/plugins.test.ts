@@ -105,4 +105,38 @@ describe("usePluginsStore", () => {
     usePluginsStore.getState().restoreActivePluginForProject("/my/project");
     expect(usePluginsStore.getState().activePluginName).toBe("my-plugin");
   });
+
+  it("restoreActivePluginForProject uses pinnedPluginName when project has no saved active plugin", () => {
+    // Simulate: pinned plugin exists, but the target project has never had an active plugin
+    usePluginsStore.setState({ pinnedPluginName: "pomodoro", activePluginNameByProject: {} });
+
+    usePluginsStore.getState().restoreActivePluginForProject("/brand-new-project");
+
+    // Should fall back to the pinned plugin instead of null
+    expect(usePluginsStore.getState().activePluginName).toBe("pomodoro");
+  });
+
+  it("restoreActivePluginForProject uses pinnedPluginName even when project saved a different active plugin", () => {
+    // Simulate: user pinned pomodoro, but project-a had 'notes' as active plugin before pin
+    usePluginsStore.setState({
+      pinnedPluginName: "pomodoro",
+      activePluginNameByProject: { "/project-a": "notes" },
+    });
+
+    usePluginsStore.getState().restoreActivePluginForProject("/project-a");
+
+    // Pinned plugin takes priority over per-project saved state
+    expect(usePluginsStore.getState().activePluginName).toBe("pomodoro");
+  });
+
+  it("restoreActivePluginForProject falls back to saved project plugin when no pinned plugin", () => {
+    usePluginsStore.setState({
+      pinnedPluginName: null,
+      activePluginNameByProject: { "/project-a": "notes" },
+    });
+
+    usePluginsStore.getState().restoreActivePluginForProject("/project-a");
+
+    expect(usePluginsStore.getState().activePluginName).toBe("notes");
+  });
 });

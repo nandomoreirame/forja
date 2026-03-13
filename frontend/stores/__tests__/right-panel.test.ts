@@ -1,5 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useRightPanelStore } from "../right-panel";
+import { usePluginsStore } from "../plugins";
+
+vi.mock("@/lib/ipc", () => ({
+  invoke: vi.fn(),
+  listen: vi.fn(() => Promise.resolve(() => {})),
+}));
 
 describe("useRightPanelStore", () => {
   beforeEach(() => {
@@ -61,5 +67,36 @@ describe("useRightPanelStore", () => {
   it("restoreStateForProject defaults activeView to empty when no saved state", () => {
     useRightPanelStore.getState().restoreStateForProject("/unknown/project");
     expect(useRightPanelStore.getState().activeView).toBe("empty");
+  });
+
+  describe("closePanel - pinned plugin protection (Bug 1)", () => {
+    beforeEach(() => {
+      usePluginsStore.setState({ pinnedPluginName: null });
+      useRightPanelStore.setState({ isOpen: true, activeView: "plugin" });
+    });
+
+    it("closePanel closes the panel when no plugin is pinned", () => {
+      usePluginsStore.setState({ pinnedPluginName: null });
+      useRightPanelStore.getState().closePanel();
+      expect(useRightPanelStore.getState().isOpen).toBe(false);
+    });
+
+    it("closePanel does NOT close the panel when a plugin is pinned", () => {
+      usePluginsStore.setState({ pinnedPluginName: "pomodoro" });
+      useRightPanelStore.getState().closePanel();
+      expect(useRightPanelStore.getState().isOpen).toBe(true);
+    });
+
+    it("closePanel keeps activeView as plugin when pinned plugin blocks close", () => {
+      usePluginsStore.setState({ pinnedPluginName: "pomodoro" });
+      useRightPanelStore.getState().closePanel();
+      expect(useRightPanelStore.getState().activeView).toBe("plugin");
+    });
+
+    it("closePanel resets activeView to empty when closing without pinned plugin", () => {
+      usePluginsStore.setState({ pinnedPluginName: null });
+      useRightPanelStore.getState().closePanel();
+      expect(useRightPanelStore.getState().activeView).toBe("empty");
+    });
   });
 });

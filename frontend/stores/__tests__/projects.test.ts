@@ -137,6 +137,30 @@ describe("useProjectsStore", () => {
     expect(mockOpenProjectPath).toHaveBeenCalledWith("/home/user/my-app");
   });
 
+  it("addProject does not overwrite existing custom icon", async () => {
+    vi.mocked(invoke).mockImplementation(async (channel) => {
+      if (channel === "detect_project_icon") return "/auto/detected.png";
+      return undefined;
+    });
+
+    // Project already exists with a custom icon
+    useProjectsStore.setState({
+      projects: [{ path: "/home/user/my-app", name: "my-app", lastOpened: "", iconPath: "data:image/png;base64,custom" }],
+    });
+
+    await useProjectsStore.getState().addProject("/home/user/my-app");
+
+    // detect_project_icon should NOT have been called
+    const detectCalls = vi.mocked(invoke).mock.calls.filter(
+      (call) => call[0] === "detect_project_icon"
+    );
+    expect(detectCalls).toHaveLength(0);
+
+    // Custom icon should be preserved
+    const project = useProjectsStore.getState().projects.find((p) => p.path === "/home/user/my-app");
+    expect(project?.iconPath).toBe("data:image/png;base64,custom");
+  });
+
   it("loads project icon via IPC", async () => {
     vi.mocked(invoke).mockImplementation(async (channel) => {
       if (channel === "detect_project_icon") return "file:///home/user/my-app/public/favicon.svg";
@@ -598,6 +622,116 @@ describe("useProjectsStore", () => {
       await useProjectsStore.getState().switchToProject("/my-project");
 
       expect(useRightPanelStore.getState().isOpen).toBe(true);
+    });
+
+    it("keeps right panel open when switching to a project that has no saved state if there is a pinned plugin", async () => {
+      // Simulate: pinned plugin exists, panel was open, switching to a new project with no saved state
+      vi.mocked(invoke).mockResolvedValue(null); // no saved disk state
+
+      const mockSetActivePlugin = vi.fn();
+      vi.mocked(usePluginsStore.getState).mockReturnValue({
+        saveActivePluginForProject: mockSaveActivePluginForProject,
+        restoreActivePluginForProject: mockRestoreActivePluginForProject,
+        activePluginName: null, // restored null for new project
+        pinnedPluginName: "pomodoro",
+        setActivePlugin: mockSetActivePlugin,
+      } as never);
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      // Panel was open before switching
+      useRightPanelStore.setState({ isOpen: true, activeView: "plugin" });
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      // Panel must stay open because there is a pinned plugin
+      expect(useRightPanelStore.getState().isOpen).toBe(true);
+      // The pinned plugin must be set as active
+      expect(mockSetActivePlugin).toHaveBeenCalledWith("pomodoro");
+    });
+
+    it("keeps right panel open when switching between multiple projects with a pinned plugin", async () => {
+      vi.mocked(invoke).mockResolvedValue(null); // no saved disk state for any project
+
+      const mockSetActivePlugin = vi.fn();
+      vi.mocked(usePluginsStore.getState).mockReturnValue({
+        saveActivePluginForProject: mockSaveActivePluginForProject,
+        restoreActivePluginForProject: mockRestoreActivePluginForProject,
+        activePluginName: null, // always null after restore (new projects)
+        pinnedPluginName: "pomodoro",
+        setActivePlugin: mockSetActivePlugin,
+      } as never);
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useRightPanelStore.setState({ isOpen: true, activeView: "plugin" });
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+          { path: "/project-c", name: "c", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+      expect(useRightPanelStore.getState().isOpen).toBe(true);
+
+      await useProjectsStore.getState().switchToProject("/project-c");
+      expect(useRightPanelStore.getState().isOpen).toBe(true);
+      expect(mockSetActivePlugin).toHaveBeenLastCalledWith("pomodoro");
+    });
+
+    it("does not force panel open when switching projects with no pinned plugin", async () => {
+      vi.mocked(invoke).mockResolvedValue(null); // no saved disk state
+
+      vi.mocked(usePluginsStore.getState).mockReturnValue({
+        saveActivePluginForProject: mockSaveActivePluginForProject,
+        restoreActivePluginForProject: mockRestoreActivePluginForProject,
+        activePluginName: null,
+        pinnedPluginName: null,
+      } as never);
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useRightPanelStore.setState({ isOpen: false, activeView: "empty" });
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      // Panel should remain closed since there's no pinned plugin
+      expect(useRightPanelStore.getState().isOpen).toBe(false);
     });
   });
 });

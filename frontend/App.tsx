@@ -278,6 +278,8 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     usePanelPreferences();
   const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
   const activePluginName = usePluginsStore((s) => s.activePluginName);
+  const pinnedPluginName = usePluginsStore((s) => s.pinnedPluginName);
+  const hasPinnedPlugin = Boolean(pinnedPluginName);
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
   const effectivePanelSizes = getPanelSizesForLayout(hasProject, panelSizes);
 
@@ -330,7 +332,19 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   }, [sessionRestoreDone, currentPath]);
 
   useEffect(() => {
-    void usePluginsStore.getState().loadPlugins();
+    usePluginsStore.getState().loadPlugins().then(() => {
+      // After plugins load, if there is a pinned plugin it will have been set as the active plugin.
+      // Open the right panel automatically so the pinned plugin is visible on startup.
+      const { pinnedPluginName, activePluginName } = usePluginsStore.getState();
+      if (pinnedPluginName && activePluginName === pinnedPluginName) {
+        useRightPanelStore.getState().setActiveView("plugin");
+        if (!useRightPanelStore.getState().isOpen) {
+          useRightPanelStore.getState().togglePanel();
+        }
+      }
+    }).catch(() => {
+      // Non-fatal: plugin load failure is handled inside loadPlugins()
+    });
   }, []);
 
   const splitPrefsSyncedRef = useRef(false);
@@ -421,11 +435,12 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     if (!panel) return;
     if (isRightPanelOpen) {
       if (panel.isCollapsed()) panel.expand();
-      panel.resize(400);
+      // Restore the user's preferred width instead of always using a hardcoded value.
+      panel.resize(effectivePanelSizes.rightPanelWidth);
     } else if (!panel.isCollapsed()) {
       panel.collapse();
     }
-  }, [isRightPanelOpen]);
+  }, [isRightPanelOpen, effectivePanelSizes.rightPanelWidth]);
 
   // Load projects on mount for ProjectSidebar
   useEffect(() => {
@@ -982,15 +997,20 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
                     />
                     <ResizablePanel
                       panelRef={rightPanelRef}
-                      defaultSize={isRightPanelOpen ? "400px" : "0%"}
+                      defaultSize={isRightPanelOpen ? `${effectivePanelSizes.rightPanelWidth}px` : "0%"}
                       minSize="300px"
                       maxSize="40%"
-                      collapsible
+                      collapsible={!hasPinnedPlugin}
                       collapsedSize="0%"
                       order={3}
                       onResize={(size) => {
                         if (size.asPercentage === 0 && useRightPanelStore.getState().isOpen) {
-                          useRightPanelStore.getState().togglePanel();
+                          // Use closePanel() instead of togglePanel() so that a pinned plugin
+                          // cannot be accidentally dismissed by dragging the resize handle.
+                          useRightPanelStore.getState().closePanel();
+                        } else if (size.inPixels && size.inPixels > 0) {
+                          // Persist the user's chosen right panel width.
+                          savePanelSize("rightPanelWidth", size.inPixels);
                         }
                       }}
                     >

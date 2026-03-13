@@ -43,6 +43,7 @@ export interface UiPreferences {
   terminalSplitEnabled: boolean;
   terminalSplitOrientation: "horizontal" | "vertical";
   terminalSplitRatio: number;
+  rightPanelWidth: number; // pixel width of the right panel (e.g. 400)
 }
 
 interface ConfigSchema {
@@ -53,6 +54,7 @@ interface ConfigSchema {
   pluginPermissions: PluginPermissionGrant[];
   enabledPlugins: string[];
   pluginOrder: string[];
+  pinnedPlugin: string | null;
 }
 
 const DEFAULT_UI_PREFERENCES: UiPreferences = {
@@ -62,6 +64,7 @@ const DEFAULT_UI_PREFERENCES: UiPreferences = {
   terminalSplitEnabled: false,
   terminalSplitOrientation: "vertical",
   terminalSplitRatio: 50,
+  rightPanelWidth: 400,
 };
 
 type TypedConfigStore = Store<ConfigSchema> & {
@@ -82,6 +85,7 @@ const store = new Store<ConfigSchema>({
     pluginPermissions: [],
     enabledPlugins: [],
     pluginOrder: [],
+    pinnedPlugin: null,
   },
 }) as TypedConfigStore;
 
@@ -97,13 +101,22 @@ export function addRecentProject(projectPath: string): void {
   const name = path.basename(projectPath);
   const lastOpened = new Date().toISOString();
 
-  const filtered = existing.filter((p) => p.path !== projectPath);
-  const updated: RecentProject[] = [
-    { path: projectPath, name, last_opened: lastOpened, icon_path: prev?.icon_path ?? undefined, ui_state: prev?.ui_state ?? undefined },
-    ...filtered,
-  ].slice(0, MAX_RECENT);
-
-  store.set("recentProjects", updated);
+  if (prev) {
+    // Existing project: update last_opened but keep its current position
+    const updated = existing.map((p) =>
+      p.path === projectPath
+        ? { ...p, name, last_opened: lastOpened }
+        : p
+    );
+    store.set("recentProjects", updated);
+  } else {
+    // New project: add to the top
+    const updated: RecentProject[] = [
+      { path: projectPath, name, last_opened: lastOpened },
+      ...existing,
+    ].slice(0, MAX_RECENT);
+    store.set("recentProjects", updated);
+  }
 }
 
 export function removeRecentProject(projectPath: string): void {
@@ -339,4 +352,14 @@ export function getPluginOrder(): string[] {
 
 export function setPluginOrder(names: string[]): void {
   store.set("pluginOrder", names);
+}
+
+// ─── Pinned Plugin ───────────────────────────────────────────────────────────
+
+export function getPinnedPlugin(): string | null {
+  return store.get("pinnedPlugin");
+}
+
+export function setPinnedPlugin(name: string | null): void {
+  store.set("pinnedPlugin", name);
 }

@@ -4,6 +4,7 @@ import { invoke } from "@/lib/ipc";
 export interface PanelSizes {
   sidebarSize: number;
   previewSize: number;
+  rightPanelWidth: number;
 }
 
 export interface TerminalSplitPreferences {
@@ -15,6 +16,7 @@ export interface TerminalSplitPreferences {
 export const DEFAULT_PANEL_SIZES: PanelSizes = {
   sidebarSize: 20,
   previewSize: 0,
+  rightPanelWidth: 400,
 };
 
 const DEFAULT_TERMINAL_SPLIT: TerminalSplitPreferences = {
@@ -55,6 +57,9 @@ export function usePanelPreferences() {
           setPanelSizes({
             sidebarSize: prefs.sidebarSize,
             previewSize: prefs.previewSize,
+            rightPanelWidth: Number.isFinite(prefs.rightPanelWidth)
+              ? Math.max(200, prefs.rightPanelWidth)
+              : DEFAULT_PANEL_SIZES.rightPanelWidth,
           });
         } else {
           setPanelSizes(DEFAULT_PANEL_SIZES);
