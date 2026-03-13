@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { scanPlugins } from "./plugin-loader.js";
 import { executeBridgeCall } from "./plugin-bridge.js";
 import { grantPermissions, denyPermissions } from "./plugin-permissions.js";
-import { getPluginPermissions, setPluginEnabled, getPluginOrder, setPluginOrder } from "../config.js";
+import { getPluginPermissions, setPluginEnabled, getPluginOrder, setPluginOrder, getPinnedPlugin, setPinnedPlugin } from "../config.js";
 import type { PluginPermission } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -37,6 +37,10 @@ interface PluginOrderArgs {
   names?: string[];
 }
 
+interface PluginPinArgs {
+  name?: string | null;
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -61,6 +65,8 @@ export function createPluginHandlers(): Array<[string, IpcHandler]> {
     ["plugin:get-preload-path", handleGetPreloadPath],
     ["plugin:get-plugin-order", handleGetPluginOrder],
     ["plugin:set-plugin-order", handleSetPluginOrder],
+    ["plugin:pin", handlePinPlugin],
+    ["plugin:get-pinned", handleGetPinnedPlugin],
   ];
 }
 
@@ -120,6 +126,16 @@ async function handleSetPluginOrder(_event: unknown, args: unknown): Promise<voi
   const { names } = (args ?? {}) as PluginOrderArgs;
   if (!names) throw new Error("names is required");
   setPluginOrder(names);
+}
+
+async function handlePinPlugin(_event: unknown, args: unknown): Promise<void> {
+  const { name } = (args ?? {}) as PluginPinArgs;
+  // name can be null (to unpin) or a string (to pin)
+  setPinnedPlugin(name ?? null);
+}
+
+async function handleGetPinnedPlugin(): Promise<string | null> {
+  return getPinnedPlugin();
 }
 
 async function handleGetPreloadPath(): Promise<string> {
