@@ -8,6 +8,12 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.5.9] - 2026-03-12
+
+### Fixed
+- Preserve expanded subdirectories on file tree refresh.
+---
+
 ## [1.5.8] - 2026-03-12
 
 ### Added
