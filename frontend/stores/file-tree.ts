@@ -20,6 +20,24 @@ export interface DirectoryTree {
 }
 
 /**
+ * Recursively searches the tree for a directory node matching `targetPath`.
+ * Only traverses directory nodes whose path is a prefix of the target.
+ * Returns null if not found or if searching a file node.
+ */
+export function findNode(root: FileNode, targetPath: string): FileNode | null {
+  if (root.path === targetPath) return root;
+  if (!root.children) return null;
+  for (const child of root.children) {
+    if (!child.isDir) continue;
+    if (targetPath !== child.path && !targetPath.startsWith(child.path + "/"))
+      continue;
+    const found = findNode(child, targetPath);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
  * Recursively walks the tree to find the node matching `dirPath`,
  * replaces its `children` with `newChildren`, and returns a new tree
  * (immutable update). If the node is not found, returns the original
@@ -266,7 +284,28 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     refreshTree: async (projectPath?: string) => {
       const path = projectPath ?? get().currentPath;
       if (!path) return;
+
+      // Collect expanded directory paths (excluding root), sorted by depth
+      const { expandedPaths } = get();
+      const expandedDirs = Object.entries(expandedPaths)
+        .filter(([p, v]) => v && p !== path && p.startsWith(path + "/"))
+        .map(([p]) => p)
+        .sort((a, b) => a.split("/").length - b.split("/").length);
+
+      // Load the new shallow tree
       await get().loadProjectTree(path);
+
+      // Re-load expanded subdirectories that were truncated by maxDepth
+      for (const dirPath of expandedDirs) {
+        const currentTree = get().trees[path];
+        if (!currentTree) break;
+        const node = findNode(currentTree.root, dirPath);
+        if (node && node.isDir && (!node.children || node.children.length === 0)) {
+          await get().loadSubdirectory(dirPath, path);
+        }
+      }
+
+      // Update active tree
       const updatedTrees = get().trees;
       if (get().activeProjectPath === path) {
         set({ tree: updatedTrees[path] ?? null });
