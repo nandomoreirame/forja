@@ -43,6 +43,7 @@ jobs:
             | macOS | Intel (x64) | `Forja-${{ steps.version.outputs.version }}.dmg` |
             | Linux | x64 (.deb) | `forja_${{ steps.version.outputs.version }}_amd64.deb` |
             | Linux | x64 (.AppImage) | `Forja-${{ steps.version.outputs.version }}.AppImage` |
+            | Windows | x64 (.exe) | `Forja-Setup-${{ steps.version.outputs.version }}.exe` |
 
             > **macOS note:** This app is not notarized. Right-click > Open to bypass Gatekeeper on first launch.
 
@@ -57,6 +58,8 @@ jobs:
             runner: macos-latest
           - label: Linux (x64)
             runner: ubuntu-latest
+          - label: Windows (x64)
+            runner: windows-latest
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -93,6 +96,7 @@ jobs:
             release/**/*.dmg
             release/**/*.AppImage
             release/**/*.deb
+            release/**/*.exe
 
   publish-release:
     name: Publish Release
