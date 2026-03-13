@@ -31,7 +31,7 @@ const CLI_BINARY_MAP: Record<string, string> = {
 };
 
 /**
- * Checks if a binary is available in PATH using `which`.
+ * Checks if a binary is available in PATH using `which` (Unix) or `where.exe` (Windows).
  * Returns true if found, false otherwise.
  */
 export function detectCli(binary: string): Promise<boolean> {
@@ -40,7 +40,8 @@ export function detectCli(binary: string): Promise<boolean> {
       resolve(false);
       return;
     }
-    execFile("which", [binary], { timeout: 3000 }, (err) => {
+    const cmd = process.platform === "win32" ? "where.exe" : "which";
+    execFile(cmd, [binary], { timeout: 3000 }, (err) => {
       resolve(!err);
     });
   });
