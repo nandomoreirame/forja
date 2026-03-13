@@ -12,10 +12,11 @@ import * as path from "path";
 import * as fs from "fs";
 import * as os from "os";
 import { fileURLToPath, pathToFileURL } from "url";
-import { execFile } from "child_process";
+import { execFile, spawn } from "child_process";
 import { assertPathWithinScope } from "./path-validation.js";
 import { resolveImeConfig, remapDeadKeyResult } from "./ime-config.js";
 import { readSettingsModeSync, resolveModeSyncFromHardware, getLiteModeConfig } from "./lite-mode.js";
+import { detectEditor } from "./editor-detector.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -693,6 +694,29 @@ ipcMain.handle("shell:openExternal", (_event, url: string) => {
   }
   return shell.openExternal(url);
 });
+
+// Shell – open a local path in the native file explorer.
+// We use spawn + detach instead of shell.openPath because the latter blocks
+// the Electron main process event loop on Linux until the file manager exits.
+ipcMain.handle("shell:openPath", (_event, args: { path: string }) => {
+  const cmd = process.platform === "darwin" ? "open" : "xdg-open";
+  const child = spawn(cmd, [args.path], { detached: true, stdio: "ignore" });
+  child.unref();
+});
+
+// Shell – open a project directory in the user's preferred code editor.
+ipcMain.handle(
+  "shell:openInEditor",
+  async (_event, args: { path: string }) => {
+    const editor = await detectEditor();
+    if (!editor) return;
+    const child = spawn(editor, [args.path], {
+      detached: true,
+      stdio: "ignore",
+    });
+    child.unref();
+  },
+);
 
 // App info
 ipcMain.handle("app:getName", () => app.getName());
