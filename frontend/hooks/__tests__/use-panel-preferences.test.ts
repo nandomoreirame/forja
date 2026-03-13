@@ -29,7 +29,7 @@ describe("usePanelPreferences", () => {
     await waitFor(() => {
       expect(result.current.loaded).toBe(true);
     });
-    expect(result.current.panelSizes).toEqual({ sidebarSize: 33, previewSize: 27 });
+    expect(result.current.panelSizes).toEqual({ sidebarSize: 33, previewSize: 27, rightPanelWidth: 400 });
     expect(result.current.terminalSplit).toEqual({
       enabled: true,
       orientation: "horizontal",
@@ -141,5 +141,52 @@ describe("usePanelPreferences", () => {
       terminalSplitOrientation: "horizontal",
       terminalSplitRatio: 70,
     });
+  });
+
+  // Bug 2: Right panel width persistence
+  it("loads persisted rightPanelWidth from ui preferences", async () => {
+    mockInvoke.mockResolvedValueOnce({
+      sidebarSize: 20,
+      previewSize: 0,
+      rightPanelWidth: 520,
+    });
+    const { usePanelPreferences } = await import("../use-panel-preferences");
+
+    const { result } = renderHook(() => usePanelPreferences());
+
+    await waitFor(() => {
+      expect(result.current.loaded).toBe(true);
+    });
+    expect(result.current.panelSizes.rightPanelWidth).toBe(520);
+  });
+
+  it("defaults rightPanelWidth to 400 when not present in persisted preferences", async () => {
+    mockInvoke.mockResolvedValueOnce({ sidebarSize: 20, previewSize: 0 });
+    const { usePanelPreferences } = await import("../use-panel-preferences");
+
+    const { result } = renderHook(() => usePanelPreferences());
+
+    await waitFor(() => {
+      expect(result.current.loaded).toBe(true);
+    });
+    // Should fall back to the default of 400px, not undefined
+    expect(result.current.panelSizes.rightPanelWidth).toBe(400);
+  });
+
+  it("savePanelSize with rightPanelWidth persists via IPC", async () => {
+    mockInvoke
+      .mockResolvedValueOnce({ sidebarSize: 20, previewSize: 0, rightPanelWidth: 400 })
+      .mockResolvedValueOnce(undefined);
+    const { usePanelPreferences } = await import("../use-panel-preferences");
+
+    const { result } = renderHook(() => usePanelPreferences());
+
+    await waitFor(() => {
+      expect(result.current.loaded).toBe(true);
+    });
+
+    result.current.savePanelSize("rightPanelWidth", 480);
+
+    expect(mockInvoke).toHaveBeenCalledWith("save_ui_preferences", { rightPanelWidth: 480 });
   });
 });
