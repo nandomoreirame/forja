@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { ProjectSidebar } from "../project-sidebar";
 import { useProjectsStore } from "@/stores/projects";
+import { invoke } from "@/lib/ipc";
 
 const mockOpen = vi.fn();
 
@@ -304,6 +305,72 @@ describe("ProjectSidebar", () => {
     const btn = screen.getByLabelText("Switch to project: my-app");
     const draggableParent = btn.closest("[data-testid='sortable-project']");
     expect(draggableParent).toBeTruthy();
+  });
+
+  it("shows 'Open in Files...' in context menu between Edit and Remove", async () => {
+    const user = userEvent.setup();
+    mockUseProjectsStore.mockReturnValue(createMockStore({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+      activeProjectPath: "/a/my-app",
+    }));
+
+    render(<ProjectSidebar onOpenProject={vi.fn()} />);
+
+    const btn = screen.getByLabelText("Switch to project: my-app");
+    await user.pointer({ target: btn, keys: "[MouseRight]" });
+
+    expect(await screen.findByText("Open in Files...")).toBeInTheDocument();
+  });
+
+  it("calls shell:openPath when 'Open in Files...' is clicked", async () => {
+    const user = userEvent.setup();
+    mockUseProjectsStore.mockReturnValue(createMockStore({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+      activeProjectPath: "/a/my-app",
+    }));
+
+    render(<ProjectSidebar onOpenProject={vi.fn()} />);
+
+    const btn = screen.getByLabelText("Switch to project: my-app");
+    await user.pointer({ target: btn, keys: "[MouseRight]" });
+
+    const openInFiles = await screen.findByText("Open in Files...");
+    await user.click(openInFiles);
+
+    expect(invoke).toHaveBeenCalledWith("shell:openPath", { path: "/a/my-app" });
+  });
+
+  it("shows 'Open in Editor...' in context menu", async () => {
+    const user = userEvent.setup();
+    mockUseProjectsStore.mockReturnValue(createMockStore({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+      activeProjectPath: "/a/my-app",
+    }));
+
+    render(<ProjectSidebar onOpenProject={vi.fn()} />);
+
+    const btn = screen.getByLabelText("Switch to project: my-app");
+    await user.pointer({ target: btn, keys: "[MouseRight]" });
+
+    expect(await screen.findByText("Open in Editor...")).toBeInTheDocument();
+  });
+
+  it("calls shell:openInEditor when 'Open in Editor...' is clicked", async () => {
+    const user = userEvent.setup();
+    mockUseProjectsStore.mockReturnValue(createMockStore({
+      projects: [{ path: "/a/my-app", name: "my-app", lastOpened: "", iconPath: null }],
+      activeProjectPath: "/a/my-app",
+    }));
+
+    render(<ProjectSidebar onOpenProject={vi.fn()} />);
+
+    const btn = screen.getByLabelText("Switch to project: my-app");
+    await user.pointer({ target: btn, keys: "[MouseRight]" });
+
+    const openInEditor = await screen.findByText("Open in Editor...");
+    await user.click(openInEditor);
+
+    expect(invoke).toHaveBeenCalledWith("shell:openInEditor", { path: "/a/my-app" });
   });
 
   it("calls open dialog when Browse is clicked", async () => {

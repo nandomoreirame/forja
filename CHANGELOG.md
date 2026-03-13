@@ -8,6 +8,22 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.5.8] - 2026-03-12
+
+### Added
+- Add open in files and open in editor context menu items.
+- Add open in files and open in editor IPC handlers.
+- Add pluginOrder config and IPC handlers.
+- Add interactive features to tasks plugin.
+- Add sidebar badge API and plugin reorder support.
+- Redesign pomodoro timer with persistence and collapsible settings.
+
+### Fixed
+- Keep plugin webview alive when panel is closed.
+- Add missing sidebar API to CTS plugin preload.
+- Prevent right panel opening empty without active plugin.
+---
+
 ## [1.5.7] - 2026-03-12
 
 ### Added
