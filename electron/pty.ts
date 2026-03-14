@@ -1,3 +1,4 @@
+import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as pty from "node-pty";
@@ -183,6 +184,71 @@ function getUserShell(): string {
   return process.env.SHELL || "/bin/bash";
 }
 
+/**
+ * Detects the bin directory for the active Node version managed by nvm, fnm, or similar.
+ * When launched from a desktop entry (not a terminal), the shell profile that sets up
+ * the version manager hasn't run, so these paths are missing from PATH.
+ */
+export function resolveNodeManagerPaths(): string[] {
+  const home = os.homedir();
+  const found: string[] = [];
+
+  // nvm: ~/.nvm/versions/node/<version>/bin
+  const nvmDir = process.env.NVM_DIR || path.join(home, ".nvm");
+  try {
+    const aliasDefault = path.join(nvmDir, "alias", "default");
+    const defaultAlias = fs.readFileSync(aliasDefault, "utf-8").trim();
+    // Resolve alias like "22" or "lts/*" to actual directory
+    const versionsDir = path.join(nvmDir, "versions", "node");
+    const versions = fs.readdirSync(versionsDir).sort();
+    let match: string | undefined;
+    if (defaultAlias.startsWith("lts/")) {
+      // Just pick the latest version available
+      match = versions[versions.length - 1];
+    } else {
+      // Match by prefix (e.g. "22" matches "v22.1.0")
+      match = versions.reverse().find((v) => v.startsWith(`v${defaultAlias}`)) || versions[0];
+    }
+    if (match) {
+      const binDir = path.join(versionsDir, match, "bin");
+      if (fs.existsSync(binDir)) found.push(binDir);
+    }
+  } catch {
+    // nvm not installed or no default alias — try current node's directory
+    try {
+      const versionsDir = path.join(nvmDir, "versions", "node");
+      const versions = fs.readdirSync(versionsDir).sort();
+      const latest = versions[versions.length - 1];
+      if (latest) {
+        const binDir = path.join(versionsDir, latest, "bin");
+        if (fs.existsSync(binDir)) found.push(binDir);
+      }
+    } catch {
+      // nvm not installed at all
+    }
+  }
+
+  // fnm: ~/.local/share/fnm/aliases/default/bin
+  const fnmDir = process.env.FNM_DIR || path.join(home, ".local", "share", "fnm");
+  const fnmDefaultBin = path.join(fnmDir, "aliases", "default", "bin");
+  if (fs.existsSync(fnmDefaultBin)) found.push(fnmDefaultBin);
+
+  // volta: ~/.volta/bin (uses shims)
+  const voltaBin = path.join(home, ".volta", "bin");
+  if (fs.existsSync(voltaBin)) found.push(voltaBin);
+
+  // asdf: ~/.asdf/shims
+  const asdfShims = path.join(home, ".asdf", "shims");
+  if (fs.existsSync(asdfShims)) found.push(asdfShims);
+
+  // mise: ~/.local/share/mise/shims
+  const miseDir = process.env.MISE_DATA_DIR || path.join(home, ".local", "share", "mise");
+  const miseShims = path.join(miseDir, "shims");
+  if (fs.existsSync(miseShims)) found.push(miseShims);
+
+  return found;
+}
+
 export function resolveShellPath(): string {
   const extraPaths: string[] = [];
 
@@ -194,6 +260,7 @@ export function resolveShellPath(): string {
     );
   } else {
     extraPaths.push(
+      ...resolveNodeManagerPaths(),
       path.join(os.homedir(), ".local", "bin"),
       "/usr/local/bin",
       "/opt/homebrew/bin",
