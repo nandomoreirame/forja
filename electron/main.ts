@@ -1,3 +1,9 @@
+// Ozone platform hint must be set before Electron/Chromium initializes.
+// Covers all packaging formats (dev, .deb, AppImage).
+if (process.platform === "linux" && !process.env.ELECTRON_OZONE_PLATFORM_HINT) {
+  process.env.ELECTRON_OZONE_PLATFORM_HINT = "auto";
+}
+
 import {
   app,
   BrowserWindow,

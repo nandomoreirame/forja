@@ -11,7 +11,8 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ## [1.6.3] - 2026-03-14
 
 ### Fixed
-- Fix black screen on Wayland-based Linux systems (Pop!_OS 24.04 / COSMIC). Use `ELECTRON_OZONE_PLATFORM_HINT=auto` instead of `appendSwitch("ozone-platform")` which is processed too late in Electron 32.
+- Fix black screen on Wayland-based Linux systems (Pop!_OS 24.04 / COSMIC) ([#11](https://github.com/nandomoreirame/forja/issues/11)). Use `ELECTRON_OZONE_PLATFORM_HINT=auto` instead of `appendSwitch("ozone-platform")` which is processed too late in Electron 32.
+- Add programmatic Ozone platform hint fallback in `electron/main.ts` to ensure AppImage builds also get Wayland auto-detection (not just `.deb`).
 ---
 
 ## [1.6.2] - 2026-03-13
