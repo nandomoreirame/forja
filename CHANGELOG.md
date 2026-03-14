@@ -13,6 +13,7 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 ### Fixed
 - Fix black screen on Wayland-based Linux systems (Pop!_OS 24.04 / COSMIC) ([#11](https://github.com/nandomoreirame/forja/issues/11)). Use `ELECTRON_OZONE_PLATFORM_HINT=auto` instead of `appendSwitch("ozone-platform")` which is processed too late in Electron 32.
 - Add programmatic Ozone platform hint fallback in `electron/main.ts` to ensure AppImage builds also get Wayland auto-detection (not just `.deb`).
+- Fix false "Claude Code CLI not found" dialog when reopening app from desktop entry. Detect Node version manager paths (nvm, fnm, volta, asdf, mise) in `resolveShellPath()` so CLI binaries installed via `npm install -g` are found even without shell profile initialization.
 ---
 
 ## [1.6.2] - 2026-03-13
