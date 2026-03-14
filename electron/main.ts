@@ -81,11 +81,10 @@ if (resolvedPerfMode !== "lite") {
   app.commandLine.appendSwitch("enable-zero-copy");
   app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
 
-  // Linux-specific GPU
+  // Linux GPU acceleration features (VAAPI)
   if (process.platform === "linux") {
     const isWayland = !!process.env.WAYLAND_DISPLAY;
     if (isWayland) {
-      app.commandLine.appendSwitch("ozone-platform", "wayland");
       app.commandLine.appendSwitch(
         "enable-features",
         "VaapiVideoDecoder,VaapiVideoEncoder,CanvasOopRasterization",
