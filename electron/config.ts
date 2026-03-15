@@ -19,6 +19,7 @@ export interface ProjectUiState {
     sessionType: string;
     customName?: string;
   }>;
+  layoutJson?: Record<string, unknown>;
 }
 
 interface RecentProject {
@@ -45,6 +46,7 @@ export interface UiPreferences {
   terminalSplitOrientation: "horizontal" | "vertical";
   terminalSplitRatio: number;
   rightPanelWidth: number; // pixel width of the right panel (e.g. 400)
+  layoutJson?: Record<string, unknown>;
 }
 
 interface ConfigSchema {

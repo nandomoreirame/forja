@@ -41,7 +41,13 @@ export async function scanPlugins(): Promise<LoadedPlugin[]> {
   const entries = await fs.readdir(PLUGINS_DIR, { withFileTypes: true });
   const plugins: LoadedPlugin[] = [];
   for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
+    let isDir = entry.isDirectory();
+    if (!isDir && entry.isSymbolicLink()) {
+      const resolved = path.join(PLUGINS_DIR, entry.name);
+      const stat = await fs.stat(resolved);
+      isDir = stat.isDirectory();
+    }
+    if (!isDir) continue;
     const plugin = await loadPlugin(path.join(PLUGINS_DIR, entry.name));
     if (plugin) plugins.push(plugin);
   }

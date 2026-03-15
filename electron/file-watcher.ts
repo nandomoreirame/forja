@@ -14,6 +14,30 @@ interface FileWatcherSession {
 const fileWatchers = new Map<string, FileWatcherSession>();
 const DEBOUNCE_MS = 1000;
 const DEFAULT_DEPTH = 3;
+const SUPPRESS_TTL_MS = 2000;
+
+const suppressedPaths = new Set<string>();
+const suppressTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+/**
+ * Temporarily suppress file watcher events for a specific absolute path.
+ * The suppression is consumed on first match or expires after SUPPRESS_TTL_MS.
+ * Use this before plugin-originated writes to avoid triggering files:changed.
+ */
+export function suppressPath(absolutePath: string): void {
+  // Clear any existing timer for this path
+  const existing = suppressTimers.get(absolutePath);
+  if (existing) clearTimeout(existing);
+
+  suppressedPaths.add(absolutePath);
+  suppressTimers.set(
+    absolutePath,
+    setTimeout(() => {
+      suppressedPaths.delete(absolutePath);
+      suppressTimers.delete(absolutePath);
+    }, SUPPRESS_TTL_MS),
+  );
+}
 
 export interface FileWatcherOptions {
   depth?: number;
@@ -29,6 +53,7 @@ const IGNORED_PATTERNS = [
   "**/coverage/**",
   "**/__pycache__/**",
   "**/.venv/**",
+  "**/.forja/**",
 ];
 
 export function startFileWatcher(
@@ -58,6 +83,17 @@ export function startFileWatcher(
   fileWatchers.set(key, session);
 
   const notify = (changedAbsolutePath: string) => {
+    // Skip paths suppressed by plugin writes
+    if (changedAbsolutePath && suppressedPaths.has(changedAbsolutePath)) {
+      suppressedPaths.delete(changedAbsolutePath);
+      const timer = suppressTimers.get(changedAbsolutePath);
+      if (timer) {
+        clearTimeout(timer);
+        suppressTimers.delete(changedAbsolutePath);
+      }
+      return;
+    }
+
     // Collect the changed path (relative to project root)
     if (changedAbsolutePath) {
       const relativePath = path.relative(projectPath, changedAbsolutePath);

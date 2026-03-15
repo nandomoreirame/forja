@@ -29,6 +29,11 @@ interface PerformanceSettings {
   mode: "auto" | "full" | "lite";
 }
 
+interface UISettings {
+  activePaneHighlight: boolean;
+  hoverToFocus: boolean;
+}
+
 interface UserSettings {
   app: FontSettings;
   editor: FontSettings;
@@ -37,6 +42,7 @@ interface UserSettings {
   sessions: Record<string, { args?: string[]; env?: Record<string, string> }>;
   theme: ThemeSettings;
   performance: PerformanceSettings;
+  ui: UISettings;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -68,6 +74,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     custom: [],
   },
   performance: { mode: "auto" },
+  ui: { activePaneHighlight: true, hoverToFocus: true },
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -118,6 +125,10 @@ function mergeWithDefaults(
     performance: {
       ...DEFAULT_SETTINGS.performance,
       ...(input.performance ?? {}),
+    },
+    ui: {
+      ...DEFAULT_SETTINGS.ui,
+      ...(input.ui ?? {}),
     },
   };
 }
