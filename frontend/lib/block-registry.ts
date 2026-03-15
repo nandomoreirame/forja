@@ -25,7 +25,7 @@ const BLOCK_LABELS: Record<BlockType, string> = {
   browser: "Browser",
   plugin: "Plugin",
   "file-tree": "Files",
-  "agent-chat": "Chat",
+  "agent-chat": "AI Assistant",
   marketplace: "Marketplace",
 };
 

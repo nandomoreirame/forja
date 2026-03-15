@@ -393,7 +393,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
             <TooltipTrigger asChild>
               <button
                 type="button"
-                aria-label="Chat"
+                aria-label="Chat with AI assistant"
                 aria-pressed={isChatOpen}
                 onClick={toggleChat}
                 className={cn(
@@ -407,7 +407,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
               </button>
             </TooltipTrigger>
             <TooltipContent side="right">
-              <p>Chat</p>
+              <p>Chat with AI assistant</p>
             </TooltipContent>
           </Tooltip>
 

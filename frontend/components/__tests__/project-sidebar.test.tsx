@@ -125,7 +125,7 @@ describe("ProjectSidebar", () => {
 
     render(<ProjectSidebar onOpenProject={vi.fn()} />);
 
-    expect(screen.getByLabelText("Chat")).toBeTruthy();
+    expect(screen.getByLabelText("Chat with AI assistant")).toBeTruthy();
     expect(screen.queryByLabelText("Settings")).toBeNull();
     expect(screen.queryByLabelText("Help")).toBeNull();
   });
@@ -266,7 +266,7 @@ describe("ProjectSidebar", () => {
 
     render(<ProjectSidebar onOpenProject={vi.fn()} />);
 
-    const chatBtn = screen.getByLabelText("Chat");
+    const chatBtn = screen.getByLabelText("Chat with AI assistant");
     fireEvent.click(chatBtn);
     expect(mockTogglePanel).toHaveBeenCalledOnce();
   });

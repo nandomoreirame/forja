@@ -30,7 +30,7 @@ describe("block-registry", () => {
       expect(getBlockLabel("browser")).toBe("Browser");
       expect(getBlockLabel("plugin")).toBe("Plugin");
       expect(getBlockLabel("file-tree")).toBe("Files");
-      expect(getBlockLabel("agent-chat")).toBe("Chat");
+      expect(getBlockLabel("agent-chat")).toBe("AI Assistant");
       expect(getBlockLabel("marketplace")).toBe("Marketplace");
     });
   });

@@ -314,7 +314,7 @@ export function buildTabName(config: BlockConfig): string {
     case "file-tree":
       return config.projectName ?? "Files";
     case "agent-chat":
-      return "Chat";
+      return "AI Assistant";
     case "marketplace":
       return "Marketplace";
   }
