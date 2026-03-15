@@ -307,7 +307,7 @@ describe("tiling-layout store", () => {
   });
 
   describe("file-tree block behaviour", () => {
-    it("file-tree tabset gets minWidth=350", () => {
+    it("file-tree tabset gets minWidth=240", () => {
       // Add a terminal to main first
       useTilingLayoutStore.getState().addBlock(
         { type: "terminal", sessionType: "terminal" },
@@ -326,7 +326,29 @@ describe("tiling-layout store", () => {
       const fileTreeNode = model.getNodeById("block-file-tree");
       const fileTreeTabset = fileTreeNode?.getParent();
       const attrMinWidth = (fileTreeTabset as any).getAttrMinWidth?.() ?? 0;
-      expect(attrMinWidth).toBeGreaterThanOrEqual(350);
+      expect(attrMinWidth).toBe(240);
+    });
+
+    it("file-tree tabset gets weight=1 for compact sizing", () => {
+      // Add a terminal to main first
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-terminal",
+      );
+      // Add file-tree docked LEFT (creates new tabset)
+      useTilingLayoutStore.getState().addBlock(
+        { type: "file-tree", projectName: "forja" },
+        TABSET_IDS.main,
+        "tab-file-tree",
+        DockLocation.LEFT,
+      );
+
+      const { model } = useTilingLayoutStore.getState();
+      const fileTreeNode = model.getNodeById("tab-file-tree");
+      const fileTreeTabset = fileTreeNode?.getParent();
+      const weight = (fileTreeTabset as any).getWeight?.() ?? -1;
+      expect(weight).toBe(1);
     });
 
     it("tab name shows project name when projectName is provided", () => {

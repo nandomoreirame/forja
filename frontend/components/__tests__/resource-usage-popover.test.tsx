@@ -125,7 +125,7 @@ describe("ResourceUsagePopover", () => {
       historyVersion: 1,
     };
 
-    it("renders Clear cache button inside popover", async () => {
+    it("renders Clear cache button inside popover in dev mode", async () => {
       mockUseAppMetrics.mockReturnValue(metricsValue);
       const { ResourceUsagePopover } = await import("../resource-usage-popover");
       render(<ResourceUsagePopover />);
@@ -149,6 +149,25 @@ describe("ResourceUsagePopover", () => {
       await userEvent.click(clearBtn);
 
       expect(mockInvoke).toHaveBeenCalledWith("app:clearCache");
+    });
+
+    it("does not render Clear cache button in production mode", async () => {
+      const original = import.meta.env.DEV;
+      import.meta.env.DEV = false;
+      try {
+        mockUseAppMetrics.mockReturnValue(metricsValue);
+        // Re-import to get fresh module with new env value
+        vi.resetModules();
+        const { ResourceUsagePopover } = await import("../resource-usage-popover");
+        render(<ResourceUsagePopover />);
+
+        const trigger = screen.getByRole("button", { name: /resource usage/i });
+        await userEvent.click(trigger);
+
+        expect(screen.queryByRole("button", { name: /clear cache/i })).not.toBeInTheDocument();
+      } finally {
+        import.meta.env.DEV = original;
+      }
     });
   });
 });
