@@ -44,7 +44,6 @@ vi.mock("@/stores/file-tree", async () => {
     tree: null,
     trees: {} as Record<string, unknown>,
     currentPath: null as string | null,
-    toggleSidebar: vi.fn(),
     openProject: vi.fn(),
   }));
 
@@ -52,18 +51,6 @@ vi.mock("@/stores/file-tree", async () => {
     APP_NAME: "Forja",
     useFileTreeStore,
   };
-});
-
-vi.mock("@/stores/browser-pane", async () => {
-  const { create } = await import("zustand");
-  const useBrowserPaneStore = create<{
-    isOpen: boolean;
-    toggleOpen: () => void;
-  }>((set) => ({
-    isOpen: false,
-    toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
-  }));
-  return { useBrowserPaneStore };
 });
 
 vi.mock("@/stores/app-dialogs", async () => {

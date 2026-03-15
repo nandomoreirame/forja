@@ -137,6 +137,23 @@ vi.mock("@/stores/projects", () => ({
   ),
 }));
 
+const mockTilingHasBlock = vi.fn(() => false);
+const mockTilingAddBlock = vi.fn();
+
+vi.mock("@/stores/tiling-layout", () => ({
+  useTilingLayoutStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = { hasBlock: mockTilingHasBlock, addBlock: mockTilingAddBlock, hasBlockOfType: vi.fn(() => false) };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({ hasBlock: mockTilingHasBlock, addBlock: mockTilingAddBlock }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    },
+  ),
+}));
+
 describe("CommandPalette", () => {
   beforeEach(() => {
     useCommandPaletteStore.setState({ isOpen: false, mode: "files" });
@@ -170,10 +187,8 @@ describe("CommandPalette", () => {
     expect(screen.getByText("Add Project")).toBeInTheDocument();
 
     // Panels & View group
-    expect(screen.getByText("Toggle Sidebar")).toBeInTheDocument();
-    expect(screen.getByText("Toggle File Preview")).toBeInTheDocument();
-    expect(screen.getByText("Toggle Right Panel")).toBeInTheDocument();
-    expect(screen.getByText("Toggle Chat Panel")).toBeInTheDocument();
+    expect(screen.getByText("Open Files")).toBeInTheDocument();
+    expect(screen.getByText("Open Browser")).toBeInTheDocument();
     expect(screen.getByText("Collapse All Folders")).toBeInTheDocument();
 
     // Terminal group
@@ -253,9 +268,6 @@ describe("CommandPalette", () => {
     expect(addProjectItem).toBeInTheDocument();
     expect(within(addProjectItem).getByText(/Shift\+O$/)).toBeInTheDocument();
 
-    const toggleSidebarItem = screen.getByText("Toggle Sidebar").closest("[cmdk-item]") as HTMLElement;
-    expect(toggleSidebarItem).toBeInTheDocument();
-    expect(within(toggleSidebarItem).getByText(/Shift\+B$/)).toBeInTheDocument();
   });
 
   describe("sessions mode", () => {
@@ -331,6 +343,80 @@ describe("CommandPalette", () => {
       const state = useCommandPaletteStore.getState();
       expect(state.mode).toBe("sessions");
       expect(state.isOpen).toBe(true);
+    });
+  });
+
+  describe("Open Files and Open Browser commands", () => {
+    beforeEach(() => {
+      mockTilingHasBlock.mockReturnValue(false);
+      mockTilingAddBlock.mockClear();
+    });
+
+    it("shows Open Files in Panels & View commands group", () => {
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+      expect(screen.getByText("Open Files")).toBeInTheDocument();
+    });
+
+    it("shows Open Browser in Panels & View commands group", () => {
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+      expect(screen.getByText("Open Browser")).toBeInTheDocument();
+    });
+
+    it("does not show Toggle File Preview in commands mode", () => {
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+      expect(screen.queryByText("Toggle File Preview")).not.toBeInTheDocument();
+    });
+
+    it("does not show Toggle Right Panel in commands mode", () => {
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+      expect(screen.queryByText("Toggle Right Panel")).not.toBeInTheDocument();
+    });
+
+    it("does not show Toggle Chat Panel in commands mode", () => {
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+      expect(screen.queryByText("Toggle Chat Panel")).not.toBeInTheDocument();
+    });
+
+    it("does not show Files in sessions mode", () => {
+      mockInstalledClis.installedClis = [];
+      useCommandPaletteStore.setState({ isOpen: true, mode: "sessions" });
+      render(<CommandPalette />);
+      expect(screen.queryByText("Files")).not.toBeInTheDocument();
+    });
+
+    it("Open Files adds file-tree block via tiling layout", async () => {
+      const user = userEvent.setup();
+      mockFileTreeState.tree = {
+        root: { name: "my-project", path: "/project", isDir: true, children: [] },
+      };
+      mockFileTreeState.currentPath = "/project";
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+
+      await user.click(screen.getByText("Open Files"));
+      expect(mockTilingAddBlock).toHaveBeenCalledWith(
+        { type: "file-tree", projectName: "my-project" },
+        undefined,
+        "tab-file-tree",
+      );
+    });
+
+    it("Open Browser adds browser block via tiling layout", async () => {
+      const user = userEvent.setup();
+      useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
+      render(<CommandPalette />);
+
+      await user.click(screen.getByText("Open Browser"));
+      expect(mockTilingAddBlock).toHaveBeenCalledWith(
+        expect.objectContaining({ type: "browser" }),
+        undefined,
+        expect.stringContaining("browser-"),
+      );
     });
   });
 

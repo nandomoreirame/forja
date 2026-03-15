@@ -72,6 +72,22 @@ vi.mock("@xterm/addon-webgl", () => ({
 
 vi.mock("@xterm/xterm/css/xterm.css", () => ({}));
 
+// Mock terminal instance cache
+const mockCacheHas = vi.fn().mockReturnValue(false);
+const mockCacheGet = vi.fn().mockReturnValue(undefined);
+const mockCachePark = vi.fn();
+const mockCacheDispose = vi.fn();
+const mockCacheClear = vi.fn();
+vi.mock("@/lib/terminal-instance-cache", () => ({
+  terminalCache: {
+    has: (...args: unknown[]) => mockCacheHas(...args),
+    get: (...args: unknown[]) => mockCacheGet(...args),
+    park: (...args: unknown[]) => mockCachePark(...args),
+    dispose: (...args: unknown[]) => mockCacheDispose(...args),
+    clear: (...args: unknown[]) => mockCacheClear(...args),
+  },
+}));
+
 // Mock terminal-tabs store for hasTab guard
 const mockHasTab = vi.fn().mockReturnValue(true);
 vi.mock("@/stores/terminal-tabs", () => ({
@@ -128,6 +144,11 @@ describe("TerminalSession", () => {
     mockGetSelection.mockReset().mockReturnValue("");
     webglInstances.length = 0;
     terminalInstances.length = 0;
+    mockCacheHas.mockReset().mockReturnValue(false);
+    mockCacheGet.mockReset().mockReturnValue(undefined);
+    mockCachePark.mockClear();
+    mockCacheDispose.mockClear();
+    mockCacheClear.mockClear();
   });
 
   afterEach(() => {
@@ -172,11 +193,15 @@ describe("TerminalSession", () => {
     const { unmount } = render(
       <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
     );
+    // Advance rAF so PTY is spawned (simulates normal usage, not strict mode fast remount)
+    vi.advanceTimersByTime(16);
     // Tab still exists (reorder or React remount)
     mockHasTab.mockReturnValue(true);
     unmount();
     expect(mockClose).not.toHaveBeenCalled();
-    expect(mockDispose).toHaveBeenCalled();
+    // Terminal is parked (not disposed) for later reattach
+    expect(mockDispose).not.toHaveBeenCalled();
+    expect(mockCachePark).toHaveBeenCalled();
   });
 
   describe("link routing", () => {
@@ -494,6 +519,105 @@ describe("TerminalSession", () => {
       const result = capturedKeyHandler!(event);
 
       expect(result).toBe(true);
+    });
+  });
+
+  describe("terminal instance cache", () => {
+    it("parks terminal on unmount when tab still exists in store", () => {
+      const { unmount } = render(
+        <TerminalSession tabId="tab-cache-1" path="/test" isVisible={true} />
+      );
+      // Advance rAF so spawn() runs and PTY is marked as started
+      vi.advanceTimersByTime(16);
+      mockHasTab.mockReturnValue(true);
+      unmount();
+
+      expect(mockCachePark).toHaveBeenCalledWith(
+        "tab-cache-1",
+        expect.anything(), // Terminal instance
+        expect.anything(), // FitAddon instance
+        expect.anything(), // hostElement
+      );
+      expect(mockClose).not.toHaveBeenCalled();
+    });
+
+    it("disposes cache and calls close on unmount when tab is removed", () => {
+      const { unmount } = render(
+        <TerminalSession tabId="tab-cache-2" path="/test" isVisible={true} />
+      );
+      mockHasTab.mockReturnValue(false);
+      unmount();
+
+      expect(mockCachePark).not.toHaveBeenCalled();
+      expect(mockClose).toHaveBeenCalled();
+      expect(mockCacheDispose).toHaveBeenCalledWith("tab-cache-2");
+    });
+
+    it("reattaches cached terminal on mount without calling spawn", async () => {
+      // Simulate a cached terminal entry
+      const mockTerminal = {
+        write: vi.fn(),
+        dispose: vi.fn(),
+        onData: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+        loadAddon: vi.fn(),
+        focus: vi.fn(),
+        getSelection: vi.fn().mockReturnValue(""),
+        attachCustomKeyEventHandler: vi.fn(),
+        options: {},
+      };
+      const mockFitAddonCached = {
+        fit: vi.fn(),
+        proposeDimensions: vi.fn().mockReturnValue({ rows: 24, cols: 80 }),
+        dispose: vi.fn(),
+      };
+      const mockHost = document.createElement("div");
+
+      mockCacheGet.mockReturnValue({
+        terminal: mockTerminal,
+        fitAddon: mockFitAddonCached,
+        hostElement: mockHost,
+      });
+
+      render(
+        <TerminalSession tabId="tab-cached" path="/test" isVisible={true} />
+      );
+
+      // Should NOT create a new Terminal (mockOpen is for new xterm instances)
+      expect(mockOpen).not.toHaveBeenCalled();
+
+      // The hostElement should be appended to the container
+      const container = screen.getByRole("region", { name: /terminal/i });
+      const innerContainer = container.querySelector(".h-full.w-full.pt-3");
+      expect(innerContainer?.querySelector("div")?.contains(mockHost)).toBe(true);
+    });
+
+    it("does not call terminal.dispose() when parking", () => {
+      const { unmount } = render(
+        <TerminalSession tabId="tab-park" path="/test" isVisible={true} />
+      );
+      mockHasTab.mockReturnValue(true);
+      mockDispose.mockClear();
+
+      // Advance so spawn() fires (rAF)
+      vi.advanceTimersByTime(16);
+      unmount();
+
+      // terminal.dispose() should NOT be called when parking
+      expect(mockDispose).not.toHaveBeenCalled();
+    });
+
+    it("disposes terminal without parking when PTY was never spawned (strict mode fast remount)", () => {
+      const { unmount } = render(
+        <TerminalSession tabId="tab-strict" path="/test" isVisible={true} />
+      );
+      // Unmount BEFORE rAF fires (simulates React strict mode fast cleanup)
+      mockHasTab.mockReturnValue(true);
+      unmount();
+
+      // Should NOT park (PTY never started)
+      expect(mockCachePark).not.toHaveBeenCalled();
+      // Should dispose the terminal
+      expect(mockDispose).toHaveBeenCalled();
     });
   });
 });
