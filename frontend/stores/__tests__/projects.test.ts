@@ -513,6 +513,56 @@ describe("useProjectsStore", () => {
     });
   });
 
+  it("updates file-tree tab name with the NEW project name, not the stale previous one", async () => {
+    const mockUpdateFileTreeTabName = vi.fn();
+    const { useTilingLayoutStore } = await import("@/stores/tiling-layout");
+    vi.spyOn(useTilingLayoutStore, "getState").mockReturnValue({
+      ...useTilingLayoutStore.getState(),
+      updateFileTreeTabName: mockUpdateFileTreeTabName,
+      saveLayoutForProject: vi.fn(),
+      restoreLayoutForProject: vi.fn(),
+      layoutByProject: {},
+    } as never);
+
+    // Simulate the stale snapshot bug:
+    // First getState() call returns tree for OLD project (forja).
+    // After openProjectPath, the REAL store would have the NEW project tree.
+    // The second getState() call should return the NEW tree.
+    let callCount = 0;
+    const mockOpenProjectPath = vi.fn().mockImplementation(async () => {
+      // Simulate that openProjectPath internally calls set(),
+      // so subsequent getState() calls return the NEW tree.
+      callCount = 99; // flip to "after" state
+    });
+    vi.mocked(useFileTreeStore.getState).mockImplementation(() => {
+      callCount++;
+      const isAfterOpen = callCount > 99;
+      const base = {
+        openProjectPath: mockOpenProjectPath,
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      };
+      if (!isAfterOpen) {
+        return { ...base, tree: { root: { name: "forja", path: "/project-a", isDir: true } } } as never;
+      }
+      return { ...base, tree: { root: { name: "play-etl-monitor", path: "/project-b", isDir: true } } } as never;
+    });
+
+    useProjectsStore.setState({
+      projects: [
+        { path: "/project-a", name: "forja", lastOpened: "" },
+        { path: "/project-b", name: "play-etl-monitor", lastOpened: "" },
+      ],
+      activeProjectPath: "/project-a",
+    });
+
+    await useProjectsStore.getState().switchToProject("/project-b");
+
+    // The tab name must be "play-etl-monitor" (NEW project), NOT "forja" (old/stale)
+    expect(mockUpdateFileTreeTabName).toHaveBeenCalledWith("play-etl-monitor");
+  });
+
   it("only restores preview (no save) when there is no previous active project", async () => {
     const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useFileTreeStore.getState).mockReturnValue({

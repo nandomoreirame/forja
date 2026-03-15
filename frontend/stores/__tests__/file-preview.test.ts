@@ -6,6 +6,38 @@ vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
 }));
 
+const mockAddBlock = vi.fn();
+const mockRemoveBlock = vi.fn();
+const mockHasBlock = vi.fn(() => false);
+const mockGetNodeById = vi.fn();
+const mockUpdateFilePreviewTabName = vi.fn();
+
+vi.mock("@/stores/tiling-layout", () => ({
+  useTilingLayoutStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = {
+        hasBlock: mockHasBlock,
+        addBlock: mockAddBlock,
+        removeBlock: mockRemoveBlock,
+        updateFilePreviewTabName: mockUpdateFilePreviewTabName,
+        model: { getNodeById: mockGetNodeById },
+      };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({
+        hasBlock: mockHasBlock,
+        addBlock: mockAddBlock,
+        removeBlock: mockRemoveBlock,
+        updateFilePreviewTabName: mockUpdateFilePreviewTabName,
+        model: { getNodeById: mockGetNodeById },
+      }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    },
+  ),
+}));
+
 describe("useFilePreviewStore", () => {
   beforeEach(() => {
     // Reset store state before each test
@@ -16,6 +48,11 @@ describe("useFilePreviewStore", () => {
       isLoading: false,
       error: null,
     });
+    mockAddBlock.mockClear();
+    mockRemoveBlock.mockClear();
+    mockHasBlock.mockReset().mockReturnValue(false);
+    mockGetNodeById.mockReset();
+    mockUpdateFilePreviewTabName.mockClear();
     vi.clearAllMocks();
   });
 
@@ -53,7 +90,7 @@ describe("useFilePreviewStore", () => {
   });
 
   describe("closePreview", () => {
-    it("should clear file content but keep panel open", () => {
+    it("should clear file content and close panel", () => {
       // Set non-default state
       useFilePreviewStore.setState({
         isOpen: true,
@@ -71,7 +108,7 @@ describe("useFilePreviewStore", () => {
       closePreview();
 
       const state = useFilePreviewStore.getState();
-      expect(state.isOpen).toBe(true);
+      expect(state.isOpen).toBe(false);
       expect(state.currentFile).toBeNull();
       expect(state.content).toBeNull();
       expect(state.error).toBeNull();
@@ -156,6 +193,67 @@ describe("useFilePreviewStore", () => {
 
       const state = useFilePreviewStore.getState();
       expect(state.error).toBe("String error message");
+    });
+
+    it("calls updateFilePreviewTabName when block already exists (tab name updates on file switch)", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue({
+        path: "/test/new-file.ts",
+        content: "new content",
+        size: 11,
+      });
+
+      // Block already exists — should update name, not add again
+      mockHasBlock.mockReturnValue(true);
+
+      await useFilePreviewStore.getState().loadFile("/test/new-file.ts");
+
+      expect(mockAddBlock).not.toHaveBeenCalled();
+      expect(mockUpdateFilePreviewTabName).toHaveBeenCalledWith("/test/new-file.ts");
+    });
+
+    it("does NOT call updateFilePreviewTabName when block is newly created", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockResolvedValue({
+        path: "/test/file.ts",
+        content: "content",
+        size: 7,
+      });
+
+      // Block does not exist — should add, not update name
+      mockHasBlock.mockReturnValue(false);
+
+      await useFilePreviewStore.getState().loadFile("/test/file.ts");
+
+      expect(mockAddBlock).toHaveBeenCalled();
+      expect(mockUpdateFilePreviewTabName).not.toHaveBeenCalled();
+    });
+
+    it("places preview block to the RIGHT of the file-tree tabset", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      const { DockLocation } = await import("flexlayout-react");
+      vi.mocked(invoke).mockResolvedValue({
+        path: "/test/file.ts",
+        content: "test content",
+        size: 12,
+      });
+
+      // Simulate file-tree node existing in the model
+      const mockParent = { getId: () => "tabset-sidebar" };
+      mockGetNodeById.mockImplementation((id: string) => {
+        if (id === "tab-file-tree") return { getParent: () => mockParent };
+        return undefined;
+      });
+      mockHasBlock.mockReturnValue(false);
+
+      await useFilePreviewStore.getState().loadFile("/test/file.ts");
+
+      expect(mockAddBlock).toHaveBeenCalledWith(
+        { type: "file-preview", filePath: "/test/file.ts" },
+        "tabset-sidebar",
+        "block-file-preview",
+        DockLocation.RIGHT,
+      );
     });
 
     it("should handle unknown errors when loading file", async () => {

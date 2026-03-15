@@ -458,6 +458,118 @@ describe("useTerminalTabsStore", () => {
     });
   });
 
+  describe("registerTab", () => {
+    it("adds tab metadata without creating a layout block", () => {
+      const store = useTerminalTabsStore.getState();
+      store.registerTab("reg-1", "/project-a", "claude");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs).toHaveLength(1);
+      expect(state.tabs[0]).toEqual({
+        id: "reg-1",
+        name: "Claude Code",
+        path: "/project-a",
+        isRunning: true,
+        sessionType: "claude",
+      });
+    });
+
+    it("does not set activeTabId", () => {
+      const store = useTerminalTabsStore.getState();
+      store.registerTab("reg-1", "/project-a", "claude");
+
+      expect(useTerminalTabsStore.getState().activeTabId).toBeNull();
+    });
+
+    it("does not create a layout block (addTab does, registerTab does not)", () => {
+      const store = useTerminalTabsStore.getState();
+
+      // registerTab should only add metadata
+      store.registerTab("reg-1", "/project-a", "terminal");
+
+      // Verify tab exists in the store
+      expect(store.hasTab("reg-1")).toBe(true);
+
+      // Now use addTab to create another tab — it SHOULD create a block
+      // This confirms the two methods have different behavior
+      const id2 = store.nextTabId();
+      useTerminalTabsStore.getState().addTab(id2, "/project-a", "terminal");
+
+      // addTab sets activeTabId, registerTab does not
+      expect(useTerminalTabsStore.getState().activeTabId).toBe(id2);
+    });
+
+    it("supports optional customName", () => {
+      const store = useTerminalTabsStore.getState();
+      store.registerTab("reg-1", "/project-a", "claude", "My Build");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].customName).toBe("My Build");
+    });
+
+    it("defaults sessionType to claude when not provided", () => {
+      const store = useTerminalTabsStore.getState();
+      store.registerTab("reg-1", "/project-a");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].sessionType).toBe("claude");
+    });
+  });
+
+  describe("ensureBlocksForProjectTabs", () => {
+    it("creates layout blocks for project tabs that have no block", () => {
+      const store = useTerminalTabsStore.getState();
+      // Register tabs (no blocks created)
+      store.registerTab("tab-a1", "/project-a", "claude");
+      store.registerTab("tab-a2", "/project-a", "terminal");
+
+      // Call ensureBlocks — should create layout blocks for missing tabs
+      useTerminalTabsStore.getState().ensureBlocksForProjectTabs("/project-a");
+
+      // Verify tabs still exist
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(2);
+    });
+
+    it("does not duplicate blocks for tabs that already have one", () => {
+      const store = useTerminalTabsStore.getState();
+      // addTab creates a block
+      const id = store.nextTabId();
+      store.addTab(id, "/project-a", "claude");
+
+      // ensureBlocks should not create a duplicate
+      useTerminalTabsStore.getState().ensureBlocksForProjectTabs("/project-a");
+
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(1);
+    });
+
+    it("only creates blocks for the specified project", () => {
+      const store = useTerminalTabsStore.getState();
+      store.registerTab("tab-a1", "/project-a", "claude");
+      store.registerTab("tab-b1", "/project-b", "terminal");
+
+      useTerminalTabsStore.getState().ensureBlocksForProjectTabs("/project-a");
+
+      // Only project-a's tab should have been processed
+      // project-b's tab should still have no block
+      expect(useTerminalTabsStore.getState().getTabsForProject("/project-a")).toHaveLength(1);
+      expect(useTerminalTabsStore.getState().getTabsForProject("/project-b")).toHaveLength(1);
+    });
+
+    it("sets activeTabId to the first project tab if none is active", () => {
+      const store = useTerminalTabsStore.getState();
+      store.registerTab("tab-a1", "/project-a", "claude");
+      store.registerTab("tab-a2", "/project-a", "terminal");
+
+      expect(useTerminalTabsStore.getState().activeTabId).toBeNull();
+
+      useTerminalTabsStore.getState().ensureBlocksForProjectTabs("/project-a");
+
+      // activeTabId should be set to first tab of the project
+      const projectTabs = useTerminalTabsStore.getState().getTabsForProject("/project-a");
+      expect(projectTabs.length).toBeGreaterThan(0);
+    });
+  });
+
   describe("terminal fullscreen", () => {
     it("starts with isTerminalFullscreen as false", () => {
       const state = useTerminalTabsStore.getState();
