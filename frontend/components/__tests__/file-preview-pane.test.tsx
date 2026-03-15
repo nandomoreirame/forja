@@ -9,6 +9,20 @@ vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn().mockResolvedValue({ isGitRepo: false, branch: null, fileStatus: null, changedFiles: 0 }),
   open: vi.fn(),
 }));
+
+vi.mock("@/stores/tiling-layout", () => ({
+  useTilingLayoutStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = { hasBlock: () => false, addBlock: vi.fn(), removeBlock: vi.fn() };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({ hasBlock: () => false, addBlock: vi.fn(), removeBlock: vi.fn() }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    },
+  ),
+}));
 vi.mock("monaco-editor", () => {
   const disposable = { dispose: vi.fn() };
   const mockModel = { dispose: vi.fn(), getValue: vi.fn(() => ""), setValue: vi.fn() };
@@ -144,7 +158,7 @@ describe("FilePreviewPane", () => {
     expect(screen.getByTestId("error-icon")).toBeInTheDocument();
   });
 
-  it("shows filename in header when content is loaded", () => {
+  it("does NOT show a separate filename header (flexlayout tab already shows it)", () => {
     useFilePreviewStore.setState({
       isOpen: true,
       isLoading: false,
@@ -152,63 +166,11 @@ describe("FilePreviewPane", () => {
       content: { path: "/path/to/example.ts", content: "const x = 1;", size: 12 },
     });
     renderWithSuspense(<FilePreviewPane />);
-    expect(screen.getByText("example.ts")).toBeInTheDocument();
-  });
-
-  it("shows close button that clears file but keeps panel open", () => {
-    useFilePreviewStore.setState({
-      isOpen: true,
-      isLoading: false,
-      currentFile: "/test/file.ts",
-      content: { path: "/test/file.ts", content: "const x = 1;", size: 12 },
-    });
-    renderWithSuspense(<FilePreviewPane />);
-    const closeButton = screen.getByLabelText("Close preview");
-    expect(closeButton).toBeInTheDocument();
-
-    fireEvent.click(closeButton);
-
-    const state = useFilePreviewStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.currentFile).toBeNull();
-    expect(state.content).toBeNull();
-  });
-
-  it("clears the selected git diff when closing a diff preview", () => {
-    useFilePreviewStore.setState({
-      isOpen: true,
-      currentFile: null,
-      content: null,
-      isLoading: false,
-      error: null,
-    });
-    useGitDiffStore.setState({
-      selectedProjectPath: "/repo",
-      selectedPath: "src/file.ts",
-      selectedDiff: {
-        path: "src/file.ts",
-        status: "M",
-        patch: "diff --git a/src/file.ts b/src/file.ts",
-        truncated: false,
-        isBinary: false,
-        originalContent: "const a = 1;",
-        modifiedContent: "const a = 2;",
-      },
-      isLoadingDiff: false,
-    });
-
-    renderWithSuspense(<FilePreviewPane />);
-
-    fireEvent.click(screen.getByLabelText("Close preview"));
-
-    const previewState = useFilePreviewStore.getState();
-    const diffState = useGitDiffStore.getState();
-
-    expect(previewState.isOpen).toBe(true);
-    expect(diffState.selectedDiff).toBeNull();
-    expect(diffState.selectedProjectPath).toBeNull();
-    expect(diffState.selectedPath).toBeNull();
-    expect(screen.getByText("Forja")).toBeInTheDocument();
+    // The filename should NOT appear in a dedicated header inside the pane
+    // (it is shown in the flexlayout tab, not inside the pane content)
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+    // The close button in the pane header should also be gone
+    expect(screen.queryByLabelText("Close preview")).not.toBeInTheDocument();
   });
 
   it("shows file info in footer", () => {
@@ -267,8 +229,10 @@ describe("FilePreviewPane", () => {
 
     fireEvent.click(screen.getByLabelText("Switch to edit"));
 
+    // Markdown viewer disappears; editor mode is active
     expect(screen.queryByTestId("markdown-content")).not.toBeInTheDocument();
-    expect(screen.getByText("Editing")).toBeInTheDocument();
+    // The footer toggle button should now show "Preview" (to go back to preview mode)
+    expect(screen.getByLabelText("Switch to preview")).toBeInTheDocument();
   });
 
   it("switches markdown from editor back to preview when Preview is clicked", async () => {
@@ -281,14 +245,16 @@ describe("FilePreviewPane", () => {
     });
     renderWithSuspense(<FilePreviewPane />);
 
+    // Footer toggle shows "Switch to preview" when editing
     expect(screen.getByLabelText("Switch to preview")).toBeInTheDocument();
-    expect(screen.getByText("Preview")).toBeInTheDocument();
 
     fireEvent.click(screen.getByLabelText("Switch to preview"));
 
     await waitFor(() => {
       expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
     });
+    // Footer toggle is back to edit mode
+    expect(screen.getByLabelText("Switch to edit")).toBeInTheDocument();
   });
 
   it("renders image viewer for PNG files with base64 encoding", () => {

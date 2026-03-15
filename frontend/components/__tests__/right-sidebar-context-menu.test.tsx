@@ -8,6 +8,26 @@ vi.mock("@/lib/ipc", () => ({
   listen: vi.fn(() => Promise.resolve(() => {})),
 }));
 
+const mockHasBlock = vi.fn(() => false);
+const mockHasBlockOfType = vi.fn(() => false);
+const mockAddBlock = vi.fn();
+const mockRemoveBlock = vi.fn();
+const mockSelectTab = vi.fn();
+
+vi.mock("@/stores/tiling-layout", () => ({
+  useTilingLayoutStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = { hasBlock: mockHasBlock, hasBlockOfType: mockHasBlockOfType, addBlock: mockAddBlock, removeBlock: mockRemoveBlock, selectTab: mockSelectTab };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({ hasBlock: mockHasBlock, hasBlockOfType: mockHasBlockOfType, addBlock: mockAddBlock, removeBlock: mockRemoveBlock, selectTab: mockSelectTab }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    },
+  ),
+}));
+
 const mockTogglePanel = vi.fn();
 const mockSetActiveView = vi.fn();
 let mockIsOpen = false;
@@ -208,9 +228,10 @@ describe("RightSidebar - Plugin Context Menu", () => {
     expect(screen.getByTestId("pin-indicator-pomodoro")).toBeTruthy();
   });
 
-  it("reverts to pinned plugin when a temporarily opened plugin closes", () => {
-    // Setup: pomodoro is pinned, notes is temporarily active
+  it("focuses plugin tab when a temporarily opened plugin is clicked", () => {
+    // Setup: pomodoro is pinned, notes is temporarily active (has block)
     mockIsOpen = true;
+    mockHasBlock.mockImplementation((id: string) => id === "block-plugin-notes");
     mockPlugins = [
       makePlugin("pomodoro", "Pomodoro"),
       makePlugin("notes", "Notes"),
@@ -219,19 +240,19 @@ describe("RightSidebar - Plugin Context Menu", () => {
     mockActivePluginName = "notes";
     render(<RightSidebar hasProject />);
 
-    // Click the notes icon (active) to close it — should revert to pinned
+    // Click the notes icon (active) to focus it (not remove)
     fireEvent.click(screen.getByLabelText("Notes"));
 
-    // Should switch back to pinned plugin instead of closing
-    expect(mockSetActivePlugin).toHaveBeenCalledWith("pomodoro");
-    expect(mockSetActiveView).toHaveBeenCalledWith("plugin");
-    // Panel should stay open
-    expect(mockTogglePanel).not.toHaveBeenCalled();
+    // Should focus the existing tab, not remove it
+    expect(mockSelectTab).toHaveBeenCalledWith("block-plugin-notes");
+    expect(mockRemoveBlock).not.toHaveBeenCalled();
+    expect(mockSetActivePlugin).toHaveBeenCalledWith("notes");
   });
 
-  it("opens a non-pinned plugin temporarily when clicked", () => {
+  it("opens a non-pinned plugin as tiling block with RIGHT dock when clicked", () => {
     // Setup: pomodoro is pinned and active, user clicks notes
     mockIsOpen = true;
+    mockHasBlock.mockReturnValue(false);
     mockPlugins = [
       makePlugin("pomodoro", "Pomodoro"),
       makePlugin("notes", "Notes"),
@@ -240,11 +261,16 @@ describe("RightSidebar - Plugin Context Menu", () => {
     mockActivePluginName = "pomodoro";
     render(<RightSidebar hasProject />);
 
-    // Click notes icon — should open notes temporarily
+    // Click notes icon — should open notes as tiling block with DockLocation.RIGHT
     fireEvent.click(screen.getByLabelText("Notes"));
 
     expect(mockSetActivePlugin).toHaveBeenCalledWith("notes");
-    expect(mockSetActiveView).toHaveBeenCalledWith("plugin");
+    expect(mockAddBlock).toHaveBeenCalledWith(
+      { type: "plugin", pluginName: "notes", pluginDisplayName: "Notes", pluginIcon: "Puzzle" },
+      undefined,
+      "block-plugin-notes",
+      expect.anything(), // DockLocation.RIGHT
+    );
   });
 
   it("does not show context menu for non-plugin utility buttons", async () => {
@@ -256,6 +282,17 @@ describe("RightSidebar - Plugin Context Menu", () => {
     await user.pointer({ target: settingsBtn, keys: "[MouseRight]" });
 
     // Should not show a context menu
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("does not show context menu for browser icon", async () => {
+    const user = userEvent.setup();
+    render(<RightSidebar hasProject />);
+
+    const browserBtn = screen.getByLabelText("Browser");
+    await user.pointer({ target: browserBtn, keys: "[MouseRight]" });
+
+    // Browser icon should not have a context menu
     expect(screen.queryByRole("menu")).toBeNull();
   });
 

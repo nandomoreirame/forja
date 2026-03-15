@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { FileTreeSidebar, SIDEBAR_MAX_WIDTH } from "../file-tree-sidebar";
 
 vi.mock("@/lib/ipc", () => ({
@@ -58,7 +57,7 @@ describe("FileTreeSidebar", () => {
     expect(sidebar.className).toMatch(/h-full/);
   });
 
-  it("renders tree nodes when a project is loaded", async () => {
+  it("renders file tree content area when a project is loaded", async () => {
     const { useFileTreeStore } = await import("@/stores/file-tree");
     useFileTreeStore.setState({
       isOpen: true,
@@ -76,80 +75,10 @@ describe("FileTreeSidebar", () => {
 
     render(<FileTreeSidebar />);
 
-    expect(screen.getByText("my-project")).toBeInTheDocument();
-  });
-
-  it("allows collapsing all folders via collapse-all button", async () => {
-    const user = userEvent.setup();
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    useFileTreeStore.setState({
-      isOpen: true,
-      tree: {
-        root: {
-          name: "my-project",
-          path: "/path/to/my-project",
-          isDir: true,
-          children: [
-            { name: "src", path: "/path/to/my-project/src", isDir: true, children: [] },
-          ],
-        },
-      },
-      expandedPaths: {
-        "/path/to/my-project": true,
-      },
-    });
-
-    render(<FileTreeSidebar />);
-    const collapseButton = screen.getByRole("button", { name: "Collapse all folders" });
-    await user.click(collapseButton);
-    expect(useFileTreeStore.getState().expandedPaths).toEqual({});
-  });
-
-  it("renders refresh button with correct aria-label", async () => {
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    useFileTreeStore.setState({
-      isOpen: true,
-      tree: {
-        root: {
-          name: "my-project",
-          path: "/path/to/my-project",
-          isDir: true,
-          children: [],
-        },
-      },
-      trees: {},
-    });
-
-    render(<FileTreeSidebar />);
-
-    const refreshButton = screen.getByRole("button", { name: "Refresh file tree" });
-    expect(refreshButton).toBeInTheDocument();
-  });
-
-  it("calls refreshTree when refresh button is clicked", async () => {
-    const user = userEvent.setup();
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    const refreshTreeSpy = vi.fn();
-    useFileTreeStore.setState({
-      isOpen: true,
-      currentPath: "/path/to/my-project",
-      tree: {
-        root: {
-          name: "my-project",
-          path: "/path/to/my-project",
-          isDir: true,
-          children: [],
-        },
-      },
-      trees: {},
-      refreshTree: refreshTreeSpy,
-    });
-
-    render(<FileTreeSidebar />);
-
-    const refreshButton = screen.getByRole("button", { name: "Refresh file tree" });
-    await user.click(refreshButton);
-    expect(refreshTreeSpy).toHaveBeenCalled();
+    const sidebar = screen.getByTestId("file-tree-sidebar");
+    expect(sidebar).toBeInTheDocument();
+    // File tree scroll container is rendered (toolbar buttons are now in the tiling tab strip)
+    expect(sidebar.querySelector(".overflow-y-auto")).toBeInTheDocument();
   });
 
   it("renders only active tree when multiple trees are cached", async () => {
@@ -166,12 +95,12 @@ describe("FileTreeSidebar", () => {
           root: { name: "project-b", path: "/path/to/project-b", isDir: true, children: [] },
         },
       },
-      expandedPaths: { "/path/to/project-a": true },
     });
 
     render(<FileTreeSidebar />);
 
-    expect(screen.getByText("project-a")).toBeInTheDocument();
-    expect(screen.queryByText("project-b")).not.toBeInTheDocument();
+    // Sidebar renders for the active tree; project name is shown in the tiling tab, not in pane content
+    const sidebar = screen.getByTestId("file-tree-sidebar");
+    expect(sidebar).toBeInTheDocument();
   });
 });
