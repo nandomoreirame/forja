@@ -78,8 +78,8 @@ describe("right-sidebar marketplace button", () => {
     expect(mockRemoveBlock).toHaveBeenCalledWith("block-marketplace");
   });
 
-  it("does not render marketplace button when no project is active", () => {
+  it("renders marketplace button even without active project", () => {
     render(<RightSidebar hasProject={false} />);
-    expect(screen.queryByLabelText("Marketplace")).toBeNull();
+    expect(screen.getByLabelText("Marketplace")).toBeTruthy();
   });
 });

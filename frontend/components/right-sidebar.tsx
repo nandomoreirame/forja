@@ -87,14 +87,29 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
     [plugins, pluginOrder],
   );
 
+  const globalPlugins = useMemo(
+    () => orderedPlugins.filter((p) => p.manifest.scope === "global"),
+    [orderedPlugins],
+  );
+
+  const projectPlugins = useMemo(
+    () => orderedPlugins.filter((p) => (p.manifest.scope ?? "project") === "project"),
+    [orderedPlugins],
+  );
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor),
   );
 
+  const visiblePlugins = useMemo(
+    () => [...globalPlugins, ...(hasProject ? projectPlugins : [])],
+    [globalPlugins, projectPlugins, hasProject],
+  );
+
   const pluginIds = useMemo(
-    () => orderedPlugins.map((p) => p.manifest.name),
-    [orderedPlugins],
+    () => visiblePlugins.map((p) => p.manifest.name),
+    [visiblePlugins],
   );
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
@@ -197,37 +212,35 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
         data-testid="right-sidebar"
         className="flex h-full w-12 shrink-0 flex-col items-center gap-1.5 bg-ctp-mantle py-2"
       >
-        {/* Browser icon (built-in, singleton) */}
-        {hasProject && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label="Browser"
-                onClick={handleBrowserClick}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
-                  hasBrowserBlock
-                    ? "bg-ctp-surface0 text-ctp-mauve"
-                    : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
-                )}
-              >
-                <Globe className="h-4 w-4" strokeWidth={1.5} />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="left">
-              <p>Browser</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        {/* Browser icon (built-in, always visible) */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label="Browser"
+              onClick={handleBrowserClick}
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+                hasBrowserBlock
+                  ? "bg-ctp-surface0 text-ctp-mauve"
+                  : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
+              )}
+            >
+              <Globe className="h-4 w-4" strokeWidth={1.5} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="left">
+            <p>Browser</p>
+          </TooltipContent>
+        </Tooltip>
 
         {/* Divider between built-in icons and installed plugins */}
-        {hasProject && orderedPlugins.length > 0 && (
+        {visiblePlugins.length > 0 && (
           <div className="mx-auto h-px w-6 bg-ctp-surface1" />
         )}
 
-        {/* Plugin icons (only when a project is active) */}
-        {hasProject && (
+        {/* Plugin icons (global always, project only with active project) */}
+        {visiblePlugins.length > 0 && (
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -238,7 +251,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
               items={pluginIds}
               strategy={verticalListSortingStrategy}
             >
-              {orderedPlugins.map((plugin) => {
+              {visiblePlugins.map((plugin) => {
                 const Icon = getPluginIcon(plugin.manifest.icon) ?? Puzzle;
                 // Only visually "active" when the panel is open with this plugin.
                 // When the panel is closed, the plugin stays mounted (webview keeps
@@ -328,9 +341,8 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
           </DndContext>
         )}
 
-        {/* Marketplace button */}
-        {hasProject && (
-          <Tooltip>
+        {/* Marketplace button (always visible) */}
+        <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
@@ -349,8 +361,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
             <TooltipContent side="left">
               <p>Marketplace</p>
             </TooltipContent>
-          </Tooltip>
-        )}
+        </Tooltip>
 
         {/* Utility buttons */}
         <div className="mt-auto flex flex-col items-center gap-1.5">

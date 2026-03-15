@@ -71,7 +71,7 @@ vi.mock("@/stores/app-dialogs", () => ({
 const mockSetActivePlugin = vi.fn();
 const mockReorderPlugins = vi.fn();
 let mockPlugins: Array<{
-  manifest: { name: string; displayName: string; icon: string; permissions: string[] };
+  manifest: { name: string; displayName: string; icon: string; permissions: string[]; scope?: string };
   enabled: boolean;
   path: string;
   entryUrl: string;
@@ -242,14 +242,14 @@ describe("RightSidebar", () => {
     expect(mockSetActivePlugin).toHaveBeenCalledWith("active-plugin");
   });
 
-  it("renders browser icon when project is active", () => {
-    render(<RightSidebar hasProject />);
+  it("renders browser icon even without active project", () => {
+    render(<RightSidebar />);
     expect(screen.getByLabelText("Browser")).toBeTruthy();
   });
 
-  it("does not render browser icon when no project is active", () => {
+  it("renders marketplace button even without active project", () => {
     render(<RightSidebar />);
-    expect(screen.queryByLabelText("Browser")).toBeNull();
+    expect(screen.getByLabelText("Marketplace")).toBeTruthy();
   });
 
   it("opens browser block when browser icon is clicked", () => {
@@ -278,5 +278,64 @@ describe("RightSidebar", () => {
     const btn = screen.getByLabelText("Browser");
     expect(btn.className).toContain("bg-ctp-surface0");
     expect(btn.className).toContain("text-ctp-mauve");
+  });
+
+  it("renders global-scope plugin even without active project", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "pomodoro", displayName: "Pomodoro", icon: "Timer", permissions: [], scope: "global" },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar />);
+    expect(screen.getByLabelText("Pomodoro")).toBeTruthy();
+  });
+
+  it("does not render project-scope plugin without active project", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "git-graph", displayName: "Git Graph", icon: "GitBranch", permissions: [], scope: "project" },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar />);
+    expect(screen.queryByLabelText("Git Graph")).toBeNull();
+  });
+
+  it("renders both global and project plugins when project is active", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "pomodoro", displayName: "Pomodoro", icon: "Timer", permissions: [], scope: "global" },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+      {
+        manifest: { name: "git-graph", displayName: "Git Graph", icon: "GitBranch", permissions: [], scope: "project" },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar hasProject />);
+    expect(screen.getByLabelText("Pomodoro")).toBeTruthy();
+    expect(screen.getByLabelText("Git Graph")).toBeTruthy();
+  });
+
+  it("treats plugin without scope as project-scope (backward compatibility)", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "legacy-plugin", displayName: "Legacy", icon: "Sparkles", permissions: [] },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar />);
+    expect(screen.queryByLabelText("Legacy")).toBeNull();
   });
 });
