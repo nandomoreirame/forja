@@ -138,6 +138,16 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     get().markProjectAsRead(projectPath);
     get().clearProjectNotified(projectPath);
 
+    // Save/restore tiling layout per project
+    if (previousPath !== projectPath) {
+      const { useTilingLayoutStore } = await import("./tiling-layout");
+      const tilingStore = useTilingLayoutStore.getState();
+      if (previousPath) {
+        tilingStore.saveLayoutForProject(previousPath);
+      }
+      tilingStore.restoreLayoutForProject(projectPath);
+    }
+
     // Save/restore file preview per project
     if (previousPath !== projectPath) {
       const { useFilePreviewStore } = await import("./file-preview");
@@ -166,13 +176,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     tabsStore.restoreActiveTabForProject(projectPath);
     tabsStore.restoreFullscreenForProject(projectPath);
 
-    // Save/restore browser pane state per project
-    const { useBrowserPaneStore } = await import("./browser-pane");
-    const browserStore = useBrowserPaneStore.getState();
-    if (previousPath && previousPath !== projectPath) {
-      browserStore.saveBrowserStateForProject(previousPath);
-    }
-    browserStore.restoreBrowserStateForProject(projectPath);
+    // Ensure layout blocks exist for this project's terminal tabs.
+    // Tabs registered via registerTab (during session restore for non-active
+    // projects) have metadata but no layout blocks — create them now.
+    tabsStore.ensureBlocksForProjectTabs(projectPath);
 
     // Save/restore right panel state per project
     const { useRightPanelStore } = await import("./right-panel");
@@ -209,19 +216,29 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 
     await fileTreeStore.openProjectPath(projectPath);
 
+    // Update the file-tree tab name with the project name
+    // Re-read fresh state after openProjectPath (which calls set() internally)
+    const updatedTree = useFileTreeStore.getState().tree;
+    if (updatedTree?.root.name) {
+      const tilingStoreNow = (await import("./tiling-layout")).useTilingLayoutStore.getState();
+      tilingStoreNow.updateFileTreeTabName(updatedTree.root.name);
+    }
+
     // Persist previous project's UI state to disk
     if (previousPath && previousPath !== projectPath) {
       const prevPreviewStore = (await import("./file-preview")).useFilePreviewStore.getState();
       const prevPreview = prevPreviewStore.previewByProject[previousPath];
+      const { useTilingLayoutStore } = await import("./tiling-layout");
+      const tilingStore = useTilingLayoutStore.getState();
+      const prevLayoutJson = tilingStore.layoutByProject[previousPath];
       invoke("save_project_ui_state", {
         path: previousPath,
         state: {
-          sidebarOpen: fileTreeStore.isOpenByProject[previousPath] ?? true,
+          sidebarOpen: useFileTreeStore.getState().isOpenByProject[previousPath] ?? true,
           rightPanelOpen: rightPanelStore.isOpenByProject[previousPath] ?? false,
           terminalFullscreen: tabsStore.isFullscreenByProject[previousPath] ?? false,
           previewFile: prevPreview?.currentFile ?? null,
-          browserOpen: browserStore.browserStateByProject[previousPath]?.isOpen ?? false,
-          browserUrl: browserStore.browserStateByProject[previousPath]?.committedUrl ?? "http://localhost:3000",
+          layoutJson: prevLayoutJson as Record<string, unknown> | undefined,
         },
       }).catch(() => {});
     }
@@ -235,11 +252,12 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         previewFile?: string | null;
         browserOpen?: boolean;
         browserUrl?: string;
+        layoutJson?: Record<string, unknown>;
       } | null>("get_project_ui_state", { path: projectPath });
 
       if (savedState) {
         // Only apply disk state if we don't have in-memory state yet
-        const hasInMemoryFileTree = fileTreeStore.isOpenByProject[projectPath] !== undefined;
+        const hasInMemoryFileTree = useFileTreeStore.getState().isOpenByProject[projectPath] !== undefined;
         if (!hasInMemoryFileTree) {
           if (savedState.sidebarOpen !== undefined) {
             useFileTreeStore.setState({ isOpen: savedState.sidebarOpen });
@@ -252,6 +270,18 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
           }
           if (savedState.terminalFullscreen !== undefined) {
             useTerminalTabsStore.setState({ isTerminalFullscreen: savedState.terminalFullscreen });
+          }
+        }
+
+        // Restore tiling layout from disk if no in-memory layout exists
+        if (savedState.layoutJson) {
+          const { useTilingLayoutStore } = await import("./tiling-layout");
+          const tilingStore = useTilingLayoutStore.getState();
+          const hasInMemoryLayout = tilingStore.layoutByProject[projectPath] !== undefined;
+          if (!hasInMemoryLayout) {
+            const { parseLayoutJson } = await import("@/lib/layout-migration");
+            const layout = parseLayoutJson(savedState.layoutJson);
+            tilingStore.loadFromJson(layout);
           }
         }
       }

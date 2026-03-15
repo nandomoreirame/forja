@@ -5,12 +5,10 @@ import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useProjectsStore } from "@/stores/projects";
-import { useTerminalSplitLayoutStore } from "@/stores/terminal-split-layout";
-import { useRightPanelStore } from "@/stores/right-panel";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
-import { useBrowserPaneStore } from "@/stores/browser-pane";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
 interface UseKeyboardShortcutsOptions {
@@ -27,16 +25,14 @@ export function useKeyboardShortcuts({
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
-      const splitStore = useTerminalSplitLayoutStore.getState();
+      const tilingStore = useTilingLayoutStore.getState();
 
-      const createSplit = (orientation: "horizontal" | "vertical") => {
-        if (splitStore.orientation !== "none") return;
+      const createSplit = (direction: "horizontal" | "vertical") => {
         const activeId = activeTabIdRef.current;
         if (!activeId) return;
         const activeTab = tabsRef.current?.find((t) => t.id === activeId);
         const sessionType = activeTab?.sessionType ?? "terminal";
-        splitStore.openSplit(orientation, activeId, sessionType);
-        splitStore.setFocusedPane("secondary");
+        tilingStore.splitActiveTabset(direction, sessionType);
       };
 
       if (mod && event.key === "s") {
@@ -52,20 +48,6 @@ export function useKeyboardShortcuts({
         useAppDialogsStore.getState().setSettingsOpen(true);
         return;
       }
-      // Ctrl/Cmd+Alt+B — toggle browser pane
-      if (mod && event.altKey && event.key.toLowerCase() === "b") {
-        event.preventDefault();
-        useBrowserPaneStore.getState().toggleOpen();
-        return;
-      }
-      if (mod && event.shiftKey && event.key.toLowerCase() === "b") {
-        event.preventDefault();
-        const { tree: t, trees: tr } = useFileTreeStore.getState();
-        if (t !== null || Object.keys(tr).length > 0) {
-          useFileTreeStore.getState().toggleSidebar();
-        }
-        return;
-      }
       if (mod && event.shiftKey && event.key.toLowerCase() === "o") {
         event.preventDefault();
         useFileTreeStore.getState().openProject();
@@ -77,17 +59,16 @@ export function useKeyboardShortcuts({
         return;
       }
       if (mod && event.key.toLowerCase() === "w") {
-        // Ctrl+Alt+W: close split (unchanged)
-        if (event.altKey && splitStore.orientation !== "none") {
+        // Ctrl+Alt+W: close active tab in tiling layout
+        if (event.altKey) {
           event.preventDefault();
-          splitStore.closeSplit();
+          tilingStore.closeActiveTab();
           return;
         }
-        // Ctrl+Shift+W: close terminal tab
+        // Ctrl+Shift+W: close active tab in tiling layout
         if (event.shiftKey) {
           event.preventDefault();
-          const id = activeTabIdRef.current;
-          if (id) closeTab(id);
+          tilingStore.closeActiveTab();
           return;
         }
         // Ctrl+W: close file preview
@@ -108,14 +89,7 @@ export function useKeyboardShortcuts({
         createSplit("horizontal");
         return;
       }
-      if (mod && event.altKey && (event.key === "[" || event.key === "]")) {
-        event.preventDefault();
-        if (splitStore.orientation === "none") return;
-        splitStore.setFocusedPane(
-          splitStore.focusedPane === "primary" ? "secondary" : "primary",
-        );
-        return;
-      }
+      // Ctrl+Alt+[/] focus switching removed — flexlayout handles focus natively
       if (mod && event.shiftKey && event.key.toLowerCase() === "p") {
         event.preventDefault();
         useCommandPaletteStore.getState().open("commands");
@@ -174,14 +148,29 @@ export function useKeyboardShortcuts({
         useTerminalTabsStore.getState().toggleTerminalFullscreen();
         return;
       }
-      if (mod && event.key === "j") {
+      if (mod && event.shiftKey && event.key.toLowerCase() === "e") {
         event.preventDefault();
-        useRightPanelStore.getState().togglePanel();
+        if (tilingStore.hasBlock("tab-file-tree")) {
+          tilingStore.selectTab("tab-file-tree");
+        } else {
+          const tree = useFileTreeStore.getState().tree;
+          const projectName = tree?.root?.name;
+          tilingStore.addBlock(
+            { type: "file-tree", projectName },
+            undefined,
+            "tab-file-tree",
+          );
+        }
         return;
       }
-      if (mod && event.key === "e") {
+      if (mod && event.shiftKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
-        useFilePreviewStore.getState().togglePreview();
+        const blockId = `browser-${Date.now().toString(36)}`;
+        tilingStore.addBlock(
+          { type: "browser", url: "https://github.com/nandomoreirame/forja" },
+          undefined,
+          blockId,
+        );
         return;
       }
       if (mod && event.altKey && (event.key === "=" || event.key === "+")) {

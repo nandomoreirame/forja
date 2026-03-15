@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import { listen } from "@/lib/ipc";
 import { extractLocalhostUrl } from "@/lib/localhost-detector";
-import { useBrowserPaneStore } from "@/stores/browser-pane";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 
 /**
- * Listens for PTY data events and auto-opens the browser pane
- * when a localhost URL is detected in terminal output.
+ * Listens for PTY data events and auto-opens a browser block
+ * in the tiling layout when a localhost URL is detected in terminal output.
  *
  * Debounced to avoid repeated triggers from the same server startup.
  */
@@ -33,8 +33,10 @@ export function useBrowserAutoOpen() {
           lastDetectedRef.current = null;
         }, 5000);
 
-        // Auto-navigate the browser pane
-        useBrowserPaneStore.getState().navigateToUrl(url);
+        // Auto-open a browser block in the tiling layout
+        const tilingStore = useTilingLayoutStore.getState();
+        const id = `browser-${Date.now().toString(36)}`;
+        tilingStore.addBlock({ type: "browser", url }, undefined, id);
       },
     );
 

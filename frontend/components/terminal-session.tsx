@@ -1,6 +1,7 @@
 import { usePty } from "@/hooks/use-pty";
 import { TERMINAL_OPTIONS } from "@/lib/terminal-theme";
 import { routeLinkClick } from "@/lib/link-router";
+import { terminalCache } from "@/lib/terminal-instance-cache";
 import type { SessionType } from "@/lib/cli-registry";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
@@ -69,19 +70,99 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const currentTheme = useThemeStore.getState().getActiveTheme();
-    const currentOpacity = useUserSettingsStore.getState().settings.window.opacity;
-    const terminalTheme = buildTerminalTheme(currentTheme, currentOpacity);
-    const terminal = new Terminal({ ...TERMINAL_OPTIONS, theme: terminalTheme });
-    const fitAddon = new FitAddon();
-    const webLinksAddon = new WebLinksAddon((_event, uri) => {
-      routeLinkClick(uri);
-    });
+    const cached = terminalCache.get(tabId);
+    let terminal: Terminal;
+    let fitAddon: FitAddon;
+    let hostElement: HTMLDivElement;
+    let shouldSpawn = true;
 
-    terminal.loadAddon(fitAddon);
-    terminal.loadAddon(webLinksAddon);
-    terminal.open(containerRef.current);
+    if (cached) {
+      // REATTACH: move cached DOM + terminal instance
+      terminal = cached.terminal;
+      fitAddon = cached.fitAddon;
+      hostElement = cached.hostElement;
+      containerRef.current.appendChild(hostElement);
+      shouldSpawn = false; // PTY already running
+    } else {
+      // NEW: create terminal + host element
+      hostElement = document.createElement("div");
+      hostElement.className = "h-full w-full";
+      containerRef.current.appendChild(hostElement);
 
+      const currentTheme = useThemeStore.getState().getActiveTheme();
+      const currentOpacity = useUserSettingsStore.getState().settings.window.opacity;
+      const terminalTheme = buildTerminalTheme(currentTheme, currentOpacity);
+      terminal = new Terminal({ ...TERMINAL_OPTIONS, theme: terminalTheme });
+      fitAddon = new FitAddon();
+      const webLinksAddon = new WebLinksAddon((_event, uri) => {
+        routeLinkClick(uri);
+      });
+
+      terminal.loadAddon(fitAddon);
+      terminal.loadAddon(webLinksAddon);
+      terminal.open(hostElement);
+
+      // Track composition state via xterm's internal textarea so we can
+      // suppress the post-composition keydown that Linux IMEs fire with
+      // isComposing: false (which would duplicate the composed character).
+      const textarea = hostElement.querySelector("textarea");
+      if (textarea) {
+        textarea.addEventListener("compositionstart", () => {
+          composingRef.current = true;
+        });
+        textarea.addEventListener("compositionend", () => {
+          // Keep the flag true until after the post-composition keydown
+          // has been processed (it fires synchronously after compositionend).
+          setTimeout(() => { composingRef.current = false; }, 0);
+        });
+      }
+
+      terminal.attachCustomKeyEventHandler((event) => {
+        // Let the browser handle dead-key / IME composition events so that
+        // composed characters (e.g. ' + c = ç) are not processed twice.
+        // composingRef catches the post-composition keydown on Linux where
+        // isComposing is already false but the character was already emitted.
+        if (event.isComposing || event.key === "Dead" || composingRef.current) return false;
+
+        // Cedilla fix: Chromium/Ozone on Wayland composes dead_acute+c as ć
+        // (c-acute) instead of ç (c-cedilla). Remap at application level.
+        const CEDILLA_MAP: Record<string, string> = { "\u0107": "\u00E7", "\u0106": "\u00C7" };
+        const cedillaReplacement = CEDILLA_MAP[event.key];
+        if (cedillaReplacement && event.type === "keydown") {
+          writeRef.current(cedillaReplacement);
+          return false;
+        }
+
+        const mod = event.metaKey || event.ctrlKey;
+        if (!mod) return true;
+
+        // Ctrl+Alt: zoom, splits, diff nav -> app
+        if (event.altKey) return false;
+        // Ctrl+Shift+C: copy terminal selection
+        if (event.shiftKey && event.key === "C" && event.type === "keydown") {
+          handleCopy();
+          return false;
+        }
+        // Ctrl+Shift+V: let browser's native paste event flow to xterm's handler
+        if (event.shiftKey && event.key === "V" && event.type === "keydown") {
+          return false;
+        }
+        // Ctrl+Shift: new tab, close tab, command palette, git -> app
+        if (event.shiftKey) return false;
+        // Ctrl+[number]: tab switching -> app
+        if (event.key >= "1" && event.key <= "9") return false;
+        // Ctrl+Tab: cycle tabs -> app
+        if (event.key === "Tab") return false;
+        // Ctrl+[letter] the app uses
+        const appKeys = new Set(["b", "e", "j", "o", "p", "s", "w", ","]);
+        if (appKeys.has(event.key.toLowerCase())) return false;
+
+        // Ctrl+C, Ctrl+D, Ctrl+Z, etc. -> xterm
+        return true;
+      });
+    }
+
+    // WebGL addon (re-create for both cached and new)
     try {
       const webgl = new WebglAddon();
       terminal.loadAddon(webgl);
@@ -89,65 +170,6 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     } catch (err) {
       console.info("[terminal] WebGL unavailable, using canvas renderer:", err);
     }
-
-    // Track composition state via xterm's internal textarea so we can
-    // suppress the post-composition keydown that Linux IMEs fire with
-    // isComposing: false (which would duplicate the composed character).
-    const textarea = containerRef.current.querySelector("textarea");
-    if (textarea) {
-      textarea.addEventListener("compositionstart", () => {
-        composingRef.current = true;
-      });
-      textarea.addEventListener("compositionend", () => {
-        // Keep the flag true until after the post-composition keydown
-        // has been processed (it fires synchronously after compositionend).
-        setTimeout(() => { composingRef.current = false; }, 0);
-      });
-    }
-
-    terminal.attachCustomKeyEventHandler((event) => {
-      // Let the browser handle dead-key / IME composition events so that
-      // composed characters (e.g. ' + c = ç) are not processed twice.
-      // composingRef catches the post-composition keydown on Linux where
-      // isComposing is already false but the character was already emitted.
-      if (event.isComposing || event.key === "Dead" || composingRef.current) return false;
-
-      // Cedilla fix: Chromium/Ozone on Wayland composes dead_acute+c as ć
-      // (c-acute) instead of ç (c-cedilla). Remap at application level.
-      const CEDILLA_MAP: Record<string, string> = { "\u0107": "\u00E7", "\u0106": "\u00C7" };
-      const cedillaReplacement = CEDILLA_MAP[event.key];
-      if (cedillaReplacement && event.type === "keydown") {
-        writeRef.current(cedillaReplacement);
-        return false;
-      }
-
-      const mod = event.metaKey || event.ctrlKey;
-      if (!mod) return true;
-
-      // Ctrl+Alt: zoom, splits, diff nav -> app
-      if (event.altKey) return false;
-      // Ctrl+Shift+C: copy terminal selection
-      if (event.shiftKey && event.key === "C" && event.type === "keydown") {
-        handleCopy();
-        return false;
-      }
-      // Ctrl+Shift+V: let browser's native paste event flow to xterm's handler
-      if (event.shiftKey && event.key === "V" && event.type === "keydown") {
-        return false;
-      }
-      // Ctrl+Shift: new tab, close tab, command palette, git -> app
-      if (event.shiftKey) return false;
-      // Ctrl+[number]: tab switching -> app
-      if (event.key >= "1" && event.key <= "9") return false;
-      // Ctrl+Tab: cycle tabs -> app
-      if (event.key === "Tab") return false;
-      // Ctrl+[letter] the app uses
-      const appKeys = new Set(["b", "e", "j", "o", "p", "s", "w", ","]);
-      if (appKeys.has(event.key.toLowerCase())) return false;
-
-      // Ctrl+C, Ctrl+D, Ctrl+Z, etc. -> xterm
-      return true;
-    });
 
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
@@ -159,6 +181,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     // Wait for layout to stabilize before fitting and spawning
     // so the PTY gets the correct initial dimensions.
     let aborted = false;
+    let spawned = !shouldSpawn; // cached entries already have a running PTY
     const rafId = requestAnimationFrame(() => {
       if (aborted) return;
       fitAddon.fit();
@@ -166,18 +189,25 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       const dims = fitAddon.proposeDimensions();
       const rows = dims?.rows ?? 24;
       const cols = dims?.cols ?? 80;
-      spawn(path, sessionType).then(() => {
-        if (!aborted) resize(rows, cols);
-      });
+      if (shouldSpawn) {
+        spawned = true;
+        spawn(path, sessionType).then(() => {
+          if (!aborted) resize(rows, cols);
+        });
+      } else {
+        resize(rows, cols);
+      }
     });
 
     let resizeTimeout: ReturnType<typeof setTimeout>;
     const handleResize = () => {
-      // Skip resize when the terminal is hidden — the container has 0×0
-      // dimensions and fit() would collapse the PTY to ~6 cols, corrupting
-      // all buffered output.  The ResizeObserver will fire again when the
-      // tab becomes visible and the container expands to its real size.
-      if (!isVisibleRef.current) return;
+      // Skip resize when the terminal is hidden (FlexLayout uses CSS
+      // display:none) — the container has 0x0 dimensions and fit() would
+      // collapse the PTY to ~6 cols, corrupting all buffered output.
+      // The ResizeObserver will fire again when the tab becomes visible
+      // and the container expands to its real size.
+      const el = containerRef.current;
+      if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) return;
 
       fitAddon.fit();
       clearTimeout(resizeTimeout);
@@ -198,13 +228,26 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       clearTimeout(resizeTimeout);
       resizeObserver.disconnect();
       dataDisposable.dispose();
-      // Only kill the PTY if the tab was actually removed from the store.
-      // During reorder or React remount the tab still exists, so we must
-      // not close the underlying process.
-      if (!useTerminalTabsStore.getState().hasTab(tabId)) {
-        close();
+
+      // Dispose WebGL before parking (can't survive DOM detachment)
+      if (webglAddonRef.current) {
+        try { webglAddonRef.current.dispose(); } finally { webglAddonRef.current = null; }
       }
-      terminal.dispose();
+
+      if (!useTerminalTabsStore.getState().hasTab(tabId)) {
+        // Tab truly removed — kill PTY and dispose terminal
+        close();
+        terminal.dispose();
+        terminalCache.dispose(tabId);
+      } else if (spawned) {
+        // Tab still exists, PTY running (project switch) — park for reattach
+        terminalCache.park(tabId, terminal, fitAddon, hostElement);
+      } else {
+        // Tab exists but PTY never started (e.g. React strict mode fast remount)
+        // Clean up and let the next mount start fresh
+        hostElement.remove();
+        terminal.dispose();
+      }
     };
   }, [tabId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -217,7 +260,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
 
       terminal.options.fontSize = state.fontSize;
       terminal.options.fontFamily = state.fontFamily;
-      if (!isVisibleRef.current) return;
+      const el = containerRef.current;
+      if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) return;
       fitAddon.fit();
       const dims = fitAddon.proposeDimensions();
       if (dims) {

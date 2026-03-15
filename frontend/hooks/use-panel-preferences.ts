@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@/lib/ipc";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
+import { parseLayoutJson } from "@/lib/layout-migration";
 
 export interface PanelSizes {
   sidebarSize: number;
@@ -49,6 +51,7 @@ export function usePanelPreferences() {
         terminalSplitEnabled?: boolean;
         terminalSplitOrientation?: "horizontal" | "vertical";
         terminalSplitRatio?: number;
+        layoutJson?: Record<string, unknown>;
       }
     >("get_ui_preferences")
       .then((prefs) => {
@@ -74,6 +77,14 @@ export function usePanelPreferences() {
               ? Math.max(10, Math.min(90, Math.round(prefs.terminalSplitRatio as number)))
               : DEFAULT_TERMINAL_SPLIT.ratio,
         });
+
+        // Restore persisted tiling layout if available.
+        // Strip terminal blocks — they are re-created by session restore
+        // (App.tsx) with fresh instance IDs and proper PTY connections.
+        if (prefs?.layoutJson) {
+          const layoutJson = parseLayoutJson(prefs.layoutJson);
+          useTilingLayoutStore.getState().loadFromJson(layoutJson);
+        }
       })
       .catch(() => {
         if (active) {
@@ -113,6 +124,13 @@ export function usePanelPreferences() {
     );
   }, []);
 
+  const saveLayout = useCallback(() => {
+    const layoutJson = useTilingLayoutStore.getState().getModelJson();
+    invoke("save_ui_preferences", { layoutJson }).catch((err) =>
+      console.warn("[panel-preferences] Save layout failed:", err),
+    );
+  }, []);
+
   return {
     panelSizes,
     sidebarOpen,
@@ -121,5 +139,6 @@ export function usePanelPreferences() {
     savePanelSize,
     saveSidebarOpen,
     saveTerminalSplit,
+    saveLayout,
   };
 }

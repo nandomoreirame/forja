@@ -261,7 +261,16 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
 
         // Notify projects store so sidebar updates
         const { useProjectsStore } = await import("./projects");
+        const previousPath = useProjectsStore.getState().activeProjectPath;
         await useProjectsStore.getState().addProject(selected);
+
+        // switchToProject handles save/restore of layout, tabs, preview etc.
+        // addProject already set activeProjectPath to `selected`, so we
+        // restore previousPath so switchToProject properly saves the old layout.
+        if (previousPath && previousPath !== selected) {
+          useProjectsStore.setState({ activeProjectPath: previousPath });
+          await useProjectsStore.getState().switchToProject(selected);
+        }
       } catch (error) {
         console.error("Failed to load project directory:", error);
       }

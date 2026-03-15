@@ -29,12 +29,10 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
       { label: "Go to Project", keys: [mod, "Shift", "L"] },
       { label: "Switch Project 1-9", keys: [mod, "Shift", "1-9"] },
       { label: "Add Project", keys: [mod, "Shift", "O"] },
-      { label: "Toggle Sidebar", keys: [mod, "Shift", "B"] },
-      { label: "Toggle Browser", keys: [mod, "Alt", "B"] },
-      { label: "Toggle File Preview", keys: [mod, "E"] },
+      { label: "Open Files", keys: [mod, "Shift", "E"] },
+      { label: "Open Browser", keys: [mod, "Shift", "B"] },
       { label: "Close File Preview", keys: [mod, "W"] },
       { label: "Keyboard Shortcuts", keys: [mod, "?"] },
-      { label: "Toggle Terminal", keys: [mod, "J"] },
       { label: "Open Settings", keys: [mod, ","] },
     ],
   },
@@ -100,7 +98,7 @@ export function KeyboardShortcutsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
           {shortcuts.map((group) => (
             <div key={group.section}>
               <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-ctp-overlay0">
