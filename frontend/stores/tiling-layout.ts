@@ -200,7 +200,7 @@ const PLUGIN_TABSET_MIN_WIDTH = 400;
 const FILE_PREVIEW_TABSET_MIN_WIDTH = 600;
 
 /** Minimum width (px) for a tabset that holds a file-tree block. */
-const FILE_TREE_TABSET_MIN_WIDTH = 400;
+const FILE_TREE_TABSET_MIN_WIDTH = 240;
 
 /** Minimum width (px) for a tabset that holds the agent-chat block. */
 const AGENT_CHAT_TABSET_MIN_WIDTH = 400;
@@ -476,7 +476,7 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
       }
     }
 
-    // Apply minWidth to file-tree tabset
+    // Apply minWidth and compact weight to file-tree tabset
     if (config.type === "file-tree") {
       const node = model.getNodeById(id);
       const parentTabsetId = node?.getParent()?.getId();
@@ -484,6 +484,7 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
         model.doAction(
           Actions.updateNodeAttributes(parentTabsetId, {
             minWidth: FILE_TREE_TABSET_MIN_WIDTH,
+            weight: 1,
           }),
         );
       }
