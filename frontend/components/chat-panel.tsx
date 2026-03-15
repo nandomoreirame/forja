@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, type FormEvent } from "react";
-import { X, Send, Loader2, MessageSquare, ChevronUp } from "lucide-react";
+import { Send, Loader2, MessageSquare, ChevronUp, Construction } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useAgentChatStore } from "@/stores/agent-chat";
@@ -130,19 +130,12 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
       data-testid="chat-panel"
       className="flex h-full w-full flex-col bg-ctp-mantle"
     >
-      {/* Header */}
-      <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
-        <span className="text-xs font-medium text-ctp-subtext0">
-          {hasSession ? `Chat (${chat.cliId})` : "Chat"}
-        </span>
-        <button
-          type="button"
-          aria-label="Close chat panel"
-          onClick={chat.togglePanel}
-          className="flex h-6 w-6 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-        >
-          <X className="h-3.5 w-3.5" strokeWidth={1.5} />
-        </button>
+      {/* WIP Alert */}
+      <div className="mx-3 mt-3 flex items-start gap-2 rounded-md border border-ctp-yellow/30 bg-ctp-yellow/10 px-3 py-2">
+        <Construction className="mt-0.5 h-4 w-4 shrink-0 text-ctp-yellow" strokeWidth={1.5} />
+        <p className="text-xs text-ctp-yellow">
+          This feature is under active development and is not functional yet.
+        </p>
       </div>
 
       {/* Body */}
@@ -325,6 +318,9 @@ function CliSelector({
           strokeWidth={1.5}
         />
         <p className="text-sm text-ctp-overlay1">Choose an AI assistant</p>
+        <p className="max-w-[260px] text-center text-xs leading-relaxed text-ctp-overlay0">
+          Set up and manage contexts, agents, and skills for your installed AI CLIs.
+        </p>
       </div>
       <div className="flex flex-col gap-2">
         {clis.map((cli) => (

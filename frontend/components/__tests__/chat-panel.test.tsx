@@ -165,12 +165,9 @@ describe("ChatPanel", () => {
     expect(screen.getByText("Hi there!")).toBeDefined();
   });
 
-  it("has close button that toggles panel", () => {
+  it("does not render a redundant close button (close via tab X)", () => {
     render(<ChatPanel />);
-    const closeButton = screen.getByLabelText("Close chat panel");
-    expect(closeButton).toBeDefined();
-    fireEvent.click(closeButton);
-    expect(mockTogglePanel).toHaveBeenCalled();
+    expect(screen.queryByLabelText("Close chat panel")).toBeNull();
   });
 
   it("shows error when present", () => {
