@@ -1,0 +1,145 @@
+/**
+ * FlexLayout theme overrides for Forja
+ *
+ * Maps flexlayout-react CSS variables to Forja's dynamic theme variables.
+ * These overrides sit on top of the base dark.css from flexlayout-react
+ * and are re-applied whenever the user switches themes via apply.ts.
+ */
+
+.flexlayout__layout {
+  /* Core palette — mapped to Catppuccin / dynamic theme vars */
+  --color-text: var(--color-ctp-text);
+  --color-background: var(--color-ctp-base);
+  --color-base: var(--color-ctp-base);
+  --color-1: var(--color-ctp-mantle);
+  --color-2: var(--color-ctp-crust, var(--color-ctp-mantle));
+  --color-3: var(--color-ctp-surface0);
+  --color-4: var(--color-ctp-surface1);
+  --color-5: var(--color-ctp-surface2);
+  --color-6: var(--color-ctp-overlay0);
+
+  /* Typography */
+  --font-size: 13px;
+  --font-family: var(--font-sans);
+
+  /* Drag indicators — use brand color */
+  --color-drag1: var(--color-brand);
+  --color-drag2: var(--color-ctp-green);
+  --color-drag1-background: rgba(203, 166, 247, 0.12);
+  --color-drag2-background: rgba(166, 227, 161, 0.12);
+  --color-drag-rect: var(--color-ctp-text);
+  --color-drag-rect-background: var(--color-ctp-mantle);
+  --color-drag-rect-border: var(--color-ctp-surface1);
+
+  /* Icons and overflow */
+  --color-overflow: var(--color-ctp-subtext0);
+  --color-icon: var(--color-ctp-subtext0);
+
+  /* Tabset backgrounds */
+  --color-tabset-background: var(--color-ctp-mantle);
+  --color-tabset-background-selected: var(--color-ctp-mantle);
+  --color-tabset-background-maximized: var(--color-ctp-surface0);
+  --color-tabset-divider-line: var(--color-ctp-surface0);
+  --color-tabset-header-background: var(--color-ctp-mantle);
+  --color-tabset-header: var(--color-ctp-text);
+
+  /* Tab content area */
+  --color-tab-content: var(--color-ctp-base);
+  --color-border-tab-content: var(--color-ctp-base);
+
+  /* Tab buttons */
+  --color-tab-selected: var(--color-ctp-text);
+  --color-tab-selected-background: var(--color-ctp-surface0);
+  --color-tab-unselected: var(--color-ctp-subtext0);
+  --color-tab-unselected-background: transparent;
+  --color-tab-textbox: var(--color-ctp-text);
+  --color-tab-textbox-background: var(--color-ctp-surface0);
+
+  /* Border panels */
+  --color-border-background: var(--color-ctp-mantle);
+  --color-border-divider-line: var(--color-ctp-surface0);
+  --color-border-tab-selected: var(--color-ctp-text);
+  --color-border-tab-selected-background: var(--color-ctp-surface0);
+  --color-border-tab-unselected: var(--color-ctp-subtext0);
+  --color-border-tab-unselected-background: var(--color-ctp-crust, var(--color-ctp-mantle));
+
+  /* Splitters — improved contrast */
+  --color-splitter: var(--color-ctp-surface0);
+  --color-splitter-hover: var(--color-ctp-surface2);
+  --color-splitter-drag: var(--color-brand);
+
+  /* Popups (overflow menus) */
+  --color-popup-border: var(--color-ctp-surface1);
+  --color-popup-unselected: var(--color-ctp-text);
+  --color-popup-unselected-background: var(--color-ctp-base);
+  --color-popup-selected: var(--color-ctp-text);
+  --color-popup-selected-background: var(--color-ctp-surface0);
+
+  /* Edge markers */
+  --color-edge-marker: var(--color-ctp-overlay0);
+  --color-edge-icon: var(--color-ctp-text);
+
+  /* Toolbar */
+  --color-toolbar-button-hover: var(--color-ctp-surface0);
+
+  /* Mini scrollbar */
+  --color-mini-scroll-indicator: var(--color-ctp-surface1);
+  --color-mini-scroll-indicator-hovered: var(--color-ctp-surface2);
+}
+
+/* Remove dark theme box-shadow overrides — keep flat Forja look */
+.flexlayout__tabset_header {
+  box-shadow: none;
+}
+
+.flexlayout__tabset-selected {
+  background-image: none;
+}
+
+/* Rounded panes */
+.flexlayout__tabset {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.flexlayout__tabset-maximized {
+  background-image: none;
+}
+
+.flexlayout__tab_top,
+.flexlayout__tab_bottom {
+  box-shadow: none;
+}
+
+.flexlayout__border_button {
+  box-shadow: none;
+}
+
+/* Tab button active indicator — brand color accent line */
+.flexlayout__tabset_tabbar_inner_tab_container_top
+  .flexlayout__tab_button--selected {
+  border-top: 2px solid var(--color-brand);
+}
+
+.flexlayout__tabset_tabbar_inner_tab_container_bottom
+  .flexlayout__tab_button--selected {
+  border-bottom: 2px solid var(--color-brand);
+}
+
+/* Rounded splitter hover for a polished look */
+.flexlayout__splitter {
+  transition: background-color 0.15s ease;
+}
+
+/* Tab button icon and content alignment */
+.flexlayout__tab_button_leading {
+  display: flex;
+  align-items: center;
+  margin-right: 6px;
+}
+
+.flexlayout__tab_button_content {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
