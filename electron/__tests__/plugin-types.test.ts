@@ -53,6 +53,30 @@ describe("validateManifest", () => {
     expect(result.valid).toBe(true);
     expect(result.manifest?.minForjaVersion).toBe("1.6.0");
   });
+
+  it("accepts manifest with scope 'global'", () => {
+    const result = validateManifest({ ...validManifest, scope: "global" });
+    expect(result.valid).toBe(true);
+    expect(result.manifest?.scope).toBe("global");
+  });
+
+  it("accepts manifest with scope 'project'", () => {
+    const result = validateManifest({ ...validManifest, scope: "project" });
+    expect(result.valid).toBe(true);
+    expect(result.manifest?.scope).toBe("project");
+  });
+
+  it("accepts manifest without scope (defaults to project)", () => {
+    const result = validateManifest(validManifest);
+    expect(result.valid).toBe(true);
+    // scope is optional, missing means "project"
+  });
+
+  it("rejects manifest with invalid scope value", () => {
+    const result = validateManifest({ ...validManifest, scope: "invalid" });
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Invalid scope: "invalid" (must be "global" or "project")');
+  });
 });
 
 describe("VALID_PERMISSIONS", () => {
