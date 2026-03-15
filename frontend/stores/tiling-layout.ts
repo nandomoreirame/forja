@@ -65,7 +65,7 @@ function findValidTabset(model: Model, preferredId: string): string | null {
 }
 
 /** Block types that live in dedicated side panes (not the center area). */
-const SIDE_PANE_BLOCK_TYPES = new Set(["file-tree", "file-preview", "plugin", "marketplace"]);
+const SIDE_PANE_BLOCK_TYPES = new Set(["file-tree", "file-preview", "plugin", "marketplace", "agent-chat"]);
 
 /** Block types considered "center" content (terminals, browsers). */
 const CENTER_CONTENT_TYPES = new Set(["terminal", "browser"]);
@@ -202,6 +202,9 @@ const FILE_PREVIEW_TABSET_MIN_WIDTH = 600;
 /** Minimum width (px) for a tabset that holds a file-tree block. */
 const FILE_TREE_TABSET_MIN_WIDTH = 400;
 
+/** Minimum width (px) for a tabset that holds the agent-chat block. */
+const AGENT_CHAT_TABSET_MIN_WIDTH = 400;
+
 /** Fixed node ID for the file-preview block. */
 const FILE_PREVIEW_NODE_ID = "block-file-preview";
 
@@ -219,6 +222,7 @@ function enforceBlockMinWidths(model: Model): void {
     "file-preview": FILE_PREVIEW_TABSET_MIN_WIDTH,
     "plugin": PLUGIN_TABSET_MIN_WIDTH,
     "marketplace": PLUGIN_TABSET_MIN_WIDTH,
+    "agent-chat": AGENT_CHAT_TABSET_MIN_WIDTH,
   };
 
   model.visitNodes((node) => {
@@ -480,6 +484,20 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
         model.doAction(
           Actions.updateNodeAttributes(parentTabsetId, {
             minWidth: FILE_TREE_TABSET_MIN_WIDTH,
+          }),
+        );
+      }
+    }
+
+    // Agent-chat: open in a compact left pane (minWidth 400, small weight)
+    if (config.type === "agent-chat") {
+      const node = model.getNodeById(id);
+      const parentTabsetId = node?.getParent()?.getId();
+      if (parentTabsetId) {
+        model.doAction(
+          Actions.updateNodeAttributes(parentTabsetId, {
+            minWidth: AGENT_CHAT_TABSET_MIN_WIDTH,
+            weight: 1,
           }),
         );
       }

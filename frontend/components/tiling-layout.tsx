@@ -26,6 +26,7 @@ import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useFilePreviewStore } from "@/stores/file-preview";
+import { useAgentChatStore } from "@/stores/agent-chat";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useSessionStateStore } from "@/stores/session-state";
 import { blockFactory } from "@/components/block-factory";
@@ -133,6 +134,11 @@ export function TilingLayout() {
             editContent: null,
             editDirty: false,
           });
+        }
+
+        // If it's the agent-chat block, sync the agent-chat store
+        if (nodeId === "block-agent-chat") {
+          useAgentChatStore.setState({ isPanelOpen: false });
         }
       }
     }

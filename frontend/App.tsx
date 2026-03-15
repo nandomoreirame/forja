@@ -177,6 +177,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   } =
     usePanelPreferences();
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
+  const tilingTabCount = useTilingLayoutStore((s) => s.tabCount);
 
   useEffect(() => {
     usePluginsStore.getState().loadPlugins().catch(() => {
@@ -607,11 +608,13 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
               onOpenProject={() => useFileTreeStore.getState().openProject()}
             />
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-ctp-surface0 bg-ctp-base">
-            {!hasProject ? (
-              <EmptyState />
-            ) : sessionRestoreDone ? (
+            {hasProject ? (
+              sessionRestoreDone ? <TilingLayout /> : null
+            ) : tilingTabCount > 0 ? (
               <TilingLayout />
-            ) : null}
+            ) : (
+              <EmptyState />
+            )}
             </div>
             <RightSidebar hasProject={hasProject} />
           </div>
