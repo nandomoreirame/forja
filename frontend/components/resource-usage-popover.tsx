@@ -1,12 +1,24 @@
+import { useState } from "react";
 import { useAppMetrics } from "@/hooks/use-app-metrics";
+import { invoke } from "@/lib/ipc";
 import { formatBytes } from "@/lib/format";
-import { Cpu, MemoryStick } from "lucide-react";
+import { Cpu, MemoryStick, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 export function ResourceUsagePopover() {
   const { current } = useAppMetrics();
+  const [clearing, setClearing] = useState(false);
 
   if (!current) return null;
+
+  const handleClearCache = async () => {
+    setClearing(true);
+    try {
+      await invoke("app:clearCache");
+    } finally {
+      setClearing(false);
+    }
+  };
 
   return (
     <Popover>
@@ -51,6 +63,18 @@ export function ResourceUsagePopover() {
               <span className="text-ctp-subtext0">Renderer</span>
               <span className="font-mono text-ctp-overlay1">{formatBytes(current.renderer_rss)}</span>
             </div>
+          </div>
+
+          <div className="border-t border-ctp-surface0 pt-2">
+            <button
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text disabled:opacity-50"
+              onClick={handleClearCache}
+              disabled={clearing}
+              aria-label="Clear cache"
+            >
+              <Trash2 className="h-3 w-3" strokeWidth={1.5} />
+              {clearing ? "Clearing..." : "Clear cache"}
+            </button>
           </div>
         </div>
       </PopoverContent>
