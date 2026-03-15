@@ -5,14 +5,19 @@ import * as path from "path";
 vi.mock("electron-store", () => {
   class MockStore<T extends Record<string, unknown>> {
     private store: Record<string, unknown>;
+    private defaults: Record<string, unknown>;
     constructor(opts?: { defaults?: T }) {
-      this.store = { ...(opts?.defaults ?? {}) };
+      this.defaults = { ...(opts?.defaults ?? {}) };
+      this.store = { ...this.defaults };
     }
     get<K extends keyof T>(key: K): T[K] {
       return (this.store[key as string] ?? undefined) as T[K];
     }
     set<K extends keyof T>(key: K, value: T[K]): void {
       this.store[key as string] = value;
+    }
+    clear(): void {
+      this.store = { ...this.defaults };
     }
   }
 
@@ -757,6 +762,22 @@ describe("config module", () => {
       setPluginOrder(["a", "b"]);
       setPluginOrder([]);
       expect(getPluginOrder()).toEqual([]);
+    });
+  });
+
+  describe("resetConfig", () => {
+    it("resets all config to defaults", async () => {
+      vi.resetModules();
+      const { addRecentProject, getRecentProjects, saveUiPreferences, getUiPreferences, resetConfig } =
+        await import("../config.js");
+
+      addRecentProject("/home/user/project-a");
+      saveUiPreferences({ sidebarSize: 30 });
+
+      resetConfig();
+
+      expect(getRecentProjects()).toEqual([]);
+      expect(getUiPreferences().sidebarSize).toBe(20);
     });
   });
 });
