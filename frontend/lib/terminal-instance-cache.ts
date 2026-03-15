@@ -8,7 +8,30 @@ export interface CachedTerminal {
   hostElement: HTMLDivElement;
 }
 
+export const CACHE_TTL_MS = 30_000;
+export const CACHE_MAX_SIZE = 10;
+
 const cache = new Map<string, CachedTerminal>();
+const ttlTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function clearTtlTimer(tabId: string): void {
+  const timer = ttlTimers.get(tabId);
+  if (timer !== undefined) {
+    clearTimeout(timer);
+    ttlTimers.delete(tabId);
+  }
+}
+
+function evictOldest(): void {
+  // Map iterates in insertion order; first key is the oldest
+  const oldest = cache.keys().next().value;
+  if (oldest !== undefined) {
+    const entry = cache.get(oldest);
+    if (entry) entry.terminal.dispose();
+    cache.delete(oldest);
+    clearTtlTimer(oldest);
+  }
+}
 
 export const terminalCache = {
   has(tabId: string): boolean {
@@ -16,7 +39,12 @@ export const terminalCache = {
   },
 
   get(tabId: string): CachedTerminal | undefined {
-    return cache.get(tabId);
+    const entry = cache.get(tabId);
+    if (entry) {
+      // Retrieved by consumer — cancel TTL timer (will be reattached)
+      clearTtlTimer(tabId);
+    }
+    return entry;
   },
 
   /**
@@ -24,6 +52,9 @@ export const terminalCache = {
    * Detaches hostElement from DOM and registers temporary
    * ptyDispatcher handlers via queueMicrotask (runs AFTER
    * use-pty's cleanup unregisters its handlers).
+   *
+   * Entries are auto-evicted after CACHE_TTL_MS if not retrieved.
+   * If the cache exceeds CACHE_MAX_SIZE, the oldest entry is evicted.
    */
   park(
     tabId: string,
@@ -31,8 +62,27 @@ export const terminalCache = {
     fitAddon: FitAddon,
     hostElement: HTMLDivElement,
   ): void {
+    // Evict oldest if at capacity
+    if (cache.size >= CACHE_MAX_SIZE && !cache.has(tabId)) {
+      evictOldest();
+    }
+
     hostElement.remove();
     cache.set(tabId, { terminal, fitAddon, hostElement });
+
+    // Start TTL timer for auto-eviction
+    clearTtlTimer(tabId);
+    ttlTimers.set(
+      tabId,
+      setTimeout(() => {
+        const entry = cache.get(tabId);
+        if (entry) {
+          entry.terminal.dispose();
+          cache.delete(tabId);
+        }
+        ttlTimers.delete(tabId);
+      }, CACHE_TTL_MS),
+    );
 
     // Re-register data/exit handlers AFTER use-pty's cleanup runs
     queueMicrotask(() => {
@@ -52,12 +102,17 @@ export const terminalCache = {
   dispose(tabId: string): void {
     const entry = cache.get(tabId);
     if (!entry) return;
+    clearTtlTimer(tabId);
     entry.terminal.dispose();
     cache.delete(tabId);
   },
 
   /** Disposes all cached terminals. */
   clear(): void {
+    for (const timer of ttlTimers.values()) {
+      clearTimeout(timer);
+    }
+    ttlTimers.clear();
     for (const [, entry] of cache) {
       entry.terminal.dispose();
     }

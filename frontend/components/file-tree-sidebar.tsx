@@ -77,6 +77,7 @@ function SingleTreeView({
               style={{
                 height: `${virtualItem.size}px`,
                 transform: `translateY(${virtualItem.start}px)`,
+                willChange: "transform",
               }}
             >
               <FileTreeNode node={node} depth={depth} projectPath={projectPath} />

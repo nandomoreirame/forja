@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, type FormEvent } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, type FormEvent } from "react";
 import { Send, Loader2, MessageSquare, ChevronUp, Construction } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -121,8 +121,13 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
   const hasSession = !!chat.sessionId;
 
   const currentCliDef = chat.cliId ? getCliDefinition(chat.cliId as Parameters<typeof getCliDefinition>[0]) : null;
-  const switchableClis = installedClis.filter(
-    (cli) => cli.chatSupported && cli.id !== chat.cliId
+  const chatSupportedClis = useMemo(
+    () => installedClis.filter((cli) => cli.chatSupported),
+    [installedClis],
+  );
+  const switchableClis = useMemo(
+    () => chatSupportedClis.filter((cli) => cli.id !== chat.cliId),
+    [chatSupportedClis, chat.cliId],
   );
 
   return (
@@ -142,7 +147,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
         {!hasSession ? (
           <CliSelector
-            clis={installedClis.filter((cli) => cli.chatSupported)}
+            clis={chatSupportedClis}
             loading={clisLoading}
             onSelect={handleSelectCli}
           />

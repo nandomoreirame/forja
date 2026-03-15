@@ -13,6 +13,7 @@ import { useThemeStore } from "@/stores/theme";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { buildTerminalTheme } from "@/themes/apply";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
+import { usePerformanceStore } from "@/stores/performance";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { TerminalContextMenu } from "./terminal-context-menu";
 
@@ -163,12 +164,15 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     }
 
     // WebGL addon (re-create for both cached and new)
-    try {
-      const webgl = new WebglAddon();
-      terminal.loadAddon(webgl);
-      webglAddonRef.current = webgl;
-    } catch (err) {
-      console.info("[terminal] WebGL unavailable, using canvas renderer:", err);
+    // Skip in lite mode to reduce GPU memory usage
+    if (!usePerformanceStore.getState().isLite) {
+      try {
+        const webgl = new WebglAddon();
+        terminal.loadAddon(webgl);
+        webglAddonRef.current = webgl;
+      } catch (err) {
+        console.info("[terminal] WebGL unavailable, using canvas renderer:", err);
+      }
     }
 
     terminalRef.current = terminal;
@@ -297,8 +301,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     const terminal = terminalRef.current;
 
     if (isVisible) {
-      // Recreate WebGL if it was disposed
-      if (!webglAddonRef.current && terminal) {
+      // Recreate WebGL if it was disposed (skip in lite mode to reduce GPU memory)
+      if (!webglAddonRef.current && terminal && !usePerformanceStore.getState().isLite) {
         try {
           const webgl = new WebglAddon();
           terminal.loadAddon(webgl);
