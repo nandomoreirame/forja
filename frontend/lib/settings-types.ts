@@ -19,6 +19,11 @@ export interface PerformanceSettings {
   mode: "auto" | "full" | "lite";
 }
 
+export interface UISettings {
+  activePaneHighlight: boolean;
+  hoverToFocus: boolean;
+}
+
 export interface UserSettings {
   app: FontSettings;
   editor: FontSettings;
@@ -27,6 +32,7 @@ export interface UserSettings {
   sessions: Record<string, { args?: string[]; env?: Record<string, string> }>;
   theme: ThemeSettings;
   performance: PerformanceSettings;
+  ui: UISettings;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -56,6 +62,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     custom: [],
   },
   performance: { mode: "auto" },
+  ui: { activePaneHighlight: true, hoverToFocus: true },
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -106,6 +113,10 @@ export function mergeWithDefaults(
     performance: {
       ...DEFAULT_SETTINGS.performance,
       ...(input.performance ?? {}),
+    },
+    ui: {
+      ...DEFAULT_SETTINGS.ui,
+      ...(input.ui ?? {}),
     },
   };
 }
