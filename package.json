@@ -43,6 +43,7 @@
     "cmdk": "^1.1.1",
     "dompurify": "^3.3.1",
     "electron-store": "^10.0.0",
+    "flexlayout-react": "^0.8.19",
     "lucide-react": "^0.469.0",
     "monaco-editor": "^0.55.1",
     "node-pty": "^1.0.0",
