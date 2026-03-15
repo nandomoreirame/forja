@@ -65,17 +65,19 @@ export function ResourceUsagePopover() {
             </div>
           </div>
 
-          <div className="border-t border-ctp-surface0 pt-2">
-            <button
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text disabled:opacity-50"
-              onClick={handleClearCache}
-              disabled={clearing}
-              aria-label="Clear cache"
-            >
-              <Trash2 className="h-3 w-3" strokeWidth={1.5} />
-              {clearing ? "Clearing..." : "Clear cache"}
-            </button>
-          </div>
+          {import.meta.env.DEV && (
+            <div className="border-t border-ctp-surface0 pt-2">
+              <button
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text disabled:opacity-50"
+                onClick={handleClearCache}
+                disabled={clearing}
+                aria-label="Clear cache"
+              >
+                <Trash2 className="h-3 w-3" strokeWidth={1.5} />
+                {clearing ? "Clearing..." : "Clear cache"}
+              </button>
+            </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>
