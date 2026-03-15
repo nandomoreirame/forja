@@ -748,6 +748,16 @@ ipcMain.handle("app:is_tiling_desktop", () => isTilingDesktopSession());
 ipcMain.handle("app:isDev", () => isDev);
 ipcMain.handle("app:getForjaConfigPath", () => getForjaConfigDir());
 
+ipcMain.handle("app:clearCache", async () => {
+  const ses = session.defaultSession;
+  await ses.clearStorageData();
+  await ses.clearCache();
+  const configMod = await getConfig();
+  configMod.resetConfig();
+  const win = BrowserWindow.getFocusedWindow();
+  if (win) win.webContents.reload();
+});
+
 ipcMain.handle("get_performance_mode", () => {
   const config = getLiteModeConfig(resolvedPerfMode);
   return {

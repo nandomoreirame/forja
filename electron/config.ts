@@ -366,3 +366,9 @@ export function getPinnedPlugin(): string | null {
 export function setPinnedPlugin(name: string | null): void {
   store.set("pinnedPlugin", name);
 }
+
+// ─── Reset ──────────────────────────────────────────────────────────────────
+
+export function resetConfig(): void {
+  store.clear();
+}
