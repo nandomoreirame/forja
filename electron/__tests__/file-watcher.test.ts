@@ -52,6 +52,7 @@ describe("file-watcher", () => {
           "**/coverage/**",
           "**/__pycache__/**",
           "**/.venv/**",
+          "**/.forja/**",
         ]),
       });
     });
@@ -375,6 +376,103 @@ describe("file-watcher", () => {
       // Should not throw
       stopFileWatcher(1, "/nonexistent");
       expect(mockClose).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("suppressPath", () => {
+    it("excludes suppressed absolute path from changedPaths in the IPC event", async () => {
+      const { startFileWatcher, suppressPath } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      // Suppress the path BEFORE the filesystem event fires
+      suppressPath("/my-project/TASKS.md");
+
+      changeHandler?.("/my-project/TASKS.md");
+
+      vi.advanceTimersByTime(1000);
+
+      // Should NOT send because the only changed path was suppressed
+      expect(sender.send).not.toHaveBeenCalled();
+    });
+
+    it("only suppresses the specified path, other paths still fire", async () => {
+      const { startFileWatcher, suppressPath } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      suppressPath("/my-project/TASKS.md");
+
+      changeHandler?.("/my-project/TASKS.md");
+      changeHandler?.("/my-project/src/index.ts");
+
+      vi.advanceTimersByTime(1000);
+
+      expect(sender.send).toHaveBeenCalledWith("files:changed", {
+        path: "/my-project",
+        changedPaths: ["src/index.ts"],
+      });
+    });
+
+    it("suppression expires automatically after 2 seconds", async () => {
+      const { startFileWatcher, suppressPath } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      suppressPath("/my-project/TASKS.md");
+
+      // Wait for suppression to expire (2s)
+      vi.advanceTimersByTime(2000);
+
+      changeHandler?.("/my-project/TASKS.md");
+      vi.advanceTimersByTime(1000);
+
+      // Now the path should NOT be suppressed anymore
+      expect(sender.send).toHaveBeenCalledWith("files:changed", {
+        path: "/my-project",
+        changedPaths: ["TASKS.md"],
+      });
+    });
+
+    it("suppression is consumed on first match within window", async () => {
+      const { startFileWatcher, suppressPath } = await import("../file-watcher.js");
+
+      const sender = { send: vi.fn(), isDestroyed: vi.fn(() => false) };
+      startFileWatcher(1, "/my-project", sender as never);
+
+      const changeHandler = mockOn.mock.calls.find(
+        (call: unknown[]) => call[0] === "change",
+      )?.[1] as ((...args: unknown[]) => void) | undefined;
+
+      suppressPath("/my-project/TASKS.md");
+
+      // First change — suppressed
+      changeHandler?.("/my-project/TASKS.md");
+      vi.advanceTimersByTime(1000);
+      expect(sender.send).not.toHaveBeenCalled();
+
+      // Second change — no longer suppressed
+      changeHandler?.("/my-project/TASKS.md");
+      vi.advanceTimersByTime(1000);
+      expect(sender.send).toHaveBeenCalledWith("files:changed", {
+        path: "/my-project",
+        changedPaths: ["TASKS.md"],
+      });
     });
   });
 
