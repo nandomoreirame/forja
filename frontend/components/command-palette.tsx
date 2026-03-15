@@ -3,26 +3,24 @@ import { useCommandPaletteStore } from "@/stores/command-palette";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
-import { useRightPanelStore } from "@/stores/right-panel";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
-import { useAgentChatStore } from "@/stores/agent-chat";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useGitStatusStore } from "@/stores/git-status";
 import { useThemeStore } from "@/stores/theme";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useProjectsStore } from "@/stores/projects";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
 import {
   ChevronsDownUp,
   FolderOpen,
+  FolderTree,
   GitCompareArrows,
+  Globe,
   Info,
   Keyboard,
   Loader2,
-  MessageSquare,
   Palette,
-  PanelLeft,
-  PanelRight,
   Plus,
   RefreshCw,
   RotateCcw,
@@ -32,7 +30,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useInstalledClis } from "@/hooks/use-installed-clis";
 import { CliIcon } from "./cli-icon";
 import { FileIcon } from "./file-icon";
@@ -94,6 +92,34 @@ export function CommandPalette() {
     close();
   };
 
+  const browserCounterRef = useRef(0);
+
+  const handleOpenFiles = () => {
+    const tilingStore = useTilingLayoutStore.getState();
+    if (!tilingStore.hasBlock("tab-file-tree")) {
+      const tree = useFileTreeStore.getState().tree;
+      const projectName = tree?.root.name;
+      tilingStore.addBlock(
+        { type: "file-tree", projectName },
+        undefined,
+        "tab-file-tree",
+      );
+    }
+    close();
+  };
+
+  const handleOpenBrowser = () => {
+    const tilingStore = useTilingLayoutStore.getState();
+    browserCounterRef.current += 1;
+    const blockId = `browser-${Date.now().toString(36)}-${browserCounterRef.current}`;
+    tilingStore.addBlock(
+      { type: "browser", url: "https://github.com/nandomoreirame/forja" },
+      undefined,
+      blockId,
+    );
+    close();
+  };
+
   const handleProjectSelect = (projectPath: string) => {
     useProjectsStore.getState().switchToProject(projectPath);
     close();
@@ -110,12 +136,6 @@ export function CommandPalette() {
       case "open-project":
         useFileTreeStore.getState().openProject();
         break;
-      case "toggle-sidebar":
-        useFileTreeStore.getState().toggleSidebar();
-        break;
-      case "toggle-file-preview":
-        useFilePreviewStore.getState().togglePreview();
-        break;
       case "keyboard-shortcuts":
         useAppDialogsStore.getState().setShortcutsOpen(true);
         break;
@@ -125,12 +145,6 @@ export function CommandPalette() {
       case "open-settings":
         useUserSettingsStore.getState().openSettingsEditor();
         useFilePreviewStore.getState().openPreview();
-        break;
-      case "toggle-right-panel":
-        useRightPanelStore.getState().togglePanel();
-        break;
-      case "toggle-chat":
-        useAgentChatStore.getState().togglePanel();
         break;
       case "collapse-all":
         useFileTreeStore.getState().collapseAll();
@@ -340,35 +354,20 @@ export function CommandPalette() {
 
             <CommandGroup heading="Panels & View">
               <CommandItem
-                value="Toggle Sidebar"
-                onSelect={() => handleCommand("toggle-sidebar")}
+                value="Open Files"
+                onSelect={handleOpenFiles}
               >
-                <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Sidebar
+                <FolderTree className="h-4 w-4" strokeWidth={1.5} />
+                Open Files
+                <CommandShortcut>{mod}+Shift+E</CommandShortcut>
+              </CommandItem>
+              <CommandItem
+                value="Open Browser"
+                onSelect={handleOpenBrowser}
+              >
+                <Globe className="h-4 w-4" strokeWidth={1.5} />
+                Open Browser
                 <CommandShortcut>{mod}+Shift+B</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                value="Toggle File Preview"
-                onSelect={() => handleCommand("toggle-file-preview")}
-              >
-                <PanelRight className="h-4 w-4" strokeWidth={1.5} />
-                Toggle File Preview
-                <CommandShortcut>{mod}+E</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                value="Toggle Right Panel"
-                onSelect={() => handleCommand("toggle-right-panel")}
-              >
-                <PanelRight className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Right Panel
-                <CommandShortcut>{mod}+J</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                value="Toggle Chat Panel"
-                onSelect={() => handleCommand("toggle-chat")}
-              >
-                <MessageSquare className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Chat Panel
               </CommandItem>
               <CommandItem
                 value="Collapse All Folders"

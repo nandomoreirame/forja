@@ -2,6 +2,8 @@ import "./lib/monaco-workers";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "@/styles/globals.css";
+import "flexlayout-react/style/dark.css";
+import "@/themes/flexlayout-theme.css";
 import App from "@/App";
 
 // Load fonts asynchronously to avoid blocking initial render

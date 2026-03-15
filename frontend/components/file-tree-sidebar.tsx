@@ -3,7 +3,7 @@ import {
   type DirectoryTree,
   type FileNode,
 } from "@/stores/file-tree";
-import { ChevronsDownUp, RefreshCw } from "lucide-react";
+import { ChevronsDownUp } from "lucide-react";
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ErrorBoundary } from "./error-boundary";
@@ -42,15 +42,11 @@ interface SingleTreeViewProps {
   tree: DirectoryTree;
   expandedPaths: Record<string, boolean>;
   toggleExpanded: (path: string) => void;
-  collapseAll: () => void;
-  refreshTree: () => void;
 }
 
 function SingleTreeView({
   tree,
   expandedPaths,
-  collapseAll,
-  refreshTree,
 }: SingleTreeViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -58,11 +54,6 @@ function SingleTreeView({
     if (!tree.root.children) return [];
     return flattenVisibleNodes(tree.root.children, expandedPaths, tree.root.path, 0);
   }, [tree, expandedPaths]);
-
-  const hasExpandedPaths = useMemo(
-    () => Object.values(expandedPaths).some(Boolean),
-    [expandedPaths],
-  );
 
   const virtualizer = useVirtualizer({
     count: flatNodes.length,
@@ -72,53 +63,28 @@ function SingleTreeView({
   });
 
   return (
-    <>
-      {/* Project name header */}
-      <div className="flex h-7 shrink-0 items-center gap-2 px-4">
-        <span className="flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-ctp-subtext0">
-          {tree.root.name}
-        </span>
-        <button
-          onClick={refreshTree}
-          className="inline-flex h-5 w-5 items-center justify-center rounded text-ctp-overlay1 transition-colors duration-100 hover:bg-ctp-surface0 hover:text-ctp-text"
-          aria-label="Refresh file tree"
-        >
-          <RefreshCw className="h-3 w-3" strokeWidth={1.5} />
-        </button>
-        <button
-          onClick={collapseAll}
-          disabled={!hasExpandedPaths}
-          className="inline-flex h-5 w-5 items-center justify-center rounded text-ctp-overlay1 transition-colors duration-100 hover:bg-ctp-surface0 hover:text-ctp-text disabled:pointer-events-none disabled:opacity-30"
-          aria-label="Collapse all folders"
-        >
-          <ChevronsDownUp className="h-3 w-3" strokeWidth={1.5} />
-        </button>
+    <div ref={scrollRef} className="flex-1 overflow-y-auto pl-[12px]">
+      <div
+        className="relative py-1"
+        style={{ height: `${virtualizer.getTotalSize()}px` }}
+      >
+        {virtualizer.getVirtualItems().map((virtualItem) => {
+          const { node, depth, projectPath } = flatNodes[virtualItem.index];
+          return (
+            <div
+              key={node.path}
+              className="absolute left-0 top-0 w-full"
+              style={{
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`,
+              }}
+            >
+              <FileTreeNode node={node} depth={depth} projectPath={projectPath} />
+            </div>
+          );
+        })}
       </div>
-
-      {/* File tree */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto pl-[12px]">
-        <div
-          className="relative py-1"
-          style={{ height: `${virtualizer.getTotalSize()}px` }}
-        >
-          {virtualizer.getVirtualItems().map((virtualItem) => {
-            const { node, depth, projectPath } = flatNodes[virtualItem.index];
-            return (
-              <div
-                key={node.path}
-                className="absolute left-0 top-0 w-full"
-                style={{
-                  height: `${virtualItem.size}px`,
-                  transform: `translateY(${virtualItem.start}px)`,
-                }}
-              >
-                <FileTreeNode node={node} depth={depth} projectPath={projectPath} />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
 
@@ -215,7 +181,6 @@ export function FileTreeSidebar() {
   const expandedPaths = useFileTreeStore((s) => s.expandedPaths);
   const toggleExpanded = useFileTreeStore((s) => s.toggleExpanded);
   const collapseAll = useFileTreeStore((s) => s.collapseAll);
-  const refreshTree = useFileTreeStore((s) => s.refreshTree);
 
   if (!isOpen) return null;
   if (!tree) return null;
@@ -236,8 +201,6 @@ export function FileTreeSidebar() {
           tree={tree}
           expandedPaths={expandedPaths}
           toggleExpanded={toggleExpanded}
-          collapseAll={collapseAll}
-          refreshTree={refreshTree}
         />
       </ErrorBoundary>
 

@@ -1,5 +1,5 @@
-import { useCallback, useMemo } from "react";
-import { CircleHelp, Pin, PinOff, Plus, Puzzle, Settings, Trash2 } from "lucide-react";
+import { useCallback, useMemo, useRef } from "react";
+import { CircleHelp, Globe, Pin, PinOff, Plus, Puzzle, Settings, Trash2 } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -15,9 +15,11 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { DockLocation } from "flexlayout-react";
 import { useRightPanelStore } from "@/stores/right-panel";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { usePluginsStore, getOrderedEnabledPlugins } from "@/stores/plugins";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { getPluginIcon } from "@/lib/plugin-types";
 import { cn } from "@/lib/utils";
 import {
@@ -76,7 +78,6 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
   const setSettingsOpen = useAppDialogsStore((s) => s.setSettingsOpen);
   const plugins = usePluginsStore((s) => s.plugins);
   const pluginOrder = usePluginsStore((s) => s.pluginOrder);
-  const activePluginName = usePluginsStore((s) => s.activePluginName);
   const pinnedPluginName = usePluginsStore((s) => s.pinnedPluginName);
   const pluginBadges = usePluginsStore((s) => s.pluginBadges);
   const isRightPanelOpen = useRightPanelStore((s) => s.isOpen);
@@ -104,45 +105,52 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
 
   const handlePluginIconClick = useCallback(
     (pluginName: string) => {
-      const isActive =
-        isRightPanelOpen && activePluginName === pluginName;
-      const isPinned = pinnedPluginName === pluginName;
+      const tiling = useTilingLayoutStore.getState();
+      const blockId = `block-plugin-${pluginName}`;
 
-      // Pinned plugin: cannot be closed by clicking its own icon
-      if (isPinned && isActive) {
-        return;
+      if (tiling.hasBlock(blockId)) {
+        // Already open — select/focus the tab
+        tiling.selectTab(blockId);
+      } else {
+        // Open plugin in a RIGHT split
+        const pluginMeta = usePluginsStore
+          .getState()
+          .plugins.find((p) => p.manifest.name === pluginName)?.manifest;
+        tiling.addBlock(
+          { type: "plugin", pluginName, pluginDisplayName: pluginMeta?.displayName, pluginIcon: pluginMeta?.icon },
+          undefined,
+          blockId,
+          DockLocation.RIGHT,
+        );
       }
 
-      if (isActive) {
-        // Non-pinned active plugin: clicking closes or reverts to pinned plugin
-        if (pinnedPluginName) {
-          // Revert to pinned plugin
-          usePluginsStore.getState().setActivePlugin(pinnedPluginName);
-          useRightPanelStore.getState().setActiveView("plugin");
-        } else {
-          // No pinned plugin — close panel
-          useRightPanelStore.getState().setActiveView("empty");
-          useRightPanelStore.getState().togglePanel();
-        }
-      } else {
-        // Open this plugin (temporarily if there's a pinned one)
-        usePluginsStore.getState().setActivePlugin(pluginName);
-        useRightPanelStore.getState().setActiveView("plugin");
-        if (!useRightPanelStore.getState().isOpen) {
-          useRightPanelStore.getState().togglePanel();
-        }
+      usePluginsStore.getState().setActivePlugin(pluginName);
+      // Keep right panel store in sync for compatibility
+      useRightPanelStore.getState().setActiveView("plugin");
+      if (!useRightPanelStore.getState().isOpen) {
+        useRightPanelStore.getState().togglePanel();
       }
     },
-    [isRightPanelOpen, activePluginName, pinnedPluginName],
+    [],
   );
 
   const handlePinPlugin = useCallback((pluginName: string) => {
     usePluginsStore.getState().pinPlugin(pluginName);
-    // Make sure the pinned plugin is active and panel is open
     usePluginsStore.getState().setActivePlugin(pluginName);
-    useRightPanelStore.getState().setActiveView("plugin");
-    if (!useRightPanelStore.getState().isOpen) {
-      useRightPanelStore.getState().togglePanel();
+
+    // Ensure the plugin block exists in tiling layout
+    const tiling = useTilingLayoutStore.getState();
+    const blockId = `block-plugin-${pluginName}`;
+    if (!tiling.hasBlock(blockId)) {
+      const pluginMeta = usePluginsStore
+        .getState()
+        .plugins.find((p) => p.manifest.name === pluginName)?.manifest;
+      tiling.addBlock(
+        { type: "plugin", pluginName, pluginDisplayName: pluginMeta?.displayName, pluginIcon: pluginMeta?.icon },
+        undefined,
+        blockId,
+        DockLocation.RIGHT,
+      );
     }
   }, []);
 
@@ -154,20 +162,33 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
     usePluginsStore.getState().uninstallPlugin(pluginName);
   }, []);
 
+  const hasBrowserBlock = useTilingLayoutStore((s) => s.hasBlockOfType("browser"));
   const activeView = useRightPanelStore((s) => s.activeView);
 
+  const browserCounterRef = useRef(0);
+  const handleBrowserClick = useCallback(() => {
+    const tiling = useTilingLayoutStore.getState();
+    browserCounterRef.current += 1;
+    const blockId = `browser-${Date.now().toString(36)}-${browserCounterRef.current}`;
+    tiling.addBlock({ type: "browser", url: "https://github.com/nandomoreirame/forja" }, undefined, blockId);
+  }, []);
+
   const handleMarketplaceClick = useCallback(() => {
-    const panel = useRightPanelStore.getState();
-    if (panel.isOpen && panel.activeView === "marketplace") {
-      // Already showing marketplace — close it
-      useRightPanelStore.getState().setActiveView("empty");
-      useRightPanelStore.getState().togglePanel();
+    const tiling = useTilingLayoutStore.getState();
+    const blockId = "block-marketplace";
+
+    if (tiling.hasBlock(blockId)) {
+      tiling.removeBlock(blockId);
     } else {
-      useRightPanelStore.getState().setActiveView("marketplace");
-      if (!panel.isOpen) {
-        useRightPanelStore.getState().togglePanel();
-      }
+      tiling.addBlock(
+        { type: "marketplace" },
+        undefined,
+        blockId,
+      );
     }
+
+    // Keep right panel store in sync for compatibility
+    useRightPanelStore.getState().setActiveView("marketplace");
   }, []);
 
   return (
@@ -176,6 +197,35 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
         data-testid="right-sidebar"
         className="flex h-full w-12 shrink-0 flex-col items-center gap-1.5 bg-ctp-mantle py-2"
       >
+        {/* Browser icon (built-in, singleton) */}
+        {hasProject && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Browser"
+                onClick={handleBrowserClick}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+                  hasBrowserBlock
+                    ? "bg-ctp-surface0 text-ctp-mauve"
+                    : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
+                )}
+              >
+                <Globe className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="left">
+              <p>Browser</p>
+            </TooltipContent>
+          </Tooltip>
+        )}
+
+        {/* Divider between built-in icons and installed plugins */}
+        {hasProject && orderedPlugins.length > 0 && (
+          <div className="mx-auto h-px w-6 bg-ctp-surface1" />
+        )}
+
         {/* Plugin icons (only when a project is active) */}
         {hasProject && (
           <DndContext
@@ -193,7 +243,6 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                 // Only visually "active" when the panel is open with this plugin.
                 // When the panel is closed, the plugin stays mounted (webview keeps
                 // running) so background features like badges continue to work.
-                const isActive = isRightPanelOpen && activePluginName === plugin.manifest.name;
                 const isPinned = pinnedPluginName === plugin.manifest.name;
                 const badge = pluginBadges[plugin.manifest.name];
                 return (
@@ -206,12 +255,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                               type="button"
                               aria-label={plugin.manifest.displayName}
                               onClick={() => handlePluginIconClick(plugin.manifest.name)}
-                              className={cn(
-                                "relative flex h-9 w-9 items-center justify-center rounded-md transition-colors",
-                                isActive
-                                  ? "bg-ctp-surface0 text-ctp-mauve"
-                                  : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
-                              )}
+                              className="relative flex h-9 w-9 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
                             >
                               <Icon className="h-4 w-4" strokeWidth={1.5} />
                               {badge && (

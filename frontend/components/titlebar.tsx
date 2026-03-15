@@ -2,19 +2,16 @@ import { IS_MAC } from "@/lib/platform";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
-import { useBrowserPaneStore } from "@/stores/browser-pane";
 import { getCurrentWindow, isDev, isTilingDesktop } from "@/lib/ipc";
 import { usePerformanceStore } from "@/stores/performance";
 import { cn } from "@/lib/utils";
 import {
   Copy,
   Gauge,
-  Globe,
   Info,
   Keyboard,
   Menu,
   Minus,
-  PanelLeft,
   Plus,
   Search,
   Settings,
@@ -50,9 +47,7 @@ export function Titlebar() {
   const isLite = usePerformanceStore((s) => s.isLite);
   const toggleLiteMode = usePerformanceStore((s) => s.toggleLiteMode);
   const { aboutOpen, setAboutOpen, shortcutsOpen, setShortcutsOpen, settingsOpen, setSettingsOpen } = useAppDialogsStore();
-  const { isOpen, tree, trees, currentPath, toggleSidebar, openProject } = useFileTreeStore();
-  const isBrowserOpen = useBrowserPaneStore((s) => s.isOpen);
-  const toggleBrowser = useBrowserPaneStore((s) => s.toggleOpen);
+  const { tree, openProject } = useFileTreeStore();
   const title = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
 
   useEffect(() => {
@@ -141,29 +136,6 @@ export function Titlebar() {
           </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
-        {(tree !== null || Object.keys(trees).length > 0) && (
-          <button
-            onClick={toggleSidebar}
-            className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-            aria-label={isOpen ? "Close sidebar" : "Open sidebar"}
-          >
-            <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
-          </button>
-        )}
-
-        {(tree !== null || Object.keys(trees).length > 0) && (
-          <button
-            onClick={toggleBrowser}
-            aria-label="Toggle browser pane"
-            className={cn(
-              "inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
-              isBrowserOpen && "text-brand"
-            )}
-          >
-            <Globe className="h-4 w-4" strokeWidth={1.5} />
-          </button>
-        )}
 
       </div>
 
