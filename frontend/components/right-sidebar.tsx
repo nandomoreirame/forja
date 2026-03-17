@@ -272,7 +272,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                             >
                               <Icon className="h-4 w-4" strokeWidth={1.5} />
                               {badge && (
-                                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 rounded bg-ctp-surface1 px-0.5 text-[8px] font-bold leading-tight text-ctp-mauve tabular-nums">
+                                <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 rounded bg-ctp-surface1 px-0.5 text-app-2xs font-bold leading-tight text-ctp-mauve tabular-nums">
                                   {badge}
                                 </span>
                               )}
@@ -297,7 +297,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                       <ContextMenuContent className="min-w-48 border-ctp-surface1 bg-overlay-mantle">
                         {isPinned ? (
                           <ContextMenuItem
-                            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+                            className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
                             onSelect={handleUnpinPlugin}
                           >
                             <PinOff className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -305,7 +305,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                           </ContextMenuItem>
                         ) : (
                           <ContextMenuItem
-                            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+                            className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
                             onSelect={() => handlePinPlugin(plugin.manifest.name)}
                           >
                             <Pin className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -316,7 +316,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                           <>
                             <ContextMenuSeparator className="bg-ctp-surface0" />
                             <ContextMenuItem
-                              className="gap-2 text-xs text-ctp-overlay1 focus:bg-ctp-surface0 focus:text-ctp-text"
+                              className="gap-2 text-app-sm text-ctp-overlay1 focus:bg-ctp-surface0 focus:text-ctp-text"
                               disabled
                             >
                               <Pin className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -326,7 +326,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
                         )}
                         <ContextMenuSeparator className="bg-ctp-surface0" />
                         <ContextMenuItem
-                          className="gap-2 text-xs text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
+                          className="gap-2 text-app-sm text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
                           onSelect={() => handleUninstallPlugin(plugin.manifest.name)}
                         >
                           <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />

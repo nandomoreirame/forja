@@ -90,7 +90,7 @@ function ProjectIcon({
       aria-pressed={isActive}
       onClick={() => onSelect(project.path)}
       className={cn(
-        "group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-sm font-bold transition-all duration-150",
+        "group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-app font-bold transition-all duration-150",
         isActive
           ? "ring-2 ring-ctp-mauve ring-offset-1 ring-offset-ctp-mantle"
           : "opacity-70 hover:opacity-100"
@@ -130,7 +130,7 @@ function ProjectIcon({
       )}
       {shortcutIndex != null && (
         <span
-          className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-ctp-surface0 text-[10px] font-bold text-ctp-mauve ring-1 ring-ctp-mantle"
+          className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-ctp-surface0 text-app-xs font-bold text-ctp-mauve ring-1 ring-ctp-mantle"
           aria-hidden="true"
         >
           {shortcutIndex}
@@ -149,21 +149,21 @@ function ProjectIcon({
         </ContextMenuTrigger>
         <ContextMenuContent className="min-w-44 border-ctp-surface1 bg-overlay-mantle">
           <ContextMenuItem
-            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+            className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
             onSelect={() => onEditRequest(project)}
           >
             <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
             Edit Project...
           </ContextMenuItem>
           <ContextMenuItem
-            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+            className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
             onSelect={() => invoke("shell:openPath", { path: project.path })}
           >
             <FolderOpen className="h-3.5 w-3.5" strokeWidth={1.5} />
             Open in Files...
           </ContextMenuItem>
           <ContextMenuItem
-            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+            className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
             onSelect={() => invoke("shell:openInEditor", { path: project.path })}
           >
             <Code className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -171,7 +171,7 @@ function ProjectIcon({
           </ContextMenuItem>
           <ContextMenuSeparator className="bg-ctp-surface0" />
           <ContextMenuItem
-            className="gap-2 text-xs text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
+            className="gap-2 text-app-sm text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
             onSelect={() => onRemoveRequest(project)}
           >
             <X className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -181,7 +181,7 @@ function ProjectIcon({
       </ContextMenu>
       <TooltipContent side="right" className="max-w-xs">
         <p className="font-semibold">{project.name}</p>
-        <p className="text-xs text-ctp-overlay1">{project.path}</p>
+        <p className="text-app-sm text-ctp-overlay1">{project.path}</p>
       </TooltipContent>
     </Tooltip>
   );
@@ -439,23 +439,23 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
               </div>
             )}
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-ctp-subtext0">Name</span>
+              <span className="text-app-sm text-ctp-subtext0">Name</span>
               <input
                 type="text"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className="rounded-md border border-ctp-surface1 bg-overlay-base px-3 py-1.5 text-sm text-ctp-text outline-none focus:border-ctp-mauve"
+                className="rounded-md border border-ctp-surface1 bg-overlay-base px-3 py-1.5 text-app text-ctp-text outline-none focus:border-ctp-mauve"
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-ctp-subtext0">Icon path</span>
+              <span className="text-app-sm text-ctp-subtext0">Icon path</span>
               <div className="flex gap-1.5">
                 <input
                   type="text"
                   value={editIconPath}
                   onChange={(e) => setEditIconPath(e.target.value)}
                   placeholder="/path/to/icon.svg"
-                  className="min-w-0 flex-1 rounded-md border border-ctp-surface1 bg-overlay-base px-3 py-1.5 text-sm text-ctp-text placeholder:text-ctp-overlay0 outline-none focus:border-ctp-mauve"
+                  className="min-w-0 flex-1 rounded-md border border-ctp-surface1 bg-overlay-base px-3 py-1.5 text-app text-ctp-text placeholder:text-ctp-overlay0 outline-none focus:border-ctp-mauve"
                 />
                 <Button
                   variant="outline"
@@ -514,7 +514,6 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
               variant="destructive"
               size="sm"
               onClick={handleRemoveConfirm}
-              className="bg-ctp-red text-ctp-base hover:bg-ctp-red/90"
             >
               Remove
             </Button>

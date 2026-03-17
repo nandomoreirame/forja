@@ -24,7 +24,7 @@ export function ResourceUsagePopover() {
     <Popover>
       <PopoverTrigger asChild>
         <button
-          className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 font-mono text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+          className="inline-flex h-8 items-center gap-1.5 rounded-md px-2 font-mono text-app-sm text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
           aria-label="Resource usage"
         >
           <Cpu className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -35,11 +35,11 @@ export function ResourceUsagePopover() {
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64 border-none p-3">
         <div className="space-y-3">
-          <h4 className="text-[11px] font-semibold uppercase tracking-wider text-ctp-overlay0">
+          <h4 className="text-app-xs font-semibold uppercase tracking-wider text-ctp-overlay0">
             Resource Usage
           </h4>
 
-          <div className="flex items-center gap-3 text-xs">
+          <div className="flex items-center gap-3 text-app-sm">
             <span className="flex items-center gap-1 text-ctp-overlay1">
               <Cpu className="h-3 w-3" strokeWidth={1.5} />
               CPU {current.total_cpu_percent.toFixed(1)}%
@@ -51,15 +51,15 @@ export function ResourceUsagePopover() {
           </div>
 
           <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-app-sm">
               <span className="text-ctp-text">Forja App</span>
               <span className="font-mono text-ctp-overlay1">{formatBytes(current.total_rss)}</span>
             </div>
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-app-sm">
               <span className="text-ctp-subtext0">Main</span>
               <span className="font-mono text-ctp-overlay1">{formatBytes(current.main_rss)}</span>
             </div>
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-app-sm">
               <span className="text-ctp-subtext0">Renderer</span>
               <span className="font-mono text-ctp-overlay1">{formatBytes(current.renderer_rss)}</span>
             </div>
@@ -68,7 +68,7 @@ export function ResourceUsagePopover() {
           {import.meta.env.DEV && (
             <div className="border-t border-ctp-surface0 pt-2">
               <button
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text disabled:opacity-50"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-app-sm text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text disabled:opacity-50"
                 onClick={handleClearCache}
                 disabled={clearing}
                 aria-label="Clear cache"
