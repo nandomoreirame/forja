@@ -805,5 +805,55 @@ describe("useWorkspaceStore", () => {
       expect(tabsState.tabs[0].sessionType).toBe("claude");
       expect(tabsState.tabs[1].sessionType).toBe("terminal");
     });
+
+    it("preserves cliSessionId on restored tabs after workspace activation", async () => {
+      // Regression test: App.tsx was wiping restored tabs (including cliSessionId)
+      // right after activateWorkspace restored them, breaking session resume.
+      const ws = makeWorkspace({
+        id: "ws-session",
+        projects: [makeProject("/project/c")],
+        lastActiveProjectPath: "/project/c",
+      });
+      useWorkspaceStore.setState({ workspaces: [ws] });
+
+      const mockLoadProjectTree = vi.fn().mockResolvedValue(undefined);
+      const mockOpenProjectPath = vi.fn();
+      useFileTreeStore.setState({
+        loadProjectTree: mockLoadProjectTree,
+        openProjectPath: mockOpenProjectPath,
+        currentPath: "/project/c",
+      });
+
+      const savedUiState = {
+        tabs: [
+          {
+            id: "tab-resumed",
+            path: "/project/c",
+            sessionType: "claude",
+            cliSessionId: "abc-session-9f3e21",
+          },
+        ],
+        activeTabIndex: 0,
+      };
+
+      mockInvoke.mockImplementation((cmd: string, args?: any) => {
+        if (cmd === "set_active_workspace") return Promise.resolve(undefined);
+        if (cmd === "get_workspace_projects") return Promise.resolve([]);
+        if (cmd === "get_project_ui_state") {
+          expect(args).toEqual({ workspaceId: "ws-session", path: "/project/c" });
+          return Promise.resolve(savedUiState);
+        }
+        return Promise.resolve(undefined);
+      });
+
+      await useWorkspaceStore.getState().activateWorkspace("ws-session");
+
+      // activateWorkspace must restore the cliSessionId so terminal-session
+      // can resume the CLI session with --resume <id>
+      const tabsState = useTerminalTabsStore.getState();
+      expect(tabsState.tabs).toHaveLength(1);
+      expect(tabsState.tabs[0].id).toBe("tab-resumed");
+      expect(tabsState.tabs[0].cliSessionId).toBe("abc-session-9f3e21");
+    });
   });
 });

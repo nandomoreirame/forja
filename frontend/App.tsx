@@ -236,10 +236,10 @@ function App({
         const wsStore = useWorkspaceStore.getState();
         await wsStore.loadWorkspaces();
         await wsStore.activateWorkspace(initialWorkspaceId);
-        // Reset tiling layout and terminal tabs so the new workspace window
-        // starts completely empty with no panels or sessions from other workspaces.
-        useTilingLayoutStore.getState().resetToDefault();
-        useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
+        // activateWorkspace already handles: clearing old tabs, loading the
+        // workspace layout, and restoring saved tabs with their cliSessionId
+        // values. Do NOT reset or clear state here — that would wipe the
+        // session IDs needed to resume CLI sessions (--resume <id>).
         if (!cancelled) setSessionRestoreDone(true);
       };
       activateNewWorkspace();
@@ -742,7 +742,7 @@ function App({
   return (
     <AppErrorBoundary>
       <div className="relative flex h-full flex-col bg-ctp-mantle">
-        <div className={cn("transition-all duration-200", isFocusMode && "h-0 overflow-hidden opacity-0")}>
+        <div className={cn("transition-all duration-200", isFocusMode && "h-0 overflow-hidden opacity-0 pointer-events-none")}>
           <Titlebar />
         </div>
         {panelPrefsLoaded && (
