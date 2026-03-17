@@ -29,9 +29,8 @@ function evictOldest(): void {
   if (oldest !== undefined) {
     const entry = cache.get(oldest);
     if (entry) {
-      // Kill backend PTY process
-      invoke("close_pty", { tabId: oldest }).catch(() => {});
-      // Unregister dispatcher handlers
+      // Only dispose frontend resources — backend PTY stays alive
+      // so the session can reconnect via pty:has-session + ring buffer.
       ptyDispatcher.unregisterData(oldest);
       ptyDispatcher.unregisterExit(oldest);
       entry.terminal.dispose();
@@ -85,12 +84,10 @@ export const terminalCache = {
       setTimeout(() => {
         const entry = cache.get(tabId);
         if (entry) {
-          // Kill backend PTY process
-          invoke("close_pty", { tabId }).catch(() => {});
-          // Unregister dispatcher handlers
+          // Only dispose frontend resources — backend PTY stays alive
+          // so the session can reconnect via pty:has-session + ring buffer.
           ptyDispatcher.unregisterData(tabId);
           ptyDispatcher.unregisterExit(tabId);
-          // Dispose frontend terminal
           entry.terminal.dispose();
           cache.delete(tabId);
         }

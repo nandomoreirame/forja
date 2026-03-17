@@ -213,7 +213,7 @@ describe("terminalCache", () => {
       expect(terminal.dispose).toHaveBeenCalled();
     });
 
-    it("calls close_pty IPC when TTL eviction fires", () => {
+    it("does NOT kill backend PTY when TTL eviction fires (PTY survives for reconnection)", () => {
       const terminal = makeMockTerminal();
       const fitAddon = makeMockFitAddon();
       const host = makeMockHostElement();
@@ -221,7 +221,7 @@ describe("terminalCache", () => {
       terminalCache.park("tab-ttl-kill", terminal, fitAddon, host);
       vi.advanceTimersByTime(CACHE_TTL_MS + 100);
 
-      expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-ttl-kill" });
+      expect(mockInvoke).not.toHaveBeenCalledWith("close_pty", { tabId: "tab-ttl-kill" });
     });
 
     it("unregisters dispatcher handlers when TTL eviction fires", () => {
@@ -296,7 +296,7 @@ describe("terminalCache", () => {
       expect(terminals[0].dispose).toHaveBeenCalled();
     });
 
-    it("calls close_pty and unregisters dispatcher when evicting oldest", () => {
+    it("does NOT kill backend PTY when evicting oldest (PTY survives for reconnection)", () => {
       // Fill cache to max so next park triggers eviction
       for (let i = 0; i < CACHE_MAX_SIZE; i++) {
         terminalCache.park(`tab-maxevict-${i}`, makeMockTerminal(), makeMockFitAddon(), makeMockHostElement());
@@ -308,7 +308,9 @@ describe("terminalCache", () => {
       // Add one more — triggers eviction of tab-maxevict-0
       terminalCache.park("tab-maxevict-extra", makeMockTerminal(), makeMockFitAddon(), makeMockHostElement());
 
-      expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-maxevict-0" });
+      // PTY should NOT be killed — it survives for reconnection
+      expect(mockInvoke).not.toHaveBeenCalledWith("close_pty", { tabId: "tab-maxevict-0" });
+      // But frontend dispatcher handlers should be unregistered
       expect(ptyDispatcher.unregisterData).toHaveBeenCalledWith("tab-maxevict-0");
       expect(ptyDispatcher.unregisterExit).toHaveBeenCalledWith("tab-maxevict-0");
     });
