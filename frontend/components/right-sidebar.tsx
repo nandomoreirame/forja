@@ -177,7 +177,6 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
     usePluginsStore.getState().uninstallPlugin(pluginName);
   }, []);
 
-  const hasBrowserBlock = useTilingLayoutStore((s) => s.hasBlockOfType("browser"));
   const activeView = useRightPanelStore((s) => s.activeView);
 
   const browserCounterRef = useRef(0);
@@ -219,12 +218,7 @@ export function RightSidebar({ hasProject = false }: RightSidebarProps) {
               type="button"
               aria-label="Browser"
               onClick={handleBrowserClick}
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-md transition-colors",
-                hasBrowserBlock
-                  ? "bg-ctp-surface0 text-ctp-mauve"
-                  : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
-              )}
+              className="flex h-9 w-9 items-center justify-center rounded-md transition-colors text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
             >
               <Globe className="h-4 w-4" strokeWidth={1.5} />
             </button>
