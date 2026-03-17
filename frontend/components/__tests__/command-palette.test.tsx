@@ -179,6 +179,7 @@ describe("CommandPalette", () => {
   });
 
   it("lists commands in commands mode", () => {
+    mockFileTreeState.currentPath = "/project";
     useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
     render(<CommandPalette />);
 
@@ -208,6 +209,7 @@ describe("CommandPalette", () => {
   });
 
   it("renders command groups with headings", () => {
+    mockFileTreeState.currentPath = "/project";
     useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
     render(<CommandPalette />);
 
@@ -257,6 +259,7 @@ describe("CommandPalette", () => {
   });
 
   it("shows shortcut badges on commands", () => {
+    mockFileTreeState.currentPath = "/project";
     useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
     render(<CommandPalette />);
 
@@ -353,6 +356,7 @@ describe("CommandPalette", () => {
     });
 
     it("shows Open Files in Panels & View commands group", () => {
+      mockFileTreeState.currentPath = "/project";
       useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
       render(<CommandPalette />);
       expect(screen.getByText("Open Files")).toBeInTheDocument();
@@ -480,6 +484,7 @@ describe("CommandPalette", () => {
 
     it("'Go to Project' command in commands mode switches to projects mode", async () => {
       const user = userEvent.setup();
+      mockProjectsState.projects = [{ path: "/project", name: "project", lastOpened: "", iconPath: null }];
       useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
       render(<CommandPalette />);
 

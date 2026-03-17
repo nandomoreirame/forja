@@ -12,8 +12,10 @@ import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useProjectsStore } from "@/stores/projects";
 import { useFocusModeStore } from "@/stores/focus-mode";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
+import { invoke } from "@/lib/ipc";
 import {
   ChevronsDownUp,
+  Eraser,
   FolderOpen,
   FolderTree,
   GitCompareArrows,
@@ -189,6 +191,12 @@ export function CommandPalette() {
         if (path) useGitStatusStore.getState().forceFetchStatuses(path);
         break;
       }
+      case "dev-reload":
+        window.location.reload();
+        return; // no close() needed — page reloads
+      case "dev-clear-cache":
+        invoke("app:clearCache").catch(() => {});
+        return; // no close() needed — page reloads after cache clear
     }
     close();
   };
@@ -331,22 +339,26 @@ export function CommandPalette() {
         {mode === "commands" && (
           <>
             <CommandGroup heading="Session">
-              <CommandItem
-                value="New Session"
-                onSelect={() => handleCommand("new-session")}
-              >
-                <Plus className="h-4 w-4" strokeWidth={1.5} />
-                New Session
-                <CommandShortcut>{mod}+Shift+T</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                value="Go to Project"
-                onSelect={() => handleCommand("go-to-project")}
-              >
-                <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-                Go to Project
-                <CommandShortcut>{mod}+Shift+L</CommandShortcut>
-              </CommandItem>
+              {currentPath && (
+                <CommandItem
+                  value="New Session"
+                  onSelect={() => handleCommand("new-session")}
+                >
+                  <Plus className="h-4 w-4" strokeWidth={1.5} />
+                  New Session
+                  <CommandShortcut>{mod}+Shift+T</CommandShortcut>
+                </CommandItem>
+              )}
+              {projects.length > 0 && (
+                <CommandItem
+                  value="Go to Project"
+                  onSelect={() => handleCommand("go-to-project")}
+                >
+                  <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
+                  Go to Project
+                  <CommandShortcut>{mod}+Shift+L</CommandShortcut>
+                </CommandItem>
+              )}
               <CommandItem
                 value="Add Project"
                 onSelect={() => handleCommand("open-project")}
@@ -358,14 +370,16 @@ export function CommandPalette() {
             </CommandGroup>
 
             <CommandGroup heading="Panels & View">
-              <CommandItem
-                value="Open Files"
-                onSelect={handleOpenFiles}
-              >
-                <FolderTree className="h-4 w-4" strokeWidth={1.5} />
-                Open Files
-                <CommandShortcut>{mod}+Shift+E</CommandShortcut>
-              </CommandItem>
+              {currentPath && (
+                <CommandItem
+                  value="Open Files"
+                  onSelect={handleOpenFiles}
+                >
+                  <FolderTree className="h-4 w-4" strokeWidth={1.5} />
+                  Open Files
+                  <CommandShortcut>{mod}+Shift+E</CommandShortcut>
+                </CommandItem>
+              )}
               <CommandItem
                 value="Open Browser"
                 onSelect={handleOpenBrowser}
@@ -380,7 +394,7 @@ export function CommandPalette() {
               >
                 <Minimize2 className="h-4 w-4" strokeWidth={1.5} />
                 Toggle Focus Mode
-                <CommandShortcut>{mod}+Shift+M</CommandShortcut>
+                <CommandShortcut>{mod}+Alt+F</CommandShortcut>
               </CommandItem>
               <CommandItem
                 value="Collapse All Folders"
@@ -418,30 +432,32 @@ export function CommandPalette() {
               </CommandItem>
             </CommandGroup>
 
-            <CommandGroup heading="Git">
-              <CommandItem
-                value="View Git Changes"
-                onSelect={() => handleCommand("git-changes")}
-              >
-                <GitCompareArrows className="h-4 w-4" strokeWidth={1.5} />
-                View Git Changes
-                <CommandShortcut>{mod}+Shift+G</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                value="Toggle Diff Mode"
-                onSelect={() => handleCommand("toggle-diff-mode")}
-              >
-                <SplitSquareHorizontal className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Diff Mode
-              </CommandItem>
-              <CommandItem
-                value="Refresh Git Status"
-                onSelect={() => handleCommand("refresh-git")}
-              >
-                <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
-                Refresh Git Status
-              </CommandItem>
-            </CommandGroup>
+            {currentPath && (
+              <CommandGroup heading="Git">
+                <CommandItem
+                  value="View Git Changes"
+                  onSelect={() => handleCommand("git-changes")}
+                >
+                  <GitCompareArrows className="h-4 w-4" strokeWidth={1.5} />
+                  View Git Changes
+                  <CommandShortcut>{mod}+Shift+G</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  value="Toggle Diff Mode"
+                  onSelect={() => handleCommand("toggle-diff-mode")}
+                >
+                  <SplitSquareHorizontal className="h-4 w-4" strokeWidth={1.5} />
+                  Toggle Diff Mode
+                </CommandItem>
+                <CommandItem
+                  value="Refresh Git Status"
+                  onSelect={() => handleCommand("refresh-git")}
+                >
+                  <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
+                  Refresh Git Status
+                </CommandItem>
+              </CommandGroup>
+            )}
 
             <CommandGroup heading="Settings & Help">
               <CommandItem
@@ -473,6 +489,23 @@ export function CommandPalette() {
               >
                 <Info className="h-4 w-4" strokeWidth={1.5} />
                 About
+              </CommandItem>
+            </CommandGroup>
+
+            <CommandGroup heading="Developer">
+              <CommandItem
+                value="Developer Reload Window"
+                onSelect={() => handleCommand("dev-reload")}
+              >
+                <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
+                Developer: Reload Window
+              </CommandItem>
+              <CommandItem
+                value="Developer Clear Cache"
+                onSelect={() => handleCommand("dev-clear-cache")}
+              >
+                <Eraser className="h-4 w-4" strokeWidth={1.5} />
+                Developer: Clear Cache
               </CommandItem>
             </CommandGroup>
           </>
