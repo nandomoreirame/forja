@@ -9,6 +9,11 @@ vi.mock("@/lib/pty-dispatcher", () => ({
   },
 }));
 
+const mockInvoke = vi.fn().mockResolvedValue(undefined);
+vi.mock("@/lib/ipc", () => ({
+  invoke: (...args: unknown[]) => mockInvoke(...args),
+}));
+
 // Must import AFTER mock declaration
 import { terminalCache, CACHE_TTL_MS, CACHE_MAX_SIZE } from "../terminal-instance-cache";
 import { ptyDispatcher } from "@/lib/pty-dispatcher";
@@ -37,6 +42,7 @@ describe("terminalCache", () => {
   beforeEach(() => {
     terminalCache.clear();
     vi.clearAllMocks();
+    mockInvoke.mockResolvedValue(undefined);
   });
 
   it("has() returns false for unknown tabId", () => {
@@ -189,8 +195,8 @@ describe("terminalCache", () => {
     });
 
     it("exports TTL and max size constants", () => {
-      expect(CACHE_TTL_MS).toBe(30_000);
-      expect(CACHE_MAX_SIZE).toBe(10);
+      expect(CACHE_TTL_MS).toBe(5 * 60 * 1000);
+      expect(CACHE_MAX_SIZE).toBe(20);
     });
 
     it("evicts entries after TTL expires", () => {
@@ -205,6 +211,29 @@ describe("terminalCache", () => {
 
       expect(terminalCache.has("tab-ttl")).toBe(false);
       expect(terminal.dispose).toHaveBeenCalled();
+    });
+
+    it("calls close_pty IPC when TTL eviction fires", () => {
+      const terminal = makeMockTerminal();
+      const fitAddon = makeMockFitAddon();
+      const host = makeMockHostElement();
+
+      terminalCache.park("tab-ttl-kill", terminal, fitAddon, host);
+      vi.advanceTimersByTime(CACHE_TTL_MS + 100);
+
+      expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-ttl-kill" });
+    });
+
+    it("unregisters dispatcher handlers when TTL eviction fires", () => {
+      const terminal = makeMockTerminal();
+      const fitAddon = makeMockFitAddon();
+      const host = makeMockHostElement();
+
+      terminalCache.park("tab-ttl-unreg", terminal, fitAddon, host);
+      vi.advanceTimersByTime(CACHE_TTL_MS + 100);
+
+      expect(ptyDispatcher.unregisterData).toHaveBeenCalledWith("tab-ttl-unreg");
+      expect(ptyDispatcher.unregisterExit).toHaveBeenCalledWith("tab-ttl-unreg");
     });
 
     it("cancels TTL timer when entry is retrieved via get()", () => {
@@ -265,6 +294,52 @@ describe("terminalCache", () => {
       expect(terminalCache.has("tab-extra")).toBe(true);
       expect(terminalCache.has("tab-0")).toBe(false);
       expect(terminals[0].dispose).toHaveBeenCalled();
+    });
+
+    it("calls close_pty and unregisters dispatcher when evicting oldest", () => {
+      // Fill cache to max so next park triggers eviction
+      for (let i = 0; i < CACHE_MAX_SIZE; i++) {
+        terminalCache.park(`tab-maxevict-${i}`, makeMockTerminal(), makeMockFitAddon(), makeMockHostElement());
+      }
+
+      vi.clearAllMocks();
+      mockInvoke.mockResolvedValue(undefined);
+
+      // Add one more — triggers eviction of tab-maxevict-0
+      terminalCache.park("tab-maxevict-extra", makeMockTerminal(), makeMockFitAddon(), makeMockHostElement());
+
+      expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-maxevict-0" });
+      expect(ptyDispatcher.unregisterData).toHaveBeenCalledWith("tab-maxevict-0");
+      expect(ptyDispatcher.unregisterExit).toHaveBeenCalledWith("tab-maxevict-0");
+    });
+  });
+
+  describe("clear()", () => {
+    it("calls close_pty for each cached entry on clear()", () => {
+      terminalCache.park("tab-clear-1", makeMockTerminal(), makeMockFitAddon(), makeMockHostElement());
+      terminalCache.park("tab-clear-2", makeMockTerminal(), makeMockFitAddon(), makeMockHostElement());
+
+      vi.clearAllMocks();
+      mockInvoke.mockResolvedValue(undefined);
+
+      terminalCache.clear();
+
+      expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-clear-1" });
+      expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-clear-2" });
+    });
+
+    it("unregisters dispatcher handlers for all entries on clear()", () => {
+      terminalCache.park("tab-clear-a", makeMockTerminal(), makeMockFitAddon(), makeMockHostElement());
+      terminalCache.park("tab-clear-b", makeMockTerminal(), makeMockFitAddon(), makeMockHostElement());
+
+      vi.clearAllMocks();
+
+      terminalCache.clear();
+
+      expect(ptyDispatcher.unregisterData).toHaveBeenCalledWith("tab-clear-a");
+      expect(ptyDispatcher.unregisterData).toHaveBeenCalledWith("tab-clear-b");
+      expect(ptyDispatcher.unregisterExit).toHaveBeenCalledWith("tab-clear-a");
+      expect(ptyDispatcher.unregisterExit).toHaveBeenCalledWith("tab-clear-b");
     });
   });
 });

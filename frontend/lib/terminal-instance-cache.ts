@@ -1,6 +1,7 @@
 import type { Terminal } from "@xterm/xterm";
 import type { FitAddon } from "@xterm/addon-fit";
 import { ptyDispatcher } from "./pty-dispatcher";
+import { invoke } from "./ipc";
 
 export interface CachedTerminal {
   terminal: Terminal;
@@ -8,8 +9,8 @@ export interface CachedTerminal {
   hostElement: HTMLDivElement;
 }
 
-export const CACHE_TTL_MS = 30_000;
-export const CACHE_MAX_SIZE = 10;
+export const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+export const CACHE_MAX_SIZE = 20;
 
 const cache = new Map<string, CachedTerminal>();
 const ttlTimers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -27,7 +28,14 @@ function evictOldest(): void {
   const oldest = cache.keys().next().value;
   if (oldest !== undefined) {
     const entry = cache.get(oldest);
-    if (entry) entry.terminal.dispose();
+    if (entry) {
+      // Kill backend PTY process
+      invoke("close_pty", { tabId: oldest }).catch(() => {});
+      // Unregister dispatcher handlers
+      ptyDispatcher.unregisterData(oldest);
+      ptyDispatcher.unregisterExit(oldest);
+      entry.terminal.dispose();
+    }
     cache.delete(oldest);
     clearTtlTimer(oldest);
   }
@@ -77,6 +85,12 @@ export const terminalCache = {
       setTimeout(() => {
         const entry = cache.get(tabId);
         if (entry) {
+          // Kill backend PTY process
+          invoke("close_pty", { tabId }).catch(() => {});
+          // Unregister dispatcher handlers
+          ptyDispatcher.unregisterData(tabId);
+          ptyDispatcher.unregisterExit(tabId);
+          // Dispose frontend terminal
           entry.terminal.dispose();
           cache.delete(tabId);
         }
@@ -107,13 +121,16 @@ export const terminalCache = {
     cache.delete(tabId);
   },
 
-  /** Disposes all cached terminals. */
+  /** Disposes all cached terminals and kills all backend PTYs. */
   clear(): void {
     for (const timer of ttlTimers.values()) {
       clearTimeout(timer);
     }
     ttlTimers.clear();
-    for (const [, entry] of cache) {
+    for (const [tabId, entry] of cache) {
+      invoke("close_pty", { tabId }).catch(() => {});
+      ptyDispatcher.unregisterData(tabId);
+      ptyDispatcher.unregisterExit(tabId);
       entry.terminal.dispose();
     }
     cache.clear();
