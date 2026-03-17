@@ -27,7 +27,7 @@ describe("FocusModeIndicator", () => {
 
   it("renders the exit shortcut hint", () => {
     render(<FocusModeIndicator />);
-    expect(screen.getByText(/Ctrl\+Shift\+M/)).toBeInTheDocument();
+    expect(screen.getByText(/Ctrl\+Alt\+F/)).toBeInTheDocument();
   });
 
   it("calls exitFocusMode when clicked", async () => {

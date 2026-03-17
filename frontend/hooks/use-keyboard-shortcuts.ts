@@ -174,8 +174,8 @@ export function useKeyboardShortcuts({
         );
         return;
       }
-      // Ctrl/Cmd+Shift+M — toggle focus mode
-      if (mod && event.shiftKey && event.key.toLowerCase() === "m") {
+      // Ctrl/Cmd+Alt+F — toggle focus mode
+      if (mod && event.altKey && event.key.toLowerCase() === "f") {
         event.preventDefault();
         useFocusModeStore.getState().toggleFocusMode();
         return;

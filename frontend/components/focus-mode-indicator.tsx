@@ -3,7 +3,7 @@ import { Minimize2 } from "lucide-react";
 import { useFocusModeStore } from "@/stores/focus-mode";
 import { IS_MAC } from "@/lib/platform";
 
-const shortcutLabel = IS_MAC ? "\u2318+Shift+M" : "Ctrl+Shift+M";
+const shortcutLabel = IS_MAC ? "\u2318+Alt+F" : "Ctrl+Alt+F";
 
 export function FocusModeIndicator() {
   const exitFocusMode = useFocusModeStore((s) => s.exitFocusMode);
@@ -19,7 +19,7 @@ export function FocusModeIndicator() {
       onClick={exitFocusMode}
       onMouseEnter={() => setFaded(false)}
       onMouseLeave={() => setFaded(true)}
-      className={`fixed left-1/2 top-2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-ctp-surface0/80 px-3 py-1 text-app-sm text-ctp-subtext0 backdrop-blur-sm transition-opacity duration-300 hover:bg-ctp-surface1/90 ${faded ? "opacity-20" : "opacity-100"}`}
+      className={`fixed bottom-2 left-1/2 z-50 -translate-x-1/2 flex items-center gap-1.5 rounded-full bg-ctp-surface0/80 px-3 py-1 text-app-sm text-ctp-subtext0 backdrop-blur-sm transition-opacity duration-300 hover:bg-ctp-surface1/90 ${faded ? "opacity-20" : "opacity-100"}`}
     >
       <Minimize2 className="h-3 w-3" strokeWidth={1.5} />
       <span>Focus Mode</span>
