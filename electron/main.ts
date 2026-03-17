@@ -30,10 +30,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // PTY must be eager (resolveShellPath used at module scope)
-import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow, getSessionBuffer } from "./pty.js";
+import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers } from "./pty.js";
 
 // Type-only imports for signatures
-import type { UiPreferences, ProjectUiState } from "./config.js";
+import type { UiPreferences, ProjectUiState, WorkspaceProject } from "./config.js";
+
+// Track which BrowserWindow belongs to which workspace
+const windowWorkspaceMap = new Map<number, string>();
 
 // Lazy module loaders (cached after first import)
 const lazyImport = <T>(factory: () => Promise<T>) => {
@@ -57,6 +60,7 @@ const getProjectIcon = lazyImport(() => import("./project-icon.js"));
 const getContextIpc = lazyImport(() => import("./context/context-ipc.js"));
 const getAgentChatIpc = lazyImport(() => import("./agent-chat-ipc.js"));
 const getPluginIpc = lazyImport(() => import("./plugins/plugin-ipc.js"));
+const getBufferPersistence = lazyImport(() => import("./buffer-persistence.js"));
 
 const isDev = !app.isPackaged;
 const VITE_DEV_URL = "http://localhost:1420";
@@ -195,7 +199,13 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
     }
   });
 
+  // Track workspace-to-window mapping
+  if (workspaceId) {
+    windowWorkspaceMap.set(win.id, workspaceId);
+  }
+
   win.on("closed", async () => {
+    windowWorkspaceMap.delete(win.id);
     closeAllPtysForWindow(win.id);
     const watcher = await getWatcher();
     watcher.stopWatcher(win.id);
@@ -290,6 +300,17 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", async () => {
+  // Save all PTY buffers to disk before quitting
+  try {
+    const bp = await getBufferPersistence();
+    const buffers = getAllSessionBuffers();
+    for (const { tabId, projectPath, content } of buffers) {
+      bp.saveBuffer(projectPath, tabId, content);
+    }
+  } catch {
+    // Non-fatal: buffer persistence failure should not prevent quit
+  }
+
   const appMetricsMod = await getAppMetrics();
   // Force-stop the loop as a safety net when all windows close,
   // regardless of subscriber count (e.g., renderer crash without cleanup).
@@ -378,9 +399,18 @@ ipcMain.handle("create_workspace", async (_event, args: { name: string; initialP
   return config.createWorkspace(args.name, args.initialProject);
 });
 
-ipcMain.handle("update_workspace", async (_event, args: { id: string; name: string }) => {
+ipcMain.handle("update_workspace", async (_event, args: {
+  id: string;
+  name?: string;
+  color?: string;
+  icon?: string;
+}) => {
   const config = await getConfig();
-  return config.updateWorkspace(args.id, { name: args.name });
+  const updates: Parameters<typeof config.updateWorkspace>[1] = {};
+  if (args.name !== undefined) updates.name = args.name;
+  if (args.color !== undefined) updates.color = args.color as import("./config.js").WorkspaceColor;
+  if (args.icon !== undefined) updates.icon = args.icon as import("./config.js").WorkspaceIcon;
+  return config.updateWorkspace(args.id, updates);
 });
 
 ipcMain.handle("delete_workspace", async (_event, args: { id: string }) => {
@@ -398,6 +428,30 @@ ipcMain.handle("remove_project_from_workspace", async (_event, args: { workspace
   return config.removeProjectFromWorkspace(args.workspaceId, args.projectPath);
 });
 
+// Workspace-scoped project operations
+ipcMain.handle("get_workspace_projects", async (_event, args: { workspaceId: string }) => {
+  const config = await getConfig();
+  return config.getWorkspaceProjects(args.workspaceId);
+});
+
+ipcMain.handle("update_workspace_project", async (_event, args: {
+  workspaceId: string;
+  path: string;
+  name?: string;
+  icon_path?: string | null;
+}) => {
+  const config = await getConfig();
+  config.updateWorkspaceProject(args.workspaceId, args.path, {
+    name: args.name,
+    icon_path: args.icon_path,
+  });
+});
+
+ipcMain.handle("reorder_workspace_projects", async (_event, args: { workspaceId: string; paths: string[] }) => {
+  const config = await getConfig();
+  config.reorderWorkspaceProjects(args.workspaceId, args.paths);
+});
+
 ipcMain.handle("set_active_workspace", async (_event, args: { id: string | null }) => {
   const config = await getConfig();
   config.setActiveWorkspace(args.id);
@@ -408,31 +462,77 @@ ipcMain.handle("get_active_workspace", async () => {
   return config.getActiveWorkspace();
 });
 
-// UI Preferences
-ipcMain.handle("get_ui_preferences", async () => {
+// UI Preferences (workspace-scoped, with optional projectPath for local config)
+ipcMain.handle("get_ui_preferences", async (_event, args?: { workspaceId?: string; projectPath?: string }) => {
   const config = await getConfig();
-  return config.getUiPreferences();
+  return config.getUiPreferences(args?.workspaceId, args?.projectPath);
 });
 
-ipcMain.handle("save_ui_preferences", async (_event, args: Partial<UiPreferences>) => {
+ipcMain.handle("save_ui_preferences", async (_event, args: Partial<UiPreferences> & { workspaceId?: string; projectPath?: string }) => {
+  const { workspaceId, projectPath, ...prefs } = args;
   const config = await getConfig();
-  config.saveUiPreferences(args);
+  config.saveUiPreferences(prefs, workspaceId, projectPath);
 });
 
-// Project UI State (per-project layout persistence)
-ipcMain.handle("get_project_ui_state", async (_event, args: { path: string }) => {
+// Project UI State (workspace-scoped, per-project layout persistence)
+ipcMain.handle("get_project_ui_state", async (_event, args: { workspaceId: string; path: string }) => {
   const config = await getConfig();
-  return config.getProjectUiState(args.path);
+  return config.getProjectUiState(args.workspaceId, args.path);
 });
 
-ipcMain.handle("save_project_ui_state", async (_event, args: { path: string; state: Partial<ProjectUiState> }) => {
+ipcMain.handle("save_project_ui_state", async (_event, args: { workspaceId: string; path: string; state: Partial<ProjectUiState> }) => {
   const config = await getConfig();
-  config.saveProjectUiState(args.path, args.state);
+  config.saveProjectUiState(args.workspaceId, args.path, args.state);
 });
 
-// Open workspace in a new window
+// Last active project path (workspace-scoped)
+ipcMain.handle("set_last_active_project_path", async (_event, args: { workspaceId: string; projectPath: string }) => {
+  const config = await getConfig();
+  config.setLastActiveProjectPath(args.workspaceId, args.projectPath);
+});
+
+// Focus existing workspace window or open a new one
+ipcMain.handle("focus_workspace_window", (_event, args: { workspaceId: string }) => {
+  for (const [winId, wsId] of windowWorkspaceMap) {
+    if (wsId === args.workspaceId) {
+      const win = BrowserWindow.fromId(winId);
+      if (win && !win.isDestroyed()) {
+        win.focus();
+        return true;
+      }
+      // Clean up stale entry
+      windowWorkspaceMap.delete(winId);
+    }
+  }
+  return false;
+});
+
+// Open workspace in a new window (checks for existing window first)
 ipcMain.handle("open_workspace_in_new_window", async (_event, args: { workspaceId: string }) => {
+  // Check if workspace already has an open window
+  for (const [winId, wsId] of windowWorkspaceMap) {
+    if (wsId === args.workspaceId) {
+      const win = BrowserWindow.fromId(winId);
+      if (win && !win.isDestroyed()) {
+        win.focus();
+        return;
+      }
+      windowWorkspaceMap.delete(winId);
+    }
+  }
   await createWindow(undefined, args.workspaceId);
+});
+
+// Create a new workspace and open it in a new window
+ipcMain.handle("create_and_open_workspace", async () => {
+  const config = await getConfig();
+  const ws = config.createWorkspace("New Workspace");
+  // Add ID prefix to the name for uniqueness
+  const nameWithId = `New Workspace (${ws.id.slice(0, 7)})`;
+  config.updateWorkspace(ws.id, { name: nameWithId });
+  ws.name = nameWithId;
+  await createWindow(undefined, ws.id);
+  return ws;
 });
 
 // User settings
@@ -468,7 +568,7 @@ ipcMain.handle("set_zoom_level", (event, args: { level: number }) => {
 });
 
 // PTY operations
-ipcMain.handle("spawn_pty", async (event, args: { tabId: string; path: string; sessionType?: string; windowLabel?: string }) => {
+ipcMain.handle("spawn_pty", async (event, args: { tabId: string; path: string; sessionType?: string; windowLabel?: string; resumeArgs?: string[] }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) throw new Error("No window found for sender");
 
@@ -488,6 +588,7 @@ ipcMain.handle("spawn_pty", async (event, args: { tabId: string; path: string; s
     sender: event.sender,
     extraArgs,
     extraEnv,
+    resumeArgs: args.resumeArgs,
   });
 });
 
@@ -507,6 +608,10 @@ ipcMain.handle("pty:get-buffer", (_event, args: { tabId: string }) => {
   return getSessionBuffer(args.tabId);
 });
 
+ipcMain.handle("pty:has-session", (_event, args: { tabId: string }) => {
+  return hasPty(args.tabId);
+});
+
 ipcMain.handle(
   "pty:notify-session-finished",
   async (
@@ -518,6 +623,22 @@ ipcMain.handle(
     showSessionFinishedNotification(args, mainWindow);
   },
 );
+
+// Buffer persistence for session resume
+ipcMain.handle("pty:load-persisted-buffer", async (_event, args: { projectPath: string; tabId: string }) => {
+  const bp = await getBufferPersistence();
+  return bp.loadBuffer(args.projectPath, args.tabId);
+});
+
+ipcMain.handle("pty:delete-persisted-buffer", async (_event, args: { projectPath: string; tabId: string }) => {
+  const bp = await getBufferPersistence();
+  bp.deleteBuffer(args.projectPath, args.tabId);
+});
+
+ipcMain.handle("pty:clean-stale-buffers", async (_event, args: { projectPath: string; activeTabIds: string[] }) => {
+  const bp = await getBufferPersistence();
+  bp.cleanStaleBuffers(args.projectPath, args.activeTabIds);
+});
 
 // Git info
 ipcMain.handle("get_git_info_command", async (_event, args: { path: string }) => {
