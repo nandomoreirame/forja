@@ -27,11 +27,18 @@ describe("InlineEdit", () => {
   });
 
   it("auto-selects text when entering edit mode", () => {
-    render(<InlineEdit {...defaultProps} />);
-    fireEvent.doubleClick(screen.getByText("My Workspace"));
+    vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame"] });
+    try {
+      render(<InlineEdit {...defaultProps} />);
+      fireEvent.doubleClick(screen.getByText("My Workspace"));
+      // Focus is deferred to requestAnimationFrame so layout libraries can settle
+      vi.advanceTimersByTime(16);
 
-    const input = screen.getByRole("textbox");
-    expect(input).toHaveFocus();
+      const input = screen.getByRole("textbox");
+      expect(input).toHaveFocus();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("saves on Enter key", () => {
@@ -162,7 +169,7 @@ describe("InlineEdit", () => {
     });
 
     it("calls onEditingChange(false) on blur when controlled", () => {
-      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame"] });
       try {
         const onSave = vi.fn();
         const onEditingChange = vi.fn();
@@ -170,11 +177,15 @@ describe("InlineEdit", () => {
           <InlineEdit value="Tab Name" onSave={onSave} isEditing={true} onEditingChange={onEditingChange} />
         );
 
+        // Advance past rAF so the input receives focus
+        vi.advanceTimersByTime(16);
+
         const input = screen.getByRole("textbox");
         fireEvent.change(input, { target: { value: "Saved" } });
         // Use native blur() so JSDOM actually updates document.activeElement
         input.blur();
-        vi.advanceTimersByTime(1);
+        // Controlled mode uses a 150ms blur delay to allow layout libraries to settle
+        vi.advanceTimersByTime(200);
 
         expect(onSave).toHaveBeenCalledWith("Saved");
         expect(onEditingChange).toHaveBeenCalledWith(false);
