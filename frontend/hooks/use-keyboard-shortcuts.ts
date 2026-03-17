@@ -188,22 +188,12 @@ export function useKeyboardShortcuts({
         useTerminalZoomStore.getState().resetZoom();
         return;
       }
-      // Ctrl+1..9: switch tabs by position
-      if (mod && !event.shiftKey && !event.altKey && event.key >= "1" && event.key <= "9") {
-        event.preventDefault();
-        const projectPath = useFileTreeStore.getState().currentPath;
-        if (!projectPath) return;
-        const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
-        const index = parseInt(event.key, 10) - 1;
-        if (index < projectTabs.length) {
-          useTerminalTabsStore.getState().setActiveTab(projectTabs[index].id);
-        }
-        return;
-      }
       // Ctrl/Cmd+Shift+1..9: switch projects by position
-      if (mod && event.shiftKey && !event.altKey && event.key >= "1" && event.key <= "9") {
+      // Uses event.code (Digit1-Digit9) because event.key returns symbols (!, @, #) when Shift is held
+      const digitMatch = event.code?.match(/^Digit([1-9])$/);
+      if (mod && event.shiftKey && !event.altKey && digitMatch) {
         event.preventDefault();
-        const index = parseInt(event.key, 10) - 1;
+        const index = parseInt(digitMatch[1], 10) - 1;
         const { projects, switchToProject: swp } = useProjectsStore.getState();
         if (index < projects.length) {
           swp(projects[index].path);

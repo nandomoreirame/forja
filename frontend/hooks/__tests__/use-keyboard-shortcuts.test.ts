@@ -88,8 +88,13 @@ vi.mock("@/stores/git-diff", () => ({
   },
 }));
 
+const projectStoreActions = {
+  projects: [] as { path: string }[],
+  switchToProject: vi.fn(),
+};
+
 vi.mock("@/stores/projects", () => ({
-  useProjectsStore: { getState: () => ({ projects: [], switchToProject: vi.fn() }) },
+  useProjectsStore: { getState: () => projectStoreActions },
 }));
 
 vi.mock("@/stores/terminal-zoom", () => ({
@@ -404,68 +409,71 @@ describe("useKeyboardShortcuts project shortcuts", () => {
   });
 });
 
-describe("useKeyboardShortcuts tab switching with Ctrl+number", () => {
+describe("useKeyboardShortcuts project switching with Ctrl+Shift+number", () => {
   beforeEach(() => {
-    tabStoreActions.setActiveTab.mockReset();
-    tabStoreActions.getTabsForProject.mockReset();
+    projectStoreActions.switchToProject.mockReset();
+    projectStoreActions.projects = [];
   });
 
-  it("Ctrl+2 navigates to the second tab of the project", () => {
-    const projectTabs = [
-      { id: "tab-1", path: "/project", sessionType: "claude" },
-      { id: "tab-2", path: "/project", sessionType: "terminal" },
-      { id: "tab-3", path: "/project", sessionType: "gemini" },
+  it("Ctrl+Shift+1 switches to the first project", () => {
+    projectStoreActions.projects = [
+      { path: "/project-a" },
+      { path: "/project-b" },
     ];
-    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
 
     setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "2",
+        key: "!",
+        code: "Digit1",
         ctrlKey: true,
+        shiftKey: true,
       }),
     );
 
-    expect(tabStoreActions.setActiveTab).toHaveBeenCalledWith("tab-2");
+    expect(projectStoreActions.switchToProject).toHaveBeenCalledWith("/project-a");
   });
 
-  it("Ctrl+1 navigates to the first tab", () => {
-    const projectTabs = [
-      { id: "tab-1", path: "/project", sessionType: "claude" },
-      { id: "tab-2", path: "/project", sessionType: "terminal" },
+  it("Ctrl+Shift+2 switches to the second project", () => {
+    projectStoreActions.projects = [
+      { path: "/project-a" },
+      { path: "/project-b" },
+      { path: "/project-c" },
     ];
-    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
 
     setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "1",
+        key: "@",
+        code: "Digit2",
         ctrlKey: true,
+        shiftKey: true,
       }),
     );
 
-    expect(tabStoreActions.setActiveTab).toHaveBeenCalledWith("tab-1");
+    expect(projectStoreActions.switchToProject).toHaveBeenCalledWith("/project-b");
   });
 
-  it("Ctrl+9 does nothing when fewer than 9 tabs exist", () => {
-    const projectTabs = [
-      { id: "tab-1", path: "/project", sessionType: "claude" },
-      { id: "tab-2", path: "/project", sessionType: "terminal" },
+  it("Ctrl+Shift+9 does nothing when fewer than 9 projects exist", () => {
+    projectStoreActions.projects = [
+      { path: "/project-a" },
+      { path: "/project-b" },
     ];
-    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
 
     setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "9",
+        key: "(",
+        code: "Digit9",
         ctrlKey: true,
+        shiftKey: true,
       }),
     );
 
-    expect(tabStoreActions.setActiveTab).not.toHaveBeenCalled();
+    expect(projectStoreActions.switchToProject).not.toHaveBeenCalled();
   });
 });
 
