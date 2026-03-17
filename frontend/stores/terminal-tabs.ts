@@ -15,6 +15,8 @@ export interface TerminalTab {
   sessionType: SessionType;
   /** User-defined custom name for the tab. When set, overrides the auto-generated display name. */
   customName?: string;
+  /** Detected CLI session ID for resume. Set when the CLI reports its session ID via output parsing. */
+  cliSessionId?: string;
 }
 
 interface TerminalTabsState {
@@ -45,6 +47,8 @@ interface TerminalTabsState {
   /** Creates layout blocks for project tabs that were registered without blocks (e.g., non-active project tabs during session restore). */
   ensureBlocksForProjectTabs: (projectPath: string) => void;
   hasTab: (tabId: string) => boolean;
+  /** Stores the detected CLI session ID on the specified tab for future resume capability. */
+  setCliSessionId: (tabId: string, sessionId: string) => void;
   /** Saves current activeTabId for the given project path. */
   saveActiveTabForProject: (projectPath: string) => void;
   /** Restores activeTabId for the given project path (falls back to first tab or null). */
@@ -201,6 +205,13 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   hasTab: (tabId: string) => {
     return get().tabs.some((t) => t.id === tabId);
   },
+
+  setCliSessionId: (tabId: string, sessionId: string) =>
+    set((state) => ({
+      tabs: state.tabs.map((t) =>
+        t.id === tabId ? { ...t, cliSessionId: sessionId } : t
+      ),
+    })),
 
   saveActiveTabForProject: (projectPath: string) => {
     const { activeTabId, activeTabIdByProject } = get();

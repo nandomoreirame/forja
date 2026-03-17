@@ -8,6 +8,8 @@ interface TilingLayoutState {
   model: Model;
   tabCount: number;
   layoutByProject: Record<string, IJsonModel>;
+  /** The node ID of the tab currently being renamed (inline-edit active), or null. */
+  editingTabId: string | null;
 
   updateModel: (model: Model) => void;
   getModelJson: () => IJsonModel;
@@ -29,6 +31,8 @@ interface TilingLayoutState {
   updateFileTreeTabName: (projectName: string) => void;
   /** Renames a block (tab) node. Empty string resets to the default generated name. */
   renameBlock: (nodeId: string, name: string) => void;
+  /** Sets (or clears) the node ID of the tab being renamed. */
+  setEditingTabId: (id: string | null) => void;
 }
 
 let tabCounter = 0;
@@ -193,6 +197,41 @@ function stripEmptyTabsetsFromJson(json: IJsonModel): IJsonModel {
   };
 }
 
+/**
+ * Strips project-specific blocks (terminal, browser) from a layout JSON,
+ * preserving structural blocks (file-tree, file-preview, plugin, etc.).
+ * Used when switching to a project with no saved layout — the structural
+ * panes remain while project-specific content is cleared.
+ */
+const PROJECT_SPECIFIC_BLOCK_TYPES = new Set(["terminal", "browser"]);
+
+export function stripProjectBlocksFromJson(json: IJsonModel): IJsonModel {
+  function filterChildren(children: any[]): any[] {
+    return children
+      .map((child) => {
+        if (child.children) {
+          return { ...child, children: filterChildren(child.children) };
+        }
+        return child;
+      })
+      .filter((child) => {
+        // Remove project-specific tab blocks
+        if (child.type === "tab" && PROJECT_SPECIFIC_BLOCK_TYPES.has(child.component)) {
+          return false;
+        }
+        return true;
+      });
+  }
+
+  return {
+    ...json,
+    layout: {
+      ...json.layout,
+      children: filterChildren((json.layout as any).children ?? []),
+    },
+  };
+}
+
 /** Minimum width (px) for a tabset that holds a plugin block. */
 const PLUGIN_TABSET_MIN_WIDTH = 400;
 
@@ -324,6 +363,7 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
   model: Model.fromJson(DEFAULT_LAYOUT),
   tabCount: 0,
   layoutByProject: {},
+  editingTabId: null,
 
   updateModel: (model) => {
     removeEmptyTabsets(model);
@@ -345,6 +385,12 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
   restoreLayoutForProject: (projectPath) => {
     const saved = get().layoutByProject[projectPath];
     if (saved) {
+      // Skip model replacement when the saved layout matches the current
+      // model's JSON — avoids a full FlexLayout re-render (and flicker)
+      // when switching back to a project whose layout hasn't changed.
+      const currentJson = get().model.toJson();
+      if (JSON.stringify(currentJson) === JSON.stringify(saved)) return;
+
       try {
         const cleaned = stripEmptyTabsetsFromJson(saved);
         const model = Model.fromJson(cleaned);
@@ -355,7 +401,20 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
         set({ model: Model.fromJson(DEFAULT_LAYOUT), tabCount: 0 });
       }
     } else {
-      set({ model: Model.fromJson(DEFAULT_LAYOUT), tabCount: 0 });
+      // No saved layout for this project — keep structural blocks (file-tree,
+      // file-preview, plugin, etc.) but strip terminal/browser blocks that
+      // belong to the previous project.
+      const currentJson = get().model.toJson() as IJsonModel;
+      const stripped = stripProjectBlocksFromJson(currentJson);
+      try {
+        const cleaned = stripEmptyTabsetsFromJson(stripped);
+        const model = Model.fromJson(cleaned);
+        removeEmptyTabsets(model);
+        enforceBlockMinWidths(model);
+        set({ model, tabCount: countTabs(model) });
+      } catch {
+        set({ model: Model.fromJson(DEFAULT_LAYOUT), tabCount: 0 });
+      }
     }
   },
 
@@ -648,4 +707,6 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
 
     set({ model });
   },
+
+  setEditingTabId: (id) => set({ editingTabId: id }),
 }));

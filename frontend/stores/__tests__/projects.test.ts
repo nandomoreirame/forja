@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useProjectsStore } from "../projects";
+import { useWorkspaceStore } from "../workspace";
 
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
@@ -56,6 +57,7 @@ describe("useProjectsStore", () => {
       activeProjectPath: null,
       loading: false,
     });
+    useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
   });
 
   it("loads projects from IPC", async () => {
@@ -96,7 +98,7 @@ describe("useProjectsStore", () => {
 
     await useProjectsStore.getState().addProject("/home/user/new-project");
 
-    expect(invoke).toHaveBeenCalledWith("add_recent_project", { path: "/home/user/new-project" });
+    expect(invoke).toHaveBeenCalledWith("add_project_to_workspace", { workspaceId: "ws-test", projectPath: "/home/user/new-project" });
   });
 
   it("removes a project from the list and persists to disk", () => {
@@ -115,7 +117,7 @@ describe("useProjectsStore", () => {
     const { projects, activeProjectPath } = useProjectsStore.getState();
     expect(projects).toHaveLength(1);
     expect(activeProjectPath).toBe("/b");
-    expect(invoke).toHaveBeenCalledWith("remove_recent_project", { path: "/a" });
+    expect(invoke).toHaveBeenCalledWith("remove_project_from_workspace", { workspaceId: "ws-test", projectPath: "/a" });
   });
 
   it("switches to project and loads file tree", async () => {
@@ -276,7 +278,7 @@ describe("useProjectsStore", () => {
 
     useProjectsStore.getState().reorderProjects(2, 0);
 
-    expect(invoke).toHaveBeenCalledWith("reorder_recent_projects", {
+    expect(invoke).toHaveBeenCalledWith("reorder_workspace_projects", { workspaceId: "ws-test",
       paths: ["/c", "/a", "/b"],
     });
   });
@@ -340,7 +342,7 @@ describe("useProjectsStore", () => {
 
     useProjectsStore.getState().updateProject("/a/my-app", { name: "new-name" });
 
-    expect(invoke).toHaveBeenCalledWith("update_recent_project", {
+    expect(invoke).toHaveBeenCalledWith("update_workspace_project", { workspaceId: "ws-test",
       path: "/a/my-app",
       name: "new-name",
       icon_path: undefined,
@@ -356,7 +358,7 @@ describe("useProjectsStore", () => {
 
     useProjectsStore.getState().updateProject("/a/my-app", { iconPath: "/icons/custom.svg" });
 
-    expect(invoke).toHaveBeenCalledWith("update_recent_project", {
+    expect(invoke).toHaveBeenCalledWith("update_workspace_project", { workspaceId: "ws-test",
       path: "/a/my-app",
       name: undefined,
       icon_path: "/icons/custom.svg",
@@ -365,7 +367,7 @@ describe("useProjectsStore", () => {
 
   it("loadProjects maps icon_path from backend to iconPath", async () => {
     vi.mocked(invoke).mockImplementation(async (channel) => {
-      if (channel === "get_recent_projects") {
+      if (channel === "get_workspace_projects") {
         return [
           { path: "/a/app1", name: "app1", last_opened: "2026-01-01", icon_path: "/icons/saved.svg" },
         ];
@@ -382,7 +384,7 @@ describe("useProjectsStore", () => {
 
   it("loadProjects skips auto-detect for projects with persisted icon_path", async () => {
     vi.mocked(invoke).mockImplementation(async (channel) => {
-      if (channel === "get_recent_projects") {
+      if (channel === "get_workspace_projects") {
         return [
           { path: "/a/app1", name: "app1", last_opened: "2026-01-01", icon_path: "/icons/saved.svg" },
         ];
@@ -402,7 +404,7 @@ describe("useProjectsStore", () => {
 
   it("loads icons for all projects after loadProjects", async () => {
     vi.mocked(invoke).mockImplementation(async (channel) => {
-      if (channel === "get_recent_projects") {
+      if (channel === "get_workspace_projects") {
         return [
           { path: "/a/app1", name: "app1", last_opened: "2026-01-01" },
           { path: "/b/app2", name: "app2", last_opened: "2026-01-02" },

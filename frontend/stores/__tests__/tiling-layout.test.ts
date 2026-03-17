@@ -171,12 +171,69 @@ describe("tiling-layout store", () => {
       expect(restored).toContain("https://test.com");
     });
 
+    it("skips model replacement when saved layout matches current model", () => {
+      const store = useTilingLayoutStore.getState();
+
+      // Add a block, save, then restore the same project (JSON matches)
+      store.addBlock({ type: "browser", url: "https://test.com" });
+      store.saveLayoutForProject("/project-same");
+
+      // Capture model reference before restore
+      const modelBefore = useTilingLayoutStore.getState().model;
+
+      // Restore the same project — should NOT create a new Model
+      useTilingLayoutStore.getState().restoreLayoutForProject("/project-same");
+      const modelAfter = useTilingLayoutStore.getState().model;
+
+      // Same object reference = no unnecessary FlexLayout re-render
+      expect(modelAfter).toBe(modelBefore);
+    });
+
     it("falls back to default when no saved layout exists", () => {
       useTilingLayoutStore
         .getState()
         .restoreLayoutForProject("/nonexistent");
       const { model } = useTilingLayoutStore.getState();
       expect(model.getNodeById(TABSET_IDS.main)).toBeDefined();
+    });
+
+    it("preserves structural blocks (file-tree) and strips terminal blocks when no saved layout exists", () => {
+      const store = useTilingLayoutStore.getState();
+
+      // Add a file-tree block and two terminal blocks (simulating project A's layout)
+      store.addBlock(
+        { type: "file-tree", projectName: "ProjectA" },
+        TABSET_IDS.main,
+        "tab-file-tree",
+      );
+      store.addBlock(
+        { type: "terminal", tabId: "tab-1", sessionType: "claude" },
+        undefined,
+        "tab-1",
+      );
+      store.addBlock(
+        { type: "terminal", tabId: "tab-2", sessionType: "terminal" },
+        undefined,
+        "tab-2",
+      );
+
+      // Verify blocks exist before switch
+      expect(useTilingLayoutStore.getState().hasBlock("tab-file-tree")).toBe(true);
+      expect(useTilingLayoutStore.getState().hasBlock("tab-1")).toBe(true);
+      expect(useTilingLayoutStore.getState().hasBlock("tab-2")).toBe(true);
+
+      // Restore layout for a project with no saved state
+      useTilingLayoutStore.getState().restoreLayoutForProject("/new-project");
+
+      // File-tree block should be preserved
+      expect(useTilingLayoutStore.getState().hasBlock("tab-file-tree")).toBe(true);
+
+      // Terminal blocks should be stripped
+      expect(useTilingLayoutStore.getState().hasBlock("tab-1")).toBe(false);
+      expect(useTilingLayoutStore.getState().hasBlock("tab-2")).toBe(false);
+
+      // tabset-main should still exist
+      expect(useTilingLayoutStore.getState().model.getNodeById(TABSET_IDS.main)).toBeDefined();
     });
   });
 
@@ -1779,6 +1836,23 @@ describe("tiling-layout store", () => {
       expect(useTilingLayoutStore.getState().tabCount).toBe(0);
       useTilingLayoutStore.getState().restoreLayoutForProject("/p1");
       expect(useTilingLayoutStore.getState().tabCount).toBe(1);
+    });
+  });
+
+  describe("editingTabId", () => {
+    it("initializes as null", () => {
+      expect(useTilingLayoutStore.getState().editingTabId).toBeNull();
+    });
+
+    it("sets editingTabId", () => {
+      useTilingLayoutStore.getState().setEditingTabId("tab-1");
+      expect(useTilingLayoutStore.getState().editingTabId).toBe("tab-1");
+    });
+
+    it("clears editingTabId", () => {
+      useTilingLayoutStore.getState().setEditingTabId("tab-1");
+      useTilingLayoutStore.getState().setEditingTabId(null);
+      expect(useTilingLayoutStore.getState().editingTabId).toBeNull();
     });
   });
 });

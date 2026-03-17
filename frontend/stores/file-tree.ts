@@ -2,6 +2,7 @@ import { invoke, open } from "@/lib/ipc";
 import { create } from "zustand";
 import { useFilePreviewStore } from "./file-preview";
 import { useGitDiffStore } from "./git-diff";
+import { useWorkspaceStore } from "./workspace";
 
 export const APP_NAME = "Forja";
 export const FILE_TREE_MAX_DEPTH = 2;
@@ -111,9 +112,12 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
       activeProjectPath: projectPath,
       tree: updatedTrees[projectPath] ?? null,
     });
-    invoke("add_recent_project", { path: projectPath }).catch((err) =>
-      console.warn("[file-tree] Failed to add recent project:", err),
-    );
+    const wsId = useWorkspaceStore.getState().activeWorkspaceId;
+    if (wsId) {
+      invoke("add_project_to_workspace", { workspaceId: wsId, projectPath }).catch((err) =>
+        console.warn("[file-tree] Failed to add project to workspace:", err),
+      );
+    }
     invoke("start_watcher", { path: projectPath }).catch((err) =>
       console.warn("[file-tree] Failed to start watcher:", err),
     );

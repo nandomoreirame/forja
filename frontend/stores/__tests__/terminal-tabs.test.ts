@@ -612,4 +612,37 @@ describe("useTerminalTabsStore", () => {
       expect(lastActive).toBeLessThanOrEqual(after);
     });
   });
+
+  describe("setCliSessionId", () => {
+    it("setCliSessionId stores the session ID on the correct tab", () => {
+      const id1 = createTab("/a", "claude");
+
+      useTerminalTabsStore.getState().setCliSessionId(id1, "session-abc-123");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].cliSessionId).toBe("session-abc-123");
+    });
+
+    it("setCliSessionId does not affect other tabs", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "claude");
+
+      useTerminalTabsStore.getState().setCliSessionId(id1, "session-abc-123");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].cliSessionId).toBe("session-abc-123");
+      expect(state.tabs[1].cliSessionId).toBeUndefined();
+    });
+
+    it("cliSessionId is preserved through other state changes", () => {
+      const id1 = createTab("/a", "claude");
+
+      useTerminalTabsStore.getState().setCliSessionId(id1, "session-persist-xyz");
+      useTerminalTabsStore.getState().markTabExited(id1);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].cliSessionId).toBe("session-persist-xyz");
+      expect(state.tabs[0].isRunning).toBe(false);
+    });
+  });
 });
