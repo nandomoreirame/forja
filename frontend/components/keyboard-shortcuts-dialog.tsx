@@ -32,6 +32,7 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
       { label: "Open Files", keys: [mod, "Shift", "E"] },
       { label: "Open Browser", keys: [mod, "Shift", "B"] },
       { label: "Close File Preview", keys: [mod, "W"] },
+      { label: "Toggle Focus Mode", keys: [mod, "Shift", "M"] },
       { label: "Keyboard Shortcuts", keys: [mod, "?"] },
       { label: "Open Settings", keys: [mod, ","] },
     ],

@@ -27,6 +27,7 @@ import { ptyDispatcher } from "./lib/pty-dispatcher";
 import {
   loadPersistedSessionState,
 } from "./lib/session-persistence";
+import { cn } from "./lib/utils";
 import { useShallow } from "zustand/react/shallow";
 import { useFilePreviewStore } from "./stores/file-preview";
 import { useFileTreeStore } from "./stores/file-tree";
@@ -45,7 +46,9 @@ import { useProjectsStore } from "./stores/projects";
 import { useWorkspaceStore } from "./stores/workspace";
 
 import { usePluginsStore } from "./stores/plugins";
+import { useFocusModeStore } from "./stores/focus-mode";
 import { PluginPermissionDialog } from "./components/plugin-permission-dialog";
+import { FocusModeIndicator } from "./components/focus-mode-indicator";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
 import {
   usePanelPreferences,
@@ -734,15 +737,21 @@ function App({
   // Keyboard shortcuts extracted to dedicated hook
   useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab });
 
+  const isFocusMode = useFocusModeStore((s) => s.isActive);
+
   return (
     <AppErrorBoundary>
       <div className="relative flex h-full flex-col bg-ctp-mantle">
-        <Titlebar />
+        <div className={cn("transition-all duration-200", isFocusMode && "h-0 overflow-hidden opacity-0")}>
+          <Titlebar />
+        </div>
         {panelPrefsLoaded && (
           <div className="flex flex-1 overflow-hidden">
-            <ProjectSidebar
-              onOpenProject={() => useFileTreeStore.getState().openProject()}
-            />
+            <div className={cn("transition-all duration-200", isFocusMode && "w-0 overflow-hidden opacity-0")}>
+              <ProjectSidebar
+                onOpenProject={() => useFileTreeStore.getState().openProject()}
+              />
+            </div>
             <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-ctp-surface0 bg-ctp-base">
             {hasProject ? (
               sessionRestoreDone ? <TilingLayout /> : null
@@ -752,9 +761,12 @@ function App({
               <EmptyState />
             )}
             </div>
-            <RightSidebar hasProject={hasProject} />
+            <div className={cn("transition-all duration-200", isFocusMode && "w-0 overflow-hidden opacity-0")}>
+              <RightSidebar hasProject={hasProject} />
+            </div>
           </div>
         )}
+        {isFocusMode && <FocusModeIndicator />}
         <Suspense fallback={null}>
           <CommandPalette />
         </Suspense>

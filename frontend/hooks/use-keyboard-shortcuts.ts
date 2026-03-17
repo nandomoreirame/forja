@@ -9,6 +9,7 @@ import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
+import { useFocusModeStore } from "@/stores/focus-mode";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
 interface UseKeyboardShortcutsOptions {
@@ -171,6 +172,12 @@ export function useKeyboardShortcuts({
           undefined,
           blockId,
         );
+        return;
+      }
+      // Ctrl/Cmd+Shift+M — toggle focus mode
+      if (mod && event.shiftKey && event.key.toLowerCase() === "m") {
+        event.preventDefault();
+        useFocusModeStore.getState().toggleFocusMode();
         return;
       }
       if (mod && event.altKey && (event.key === "=" || event.key === "+")) {

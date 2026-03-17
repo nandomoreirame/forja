@@ -10,6 +10,7 @@ import { useGitStatusStore } from "@/stores/git-status";
 import { useThemeStore } from "@/stores/theme";
 import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useProjectsStore } from "@/stores/projects";
+import { useFocusModeStore } from "@/stores/focus-mode";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
 import {
   ChevronsDownUp,
@@ -20,6 +21,7 @@ import {
   Info,
   Keyboard,
   Loader2,
+  Minimize2,
   Palette,
   Plus,
   RefreshCw,
@@ -174,6 +176,9 @@ export function CommandPalette() {
         diffState.selectChangedFile(projectPath, targetPath);
         break;
       }
+      case "toggle-focus-mode":
+        useFocusModeStore.getState().toggleFocusMode();
+        break;
       case "toggle-diff-mode": {
         const diff = useGitDiffStore.getState();
         diff.setDiffMode(diff.diffMode === "split" ? "unified" : "split");
@@ -368,6 +373,14 @@ export function CommandPalette() {
                 <Globe className="h-4 w-4" strokeWidth={1.5} />
                 Open Browser
                 <CommandShortcut>{mod}+Shift+B</CommandShortcut>
+              </CommandItem>
+              <CommandItem
+                value="Toggle Focus Mode"
+                onSelect={() => handleCommand("toggle-focus-mode")}
+              >
+                <Minimize2 className="h-4 w-4" strokeWidth={1.5} />
+                Toggle Focus Mode
+                <CommandShortcut>{mod}+Shift+M</CommandShortcut>
               </CommandItem>
               <CommandItem
                 value="Collapse All Folders"

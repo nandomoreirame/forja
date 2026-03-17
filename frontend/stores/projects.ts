@@ -158,6 +158,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       { useRightPanelStore },
       { usePluginsStore },
       { useFileTreeStore },
+      { useFocusModeStore },
     ] = await Promise.all([
       import("./tiling-layout"),
       import("./file-preview"),
@@ -166,9 +167,15 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       import("./right-panel"),
       import("./plugins"),
       import("./file-tree"),
+      import("./focus-mode"),
     ]);
 
     // --- Synchronous state changes (React 18 batches into one render) ---
+
+    // Exit focus mode before switching projects to avoid snapshot conflicts
+    if (useFocusModeStore.getState().isActive) {
+      useFocusModeStore.getState().exitFocusMode();
+    }
 
     set({ activeProjectPath: projectPath });
     get().markProjectAsRead(projectPath);
