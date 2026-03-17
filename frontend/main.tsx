@@ -13,16 +13,27 @@ import("@fontsource/geist-sans/600.css");
 import("@fontsource/geist-sans/700.css");
 import("@fontsource-variable/jetbrains-mono/index.css");
 
-function getInitialProjectPath(): string | null {
+function getInitialParams(): {
+  projectPath: string | null;
+  workspaceId: string | null;
+} {
   const params = new URLSearchParams(window.location.search);
-  const project = params.get("project");
-  return project ? decodeURIComponent(project) : null;
+  const project = params.get("project") || params.get("path");
+  const workspace = params.get("workspace");
+  return {
+    projectPath: project ? decodeURIComponent(project) : null,
+    workspaceId: workspace ? decodeURIComponent(workspace) : null,
+  };
 }
 
-const initialProjectPath = getInitialProjectPath();
+const { projectPath: initialProjectPath, workspaceId: initialWorkspaceId } =
+  getInitialParams();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App initialProjectPath={initialProjectPath} />
+    <App
+      initialProjectPath={initialProjectPath}
+      initialWorkspaceId={initialWorkspaceId}
+    />
   </React.StrictMode>,
 );

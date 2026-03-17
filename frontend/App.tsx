@@ -26,7 +26,6 @@ import { Titlebar } from "./components/titlebar";
 import { ptyDispatcher } from "./lib/pty-dispatcher";
 import {
   loadPersistedSessionState,
-  savePersistedSessionState,
 } from "./lib/session-persistence";
 import { useShallow } from "zustand/react/shallow";
 import { useFilePreviewStore } from "./stores/file-preview";
@@ -43,6 +42,7 @@ import type { ThemeDefinition } from "@/themes";
 import { applyBackgroundOpacity } from "@/themes/apply";
 import { usePerformanceStore } from "./stores/performance";
 import { useProjectsStore } from "./stores/projects";
+import { useWorkspaceStore } from "./stores/workspace";
 
 import { usePluginsStore } from "./stores/plugins";
 import { PluginPermissionDialog } from "./components/plugin-permission-dialog";
@@ -80,15 +80,15 @@ class AppErrorBoundary extends Component<
       return (
         <div className="flex h-full flex-col items-center justify-center gap-4 bg-ctp-base p-8">
           <AlertCircle className="h-12 w-12 text-ctp-red" strokeWidth={1.5} />
-          <h1 className="text-lg font-semibold text-ctp-text">
+          <h1 className="text-app-lg font-semibold text-ctp-text">
             Something went wrong
           </h1>
-          <p className="max-w-md text-center text-sm text-ctp-overlay1">
+          <p className="max-w-md text-center text-app text-ctp-overlay1">
             {this.state.error?.message || "An unexpected error occurred."}
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="rounded-md bg-ctp-surface0 px-4 py-2 text-sm text-ctp-text transition-colors hover:bg-ctp-surface1"
+            className="rounded-md bg-ctp-surface0 px-4 py-2 text-app text-ctp-text transition-colors hover:bg-ctp-surface1"
           >
             Try Again
           </button>
@@ -128,17 +128,17 @@ function EmptyState() {
       <div className="flex flex-col items-center gap-4">
         <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
         <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
-        <p className="text-sm text-ctp-overlay1">
+        <p className="text-app text-ctp-overlay1">
           A dedicated desktop client for vibe coders
         </p>
       </div>
       <div className="flex flex-col items-center gap-3">
-        <p className="text-sm text-ctp-overlay1">
-          Click <kbd className="rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-xs">+</kbd> in the sidebar to add a project.
+        <p className="text-app text-ctp-overlay1">
+          Click <kbd className="rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-app-sm">+</kbd> in the sidebar to add a project.
         </p>
         <button
           onClick={openProject}
-          className="flex items-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
+          className="flex items-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-app text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
         >
           <Plus className="h-4 w-4" strokeWidth={1.5} />
           Add Project
@@ -148,7 +148,13 @@ function EmptyState() {
   );
 }
 
-function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
+function App({
+  initialProjectPath,
+  initialWorkspaceId,
+}: {
+  initialProjectPath?: string | null;
+  initialWorkspaceId?: string | null;
+}) {
   const { tree, currentPath, trees, isSidebarOpen } = useFileTreeStore(
     useShallow((s) => ({
       tree: s.tree,
@@ -172,10 +178,11 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   );
   const [claudeNotFound, setClaudeNotFound] = useState(false);
   const [sessionRestoreDone, setSessionRestoreDone] = useState(false);
+  const [workspacesLoaded, setWorkspacesLoaded] = useState(false);
   const {
     loaded: panelPrefsLoaded,
   } =
-    usePanelPreferences();
+    usePanelPreferences(currentPath);
   const hasProject = Boolean((tree && currentPath) || Object.keys(trees).length > 0);
   const tilingTabCount = useTilingLayoutStore((s) => s.tabCount);
 
@@ -185,10 +192,16 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     });
   }, []);
 
-  // Load projects on mount for ProjectSidebar
+  // Load workspaces first, then projects for ProjectSidebar.
+  // Workspaces must be loaded before projects because loadProjects() needs activeWorkspaceId.
+  // Skip when opening a workspace window — the workspace activation handles its own projects.
   useEffect(() => {
-    useProjectsStore.getState().loadProjects();
-  }, []);
+    if (initialWorkspaceId) return;
+    useWorkspaceStore.getState().loadWorkspaces().then(() => {
+      setWorkspacesLoaded(true);
+      useProjectsStore.getState().loadProjects();
+    });
+  }, [initialWorkspaceId]);
 
   // Load performance mode on mount (lite-mode detection)
   useEffect(() => {
@@ -198,21 +211,72 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
   // Restore previous user session when opening app without explicit route params.
   // Waits for panelPrefsLoaded so the structural layout (tabset arrangement,
   // sizes) is already in the model before terminal blocks are added via addTab().
-  // This prevents duplicate tabs on reload caused by both the layout JSON and
-  // session restore independently creating terminal blocks.
+  // Also waits for workspacesLoaded so activeWorkspaceId is available for
+  // reading saved session state from config.json.
+  //
+  // When initialWorkspaceId is set, this is a NEW workspace window — activate
+  // that workspace (which clears file tree and project sidebar) so the window
+  // opens empty with the correct workspace selected.
   useEffect(() => {
     if (initialProjectPath) {
       setSessionRestoreDone(true);
       return;
     }
 
-    if (!panelPrefsLoaded) return;
+    if (initialWorkspaceId) {
+      // Wait for panel preferences (including layout) to load first, then reset.
+      // This avoids a race where resetToDefault() runs before the old layout
+      // finishes loading, causing the stale layout to overwrite our reset.
+      if (!panelPrefsLoaded) return;
+
+      let cancelled = false;
+      const activateNewWorkspace = async () => {
+        const wsStore = useWorkspaceStore.getState();
+        await wsStore.loadWorkspaces();
+        await wsStore.activateWorkspace(initialWorkspaceId);
+        // Reset tiling layout and terminal tabs so the new workspace window
+        // starts completely empty with no panels or sessions from other workspaces.
+        useTilingLayoutStore.getState().resetToDefault();
+        useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
+        if (!cancelled) setSessionRestoreDone(true);
+      };
+      activateNewWorkspace();
+      return () => { cancelled = true; };
+    }
+
+    if (!panelPrefsLoaded || !workspacesLoaded) return;
 
     let cancelled = false;
 
     const restore = async () => {
-      const snapshot = loadPersistedSessionState();
-      if (!snapshot) {
+      // Restore from config.json (workspace-scoped) instead of localStorage
+      const wsStore = useWorkspaceStore.getState();
+      const wsId = wsStore.activeWorkspaceId;
+      const workspace = wsStore.workspaces.find((w) => w.id === wsId);
+      const projectPath = workspace?.lastActiveProjectPath;
+
+      // Fallback: try localStorage for users upgrading from older versions
+      if (!wsId || !projectPath) {
+        const snapshot = loadPersistedSessionState();
+        if (!snapshot) {
+          if (!cancelled) setSessionRestoreDone(true);
+          return;
+        }
+        // One-time migration from localStorage
+        await restoreFromSnapshot(snapshot, cancelled);
+        // Clear localStorage after successful migration
+        try { window.localStorage.removeItem("forja:session:v1"); } catch { /* ignore */ }
+        if (!cancelled) setSessionRestoreDone(true);
+        return;
+      }
+
+      const uiState = await invoke<{
+        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string }>;
+        activeTabIndex?: number;
+        previewFile?: string | null;
+      } | null>("get_project_ui_state", { workspaceId: wsId, path: projectPath });
+
+      if (!uiState || !uiState.tabs || uiState.tabs.length === 0) {
         if (!cancelled) setSessionRestoreDone(true);
         return;
       }
@@ -221,55 +285,46 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       const tabsStore = useTerminalTabsStore.getState();
 
       // 1) Restore project
-      if (snapshot.activeProjectPath) {
-        await useFileTreeStore.getState().openProjectPath(snapshot.activeProjectPath);
-        // Also register in projects store
-        await useProjectsStore.getState().addProject(snapshot.activeProjectPath);
-      }
+      await useFileTreeStore.getState().openProjectPath(projectPath);
+      await useProjectsStore.getState().addProject(projectPath);
 
       const effectiveProjectPath = useFileTreeStore.getState().currentPath;
 
       // 2) Restore preview file
-      if (snapshot.preview.isOpen && snapshot.preview.currentFile && effectiveProjectPath) {
-        await previewStore.loadFile(snapshot.preview.currentFile);
+      if (uiState.previewFile && effectiveProjectPath) {
+        await previewStore.loadFile(uiState.previewFile);
       }
 
-      // 3) Restore terminal tabs
-      // Only create layout blocks (addTab) for the ACTIVE project's tabs.
-      // Other projects' tabs are registered as metadata only (registerTab)
-      // to prevent layout contamination across projects.
-      useTerminalTabsStore.setState({
-        tabs: [],
-        activeTabId: null,
-      });
+      // 3) Restore terminal tabs from config.json
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
 
       const layoutStore = useTilingLayoutStore.getState();
       const activeProjectTabIds: string[] = [];
-      for (const tab of snapshot.terminal.tabs) {
-        const tabPath = tab.path || effectiveProjectPath || snapshot.activeProjectPath || "";
+      for (const tab of uiState.tabs) {
+        const tabPath = tab.path || effectiveProjectPath || projectPath;
         if (!tabPath) continue;
 
         const isActiveProject = tabPath === effectiveProjectPath;
 
         if (isActiveProject) {
-          // Active project: create tab WITH layout block
           const id = tab.id && layoutStore.hasBlock(tab.id)
             ? tab.id
             : tabsStore.nextTabId();
-          tabsStore.addTab(id, tabPath, tab.sessionType);
-          if (tab.customName) {
-            tabsStore.renameTab(id, tab.customName);
+          tabsStore.addTab(id, tabPath, tab.sessionType as import("@/lib/cli-registry").SessionType);
+          if (tab.cliSessionId) {
+            tabsStore.setCliSessionId(id, tab.cliSessionId);
           }
           activeProjectTabIds.push(id);
         } else {
-          // Non-active project: register metadata only, no layout block
           const id = tab.id || tabsStore.nextTabId();
-          tabsStore.registerTab(id, tabPath, tab.sessionType, tab.customName);
+          tabsStore.registerTab(id, tabPath, tab.sessionType as import("@/lib/cli-registry").SessionType);
+          if (tab.cliSessionId) {
+            tabsStore.setCliSessionId(id, tab.cliSessionId);
+          }
         }
       }
 
-      // Clean up orphaned terminal blocks from the layout model.
-      // Only keep blocks that belong to active project's restored tabs.
+      // Clean up orphaned terminal blocks
       const activeIds = new Set(activeProjectTabIds);
       const orphanIds: string[] = [];
       layoutStore.model.visitNodes((node) => {
@@ -286,16 +341,78 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
       }
 
       if (activeProjectTabIds.length > 0) {
-        // Find the active tab among the active project's tabs.
-        const snapshotActiveTab = snapshot.terminal.tabs[snapshot.terminal.activeTabIndex];
+        const activeTabIndex = uiState.activeTabIndex ?? 0;
+        const snapshotActiveTab = uiState.tabs[activeTabIndex];
         const matchingId = snapshotActiveTab?.id && activeProjectTabIds.includes(snapshotActiveTab.id)
           ? snapshotActiveTab.id
           : activeProjectTabIds[0];
         tabsStore.setActiveTab(matchingId);
       }
 
+      // Clean stale persisted buffers (buffers for tabs that no longer exist)
+      if (effectiveProjectPath) {
+        const activeIds = useTerminalTabsStore.getState().tabs
+          .filter(t => t.path === effectiveProjectPath)
+          .map(t => t.id);
+        invoke("pty:clean-stale-buffers", {
+          projectPath: effectiveProjectPath,
+          activeTabIds: activeIds,
+        }).catch(() => {});
+      }
+
       if (!cancelled) setSessionRestoreDone(true);
     };
+
+    // Helper: restore from legacy localStorage snapshot (migration path)
+    async function restoreFromSnapshot(snapshot: NonNullable<ReturnType<typeof loadPersistedSessionState>>, cancelled: boolean) {
+      const previewStore = useFilePreviewStore.getState();
+      const tabsStore = useTerminalTabsStore.getState();
+
+      if (snapshot.activeProjectPath) {
+        await useFileTreeStore.getState().openProjectPath(snapshot.activeProjectPath);
+        await useProjectsStore.getState().addProject(snapshot.activeProjectPath);
+      }
+
+      const effectiveProjectPath = useFileTreeStore.getState().currentPath;
+
+      if (snapshot.preview.isOpen && snapshot.preview.currentFile && effectiveProjectPath) {
+        await previewStore.loadFile(snapshot.preview.currentFile);
+      }
+
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
+      const layoutStore = useTilingLayoutStore.getState();
+      const activeProjectTabIds: string[] = [];
+
+      for (const tab of snapshot.terminal.tabs) {
+        const tabPath = tab.path || effectiveProjectPath || snapshot.activeProjectPath || "";
+        if (!tabPath) continue;
+        const isActiveProject = tabPath === effectiveProjectPath;
+        if (isActiveProject) {
+          const id = tab.id && layoutStore.hasBlock(tab.id) ? tab.id : tabsStore.nextTabId();
+          tabsStore.addTab(id, tabPath, tab.sessionType);
+          activeProjectTabIds.push(id);
+        } else {
+          const id = tab.id || tabsStore.nextTabId();
+          tabsStore.registerTab(id, tabPath, tab.sessionType);
+        }
+      }
+
+      const activeIds = new Set(activeProjectTabIds);
+      const orphanIds: string[] = [];
+      layoutStore.model.visitNodes((node) => {
+        if (node.getType() === "tab" && (node as any).getComponent?.() === "terminal" && !activeIds.has(node.getId())) {
+          orphanIds.push(node.getId());
+        }
+      });
+      for (const orphanId of orphanIds) layoutStore.removeBlock(orphanId);
+
+      if (activeProjectTabIds.length > 0) {
+        const snapshotActiveTab = snapshot.terminal.tabs[snapshot.terminal.activeTabIndex];
+        const matchingId = snapshotActiveTab?.id && activeProjectTabIds.includes(snapshotActiveTab.id)
+          ? snapshotActiveTab.id : activeProjectTabIds[0];
+        tabsStore.setActiveTab(matchingId);
+      }
+    }
 
     restore().catch((err) => {
       console.warn("[App] Failed to restore session:", err);
@@ -305,7 +422,7 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     return () => {
       cancelled = true;
     };
-  }, [initialProjectPath, panelPrefsLoaded]);
+  }, [initialProjectPath, initialWorkspaceId, panelPrefsLoaded, workspacesLoaded]);
 
   // Load user settings on mount and listen for changes
   useEffect(() => {
@@ -346,6 +463,14 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     // App (UI) font settings
     document.documentElement.style.setProperty("--font-sans", settings.app.fontFamily);
     document.documentElement.style.setProperty("font-size", `${settings.app.fontSize}px`);
+    // App font-size scale (derived from base setting)
+    const fs = settings.app.fontSize;
+    document.documentElement.style.setProperty("--app-fs", `${fs}px`);
+    document.documentElement.style.setProperty("--app-fs-sm", `${fs - 2}px`);
+    document.documentElement.style.setProperty("--app-fs-xs", `${fs - 4}px`);
+    document.documentElement.style.setProperty("--app-fs-2xs", `${Math.max(fs - 6, 7)}px`);
+    document.documentElement.style.setProperty("--app-fs-lg", `${fs + 2}px`);
+    document.documentElement.style.setProperty("--app-fs-xl", `${fs + 6}px`);
     // Editor/Preview (monospace areas) font settings
     document.documentElement.style.setProperty("--font-mono", settings.editor.fontFamily);
     document.documentElement.style.setProperty("--editor-font-size", `${settings.editor.fontSize}px`);
@@ -549,39 +674,39 @@ function App({ initialProjectPath }: { initialProjectPath?: string | null }) {
     };
   }, []);
 
-  // Persist session snapshot across renderer reloads
+  // Persist session snapshot across renderer reloads.
+  // Secondary workspace windows (initialWorkspaceId) must NOT write to
+  // shared localStorage — it would overwrite the primary window's session.
   useEffect(() => {
     if (!sessionRestoreDone) return;
-    const activeTabIndex = tabs.findIndex((tab) => tab.id === activeTabId);
-    savePersistedSessionState({
-      activeWorkspaceId: null, // deprecated, keep for backward compat
-      activeProjectPath: currentPath,
-      preview: {
-        isOpen: isPreviewOpen,
-        currentFile: previewCurrentFile,
-      },
-      terminal: {
-        activeTabIndex: activeTabIndex >= 0 ? activeTabIndex : 0,
-        tabs: tabs.map((tab) => ({
-          id: tab.id,
-          path: tab.path,
-          sessionType: tab.sessionType,
-          ...(tab.customName ? { customName: tab.customName } : {}),
-        })),
-      },
-    });
+    if (initialWorkspaceId) return;
 
-    // Also persist tab data (session types + custom names) to config.json per project
+    // Persist full tab data (id, path, sessionType, activeTabIndex) to config.json per project
     if (currentPath) {
-      invoke("save_project_ui_state", {
-        path: currentPath,
-        state: {
-          tabs: tabs.map((tab) => ({
-            sessionType: tab.sessionType,
-            ...(tab.customName ? { customName: tab.customName } : {}),
-          })),
-        },
-      }).catch((err: unknown) => console.warn("[App] Failed to save project tab state:", err));
+      const wsId = useWorkspaceStore.getState().activeWorkspaceId;
+      if (wsId) {
+        // Filter tabs belonging to this project only — other projects have their own .forja/config.json
+        const projectTabs = tabs.filter((tab) => tab.path === currentPath);
+        const activeTabIndex = projectTabs.findIndex((tab) => tab.id === activeTabId);
+        invoke("save_project_ui_state", {
+          workspaceId: wsId,
+          path: currentPath,
+          state: {
+            tabs: projectTabs.map((tab) => ({
+              id: tab.id,
+              sessionType: tab.sessionType,
+              ...(tab.cliSessionId ? { cliSessionId: tab.cliSessionId } : {}),
+              ...(!tab.isRunning ? { exited: true } : {}),
+            })),
+            activeTabIndex: activeTabIndex >= 0 ? activeTabIndex : 0,
+          },
+        }).catch((err: unknown) => console.warn("[App] Failed to save project tab state:", err));
+
+        invoke("set_last_active_project_path", {
+          workspaceId: wsId,
+          projectPath: currentPath,
+        }).catch((err: unknown) => console.warn("[App] Failed to save last active project path:", err));
+      }
     }
   }, [
     sessionRestoreDone,
