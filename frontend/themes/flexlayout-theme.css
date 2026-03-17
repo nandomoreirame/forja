@@ -131,6 +131,15 @@
   transition: background-color 0.15s ease;
 }
 
+/* Consistent tab strip height — prevents empty tabsets from being shorter than
+   tabsets with tabs. The tab button content (icon + text + padding) naturally
+   makes the strip ~26-28px; without tabs the toolbar alone is only ~16px.
+   min-height ensures panes align regardless of tab count. */
+.flexlayout__tabset_tabbar_outer {
+  min-height: 30px;
+  align-items: center;
+}
+
 /* Tab button icon and content alignment */
 .flexlayout__tab_button_leading {
   display: flex;
