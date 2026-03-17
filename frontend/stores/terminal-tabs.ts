@@ -25,7 +25,6 @@ interface TerminalTabsState {
   counter: number;
   isTerminalFullscreen: boolean;
   activeTabIdByProject: Record<string, string>;
-  tabLastActiveAt: Record<string, number>;
   isFullscreenByProject: Record<string, boolean>;
 
   nextTabId: () => string;
@@ -47,6 +46,11 @@ interface TerminalTabsState {
   /** Creates layout blocks for project tabs that were registered without blocks (e.g., non-active project tabs during session restore). */
   ensureBlocksForProjectTabs: (projectPath: string) => void;
   hasTab: (tabId: string) => boolean;
+  /** Serializes tabs for a specific project path into a disk-persistable format. */
+  serializeTabsForSave: (projectPath: string) => {
+    tabs: Array<{ id: string; sessionType: string; cliSessionId?: string; exited?: boolean }>;
+    activeTabIndex: number;
+  };
   /** Stores the detected CLI session ID on the specified tab for future resume capability. */
   setCliSessionId: (tabId: string, sessionId: string) => void;
   /** Saves current activeTabId for the given project path. */
@@ -65,7 +69,6 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   counter: 0,
   isTerminalFullscreen: false,
   activeTabIdByProject: {},
-  tabLastActiveAt: {},
   isFullscreenByProject: {},
 
   nextTabId: () => {
@@ -86,7 +89,6 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     set((state) => ({
       tabs: [...state.tabs, tab],
       activeTabId: id,
-      tabLastActiveAt: { ...state.tabLastActiveAt, [id]: Date.now() },
     }));
 
     // Create a terminal block in the tiling layout (use tabId as nodeId)
@@ -140,10 +142,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   },
 
   setActiveTab: (id: string) =>
-    set((state) => ({
-      activeTabId: id,
-      tabLastActiveAt: { ...state.tabLastActiveAt, [id]: Date.now() },
-    })),
+    set({ activeTabId: id }),
 
   markTabExited: (id: string) =>
     set((state) => ({
@@ -204,6 +203,20 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
 
   hasTab: (tabId: string) => {
     return get().tabs.some((t) => t.id === tabId);
+  },
+
+  serializeTabsForSave: (projectPath: string) => {
+    const projectTabs = get().tabs.filter((t) => t.path === projectPath);
+    const activeIdx = projectTabs.findIndex((t) => t.id === get().activeTabId);
+    return {
+      tabs: projectTabs.map((tab) => ({
+        id: tab.id,
+        sessionType: tab.sessionType,
+        ...(tab.cliSessionId ? { cliSessionId: tab.cliSessionId } : {}),
+        ...(!tab.isRunning ? { exited: true } : {}),
+      })),
+      activeTabIndex: activeIdx >= 0 ? activeIdx : 0,
+    };
   },
 
   setCliSessionId: (tabId: string, sessionId: string) =>

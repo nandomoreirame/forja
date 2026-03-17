@@ -23,7 +23,6 @@ describe("useTerminalTabsStore", () => {
       activeTabId: null,
       counter: 0,
       isTerminalFullscreen: false,
-      tabLastActiveAt: {},
     });
   });
 
@@ -586,30 +585,88 @@ describe("useTerminalTabsStore", () => {
 
   });
 
-  describe("tabLastActiveAt tracking", () => {
-    it("initializes with empty tabLastActiveAt", () => {
-      expect(useTerminalTabsStore.getState().tabLastActiveAt).toEqual({});
+
+  describe("serializeTabsForSave", () => {
+    it("returns empty tabs array and activeTabIndex 0 for unknown project", () => {
+      createTab("/project-a", "claude");
+
+      const result = useTerminalTabsStore.getState().serializeTabsForSave("/unknown");
+
+      expect(result).toEqual({ tabs: [], activeTabIndex: 0 });
     });
 
-    it("records timestamp when setActiveTab is called", () => {
-      const id1 = createTab("/a");
-      const before = Date.now();
+    it("serializes tabs for a specific project with id and sessionType", () => {
+      const id1 = createTab("/project-a", "claude");
+      const id2 = createTab("/project-a", "terminal");
+      createTab("/project-b", "gemini");
+
+      const result = useTerminalTabsStore.getState().serializeTabsForSave("/project-a");
+
+      expect(result.tabs).toHaveLength(2);
+      expect(result.tabs[0]).toEqual({ id: id1, sessionType: "claude" });
+      expect(result.tabs[1]).toEqual({ id: id2, sessionType: "terminal" });
+    });
+
+    it("includes cliSessionId when present", () => {
+      const id1 = createTab("/project-a", "claude");
+      useTerminalTabsStore.getState().setCliSessionId(id1, "session-abc");
+
+      const result = useTerminalTabsStore.getState().serializeTabsForSave("/project-a");
+
+      expect(result.tabs[0]).toEqual({
+        id: id1,
+        sessionType: "claude",
+        cliSessionId: "session-abc",
+      });
+    });
+
+    it("omits cliSessionId when not present", () => {
+      const id1 = createTab("/project-a", "claude");
+
+      const result = useTerminalTabsStore.getState().serializeTabsForSave("/project-a");
+
+      expect(result.tabs[0]).not.toHaveProperty("cliSessionId");
+    });
+
+    it("includes exited flag when tab is not running", () => {
+      const id1 = createTab("/project-a", "claude");
+      useTerminalTabsStore.getState().markTabExited(id1);
+
+      const result = useTerminalTabsStore.getState().serializeTabsForSave("/project-a");
+
+      expect(result.tabs[0]).toEqual({
+        id: id1,
+        sessionType: "claude",
+        exited: true,
+      });
+    });
+
+    it("omits exited flag when tab is running", () => {
+      createTab("/project-a", "claude");
+
+      const result = useTerminalTabsStore.getState().serializeTabsForSave("/project-a");
+
+      expect(result.tabs[0]).not.toHaveProperty("exited");
+    });
+
+    it("computes activeTabIndex based on active tab within project", () => {
+      const id1 = createTab("/project-a", "claude");
+      const id2 = createTab("/project-a", "terminal");
       useTerminalTabsStore.getState().setActiveTab(id1);
-      const after = Date.now();
 
-      const lastActive = useTerminalTabsStore.getState().tabLastActiveAt[id1];
-      expect(lastActive).toBeGreaterThanOrEqual(before);
-      expect(lastActive).toBeLessThanOrEqual(after);
+      const result = useTerminalTabsStore.getState().serializeTabsForSave("/project-a");
+
+      expect(result.activeTabIndex).toBe(0);
     });
 
-    it("records timestamp when addTab creates a tab", () => {
-      const before = Date.now();
-      const id1 = createTab("/a");
-      const after = Date.now();
+    it("returns activeTabIndex 0 when active tab is in another project", () => {
+      createTab("/project-a", "claude");
+      const idB = createTab("/project-b", "terminal");
+      useTerminalTabsStore.getState().setActiveTab(idB);
 
-      const lastActive = useTerminalTabsStore.getState().tabLastActiveAt[id1];
-      expect(lastActive).toBeGreaterThanOrEqual(before);
-      expect(lastActive).toBeLessThanOrEqual(after);
+      const result = useTerminalTabsStore.getState().serializeTabsForSave("/project-a");
+
+      expect(result.activeTabIndex).toBe(0);
     });
   });
 
