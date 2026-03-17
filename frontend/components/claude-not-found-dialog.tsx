@@ -62,26 +62,26 @@ export function ClaudeNotFoundDialog({
             />
           </div>
 
-          <h2 className="mt-4 text-lg font-semibold text-ctp-text">
+          <h2 className="mt-4 text-app-lg font-semibold text-ctp-text">
             Claude Code CLI not found
           </h2>
-          <p className="mt-2 text-center text-sm text-ctp-overlay1">
-            The <code className="rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-xs text-ctp-text">claude</code> command
+          <p className="mt-2 text-center text-app text-ctp-overlay1">
+            The <code className="rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-app-sm text-ctp-text">claude</code> command
             could not be found in your system PATH. Install Claude Code to continue.
           </p>
 
           <div className="mt-6 w-full rounded-lg bg-overlay-mantle p-4">
-            <div className="flex items-center gap-2 text-xs text-ctp-overlay1">
+            <div className="flex items-center gap-2 text-app-sm text-ctp-overlay1">
               <Terminal className="h-3.5 w-3.5" strokeWidth={1.5} />
               <span>Install via npm:</span>
             </div>
-            <pre className="mt-2 select-all rounded bg-ctp-surface0 px-3 py-2 font-mono text-sm text-ctp-text">
+            <pre className="mt-2 select-all rounded bg-ctp-surface0 px-3 py-2 font-mono text-app text-ctp-text">
               npm install -g @anthropic-ai/claude-code
             </pre>
           </div>
 
           {error && (
-            <p className="mt-4 text-center text-sm text-ctp-red">{error}</p>
+            <p className="mt-4 text-center text-app text-ctp-red">{error}</p>
           )}
 
           <div className="mt-6 flex w-full flex-col gap-2">
@@ -89,7 +89,7 @@ export function ClaudeNotFoundDialog({
               aria-label="Try Again"
               onClick={handleRetry}
               disabled={checking}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-ctp-base transition-colors hover:bg-brand/90 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-app font-medium text-ctp-base transition-colors hover:bg-brand/90 disabled:opacity-50"
             >
               <RefreshCw
                 className={`h-4 w-4 ${checking ? "animate-spin" : ""}`}
@@ -105,7 +105,7 @@ export function ClaudeNotFoundDialog({
                   "https://docs.anthropic.com/en/docs/claude-code/overview"
                 )
               }
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-ctp-surface0 px-4 py-2.5 text-sm text-ctp-text transition-colors hover:bg-ctp-surface1"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-ctp-surface0 px-4 py-2.5 text-app text-ctp-text transition-colors hover:bg-ctp-surface1"
             >
               <ExternalLink className="h-4 w-4" strokeWidth={1.5} />
               Installation Guide

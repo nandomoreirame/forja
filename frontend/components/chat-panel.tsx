@@ -138,7 +138,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
       {/* WIP Alert */}
       <div className="mx-3 mt-3 flex items-start gap-2 rounded-md border border-ctp-yellow/30 bg-ctp-yellow/10 px-3 py-2">
         <Construction className="mt-0.5 h-4 w-4 shrink-0 text-ctp-yellow" strokeWidth={1.5} />
-        <p className="text-xs text-ctp-yellow">
+        <p className="text-app-sm text-ctp-yellow">
           This feature is under active development and is not functional yet.
         </p>
       </div>
@@ -157,7 +157,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
               <div
                 key={msg.id}
                 className={cn(
-                  "rounded-lg px-3 py-2 text-sm select-text cursor-text",
+                  "rounded-lg px-3 py-2 text-app select-text cursor-text",
                   msg.role === "user"
                     ? "ml-4 bg-ctp-surface0 text-ctp-text"
                     : "text-ctp-subtext1"
@@ -175,7 +175,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
               </div>
             ))}
             {isStreaming && (
-              <div className="flex items-center gap-2 text-xs text-ctp-overlay1">
+              <div className="flex items-center gap-2 text-app-sm text-ctp-overlay1">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Thinking...
               </div>
@@ -207,7 +207,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
                     type="button"
                     data-testid={`cli-switcher-item-${cli.id}`}
                     onClick={() => handleSwitchCli(cli.id)}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-ctp-text transition-colors hover:bg-ctp-surface0"
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-app text-ctp-text transition-colors hover:bg-ctp-surface0"
                   >
                     {cli.icon && (
                       <img
@@ -230,7 +230,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
               onKeyDown={handleKeyDown}
               placeholder="Type a message..."
               rows={1}
-              className="min-h-[36px] flex-1 resize-none rounded-md border border-ctp-surface1 bg-ctp-base px-3 py-2 text-sm text-ctp-text placeholder:text-ctp-overlay0 outline-none focus:border-ctp-mauve"
+              className="min-h-[36px] flex-1 resize-none rounded-md border border-ctp-surface1 bg-ctp-base px-3 py-2 text-app text-ctp-text placeholder:text-ctp-overlay0 outline-none focus:border-ctp-mauve"
             />
             <button
               type="submit"
@@ -247,7 +247,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
               type="button"
               aria-label="Insert slash command"
               onClick={handleSlashButtonClick}
-              className="flex h-6 items-center justify-center rounded px-2 text-xs font-medium text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+              className="flex h-6 items-center justify-center rounded px-2 text-app-sm font-medium text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
             >
               /
             </button>
@@ -256,7 +256,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
                 type="button"
                 aria-label="Switch AI agent"
                 onClick={() => setCliSwitcherOpen((o) => !o)}
-                className="flex h-6 items-center gap-1 rounded px-2 text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                className="flex h-6 items-center gap-1 rounded px-2 text-app-sm text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
               >
                 {currentCliDef.icon && (
                   <img
@@ -278,7 +278,7 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
 
       {/* Error */}
       {chat.error && (
-        <div className="shrink-0 border-t border-ctp-red/30 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red">
+        <div className="shrink-0 border-t border-ctp-red/30 bg-ctp-red/10 px-3 py-2 text-app-sm text-ctp-red">
           {chat.error}
         </div>
       )}
@@ -306,8 +306,8 @@ function CliSelector({
   if (clis.length === 0) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 text-center">
-        <p className="text-sm text-ctp-overlay1">No AI CLIs detected</p>
-        <p className="text-xs text-ctp-surface2">
+        <p className="text-app text-ctp-overlay1">No AI CLIs detected</p>
+        <p className="text-app-sm text-ctp-surface2">
           Install Claude Code, Codex, or Gemini CLI to start chatting.
         </p>
       </div>
@@ -322,8 +322,8 @@ function CliSelector({
           className="h-6 w-6 text-ctp-overlay1"
           strokeWidth={1.5}
         />
-        <p className="text-sm text-ctp-overlay1">Choose an AI assistant</p>
-        <p className="max-w-[260px] text-center text-xs leading-relaxed text-ctp-overlay0">
+        <p className="text-app text-ctp-overlay1">Choose an AI assistant</p>
+        <p className="max-w-[260px] text-center text-app-sm leading-relaxed text-ctp-overlay0">
           Set up and manage contexts, agents, and skills for your installed AI CLIs.
         </p>
       </div>
@@ -333,7 +333,7 @@ function CliSelector({
             key={cli.id}
             type="button"
             onClick={() => onSelect(cli.id)}
-            className="flex items-center justify-center gap-2.5 rounded-lg border border-ctp-surface1 px-4 py-2.5 text-sm text-ctp-text transition-colors hover:border-ctp-mauve hover:bg-ctp-surface0"
+            className="flex items-center justify-center gap-2.5 rounded-lg border border-ctp-surface1 px-4 py-2.5 text-app text-ctp-text transition-colors hover:border-ctp-mauve hover:bg-ctp-surface0"
           >
             {cli.icon && (
               <img

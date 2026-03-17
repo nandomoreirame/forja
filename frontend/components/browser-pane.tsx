@@ -224,7 +224,7 @@ export function BrowserPane({ initialUrl = "http://localhost:3000" }: BrowserPan
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={handleKeyDown}
             spellCheck={false}
-            className="h-7 w-full rounded bg-ctp-surface0 pl-7 pr-2 text-xs text-ctp-text placeholder-ctp-overlay0 outline-none ring-0 focus:ring-1 focus:ring-brand"
+            className="h-7 w-full rounded bg-ctp-surface0 pl-7 pr-2 text-app-sm text-ctp-text placeholder-ctp-overlay0 outline-none ring-0 focus:ring-1 focus:ring-brand"
           />
         </div>
 
@@ -284,7 +284,7 @@ export function BrowserPane({ initialUrl = "http://localhost:3000" }: BrowserPan
               <h2 className="text-base font-medium text-ctp-text">
                 Could not access this site
               </h2>
-              <p className="text-sm font-semibold text-ctp-subtext0">
+              <p className="text-app font-semibold text-ctp-subtext0">
                 {(() => {
                   try {
                     return new URL(error.url).hostname;
@@ -293,14 +293,14 @@ export function BrowserPane({ initialUrl = "http://localhost:3000" }: BrowserPan
                   }
                 })()}
               </p>
-              <p className="mt-1 text-xs text-ctp-overlay1">{error.description}</p>
+              <p className="mt-1 text-app-sm text-ctp-overlay1">{error.description}</p>
             </div>
             <button
               onClick={() => {
                 clearError();
                 webviewRef.current?.reload();
               }}
-              className="mt-2 rounded bg-ctp-surface1 px-4 py-1.5 text-sm text-ctp-text transition-colors hover:bg-ctp-surface2"
+              className="mt-2 rounded bg-ctp-surface1 px-4 py-1.5 text-app text-ctp-text transition-colors hover:bg-ctp-surface2"
             >
               Reload
             </button>

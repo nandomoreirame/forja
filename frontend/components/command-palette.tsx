@@ -237,7 +237,7 @@ export function CommandPalette() {
         {mode === "sessions" && (
           <CommandGroup heading="New Session">
             {clisLoading ? (
-              <div className="flex items-center gap-2 px-2 py-3 text-sm text-ctp-overlay1">
+              <div className="flex items-center gap-2 px-2 py-3 text-app text-ctp-overlay1">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Detecting installed CLIs...
               </div>
@@ -279,7 +279,7 @@ export function CommandPalette() {
                 />
                 {theme.name}
                 {theme.type === "light" && (
-                  <span className="ml-auto text-xs text-ctp-overlay1">Light</span>
+                  <span className="ml-auto text-app-sm text-ctp-overlay1">Light</span>
                 )}
               </CommandItem>
             ))}
@@ -306,14 +306,14 @@ export function CommandPalette() {
                     />
                   ) : (
                     <span
-                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-bold"
+                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-app-xs font-bold"
                       style={{ backgroundColor: `${color}22`, color }}
                     >
                       {initial}
                     </span>
                   )}
                   <span className="flex-1 truncate">{project.name}</span>
-                  <span className="ml-2 truncate text-xs text-ctp-overlay1">{project.path}</span>
+                  <span className="ml-2 truncate text-app-sm text-ctp-overlay1">{project.path}</span>
                   {isActive && (
                     <FolderOpen className="ml-2 h-3.5 w-3.5 shrink-0 text-ctp-mauve" strokeWidth={1.5} />
                   )}

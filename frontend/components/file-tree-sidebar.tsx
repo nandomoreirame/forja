@@ -136,7 +136,7 @@ function MultiTreeView({
     <>
       {/* Projects header */}
       <div className="flex h-9 shrink-0 items-center gap-2 pl-[22px] pr-4">
-        <span className="flex-1 text-sm font-semibold text-ctp-text">
+        <span className="flex-1 text-app font-semibold text-ctp-text">
           Projects ({projectCount})
         </span>
         <button
@@ -193,7 +193,7 @@ export function FileTreeSidebar() {
     >
       <ErrorBoundary
         fallback={
-          <div className="flex-1 flex items-center justify-center p-4 text-xs text-ctp-overlay1">
+          <div className="flex-1 flex items-center justify-center p-4 text-app-sm text-ctp-overlay1">
             Failed to load file tree.
           </div>
         }
