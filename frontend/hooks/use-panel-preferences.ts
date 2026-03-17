@@ -34,7 +34,7 @@ export function getPanelSizesForLayout(
   return hasProject ? panelSizes : DEFAULT_PANEL_SIZES;
 }
 
-export function usePanelPreferences() {
+export function usePanelPreferences(projectPath?: string | null) {
   const [panelSizes, setPanelSizes] = useState<PanelSizes>(DEFAULT_PANEL_SIZES);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [terminalSplit, setTerminalSplit] = useState<TerminalSplitPreferences>(
@@ -45,6 +45,9 @@ export function usePanelPreferences() {
   useEffect(() => {
     let active = true;
 
+    const ipcArgs: { projectPath?: string } = {};
+    if (projectPath) ipcArgs.projectPath = projectPath;
+
     invoke<
       PanelSizes & {
         sidebarOpen?: boolean;
@@ -53,7 +56,7 @@ export function usePanelPreferences() {
         terminalSplitRatio?: number;
         layoutJson?: Record<string, unknown>;
       }
-    >("get_ui_preferences")
+    >("get_ui_preferences", ipcArgs)
       .then((prefs) => {
         if (!active) return;
         if (prefs && Number.isFinite(prefs.sidebarSize) && Number.isFinite(prefs.previewSize)) {
@@ -78,9 +81,9 @@ export function usePanelPreferences() {
               : DEFAULT_TERMINAL_SPLIT.ratio,
         });
 
-        // Restore persisted tiling layout if available.
-        // Strip terminal blocks — they are re-created by session restore
-        // (App.tsx) with fresh instance IDs and proper PTY connections.
+        // Restore persisted tiling layout if available (including terminal blocks
+        // with their custom names). Blocks for tabs not in config are cleaned up
+        // by orphan removal in App.tsx after session restore.
         if (prefs?.layoutJson) {
           const layoutJson = parseLayoutJson(prefs.layoutJson);
           useTilingLayoutStore.getState().loadFromJson(layoutJson);
@@ -100,36 +103,44 @@ export function usePanelPreferences() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [projectPath]);
 
   const savePanelSize = useCallback((key: keyof PanelSizes, value: number) => {
-    invoke("save_ui_preferences", { [key]: value }).catch((err) =>
+    const args: Record<string, unknown> = { [key]: value };
+    if (projectPath) args.projectPath = projectPath;
+    invoke("save_ui_preferences", args).catch((err) =>
       console.warn("[panel-preferences] Save failed:", err),
     );
-  }, []);
+  }, [projectPath]);
 
   const saveSidebarOpen = useCallback((value: boolean) => {
-    invoke("save_ui_preferences", { sidebarOpen: value }).catch((err) =>
+    const args: Record<string, unknown> = { sidebarOpen: value };
+    if (projectPath) args.projectPath = projectPath;
+    invoke("save_ui_preferences", args).catch((err) =>
       console.warn("[panel-preferences] Save sidebarOpen failed:", err),
     );
-  }, []);
+  }, [projectPath]);
 
   const saveTerminalSplit = useCallback((value: TerminalSplitPreferences) => {
-    invoke("save_ui_preferences", {
+    const args: Record<string, unknown> = {
       terminalSplitEnabled: value.enabled,
       terminalSplitOrientation: value.orientation,
       terminalSplitRatio: value.ratio,
-    }).catch((err) =>
+    };
+    if (projectPath) args.projectPath = projectPath;
+    invoke("save_ui_preferences", args).catch((err) =>
       console.warn("[panel-preferences] Save terminal split failed:", err),
     );
-  }, []);
+  }, [projectPath]);
 
   const saveLayout = useCallback(() => {
     const layoutJson = useTilingLayoutStore.getState().getModelJson();
-    invoke("save_ui_preferences", { layoutJson }).catch((err) =>
+    const args: Record<string, unknown> = { layoutJson };
+    if (projectPath) args.projectPath = projectPath;
+    invoke("save_ui_preferences", args).catch((err) =>
       console.warn("[panel-preferences] Save layout failed:", err),
     );
-  }, []);
+  }, [projectPath]);
 
   return {
     panelSizes,
