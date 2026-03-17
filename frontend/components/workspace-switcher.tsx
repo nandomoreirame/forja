@@ -161,7 +161,7 @@ export function WorkspaceSwitcher() {
             strokeWidth={1.5}
           />
           {activeWorkspace && (
-            <span className="max-w-[120px] truncate text-app-sm font-medium text-ctp-text">
+            <span className="text-app-sm font-medium text-ctp-text">
               {activeWorkspace.name}
             </span>
           )}
