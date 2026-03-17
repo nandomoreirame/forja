@@ -27,3 +27,5 @@ Thumbs.db
 
 # Firebase
 site/.firebase/
+.forja/
+.understand-anything/

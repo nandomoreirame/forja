@@ -8,6 +8,14 @@
     monospace;
   --editor-font-size: 13px;
 
+  /* App font-size scale (defaults; JS overrides from user settings) */
+  --app-fs: 14px;
+  --app-fs-sm: 12px;
+  --app-fs-xs: 10px;
+  --app-fs-2xs: 8px;
+  --app-fs-lg: 16px;
+  --app-fs-xl: 20px;
+
   /* Catppuccin Mocha palette */
   --color-ctp-crust: #11111b;
   --color-ctp-mantle: #181825;
@@ -84,6 +92,36 @@
   /* Overlay backgrounds (always opaque, used by dialogs/tooltips/command palette) */
   --color-overlay-base: #1e1e2e;
   --color-overlay-mantle: #181825;
+
+  /* Selection colors (updated by JS theme system) */
+  --selection-bg: #585b70;
+  --selection-fg: #cdd6f4;
+}
+
+/* App font-size utilities (scale with user setting) */
+@utility text-app {
+  font-size: var(--app-fs);
+  line-height: 1.4;
+}
+@utility text-app-sm {
+  font-size: var(--app-fs-sm);
+  line-height: 1.4;
+}
+@utility text-app-xs {
+  font-size: var(--app-fs-xs);
+  line-height: 1.3;
+}
+@utility text-app-2xs {
+  font-size: var(--app-fs-2xs);
+  line-height: 1.2;
+}
+@utility text-app-lg {
+  font-size: var(--app-fs-lg);
+  line-height: 1.3;
+}
+@utility text-app-xl {
+  font-size: var(--app-fs-xl);
+  line-height: 1.2;
 }
 
 :root {
@@ -129,6 +167,17 @@
 
 html {
   color-scheme: dark;
+}
+
+/* Text selection (theme-aware, updates on theme switch) */
+::selection {
+  background: var(--selection-bg, var(--bg-active));
+  color: var(--selection-fg, var(--fg-primary));
+}
+
+::-moz-selection {
+  background: var(--selection-bg, var(--bg-active));
+  color: var(--selection-fg, var(--fg-primary));
 }
 
 body {
@@ -227,7 +276,7 @@ body {
 
 .markdown.prose code:not(pre code) {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--app-fs-sm);
   background: var(--color-ctp-surface0);
   color: var(--color-brand);
   padding: 0.125rem 0.375rem;
@@ -245,7 +294,7 @@ body {
 
 .markdown.prose pre code {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--app-fs-sm);
   background: transparent;
   padding: 0;
 }
@@ -308,7 +357,7 @@ body {
 .chat-markdown {
   font-family: var(--font-sans);
   color: var(--color-ctp-subtext1);
-  font-size: 0.8125rem;
+  font-size: var(--app-fs-sm);
   line-height: 1.6;
   user-select: text;
   cursor: text;
@@ -365,7 +414,7 @@ body {
 
 .chat-markdown code:not(pre code) {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--app-fs-xs);
   background: var(--color-ctp-surface0);
   color: var(--color-brand);
   padding: 0.0625rem 0.3125rem;
@@ -383,7 +432,7 @@ body {
 
 .chat-markdown pre code {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: var(--app-fs-xs);
   background: transparent;
   padding: 0;
   color: var(--color-ctp-text);
@@ -422,7 +471,7 @@ body {
   width: 100%;
   border-collapse: collapse;
   margin: 0.5rem 0;
-  font-size: 0.75rem;
+  font-size: var(--app-fs-xs);
 }
 
 .chat-markdown th {

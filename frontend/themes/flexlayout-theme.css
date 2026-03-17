@@ -140,15 +140,26 @@
   align-items: center;
 }
 
-/* Tab button icon and content alignment */
+/* Tab button icon and content alignment — leading and trailing must NOT
+   shrink so icons keep a fixed size when the panel is at minimum width. */
 .flexlayout__tab_button_leading {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   margin-right: 6px;
+}
+
+.flexlayout__tab_button_trailing {
+  flex-shrink: 0;
 }
 
 .flexlayout__tab_button_content {
   display: flex;
   align-items: center;
   min-width: 0;
+}
+
+/* Tabset toolbar buttons (maximize, close, custom) — fixed size at narrow widths */
+.flexlayout__tab_toolbar_button {
+  flex-shrink: 0;
 }
