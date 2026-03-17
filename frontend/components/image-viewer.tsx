@@ -33,8 +33,8 @@ export function ImageViewer({ content, filename }: ImageViewerProps) {
         <div className="flex flex-col items-center gap-3 text-center">
           <AlertCircle className="h-8 w-8 text-ctp-red" strokeWidth={1.5} />
           <div>
-            <p className="text-sm font-medium text-ctp-text">Failed to load image</p>
-            <p className="mt-1 text-xs text-ctp-overlay1">{filename}</p>
+            <p className="text-app font-medium text-ctp-text">Failed to load image</p>
+            <p className="mt-1 text-app-sm text-ctp-overlay1">{filename}</p>
           </div>
         </div>
       </div>

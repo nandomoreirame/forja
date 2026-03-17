@@ -62,7 +62,7 @@ export function MarketplacePane() {
     <div className="flex h-full flex-col overflow-hidden bg-ctp-base">
       {/* Pane header */}
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
-        <span className="text-xs font-semibold text-ctp-text">Marketplace</span>
+        <span className="text-app-sm font-semibold text-ctp-text">Marketplace</span>
         <button
           type="button"
           aria-label="Refresh marketplace"
@@ -82,7 +82,7 @@ export function MarketplacePane() {
             placeholder="Search plugins..."
             value={inputValue}
             onChange={handleSearchChange}
-            className="flex-1 bg-transparent text-xs text-ctp-text placeholder:text-ctp-overlay0 outline-none"
+            className="flex-1 bg-transparent text-app-sm text-ctp-text placeholder:text-ctp-overlay0 outline-none"
           />
         </div>
       </div>
@@ -96,7 +96,7 @@ export function MarketplacePane() {
               type="button"
               onClick={() => handleTagClick(null)}
               className={cn(
-                "shrink-0 rounded-full px-2 py-0.5 text-[11px] transition-colors",
+                "shrink-0 rounded-full px-2 py-0.5 text-app-xs transition-colors",
                 activeTag === null
                   ? "bg-ctp-mauve text-ctp-base"
                   : "bg-ctp-surface0 text-ctp-subtext0 hover:bg-ctp-surface1"
@@ -110,7 +110,7 @@ export function MarketplacePane() {
                 type="button"
                 onClick={() => handleTagClick(tag)}
                 className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-[11px] transition-colors",
+                  "shrink-0 rounded-full px-2 py-0.5 text-app-xs transition-colors",
                   activeTag === tag
                     ? "bg-ctp-mauve text-ctp-base"
                     : "bg-ctp-surface0 text-ctp-subtext0 hover:bg-ctp-surface1"
@@ -136,11 +136,11 @@ export function MarketplacePane() {
         {!loading && error && (
           <div className="flex flex-col items-center justify-center gap-3 px-4 py-10 text-center">
             <AlertCircle className="h-8 w-8 text-ctp-red" strokeWidth={1.5} />
-            <p className="text-xs text-ctp-subtext0">{error}</p>
+            <p className="text-app-sm text-ctp-subtext0">{error}</p>
             <button
               type="button"
               onClick={() => fetchRegistry()}
-              className="rounded-md border border-ctp-surface1 bg-ctp-mantle px-3 py-1.5 text-xs text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+              className="rounded-md border border-ctp-surface1 bg-ctp-mantle px-3 py-1.5 text-app-sm text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
             >
               Retry
             </button>
@@ -153,14 +153,14 @@ export function MarketplacePane() {
             {/* Empty state */}
             {filteredPlugins.length === 0 && (
               <div className="flex flex-col items-center justify-center px-4 py-10 text-center">
-                <p className="text-xs text-ctp-overlay1">No plugins found</p>
+                <p className="text-app-sm text-ctp-overlay1">No plugins found</p>
               </div>
             )}
 
             {/* Installed section */}
             {installedFiltered.length > 0 && (
               <div className="px-3 pb-2 pt-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ctp-overlay1">
+                <p className="mb-2 text-app-sm font-semibold uppercase tracking-wide text-ctp-overlay1">
                   Installed ({installedFiltered.length})
                 </p>
                 <div className="flex flex-col gap-2">
@@ -187,7 +187,7 @@ export function MarketplacePane() {
             {/* Available section */}
             {availableFiltered.length > 0 && (
               <div className="px-3 pb-3 pt-3">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ctp-overlay1">
+                <p className="mb-2 text-app-sm font-semibold uppercase tracking-wide text-ctp-overlay1">
                   Available ({availableFiltered.length})
                 </p>
                 <div className="flex flex-col gap-2">

@@ -60,7 +60,7 @@ function PluginActionButton({
   if (installProgress?.stage === "error") {
     return (
       <div className="flex flex-col items-end gap-1">
-        <span className="text-[10px] text-ctp-red">{installProgress.message}</span>
+        <span className="text-app-xs text-ctp-red">{installProgress.message}</span>
         <Button
           size="xs"
           variant="outline"
@@ -129,7 +129,7 @@ export function MarketplacePluginCard(props: MarketplacePluginCardProps) {
       <div className="flex-1 min-w-0">
         {/* Header row: name + button */}
         <div className="flex items-start justify-between gap-2">
-          <span className="text-xs font-medium text-ctp-text leading-tight truncate">
+          <span className="text-app-sm font-medium text-ctp-text leading-tight truncate">
             {plugin.displayName}
           </span>
           <div className="shrink-0">
@@ -138,12 +138,12 @@ export function MarketplacePluginCard(props: MarketplacePluginCardProps) {
         </div>
 
         {/* Version · Author */}
-        <p className="text-[10px] text-ctp-overlay0 mt-0.5">
+        <p className="text-app-xs text-ctp-overlay0 mt-0.5">
           v{plugin.version} · by {plugin.author}
         </p>
 
         {/* Description */}
-        <p className="text-[11px] text-ctp-subtext0 mt-1 leading-snug line-clamp-2">
+        <p className="text-app-xs text-ctp-subtext0 mt-1 leading-snug line-clamp-2">
           {plugin.description}
         </p>
 
@@ -152,13 +152,13 @@ export function MarketplacePluginCard(props: MarketplacePluginCardProps) {
           {plugin.tags.map((tag) => (
             <span
               key={tag}
-              className="bg-ctp-surface1 text-ctp-subtext0 rounded px-1.5 py-0.5 text-[10px]"
+              className="bg-ctp-surface1 text-ctp-subtext0 rounded px-1.5 py-0.5 text-app-xs"
             >
               {tag}
             </span>
           ))}
 
-          <span className="ml-auto flex items-center gap-0.5 text-[10px] text-ctp-overlay0 shrink-0">
+          <span className="ml-auto flex items-center gap-0.5 text-app-xs text-ctp-overlay0 shrink-0">
             <Download className="h-3 w-3" strokeWidth={1.5} />
             {formatDownloads(plugin.downloads)}
           </span>

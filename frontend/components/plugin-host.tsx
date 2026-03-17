@@ -355,7 +355,7 @@ export function PluginHost({ pluginName }: PluginHostProps) {
   if (!plugin) {
     return (
       <div className="flex h-full items-center justify-center border-l border-ctp-surface0 bg-ctp-base">
-        <p className="text-sm text-ctp-overlay0">Plugin not found</p>
+        <p className="text-app text-ctp-overlay0">Plugin not found</p>
       </div>
     );
   }
@@ -384,13 +384,13 @@ export function PluginHost({ pluginName }: PluginHostProps) {
       {(status === "error" || status === "crashed") && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-ctp-base">
           <AlertTriangle className="h-8 w-8 text-ctp-red" strokeWidth={1.5} />
-          <p className="text-sm text-ctp-overlay1">
+          <p className="text-app text-ctp-overlay1">
             {errorMessage ?? "An error occurred"}
           </p>
           <button
             type="button"
             onClick={handleReload}
-            className="flex items-center gap-1.5 rounded-md bg-ctp-surface0 px-3 py-1.5 text-xs text-ctp-text transition-colors hover:bg-ctp-surface1"
+            className="flex items-center gap-1.5 rounded-md bg-ctp-surface0 px-3 py-1.5 text-app-sm text-ctp-text transition-colors hover:bg-ctp-surface1"
           >
             <RefreshCw className="h-3 w-3" />
             Reload

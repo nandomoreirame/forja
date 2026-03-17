@@ -65,7 +65,7 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-[11px] text-ctp-overlay1">
+    <kbd className="inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-app-xs text-ctp-overlay1">
       {children}
     </kbd>
   );
@@ -101,7 +101,7 @@ export function KeyboardShortcutsDialog({
         <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
           {shortcuts.map((group) => (
             <div key={group.section}>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-ctp-overlay0">
+              <h3 className="mb-2 text-app-sm font-medium uppercase tracking-wider text-ctp-overlay0">
                 {group.section}
               </h3>
               <div className="space-y-1.5">
@@ -110,14 +110,14 @@ export function KeyboardShortcutsDialog({
                     key={shortcut.label}
                     className="flex items-center justify-between py-1"
                   >
-                    <span className="text-sm text-ctp-subtext0">
+                    <span className="text-app text-ctp-subtext0">
                       {shortcut.label}
                     </span>
                     <span className="flex items-center gap-1">
                       {shortcut.keys.map((key, i) => (
                         <span key={i} className="flex items-center gap-1">
                           {i > 0 && (
-                            <span className="text-[11px] text-ctp-surface1">
+                            <span className="text-app-xs text-ctp-surface1">
                               +
                             </span>
                           )}
