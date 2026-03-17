@@ -180,6 +180,7 @@ describe("CommandPalette", () => {
 
   it("lists commands in commands mode", () => {
     mockFileTreeState.currentPath = "/project";
+    mockTilingHasBlock.mockReturnValue(true);
     useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
     render(<CommandPalette />);
 

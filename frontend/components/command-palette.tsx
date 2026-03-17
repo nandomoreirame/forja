@@ -58,6 +58,7 @@ export function CommandPalette() {
   const { installedClis, loading: clisLoading } = useInstalledClis();
   const { customThemes: themeCustom } = useThemeStore();
   const { projects, activeProjectPath, getProjectInitial, getProjectColor } = useProjectsStore();
+  const isFileTreeOpen = useTilingLayoutStore((s) => s.hasBlock("tab-file-tree"));
   const allThemes = useMemo(
     () => useThemeStore.getState().getAllThemes(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -396,13 +397,15 @@ export function CommandPalette() {
                 Toggle Focus Mode
                 <CommandShortcut>{mod}+Alt+F</CommandShortcut>
               </CommandItem>
-              <CommandItem
-                value="Collapse All Folders"
-                onSelect={() => handleCommand("collapse-all")}
-              >
-                <ChevronsDownUp className="h-4 w-4" strokeWidth={1.5} />
-                Collapse All Folders
-              </CommandItem>
+              {currentPath && isFileTreeOpen && (
+                <CommandItem
+                  value="Collapse All Folders"
+                  onSelect={() => handleCommand("collapse-all")}
+                >
+                  <ChevronsDownUp className="h-4 w-4" strokeWidth={1.5} />
+                  Collapse All Folders
+                </CommandItem>
+              )}
             </CommandGroup>
 
             <CommandGroup heading="Terminal">
