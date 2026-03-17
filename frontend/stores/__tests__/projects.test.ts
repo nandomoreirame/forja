@@ -5,6 +5,7 @@ import { useWorkspaceStore } from "../workspace";
 vi.mock("@/lib/ipc", () => ({
   invoke: vi.fn(),
   listen: vi.fn(() => Promise.resolve(() => {})),
+  getCurrentWindow: () => ({ label: "main" }),
 }));
 
 vi.mock("@/stores/file-tree", () => ({
@@ -48,6 +49,7 @@ import { invoke } from "@/lib/ipc";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { usePluginsStore } from "@/stores/plugins";
 import { useRightPanelStore } from "@/stores/right-panel";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 
 describe("useProjectsStore", () => {
   beforeEach(() => {
@@ -512,6 +514,139 @@ describe("useProjectsStore", () => {
       useProjectsStore.setState({ notifiedProjects: new Set(["/b/other"]) });
       await useProjectsStore.getState().switchToProject("/b/other");
       expect(useProjectsStore.getState().notifiedProjects.has("/b/other")).toBe(false);
+    });
+  });
+
+  describe("switchToProject saves and restores terminal tabs", () => {
+    beforeEach(() => {
+      useTerminalTabsStore.setState({
+        tabs: [],
+        activeTabId: null,
+        counter: 0,
+        isTerminalFullscreen: false,
+        activeTabIdByProject: {},
+        isFullscreenByProject: {},
+      });
+    });
+
+    it("includes serialized terminal tabs in outgoing project disk save", async () => {
+      vi.mocked(invoke).mockResolvedValue(undefined);
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      // Set up tabs for project-a (outgoing project)
+      const tabsStore = useTerminalTabsStore.getState();
+      const id1 = tabsStore.nextTabId();
+      tabsStore.addTab(id1, "/project-a", "claude");
+      tabsStore.setCliSessionId(id1, "session-123");
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      // Find the save_project_ui_state call for the outgoing project
+      const saveCalls = vi.mocked(invoke).mock.calls.filter(
+        (call) => call[0] === "save_project_ui_state" && (call[1] as any)?.path === "/project-a"
+      );
+      expect(saveCalls.length).toBeGreaterThan(0);
+
+      const savedState = (saveCalls[0][1] as any).state;
+      expect(savedState.tabs).toBeDefined();
+      expect(savedState.tabs).toHaveLength(1);
+      expect(savedState.tabs[0].id).toBe(id1);
+      expect(savedState.tabs[0].sessionType).toBe("claude");
+      expect(savedState.tabs[0].cliSessionId).toBe("session-123");
+      expect(savedState.activeTabIndex).toBeDefined();
+    });
+
+    it("restores terminal tabs from disk when switching to a project with no in-memory tabs", async () => {
+      const savedTabs = [
+        { id: "saved-tab-1", sessionType: "claude", cliSessionId: "sess-abc" },
+        { id: "saved-tab-2", sessionType: "terminal", exited: true },
+      ];
+
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") {
+          return {
+            tabs: savedTabs,
+            activeTabIndex: 0,
+          };
+        }
+        return undefined;
+      });
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      // Verify tabs were restored from disk
+      const projectBTabs = useTerminalTabsStore.getState().getTabsForProject("/project-b");
+      expect(projectBTabs).toHaveLength(2);
+      expect(projectBTabs[0].sessionType).toBe("claude");
+      expect(projectBTabs[0].cliSessionId).toBe("sess-abc");
+      expect(projectBTabs[1].sessionType).toBe("terminal");
+      expect(projectBTabs[1].isRunning).toBe(false);
+    });
+
+    it("does not restore tabs from disk when in-memory tabs already exist", async () => {
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") {
+          return {
+            tabs: [{ id: "disk-tab", sessionType: "claude" }],
+            activeTabIndex: 0,
+          };
+        }
+        return undefined;
+      });
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      // Pre-populate in-memory tabs for project-b
+      const tabsStore = useTerminalTabsStore.getState();
+      tabsStore.registerTab("mem-tab-1", "/project-b", "claude");
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      // In-memory tabs should be preserved (not overwritten by disk tabs)
+      const projectBTabs = useTerminalTabsStore.getState().getTabsForProject("/project-b");
+      expect(projectBTabs).toHaveLength(1);
+      expect(projectBTabs[0].id).toBe("mem-tab-1");
     });
   });
 

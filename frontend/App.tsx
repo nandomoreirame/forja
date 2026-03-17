@@ -47,7 +47,6 @@ import { useWorkspaceStore } from "./stores/workspace";
 import { usePluginsStore } from "./stores/plugins";
 import { PluginPermissionDialog } from "./components/plugin-permission-dialog";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
-import { useBrowserAutoOpen } from "./hooks/use-browser-auto-open";
 import {
   usePanelPreferences,
 } from "./hooks/use-panel-preferences";
@@ -685,21 +684,11 @@ function App({
     if (currentPath) {
       const wsId = useWorkspaceStore.getState().activeWorkspaceId;
       if (wsId) {
-        // Filter tabs belonging to this project only — other projects have their own .forja/config.json
-        const projectTabs = tabs.filter((tab) => tab.path === currentPath);
-        const activeTabIndex = projectTabs.findIndex((tab) => tab.id === activeTabId);
+        const tabsStore = useTerminalTabsStore.getState();
         invoke("save_project_ui_state", {
           workspaceId: wsId,
           path: currentPath,
-          state: {
-            tabs: projectTabs.map((tab) => ({
-              id: tab.id,
-              sessionType: tab.sessionType,
-              ...(tab.cliSessionId ? { cliSessionId: tab.cliSessionId } : {}),
-              ...(!tab.isRunning ? { exited: true } : {}),
-            })),
-            activeTabIndex: activeTabIndex >= 0 ? activeTabIndex : 0,
-          },
+          state: tabsStore.serializeTabsForSave(currentPath),
         }).catch((err: unknown) => console.warn("[App] Failed to save project tab state:", err));
 
         invoke("set_last_active_project_path", {
@@ -717,11 +706,33 @@ function App({
     activeTabId,
   ]);
 
+  // Safety net: save ALL projects' terminal tabs on window close.
+  // The reactive effect above only covers the active project; this ensures
+  // non-active projects' tabs are persisted before the window is destroyed.
+  useEffect(() => {
+    if (initialWorkspaceId) return;
+
+    const handler = () => {
+      const tabsStore = useTerminalTabsStore.getState();
+      const wsId = useWorkspaceStore.getState().activeWorkspaceId;
+      if (!wsId) return;
+
+      const projectPaths = new Set(tabsStore.tabs.map((t) => t.path));
+      for (const projectPath of projectPaths) {
+        invoke("save_project_ui_state", {
+          workspaceId: wsId,
+          path: projectPath,
+          state: tabsStore.serializeTabsForSave(projectPath),
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [initialWorkspaceId]);
+
   // Keyboard shortcuts extracted to dedicated hook
   useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab });
-
-  // Auto-open browser pane when a localhost URL is detected in terminal output
-  useBrowserAutoOpen();
 
   return (
     <AppErrorBoundary>

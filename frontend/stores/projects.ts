@@ -242,6 +242,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
             terminalFullscreen: tabsStore.isFullscreenByProject[previousPath] ?? false,
             previewFile: prevPreview?.currentFile ?? null,
             layoutJson: prevLayoutJson as Record<string, unknown> | undefined,
+            ...tabsStore.serializeTabsForSave(previousPath),
           },
         }).catch(() => {});
       }
@@ -257,6 +258,8 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         browserOpen?: boolean;
         browserUrl?: string;
         layoutJson?: Record<string, unknown>;
+        tabs?: Array<{ id?: string; sessionType: string; cliSessionId?: string; exited?: boolean }>;
+        activeTabIndex?: number;
       } | null>("get_project_ui_state", {
         workspaceId: useWorkspaceStore.getState().activeWorkspaceId ?? "",
         path: projectPath,
@@ -285,6 +288,20 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
             const { parseLayoutJson } = await import("@/lib/layout-migration");
             const layout = parseLayoutJson(savedState.layoutJson);
             useTilingLayoutStore.getState().loadFromJson(layout);
+          }
+        }
+
+        // Restore terminal tabs from disk if no in-memory tabs exist for this project
+        if (savedState.tabs?.length) {
+          const existingProjectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
+          if (existingProjectTabs.length === 0) {
+            const currentTabsStore = useTerminalTabsStore.getState();
+            for (const tab of savedState.tabs) {
+              const id = tab.id || currentTabsStore.nextTabId();
+              currentTabsStore.registerTab(id, projectPath, (tab.sessionType || "claude") as import("@/lib/cli-registry").SessionType);
+              if (tab.cliSessionId) currentTabsStore.setCliSessionId(id, tab.cliSessionId);
+              if (tab.exited) currentTabsStore.markTabExited(id);
+            }
           }
         }
       }
