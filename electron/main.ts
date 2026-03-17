@@ -883,8 +883,6 @@ ipcMain.handle("get_performance_mode", () => {
   const config = getLiteModeConfig(resolvedPerfMode);
   return {
     resolved: config.resolved,
-    tabHibernation: config.tabHibernation,
-    tabHibernationTimeoutMs: config.tabHibernationTimeoutMs,
   };
 });
 

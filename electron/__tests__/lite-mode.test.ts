@@ -160,8 +160,6 @@ describe("lite-mode module", () => {
       expect(config.metricsIntervalMs).toBe(2000);
       expect(config.fileWatcherDepth).toBe(3);
       expect(config.disableGpuAcceleration).toBe(false);
-      expect(config.tabHibernation).toBe(false);
-      expect(config.tabHibernationTimeoutMs).toBe(0);
       expect(config.v8SemiSpaceSize).toBe(64);
     });
 
@@ -174,8 +172,6 @@ describe("lite-mode module", () => {
       expect(config.metricsIntervalMs).toBe(10000);
       expect(config.fileWatcherDepth).toBe(1);
       expect(config.disableGpuAcceleration).toBe(true);
-      expect(config.tabHibernation).toBe(true);
-      expect(config.tabHibernationTimeoutMs).toBe(60000);
       expect(config.v8SemiSpaceSize).toBe(32);
     });
   });
@@ -214,7 +210,6 @@ describe("lite-mode module", () => {
       const config = await initLiteMode();
 
       expect(config.resolved).toBe("lite");
-      expect(config.tabHibernation).toBe(true);
       expect(config.disableGpuAcceleration).toBe(true);
     });
 

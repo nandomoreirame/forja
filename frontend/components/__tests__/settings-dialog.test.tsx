@@ -4,8 +4,6 @@ import { DEFAULT_SETTINGS } from "@/lib/settings-types";
 
 const mockPerformanceStore = {
   resolved: "full" as "full" | "lite",
-  tabHibernation: false,
-  tabHibernationTimeoutMs: 0,
   loaded: true,
   isLite: false,
 };

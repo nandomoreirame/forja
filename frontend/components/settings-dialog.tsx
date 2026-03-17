@@ -550,7 +550,7 @@ function PerformanceSection({ settings, onSave }: { settings: UserSettings; onSa
       <SettingItem
         category="Performance"
         label="Mode"
-        description="Controls resource usage. Auto detects your hardware and adjusts accordingly. Lite reduces GPU, metrics, watchers, and hibernates inactive tabs."
+        description="Controls resource usage. Auto detects your hardware and adjusts accordingly. Lite reduces GPU, metrics, and watchers."
       >
         <select
           value={settings.performance.mode}
@@ -571,7 +571,7 @@ function PerformanceSection({ settings, onSave }: { settings: UserSettings; onSa
         <div className="mt-3 rounded-md border border-ctp-yellow/20 bg-ctp-yellow/5 p-3">
           <p className="text-app-sm text-ctp-yellow">
             Lite mode is active. GPU acceleration is disabled, metrics polling is reduced,
-            file watchers are shallow, and inactive tabs will be hibernated after 60 seconds.
+            and file watchers are shallow.
           </p>
         </div>
       )}
