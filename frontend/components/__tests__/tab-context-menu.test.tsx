@@ -30,11 +30,11 @@ describe("TabContextMenu", () => {
     vi.clearAllMocks();
   });
 
-  it("renders Edit tab and Fechar tab menu items", () => {
+  it("renders Edit tab and Close tab menu items", () => {
     render(<TabContextMenu {...defaultProps} />);
 
     expect(screen.getByText("Edit tab")).toBeInTheDocument();
-    expect(screen.getByText("Fechar tab")).toBeInTheDocument();
+    expect(screen.getByText("Close tab")).toBeInTheDocument();
   });
 
   it("calls onStartRename when Edit tab is clicked", () => {
@@ -46,7 +46,7 @@ describe("TabContextMenu", () => {
     expect(defaultProps.onClose).toHaveBeenCalled();
   });
 
-  it("calls removeBlock when Fechar tab is clicked", () => {
+  it("calls removeBlock when Close tab is clicked", () => {
     const mockRemoveBlock = vi.fn();
     vi.mocked(useTilingLayoutStore.getState).mockReturnValue({
       removeBlock: mockRemoveBlock,
@@ -54,7 +54,7 @@ describe("TabContextMenu", () => {
 
     render(<TabContextMenu {...defaultProps} />);
 
-    fireEvent.click(screen.getByText("Fechar tab"));
+    fireEvent.click(screen.getByText("Close tab"));
 
     expect(mockRemoveBlock).toHaveBeenCalledWith("tab-1");
     expect(defaultProps.onClose).toHaveBeenCalled();

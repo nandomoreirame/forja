@@ -53,7 +53,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
       <ContextMenuContent className="min-w-48 border-ctp-surface1 bg-overlay-mantle">
         {/* Copy / Paste */}
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+          className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
           onSelect={onCopy}
         >
           <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -62,7 +62,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
         </ContextMenuItem>
 
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+          className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
           onSelect={onPaste}
         >
           <Clipboard className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -74,7 +74,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
 
         {/* Split options — always available, flexlayout supports unlimited splits */}
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+          className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
           onSelect={handleSplitVertical}
         >
           <SplitSquareHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -82,7 +82,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
         </ContextMenuItem>
 
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+          className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
           onSelect={handleSplitHorizontal}
         >
           <SplitSquareVertical className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -93,7 +93,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
 
         {/* Close Terminal */}
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
+          className="gap-2 text-app-sm text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
           onSelect={handleCloseTerminal}
         >
           <X className="h-3.5 w-3.5" strokeWidth={1.5} />

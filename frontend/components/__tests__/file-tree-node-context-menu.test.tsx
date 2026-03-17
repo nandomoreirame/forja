@@ -54,7 +54,7 @@ describe("FileTreeNode - Context Menu", () => {
         {
           id: "ws-1",
           name: "My Workspace",
-          projects: ["/project"],
+          projects: [{ path: "/project", name: "project", last_opened: "" }],
           createdAt: "",
           lastUsedAt: "",
         },
@@ -127,7 +127,10 @@ describe("FileTreeNode - Context Menu", () => {
         {
           id: "ws-1",
           name: "My Workspace",
-          projects: ["/project", "/other-project"],
+          projects: [
+            { path: "/project", name: "project", last_opened: "" },
+            { path: "/other-project", name: "other-project", last_opened: "" },
+          ],
           createdAt: "",
           lastUsedAt: "",
         },

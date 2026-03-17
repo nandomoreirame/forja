@@ -7,9 +7,11 @@ interface TabContextMenuProps {
   position: { x: number; y: number };
   onClose: () => void;
   onStartRename: (nodeId: string) => void;
+  /** Whether this tab supports renaming. Defaults to true. */
+  canRename?: boolean;
 }
 
-export function TabContextMenu({ nodeId, position, onClose, onStartRename }: TabContextMenuProps) {
+export function TabContextMenu({ nodeId, position, onClose, onStartRename, canRename = true }: TabContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,24 +50,26 @@ export function TabContextMenu({ nodeId, position, onClose, onStartRename }: Tab
     <div
       ref={menuRef}
       role="menu"
-      className="fixed z-[9999] min-w-[160px] rounded-md border border-ctp-surface1 bg-ctp-base py-1 shadow-lg"
+      className="fixed z-[9999] min-w-[160px] rounded-md border border-ctp-surface1 bg-overlay-base py-1 shadow-lg"
       style={{ left: position.x, top: position.y }}
     >
+      {canRename && (
+        <button
+          role="menuitem"
+          className="flex w-full items-center gap-2 px-3 py-1.5 text-app text-ctp-text hover:bg-ctp-surface0"
+          onClick={handleEditTab}
+        >
+          <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
+          Edit tab
+        </button>
+      )}
       <button
         role="menuitem"
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-ctp-text hover:bg-ctp-surface0"
-        onClick={handleEditTab}
-      >
-        <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
-        Edit tab
-      </button>
-      <button
-        role="menuitem"
-        className="flex w-full items-center gap-2 px-3 py-1.5 text-sm text-ctp-red hover:bg-ctp-surface0"
+        className="flex w-full items-center gap-2 px-3 py-1.5 text-app text-ctp-red hover:bg-ctp-surface0"
         onClick={handleCloseTab}
       >
         <X className="h-3.5 w-3.5" strokeWidth={1.5} />
-        Fechar tab
+        Close tab
       </button>
     </div>
   );

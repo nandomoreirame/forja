@@ -25,7 +25,7 @@ export function blockFactory(node: TabNode): React.ReactNode {
         />
       );
     case "file-preview":
-      return <FilePreviewBlock />;
+      return <FilePreviewBlock config={config} />;
     case "browser":
       return <BrowserBlock config={config} />;
     case "plugin":

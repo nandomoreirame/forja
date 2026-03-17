@@ -11,7 +11,6 @@ import {
   type ITabRenderValues,
 } from "flexlayout-react";
 import {
-  Anvil,
   ChevronsDownUp,
   FileText,
   FolderTree,
@@ -30,8 +29,9 @@ import { useAgentChatStore } from "@/stores/agent-chat";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useSessionStateStore } from "@/stores/session-state";
 import { blockFactory } from "@/components/block-factory";
+import { ForjaEmptyState } from "@/components/forja-empty-state";
 import { CliIcon } from "@/components/cli-icon";
-import { InlineEdit } from "@/components/inline-edit";
+import { TabNameOverlay } from "@/components/tab-name-overlay";
 import { TabContextMenu } from "@/components/tab-context-menu";
 import { invoke } from "@/lib/ipc";
 import { getPluginIcon } from "@/lib/plugin-types";
@@ -56,23 +56,44 @@ const STATE_CLASSES: Record<string, string> = {
   idle: "bg-ctp-surface1",
 };
 
+/** Block types whose tabs can be renamed by the user (double-click or context menu). */
+const RENAMABLE_BLOCK_TYPES = new Set(["terminal", "browser"]);
+
 function TilingEmptyState() {
+  const btnClass = "flex items-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-app text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text";
   return (
-    <div className="flex h-full flex-1 flex-col items-center justify-center gap-6">
-      <div className="flex flex-col items-center gap-3">
-        <Anvil className="h-12 w-12 text-brand" strokeWidth={1.5} />
-        <p className="text-sm text-ctp-overlay1">
-          No open sessions
-        </p>
+    <ForjaEmptyState>
+      <div className="flex items-center gap-3">
+        <button onClick={() => useCommandPaletteStore.getState().open("sessions")} className={btnClass}>
+          <Plus className="h-4 w-4" strokeWidth={1.5} />
+          New Session
+        </button>
+        <button
+          onClick={() => {
+            const tilingStore = useTilingLayoutStore.getState();
+            if (!tilingStore.hasBlock("tab-file-tree")) {
+              const tree = useFileTreeStore.getState().tree;
+              tilingStore.addBlock({ type: "file-tree", projectName: tree?.root.name }, undefined, "tab-file-tree");
+            }
+          }}
+          className={btnClass}
+        >
+          <FolderTree className="h-4 w-4" strokeWidth={1.5} />
+          Open Files
+        </button>
+        <button
+          onClick={() => {
+            const tilingStore = useTilingLayoutStore.getState();
+            const blockId = `browser-${Date.now().toString(36)}`;
+            tilingStore.addBlock({ type: "browser", url: "https://github.com/nandomoreirame/forja" }, undefined, blockId);
+          }}
+          className={btnClass}
+        >
+          <Globe className="h-4 w-4" strokeWidth={1.5} />
+          Browser
+        </button>
       </div>
-      <button
-        onClick={() => useCommandPaletteStore.getState().open("sessions")}
-        className="flex items-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-sm text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text"
-      >
-        <Plus className="h-4 w-4" strokeWidth={1.5} />
-        New Session
-      </button>
-    </div>
+    </ForjaEmptyState>
   );
 }
 
@@ -80,22 +101,9 @@ export function TilingLayout() {
   const model = useTilingLayoutStore((s) => s.model);
   const tabCount = useTilingLayoutStore((s) => s.tabCount);
   const updateModel = useTilingLayoutStore((s) => s.updateModel);
-  const renameBlock = useTilingLayoutStore((s) => s.renameBlock);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const [editingNodeId, _setEditingNodeId] = useState<string | null>(null);
-  const editingNodeIdRef = useRef<string | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
-
-  // Keep ref in sync so the stable onRenderTab callback can read the latest value
-  // without being listed in its dependency array (which would cause FlexLayout to
-  // re-render every tab, stealing focus from the inline-edit input).
-  editingNodeIdRef.current = editingNodeId;
-
-  function setEditingNodeId(id: string | null) {
-    editingNodeIdRef.current = id;
-    _setEditingNodeId(id);
-  }
+  const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number; canRename: boolean } | null>(null);
 
   // Subscribe to session state changes to trigger re-renders for tab dots
   const sessionStates = useSessionStateStore((s) => s.states);
@@ -145,6 +153,8 @@ export function TilingLayout() {
     return action;
   }, []);
 
+  const currentProjectPath = useFileTreeStore((s) => s.currentPath);
+
   const handleModelChange = useCallback(
     (newModel: Model, _action: Action) => {
       updateModel(newModel);
@@ -153,10 +163,12 @@ export function TilingLayout() {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         const json = newModel.toJson();
-        invoke("save_ui_preferences", { layoutJson: json }).catch(() => {});
+        const args: Record<string, unknown> = { layoutJson: json };
+        if (currentProjectPath) args.projectPath = currentProjectPath;
+        invoke("save_ui_preferences", args).catch(() => {});
       }, LAYOUT_SAVE_DEBOUNCE_MS);
     },
-    [updateModel],
+    [updateModel, currentProjectPath],
   );
 
   const factory = useCallback((node: TabNode) => {
@@ -181,7 +193,7 @@ export function TilingLayout() {
             type="button"
             title="Refresh file tree"
             aria-label="Refresh file tree"
-            className="flex h-5 w-5 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
             onMouseDown={(e) => {
               e.stopPropagation();
             }}
@@ -197,7 +209,7 @@ export function TilingLayout() {
             type="button"
             title="Collapse all folders"
             aria-label="Collapse all folders"
-            className="flex h-5 w-5 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+            className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
             onMouseDown={(e) => {
               e.stopPropagation();
             }}
@@ -228,58 +240,50 @@ export function TilingLayout() {
         const dotClass = STATE_CLASSES[state] ?? STATE_CLASSES.idle;
 
         renderValues.leading = (
-          <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1.5">
             <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotClass}`} />
-            <CliIcon sessionType={sessionType} className="h-4 w-4" />
+            <CliIcon sessionType={sessionType} className="h-4 w-4 shrink-0" />
           </div>
         );
       } else if (component === "plugin" && config?.pluginIcon) {
         const PluginIcon = getPluginIcon(config.pluginIcon) ?? Puzzle;
         renderValues.leading = (
-          <PluginIcon className="h-4 w-4 text-ctp-overlay1" strokeWidth={1.5} />
+          <PluginIcon className="h-4 w-4 shrink-0 text-ctp-overlay1" strokeWidth={1.5} />
         );
       } else {
         const LucideIcon = LUCIDE_TAB_ICONS[component];
         if (LucideIcon) {
           renderValues.leading = (
-            <LucideIcon className="h-4 w-4 text-ctp-overlay1" strokeWidth={1.5} />
+            <LucideIcon className="h-4 w-4 shrink-0 text-ctp-overlay1" strokeWidth={1.5} />
           );
         }
       }
 
-      // --- Content: editable name ---
-      // Read editing state from ref (NOT from state) so this callback stays stable
-      // and FlexLayout doesn't re-render all tabs on edit start (which steals focus).
-      const isEditing = editingNodeIdRef.current === nodeId;
+      // --- Content: name label with double-click handling ---
+      // ALL tabs block double-click propagation to prevent FlexLayout's maximize
+      // toggle on double-click. The maximize button in the tabset header still works
+      // because it uses onClick, not onDoubleClick.
+      const isRenamable = RENAMABLE_BLOCK_TYPES.has(component);
+
+      const handleDoubleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.nativeEvent.stopImmediatePropagation();
+        if (isRenamable) {
+          useTilingLayoutStore.getState().setEditingTabId(nodeId);
+        }
+      };
 
       renderValues.content = (
-        <div
-          className="flex min-w-0 items-center"
-          onDoubleClick={(e) => {
-            e.stopPropagation();
-            setEditingNodeId(nodeId);
-          }}
-          onMouseDown={(e) => {
-            // When editing, stop FlexLayout from intercepting mousedown for
-            // tab selection / drag, which would steal focus from the input.
-            if (editingNodeIdRef.current === nodeId) {
-              e.stopPropagation();
-            }
-          }}
+        <span
+          data-tab-node-id={isRenamable ? nodeId : undefined}
+          className="truncate text-app-sm"
+          onDoubleClick={handleDoubleClick}
         >
-          <InlineEdit
-            value={node.getName()}
-            isEditing={isEditing}
-            onEditingChange={(editing) => setEditingNodeId(editing ? nodeId : null)}
-            onSave={(newName) => renameBlock(nodeId, newName)}
-            className="truncate text-xs"
-          />
-        </div>
+          {node.getName()}
+        </span>
       );
     },
-    // editingNodeId intentionally omitted — read from editingNodeIdRef instead
-    // to keep callback stable and prevent FlexLayout from re-rendering all tabs.
-    [sessionStates, renameBlock],
+    [sessionStates],
   );
 
   const onContextMenu = useCallback(
@@ -287,7 +291,9 @@ export function TilingLayout() {
       if (node.getType() !== "tab") return;
       event.preventDefault();
       event.stopPropagation();
-      setContextMenu({ nodeId: node.getId(), x: event.clientX, y: event.clientY });
+      const component = (node as TabNode).getComponent?.() ?? "";
+      const canRename = RENAMABLE_BLOCK_TYPES.has(component);
+      setContextMenu({ nodeId: node.getId(), x: event.clientX, y: event.clientY, canRename });
     },
     [],
   );
@@ -307,15 +313,17 @@ export function TilingLayout() {
         onRenderTab={onRenderTab}
         onContextMenu={onContextMenu}
       />
+      <TabNameOverlay />
       {contextMenu && (
         <TabContextMenu
           nodeId={contextMenu.nodeId}
           position={{ x: contextMenu.x, y: contextMenu.y }}
+          canRename={contextMenu.canRename}
           onClose={() => setContextMenu(null)}
           onStartRename={(id) => {
             // Delay so FlexLayout can settle focus after context menu closes;
             // without this the InlineEdit input blurs immediately.
-            setTimeout(() => setEditingNodeId(id), 80);
+            setTimeout(() => useTilingLayoutStore.getState().setEditingTabId(id), 80);
           }}
         />
       )}
