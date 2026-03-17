@@ -23,6 +23,7 @@ vi.mock("@/lib/ipc", () => {
     isTilingDesktop: vi.fn().mockResolvedValue(false),
     isDev: vi.fn().mockResolvedValue(false),
     listen: vi.fn().mockResolvedValue(() => {}),
+    invoke: vi.fn().mockResolvedValue(null),
   };
 });
 
@@ -51,6 +52,39 @@ vi.mock("@/stores/file-tree", async () => {
     useFileTreeStore,
   };
 });
+
+vi.mock("@/stores/workspace", () => ({
+  useWorkspaceStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = {
+        workspaces: [],
+        activeWorkspaceId: null,
+        loading: false,
+        loadWorkspaces: vi.fn(),
+        activateWorkspace: vi.fn(),
+        updateWorkspaceDetails: vi.fn(),
+        deleteWorkspace: vi.fn(),
+        createWorkspace: vi.fn(),
+        renameWorkspace: vi.fn(),
+        addProject: vi.fn(),
+        removeProject: vi.fn(),
+        setActiveWorkspace: vi.fn(),
+        openWorkspaceInNewWindow: vi.fn(),
+      };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({
+        workspaces: [],
+        activeWorkspaceId: null,
+        loading: false,
+        loadWorkspaces: vi.fn(),
+      }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    }
+  ),
+}));
 
 describe("Titlebar", () => {
   beforeEach(() => {

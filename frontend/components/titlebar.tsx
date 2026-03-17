@@ -23,6 +23,7 @@ import { AboutDialog } from "./about-dialog";
 import { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
 import { SettingsDialog } from "./settings-dialog";
 import { ResourceUsagePopover } from "./resource-usage-popover";
+import { WorkspaceSwitcher } from "./workspace-switcher";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -87,7 +88,7 @@ export function Titlebar() {
         isMac && "pl-[78px]"
       )}
     >
-      {/* Left: menu + sidebar toggle */}
+      {/* Left: menu + workspace switcher */}
       <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <div className="flex w-12 shrink-0 items-center justify-center">
           <DropdownMenu>
@@ -103,14 +104,14 @@ export function Titlebar() {
             <DropdownMenuItem onClick={openProject}>
               <Plus className="h-3.5 w-3.5" />
               Add Project
-              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+              <span className="ml-auto font-mono text-app-xs text-ctp-overlay0">
                 {isMac ? "\u2318" : "Ctrl"}+Shift+O
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => useCommandPaletteStore.getState().open("commands")}>
               <Search className="h-3.5 w-3.5" />
               Command Palette
-              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+              <span className="ml-auto font-mono text-app-xs text-ctp-overlay0">
                 {isMac ? "\u2318" : "Ctrl"}+Shift+P
               </span>
             </DropdownMenuItem>
@@ -118,14 +119,14 @@ export function Titlebar() {
             <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
               <Settings className="h-3.5 w-3.5" />
               Settings
-              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+              <span className="ml-auto font-mono text-app-xs text-ctp-overlay0">
                 {isMac ? "\u2318" : "Ctrl"}+,
               </span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setShortcutsOpen(true)}>
               <Keyboard className="h-3.5 w-3.5" />
               Shortcuts
-              <span className="ml-auto font-mono text-[11px] text-ctp-overlay0">
+              <span className="ml-auto font-mono text-app-xs text-ctp-overlay0">
                 {isMac ? "\u2318" : "Ctrl"}+?
               </span>
             </DropdownMenuItem>
@@ -136,11 +137,11 @@ export function Titlebar() {
           </DropdownMenuContent>
           </DropdownMenu>
         </div>
-
+        <WorkspaceSwitcher />
       </div>
 
       <span
-        className="pointer-events-none absolute inset-x-0 text-center text-sm font-semibold text-ctp-overlay1"
+        className="pointer-events-none absolute inset-x-0 text-center text-app font-semibold text-ctp-overlay1"
       >
         {title}
       </span>
@@ -152,7 +153,7 @@ export function Titlebar() {
             onClick={toggleLiteMode}
             aria-label="Toggle lite mode"
             className={cn(
-              "mr-1 inline-flex h-6 items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-semibold uppercase transition-colors",
+              "mr-1 inline-flex h-6 items-center gap-1 rounded border px-1.5 font-mono text-app-xs font-semibold uppercase transition-colors",
               isLite
                 ? "border-ctp-yellow/40 bg-ctp-yellow/10 text-ctp-yellow"
                 : "border-ctp-surface1 bg-ctp-surface0/50 text-ctp-overlay0 hover:text-ctp-text"

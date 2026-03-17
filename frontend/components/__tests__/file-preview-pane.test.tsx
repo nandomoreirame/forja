@@ -105,7 +105,7 @@ describe("FilePreviewPane", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("shows Forja branding with keyboard shortcuts when open but no file selected", () => {
+  it("returns null when open but no file selected (no empty state)", () => {
     useFilePreviewStore.setState({
       isOpen: true,
       isLoading: false,
@@ -113,13 +113,8 @@ describe("FilePreviewPane", () => {
       content: null,
       error: null,
     });
-    renderWithSuspense(<FilePreviewPane />);
-    const pane = screen.getByTestId("file-preview-pane");
-    expect(pane).toBeInTheDocument();
-    expect(screen.getByText("Forja")).toBeInTheDocument();
-    expect(screen.getByText("A dedicated desktop client for vibe coders")).toBeInTheDocument();
-    expect(screen.getByText("Quick open")).toBeInTheDocument();
-    expect(screen.getByText("Command palette")).toBeInTheDocument();
+    const { container } = renderWithSuspense(<FilePreviewPane />);
+    expect(container.innerHTML).toBe("");
   });
 
   it("renders with fixed width when open", () => {

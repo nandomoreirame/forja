@@ -1,5 +1,5 @@
 import { Component, Suspense, lazy, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
-import { AlertCircle, Pencil, Eye, Anvil } from 'lucide-react';
+import { AlertCircle, Pencil, Eye } from 'lucide-react';
 import { invoke } from '@/lib/ipc';
 import { useFilePreviewStore } from '@/stores/file-preview';
 import { useGitDiffStore } from '@/stores/git-diff';
@@ -9,7 +9,6 @@ import { ImageViewer } from './image-viewer';
 import { MarkdownRenderer } from './markdown-renderer';
 import { GitDiffViewer } from './git-diff-viewer';
 import { detectLanguage } from '@/lib/detect-language';
-import { MOD_KEY } from '@/lib/platform';
 
 const MonacoEditor = lazy(() =>
   import("./monaco-editor").then((module) => ({
@@ -119,8 +118,8 @@ class PreviewErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <div className="flex flex-col items-center gap-3 text-center">
             <AlertCircle className="h-8 w-8 text-ctp-red" strokeWidth={1.5} />
             <div>
-              <p className="text-sm font-medium text-ctp-text">Failed to render preview</p>
-              <p className="mt-1 text-xs text-ctp-overlay1">An error occurred while rendering this file.</p>
+              <p className="text-app font-medium text-ctp-text">Failed to render preview</p>
+              <p className="mt-1 text-app-sm text-ctp-overlay1">An error occurred while rendering this file.</p>
             </div>
           </div>
         </div>
@@ -177,38 +176,7 @@ function FilePreviewPaneContent() {
   const showEmptyState = !hasFile && !isLoading && !error && !isDiffView;
 
   if (showEmptyState) {
-    const mod = MOD_KEY;
-    const kbdClass = "inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-[11px] text-ctp-overlay1";
-    const sepClass = "text-[11px] text-ctp-surface1";
-
-    return (
-      <div
-        data-testid="file-preview-pane"
-        className="flex h-full w-full flex-col items-center justify-center gap-4"
-      >
-        <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
-        <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
-        <p className="text-sm text-ctp-overlay1">
-          A dedicated desktop client for vibe coders
-        </p>
-        <div className="mt-4 flex flex-col items-center gap-3 text-sm text-ctp-overlay1">
-          <span className="flex items-center gap-1">
-            <kbd className={kbdClass}>{mod}</kbd>
-            <span className={sepClass}>+</span>
-            <kbd className={kbdClass}>P</kbd>
-            <span className="ml-2">Quick open</span>
-          </span>
-          <span className="flex items-center gap-1">
-            <kbd className={kbdClass}>{mod}</kbd>
-            <span className={sepClass}>+</span>
-            <kbd className={kbdClass}>Shift</kbd>
-            <span className={sepClass}>+</span>
-            <kbd className={kbdClass}>P</kbd>
-            <span className="ml-2">Command palette</span>
-          </span>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -222,7 +190,7 @@ function FilePreviewPaneContent() {
           <div className="flex h-full items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand border-t-transparent" />
-              <p className="text-sm text-ctp-overlay1">Loading file...</p>
+              <p className="text-app text-ctp-overlay1">Loading file...</p>
             </div>
           </div>
         )}
@@ -236,8 +204,8 @@ function FilePreviewPaneContent() {
                 strokeWidth={1.5}
               />
               <div>
-                <p className="text-sm font-medium text-ctp-text">Failed to load file</p>
-                <p className="mt-1 text-xs text-ctp-overlay1">{error}</p>
+                <p className="text-app font-medium text-ctp-text">Failed to load file</p>
+                <p className="mt-1 text-app-sm text-ctp-overlay1">{error}</p>
               </div>
             </div>
           </div>
@@ -280,7 +248,7 @@ function FilePreviewPaneContent() {
 
       {/* Footer — file metadata + edit/preview toggle */}
       {!isDiffView && !isLoading && !error && content && (
-        <div className="flex h-9 shrink-0 items-center gap-3 border-t border-ctp-surface0 px-3 font-mono text-[11px] text-ctp-overlay1">
+        <div className="flex h-9 shrink-0 items-center gap-3 border-t border-ctp-surface0 px-3 font-mono text-app-xs text-ctp-overlay1">
           {isImage ? (
             <>
               <span>{formatFileSize(content.size)}</span>
@@ -316,7 +284,7 @@ function FilePreviewPaneContent() {
               <button
                 onClick={() => setEditing(!isEditing)}
                 aria-label={isEditing ? "Switch to preview" : "Switch to edit"}
-                className="inline-flex h-6 items-center gap-1 rounded px-2 font-sans text-[11px] text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                className="inline-flex h-6 items-center gap-1 rounded px-2 font-sans text-app-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
               >
                 {isEditing ? (
                   <>
