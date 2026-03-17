@@ -7,7 +7,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -62,7 +62,6 @@ interface ProjectIconProps {
   color: string;
   isThinking?: boolean;
   isNotified?: boolean;
-  shortcutIndex?: number | null;
 }
 
 function ProjectIcon({
@@ -75,7 +74,6 @@ function ProjectIcon({
   color,
   isThinking,
   isNotified,
-  shortcutIndex,
 }: ProjectIconProps) {
   const showSpinner = !isActive && !!isThinking;
   const showBadge = !isActive && !!isNotified;
@@ -127,14 +125,6 @@ function ProjectIcon({
           className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-ctp-green ring-1 ring-ctp-mantle"
           aria-label={`${project.name} session finished`}
         />
-      )}
-      {shortcutIndex != null && (
-        <span
-          className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-ctp-surface0 text-app-xs font-bold text-ctp-mauve ring-1 ring-ctp-mantle"
-          aria-hidden="true"
-        >
-          {shortcutIndex}
-        </span>
       )}
     </button>
   );
@@ -248,21 +238,6 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
   const toggleChat = useAgentChatStore((s) => s.togglePanel);
   const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
 
-  const [altPressed, setAltPressed] = useState(false);
-
-  useEffect(() => {
-    const sync = (e: KeyboardEvent) => setAltPressed(e.altKey);
-    const clear = () => setAltPressed(false);
-    window.addEventListener("keydown", sync);
-    window.addEventListener("keyup", sync);
-    window.addEventListener("blur", clear);
-    return () => {
-      window.removeEventListener("keydown", sync);
-      window.removeEventListener("keyup", sync);
-      window.removeEventListener("blur", clear);
-    };
-  }, []);
-
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editName, setEditName] = useState("");
   const [editIconPath, setEditIconPath] = useState("");
@@ -366,7 +341,6 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 color={getProjectColor(project.name)}
                 isThinking={thinkingProjects?.has(project.path)}
                 isNotified={notifiedProjects?.has(project.path)}
-                shortcutIndex={altPressed && index < 9 ? index + 1 : null}
               />
             ))}
           </SortableContext>
