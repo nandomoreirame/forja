@@ -13,14 +13,13 @@ import {
 import type { CliId, SessionType } from "../cli-registry";
 
 describe("CLI_REGISTRY", () => {
-  it("contains all six CLI entries", () => {
+  it("contains all five CLI entries", () => {
     const ids = Object.keys(CLI_REGISTRY) as CliId[];
-    expect(ids).toHaveLength(6);
+    expect(ids).toHaveLength(5);
     expect(ids).toContain("claude");
     expect(ids).toContain("gemini");
     expect(ids).toContain("codex");
     expect(ids).toContain("cursor-agent");
-    expect(ids).toContain("opencode");
     expect(ids).toContain("gh-copilot");
   });
 
@@ -136,38 +135,6 @@ describe("CLI_REGISTRY", () => {
     });
   });
 
-  describe("opencode entry", () => {
-    it("has correct displayName", () => {
-      expect(CLI_REGISTRY.opencode.displayName).toBe("OpenCode");
-    });
-
-    it("has correct binary", () => {
-      expect(CLI_REGISTRY.opencode.binary).toBe("opencode");
-    });
-
-    it("has correct description", () => {
-      expect(CLI_REGISTRY.opencode.description).toBe(
-        "Open source AI coding agent"
-      );
-    });
-
-    it("has correct iconColor using Catppuccin teal", () => {
-      expect(CLI_REGISTRY.opencode.iconColor).toBe("text-ctp-teal");
-    });
-
-    it("has correct id", () => {
-      expect(CLI_REGISTRY.opencode.id).toBe("opencode");
-    });
-
-    it("has an icon path starting with ./images/", () => {
-      expect(CLI_REGISTRY.opencode.icon).toMatch(/^\.\/images\//);
-    });
-
-    it("has icon pointing to opencode.svg", () => {
-      expect(CLI_REGISTRY.opencode.icon).toBe("./images/opencode.svg");
-    });
-  });
-
   describe("gh-copilot entry", () => {
     it("has correct displayName", () => {
       expect(CLI_REGISTRY["gh-copilot"].displayName).toBe("GitHub Copilot");
@@ -237,13 +204,6 @@ describe("getCliDefinition", () => {
     expect(def.binary).toBe("cursor-agent");
   });
 
-  it("returns the correct definition for opencode", () => {
-    const def = getCliDefinition("opencode");
-    expect(def.id).toBe("opencode");
-    expect(def.displayName).toBe("OpenCode");
-    expect(def.binary).toBe("opencode");
-  });
-
   it("returns the correct definition for gh-copilot", () => {
     const def = getCliDefinition("gh-copilot");
     expect(def.id).toBe("gh-copilot");
@@ -274,10 +234,6 @@ describe("getSessionDisplayName", () => {
       expect(getSessionDisplayName("cursor-agent")).toBe("Cursor Agent");
     });
 
-    it("returns just displayName for opencode", () => {
-      expect(getSessionDisplayName("opencode")).toBe("OpenCode");
-    });
-
     it("returns just displayName for gh-copilot", () => {
       expect(getSessionDisplayName("gh-copilot")).toBe("GitHub Copilot");
     });
@@ -304,10 +260,6 @@ describe("getSessionDisplayName", () => {
       expect(getSessionDisplayName("cursor-agent", 5)).toBe("Cursor Agent #5");
     });
 
-    it("returns 'OpenCode #1' for opencode with counter 1", () => {
-      expect(getSessionDisplayName("opencode", 1)).toBe("OpenCode #1");
-    });
-
     it("returns 'GitHub Copilot #2' for gh-copilot with counter 2", () => {
       expect(getSessionDisplayName("gh-copilot", 2)).toBe("GitHub Copilot #2");
     });
@@ -323,14 +275,13 @@ describe("getSessionDisplayName", () => {
 });
 
 describe("getAllCliIds", () => {
-  it("returns an array of all six CLI IDs", () => {
+  it("returns an array of all five CLI IDs", () => {
     const ids = getAllCliIds();
-    expect(ids).toHaveLength(6);
+    expect(ids).toHaveLength(5);
     expect(ids).toContain("claude");
     expect(ids).toContain("gemini");
     expect(ids).toContain("codex");
     expect(ids).toContain("cursor-agent");
-    expect(ids).toContain("opencode");
     expect(ids).toContain("gh-copilot");
   });
 
@@ -344,14 +295,13 @@ describe("getAllCliIds", () => {
 });
 
 describe("getAllCliBinaries", () => {
-  it("returns an array of all six binary names", () => {
+  it("returns an array of all five binary names", () => {
     const binaries = getAllCliBinaries();
-    expect(binaries).toHaveLength(6);
+    expect(binaries).toHaveLength(5);
     expect(binaries).toContain("claude");
     expect(binaries).toContain("gemini");
     expect(binaries).toContain("codex");
     expect(binaries).toContain("cursor-agent");
-    expect(binaries).toContain("opencode");
     expect(binaries).toContain("gh");
   });
 
@@ -390,10 +340,6 @@ describe("chatSupported field", () => {
     expect(CLI_REGISTRY["cursor-agent"].chatSupported).toBe(true);
   });
 
-  it("opencode does not support chat", () => {
-    expect(CLI_REGISTRY.opencode.chatSupported).toBe(false);
-  });
-
   it("gh-copilot does not support chat", () => {
     expect(CLI_REGISTRY["gh-copilot"].chatSupported).toBe(false);
   });
@@ -406,7 +352,6 @@ describe("getChatCliIds", () => {
     expect(ids).toContain("gemini");
     expect(ids).toContain("codex");
     expect(ids).toContain("cursor-agent");
-    expect(ids).not.toContain("opencode");
     expect(ids).not.toContain("gh-copilot");
   });
 
@@ -431,8 +376,8 @@ describe("TERMINAL_ICON", () => {
 
 describe("type contracts", () => {
   it("CliId type covers all expected values", () => {
-    const ids: CliId[] = ["claude", "gemini", "codex", "cursor-agent", "opencode", "gh-copilot"];
-    expect(ids).toHaveLength(6);
+    const ids: CliId[] = ["claude", "gemini", "codex", "cursor-agent", "gh-copilot"];
+    expect(ids).toHaveLength(5);
   });
 
   it("SessionType extends CliId with terminal", () => {
@@ -441,11 +386,10 @@ describe("type contracts", () => {
       "gemini",
       "codex",
       "cursor-agent",
-      "opencode",
       "gh-copilot",
       "terminal",
     ];
-    expect(sessionTypes).toHaveLength(7);
+    expect(sessionTypes).toHaveLength(6);
   });
 });
 
@@ -464,10 +408,6 @@ describe("resumeFlag field", () => {
 
   it("cursor-agent uses '--resume=' flag format", () => {
     expect(CLI_REGISTRY["cursor-agent"].resumeFlag).toBe("--resume=");
-  });
-
-  it("opencode has no resumeFlag (no resume support)", () => {
-    expect(CLI_REGISTRY.opencode.resumeFlag).toBeUndefined();
   });
 
   it("gh-copilot has no resumeFlag (no resume support)", () => {
@@ -494,10 +434,6 @@ describe("sessionIdPattern field", () => {
   it("cursor-agent has sessionIdPattern defined", () => {
     expect(CLI_REGISTRY["cursor-agent"].sessionIdPattern).toBeDefined();
     expect(CLI_REGISTRY["cursor-agent"].sessionIdPattern).toBeInstanceOf(RegExp);
-  });
-
-  it("opencode has no sessionIdPattern (no resume support)", () => {
-    expect(CLI_REGISTRY.opencode.sessionIdPattern).toBeUndefined();
   });
 
   it("gh-copilot has no sessionIdPattern (no resume support)", () => {
@@ -584,7 +520,6 @@ describe("CliDefinition interface includes resumeFlag and sessionIdPattern", () 
   });
 
   it("CLIs without resume support have no resumeFlag", () => {
-    expect(CLI_REGISTRY.opencode.resumeFlag).toBeUndefined();
     expect(CLI_REGISTRY["gh-copilot"].resumeFlag).toBeUndefined();
   });
 });
@@ -604,10 +539,6 @@ describe("detectSessionId", () => {
 
   it("returns session ID for cursor-agent output matching 'Chat: my-chat-id'", () => {
     expect(detectSessionId("cursor-agent", "Chat: my-chat-id")).toBe("my-chat-id");
-  });
-
-  it("returns null for CLIs with no sessionIdPattern (opencode)", () => {
-    expect(detectSessionId("opencode", "session: abc123")).toBeNull();
   });
 
   it("returns null for CLIs with no sessionIdPattern (gh-copilot)", () => {
@@ -650,13 +581,13 @@ describe("computeTabDisplayNames", () => {
         { id: "t1", sessionType: "claude" },
         { id: "t2", sessionType: "gemini" },
         { id: "t3", sessionType: "terminal" },
-        { id: "t4", sessionType: "opencode" },
+        { id: "t4", sessionType: "gh-copilot" },
       ];
       const names = computeTabDisplayNames(tabs);
       expect(names["t1"]).toBe("Claude Code");
       expect(names["t2"]).toBe("Gemini CLI");
       expect(names["t3"]).toBe("Terminal");
-      expect(names["t4"]).toBe("OpenCode");
+      expect(names["t4"]).toBe("GitHub Copilot");
     });
   });
 

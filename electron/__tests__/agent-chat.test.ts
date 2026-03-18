@@ -78,7 +78,6 @@ describe("agent-chat", () => {
     });
 
     it("returns null for unsupported CLI", () => {
-      expect(buildCliArgs("opencode", "/project")).toBeNull();
       expect(buildCliArgs("gh-copilot", "/project")).toBeNull();
       expect(buildCliArgs("unknown" as never, "/project")).toBeNull();
     });
@@ -139,7 +138,7 @@ describe("agent-chat", () => {
     });
 
     it("returns null for unsupported CLI", () => {
-      const session = spawnChatSession("s1", "opencode" as never, "/project", vi.fn(), vi.fn());
+      const session = spawnChatSession("s1", "gh-copilot" as never, "/project", vi.fn(), vi.fn());
       expect(session).toBeNull();
     });
   });

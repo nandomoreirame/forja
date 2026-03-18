@@ -272,12 +272,11 @@ describe("RightSidebar", () => {
     expect(firstId).not.toBe(secondId);
   });
 
-  it("highlights browser icon when a browser block exists", () => {
+  it("browser button has consistent styling regardless of active browser blocks", () => {
     mockHasBlockOfType.mockImplementation((type: string) => type === "browser");
     render(<RightSidebar hasProject />);
     const btn = screen.getByLabelText("Browser");
-    expect(btn.className).toContain("bg-ctp-surface0");
-    expect(btn.className).toContain("text-ctp-mauve");
+    expect(btn.className).toContain("text-ctp-overlay1");
   });
 
   it("renders global-scope plugin even without active project", () => {

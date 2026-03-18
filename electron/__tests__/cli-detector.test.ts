@@ -128,8 +128,7 @@ describe("cli-detector", () => {
     it("returns a map of CLI IDs to their detection results", async () => {
       mockExecFile.mockImplementation((_cmd, args, _opts, cb) => {
         const argList = args as string[];
-        // opencode and gh are installed
-        if (argList.includes("opencode") || argList.includes("gh")) {
+        if (argList.includes("gh")) {
           (cb as (err: null) => void)(null);
         } else if (argList.includes("extension") && argList.includes("list")) {
           // copilot extension is present
@@ -142,9 +141,8 @@ describe("cli-detector", () => {
       });
 
       const { detectInstalledClis } = await import("../cli-detector");
-      const result = await detectInstalledClis(["opencode", "gh-copilot", "claude", "gemini"]);
+      const result = await detectInstalledClis(["gh-copilot", "claude", "gemini"]);
 
-      expect(result["opencode"]).toBe(true);
       expect(result["gh-copilot"]).toBe(true);
       expect(result["claude"]).toBe(false);
       expect(result["gemini"]).toBe(false);

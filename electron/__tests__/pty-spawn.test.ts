@@ -28,29 +28,6 @@ describe("spawnPty - session type handling", () => {
     mockPtySpawn.mockReturnValue(mockPtyProcess);
   });
 
-  it("spawns opencode binary directly with no extra args", async () => {
-    const { spawnPty } = await import("../pty");
-
-    const mockSender = {
-      send: vi.fn(),
-      isDestroyed: vi.fn(() => false),
-    };
-
-    spawnPty({
-      tabId: "test-tab",
-      path: "/home/test/project",
-      sessionType: "opencode",
-      windowId: 1,
-      sender: mockSender as unknown as Electron.WebContents,
-    });
-
-    expect(mockPtySpawn).toHaveBeenCalledWith(
-      "opencode",
-      [],
-      expect.objectContaining({ cwd: "/home/test/project" })
-    );
-  });
-
   it("spawns gh binary with copilot as first arg for gh-copilot", async () => {
     const { spawnPty } = await import("../pty");
 
