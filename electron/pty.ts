@@ -75,9 +75,9 @@ export function spawnPty(opts: SpawnOptions): string {
     // Terminal sessions do not support resume — resumeArgs intentionally excluded
     args = [...(extraArgs ?? [])];
   } else if (sessionType === "gh-copilot") {
-    // gh copilot is a gh extension: `gh copilot [args...]`
-    shell = "gh";
-    args = ["copilot", ...(extraArgs ?? []), ...(resumeArgs ?? [])];
+    // gh-copilot is a standalone binary: `copilot [args...]`
+    shell = "copilot";
+    args = [...(extraArgs ?? []), ...(resumeArgs ?? [])];
   } else {
     shell = sessionType || "claude";
     args = [...(extraArgs ?? []), ...(resumeArgs ?? [])];

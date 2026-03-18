@@ -63,7 +63,7 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
   "gh-copilot": {
     id: "gh-copilot",
     displayName: "GitHub Copilot",
-    binary: "gh",
+    binary: "copilot",
     description: "AI coding assistant by GitHub Copilot",
     iconColor: "text-ctp-lavender",
     icon: "./images/github-copilot.svg",
