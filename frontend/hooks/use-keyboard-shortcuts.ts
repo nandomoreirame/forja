@@ -10,6 +10,7 @@ import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFocusModeStore } from "@/stores/focus-mode";
+import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
 interface UseKeyboardShortcutsOptions {
@@ -207,19 +208,17 @@ export function useKeyboardShortcuts({
         }
         return;
       }
-      // Ctrl+Tab / Ctrl+Shift+Tab: cycle tabs
+      // Ctrl+Tab / Ctrl+Shift+Tab: cycle ALL tabs across ALL panes (like Chrome)
       if (event.ctrlKey && event.key === "Tab") {
         event.preventDefault();
-        const currentTabs = tabsRef.current;
-        const currentActive = activeTabIdRef.current;
-        if (currentTabs && currentTabs.length > 1 && currentActive) {
-          const currentIndex = currentTabs.findIndex(
-            (t) => t.id === currentActive,
-          );
-          const nextIndex = event.shiftKey
-            ? (currentIndex - 1 + currentTabs.length) % currentTabs.length
-            : (currentIndex + 1) % currentTabs.length;
-          useTerminalTabsStore.getState().setActiveTab(currentTabs[nextIndex].id);
+        const direction = event.shiftKey ? "backward" : "forward";
+        const nextTabId = tilingStore.cycleGlobalTab(direction);
+        if (nextTabId) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              paneFocusRegistry.focus(nextTabId);
+            });
+          });
         }
       }
     };

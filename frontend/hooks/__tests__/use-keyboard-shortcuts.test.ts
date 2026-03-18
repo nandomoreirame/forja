@@ -8,6 +8,9 @@ const tilingActions = {
   hasBlock: vi.fn(() => false),
   addBlock: vi.fn(),
   selectTab: vi.fn(),
+  cycleActiveTabset: vi.fn(() => null),
+  cycleGlobalTab: vi.fn(() => null),
+  model: {},
 };
 
 vi.mock("@/stores/tiling-layout", () => ({
@@ -113,6 +116,18 @@ vi.mock("@/stores/user-settings", () => ({
 
 vi.mock("@/stores/browser-pane", () => ({
   useBrowserPaneStore: { getState: () => ({}) },
+}));
+
+const mockFocusActiveTabInTabset = vi.fn();
+vi.mock("@/lib/pane-focus", () => ({
+  focusActiveTabInTabset: (...args: unknown[]) => mockFocusActiveTabInTabset(...args),
+}));
+
+const mockPaneFocusRegistryFocus = vi.fn();
+vi.mock("@/lib/pane-focus-registry", () => ({
+  paneFocusRegistry: {
+    focus: (...args: unknown[]) => mockPaneFocusRegistryFocus(...args),
+  },
 }));
 
 function setupHook() {
@@ -563,5 +578,78 @@ describe("useKeyboardShortcuts open files and browser", () => {
     );
 
     expect(rightPanelActions.togglePanel).not.toHaveBeenCalled();
+  });
+});
+
+describe("useKeyboardShortcuts global tab cycling (Ctrl+Tab)", () => {
+  let origRAF: typeof requestAnimationFrame;
+
+  beforeEach(() => {
+    tilingActions.cycleGlobalTab.mockReset().mockReturnValue(null);
+    mockFocusActiveTabInTabset.mockReset();
+    mockPaneFocusRegistryFocus.mockReset();
+    origRAF = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => { cb(0); return 0; };
+  });
+
+  afterEach(() => {
+    globalThis.requestAnimationFrame = origRAF;
+  });
+
+  it("Ctrl+Tab calls cycleGlobalTab with forward", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(tilingActions.cycleGlobalTab).toHaveBeenCalledWith("forward");
+  });
+
+  it("Ctrl+Shift+Tab calls cycleGlobalTab with backward", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tilingActions.cycleGlobalTab).toHaveBeenCalledWith("backward");
+  });
+
+  it("focuses the new tab via paneFocusRegistry when cycleGlobalTab returns a tab ID", () => {
+    tilingActions.cycleGlobalTab.mockReturnValue("tab-2");
+    mockPaneFocusRegistryFocus.mockReset();
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(mockPaneFocusRegistryFocus).toHaveBeenCalledWith("tab-2");
+  });
+
+  it("does not focus when cycleGlobalTab returns null", () => {
+    tilingActions.cycleGlobalTab.mockReturnValue(null);
+    mockPaneFocusRegistryFocus.mockReset();
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(mockPaneFocusRegistryFocus).not.toHaveBeenCalled();
   });
 });
