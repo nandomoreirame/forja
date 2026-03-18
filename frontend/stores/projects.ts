@@ -221,7 +221,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     // Layout restore LAST among sync changes so that when FlexLayout
     // re-renders with the new model, all other stores already have the
     // correct state for the incoming project.
-    tilingStore.restoreLayoutForProject(projectPath);
+    const projectTabIds = new Set(
+      tabsStore.getTabsForProject(projectPath).map((t) => t.id),
+    );
+    tilingStore.restoreLayoutForProject(projectPath, projectTabIds);
     tabsStore.ensureBlocksForProjectTabs(projectPath);
 
     // --- Async operations below (separate render batch) ---

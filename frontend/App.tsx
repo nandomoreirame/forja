@@ -279,6 +279,11 @@ function App({
       } | null>("get_project_ui_state", { workspaceId: wsId, path: projectPath });
 
       if (!uiState || !uiState.tabs || uiState.tabs.length === 0) {
+        // Still open the project so the file tree loads and UI is usable,
+        // even when there are no terminal sessions to restore.
+        await useFileTreeStore.getState().openProjectPath(projectPath);
+        await useProjectsStore.getState().addProject(projectPath);
+
         if (!cancelled) setSessionRestoreDone(true);
         return;
       }

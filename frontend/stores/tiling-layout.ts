@@ -14,7 +14,7 @@ interface TilingLayoutState {
   updateModel: (model: Model) => void;
   getModelJson: () => IJsonModel;
   saveLayoutForProject: (projectPath: string) => void;
-  restoreLayoutForProject: (projectPath: string) => void;
+  restoreLayoutForProject: (projectPath: string, validTerminalIds?: Set<string>) => void;
   addBlock: (config: BlockConfig, targetTabsetId?: string, nodeId?: string, dockLocation?: DockLocation) => void;
   removeBlock: (nodeId: string) => void;
   hasBlock: (nodeId: string) => boolean;
@@ -155,6 +155,23 @@ function removeEmptyTabsets(model: Model): void {
 }
 
 /**
+ * Un-maximizes any tabset that is maximized but has no children.
+ * This prevents a stale persisted layout where tabset-main was saved
+ * maximized and empty from blocking the entire UI.
+ */
+function unmaximizeEmptyTabsets(model: Model): void {
+  model.visitNodes((node) => {
+    if (
+      node.getType() === "tabset" &&
+      (node as any).isMaximized?.() &&
+      (node as any).getChildren().length === 0
+    ) {
+      model.doAction(Actions.maximizeToggle(node.getId()));
+    }
+  });
+}
+
+/**
  * Strips empty tabsets (except tabset-main) from a layout JSON *before*
  * Model.fromJson(). This handles the case where deleteTabset action is a
  * no-op on freshly-parsed models with undefined enableDeleteWhenEmpty.
@@ -217,6 +234,44 @@ export function stripProjectBlocksFromJson(json: IJsonModel): IJsonModel {
       .filter((child) => {
         // Remove project-specific tab blocks
         if (child.type === "tab" && PROJECT_SPECIFIC_BLOCK_TYPES.has(child.component)) {
+          return false;
+        }
+        return true;
+      });
+  }
+
+  return {
+    ...json,
+    layout: {
+      ...json.layout,
+      children: filterChildren((json.layout as any).children ?? []),
+    },
+  };
+}
+
+/**
+ * Strips terminal/browser blocks whose node ID is NOT in the given valid set.
+ * Used during project switch to remove stale blocks from a cached layout
+ * BEFORE creating the FlexLayout model, preventing a visible flash.
+ */
+function stripOrphanTerminalBlocksFromJson(
+  json: IJsonModel,
+  validIds: Set<string>,
+): IJsonModel {
+  function filterChildren(children: any[]): any[] {
+    return children
+      .map((child) => {
+        if (child.children) {
+          return { ...child, children: filterChildren(child.children) };
+        }
+        return child;
+      })
+      .filter((child) => {
+        if (
+          child.type === "tab" &&
+          PROJECT_SPECIFIC_BLOCK_TYPES.has(child.component) &&
+          !validIds.has(child.id)
+        ) {
           return false;
         }
         return true;
@@ -382,19 +437,26 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     }));
   },
 
-  restoreLayoutForProject: (projectPath) => {
+  restoreLayoutForProject: (projectPath, validTerminalIds) => {
     const saved = get().layoutByProject[projectPath];
     if (saved) {
-      // Skip model replacement when the saved layout matches the current
+      // Strip orphan terminal/browser blocks from cached layout BEFORE
+      // building the model so they never render (prevents visible flash).
+      const sanitized = validTerminalIds
+        ? stripOrphanTerminalBlocksFromJson(saved, validTerminalIds)
+        : saved;
+
+      // Skip model replacement when the sanitized layout matches the current
       // model's JSON — avoids a full FlexLayout re-render (and flicker)
       // when switching back to a project whose layout hasn't changed.
       const currentJson = get().model.toJson();
-      if (JSON.stringify(currentJson) === JSON.stringify(saved)) return;
+      if (JSON.stringify(currentJson) === JSON.stringify(sanitized)) return;
 
       try {
-        const cleaned = stripEmptyTabsetsFromJson(saved);
+        const cleaned = stripEmptyTabsetsFromJson(sanitized);
         const model = Model.fromJson(cleaned);
         removeEmptyTabsets(model);
+        unmaximizeEmptyTabsets(model);
         enforceBlockMinWidths(model);
         set({ model, tabCount: countTabs(model) });
       } catch {
@@ -410,6 +472,7 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
         const cleaned = stripEmptyTabsetsFromJson(stripped);
         const model = Model.fromJson(cleaned);
         removeEmptyTabsets(model);
+        unmaximizeEmptyTabsets(model);
         enforceBlockMinWidths(model);
         set({ model, tabCount: countTabs(model) });
       } catch {
@@ -598,6 +661,7 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
       const cleaned = stripEmptyTabsetsFromJson(json);
       const model = Model.fromJson(cleaned);
       removeEmptyTabsets(model);
+      unmaximizeEmptyTabsets(model);
       enforceBlockMinWidths(model);
       set({ model, tabCount: countTabs(model) });
     } catch {

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@/lib/ipc";
-import { useTilingLayoutStore } from "@/stores/tiling-layout";
+import { useTilingLayoutStore, stripProjectBlocksFromJson } from "@/stores/tiling-layout";
 import { parseLayoutJson } from "@/lib/layout-migration";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 
 export interface PanelSizes {
   sidebarSize: number;
@@ -85,7 +86,15 @@ export function usePanelPreferences(projectPath?: string | null) {
         // with their custom names). Blocks for tabs not in config are cleaned up
         // by orphan removal in App.tsx after session restore.
         if (prefs?.layoutJson) {
-          const layoutJson = parseLayoutJson(prefs.layoutJson);
+          let layoutJson = parseLayoutJson(prefs.layoutJson);
+          // When there are no terminal sessions to restore, strip stale
+          // terminal/browser blocks from the layout to avoid orphan panes
+          // that would otherwise linger (the orphan cleanup in restore()
+          // runs before this layout is loaded).
+          const hasTabs = useTerminalTabsStore.getState().tabs.length > 0;
+          if (!hasTabs) {
+            layoutJson = stripProjectBlocksFromJson(layoutJson);
+          }
           useTilingLayoutStore.getState().loadFromJson(layoutJson);
         }
       })
