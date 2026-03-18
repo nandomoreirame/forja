@@ -1,4 +1,4 @@
-export type CliId = "claude" | "gemini" | "codex" | "cursor-agent" | "opencode" | "gh-copilot";
+export type CliId = "claude" | "gemini" | "codex" | "cursor-agent" | "gh-copilot";
 export type SessionType = CliId | "terminal";
 
 export interface CliDefinition {
@@ -59,15 +59,6 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     chatSupported: true,
     resumeFlag: "--resume=",
     sessionIdPattern: /chat[:\s]+([a-zA-Z0-9_-]+)/i,
-  },
-  opencode: {
-    id: "opencode",
-    displayName: "OpenCode",
-    binary: "opencode",
-    description: "Open source AI coding agent",
-    iconColor: "text-ctp-teal",
-    icon: "./images/opencode.svg",
-    chatSupported: false,
   },
   "gh-copilot": {
     id: "gh-copilot",
@@ -154,7 +145,6 @@ const CLI_DISPLAY_ORDER: CliId[] = [
   "codex",
   "gemini",
   "cursor-agent",
-  "opencode",
   "gh-copilot",
 ];
 

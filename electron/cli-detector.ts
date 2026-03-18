@@ -27,7 +27,6 @@ const CLI_BINARY_MAP: Record<string, string> = {
   gemini: "gemini",
   codex: "codex",
   "cursor-agent": "cursor-agent",
-  opencode: "opencode",
 };
 
 /**
