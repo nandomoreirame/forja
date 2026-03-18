@@ -301,10 +301,16 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
           }
         }
 
-        // Restore terminal tabs from disk if no in-memory tabs exist for this project
+        // Restore terminal tabs from disk ONLY on first visit in this
+        // session (no in-memory layout yet).  Once we've saved an
+        // in-memory layout for a project (via saveLayoutForProject on
+        // switch-away), the in-memory state is authoritative and we must
+        // NOT overwrite it with potentially stale disk data — the
+        // fire-and-forget disk save may not have completed yet (race).
         if (savedState.tabs?.length) {
           const existingProjectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
-          if (existingProjectTabs.length === 0) {
+          const hasInMemoryLayout = useTilingLayoutStore.getState().layoutByProject[projectPath] !== undefined;
+          if (existingProjectTabs.length === 0 && !hasInMemoryLayout) {
             const currentTabsStore = useTerminalTabsStore.getState();
             for (const tab of savedState.tabs) {
               const id = tab.id || currentTabsStore.nextTabId();
