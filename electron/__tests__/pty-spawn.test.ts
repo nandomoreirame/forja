@@ -28,7 +28,7 @@ describe("spawnPty - session type handling", () => {
     mockPtySpawn.mockReturnValue(mockPtyProcess);
   });
 
-  it("spawns gh binary with copilot as first arg for gh-copilot", async () => {
+  it("spawns copilot binary directly for gh-copilot", async () => {
     const { spawnPty } = await import("../pty");
 
     const mockSender = {
@@ -45,13 +45,13 @@ describe("spawnPty - session type handling", () => {
     });
 
     expect(mockPtySpawn).toHaveBeenCalledWith(
-      "gh",
-      expect.arrayContaining(["copilot"]),
+      "copilot",
+      [],
       expect.objectContaining({ cwd: "/home/test/project" })
     );
   });
 
-  it("gh-copilot passes copilot as first arg before extraArgs", async () => {
+  it("gh-copilot passes extraArgs to copilot binary", async () => {
     const { spawnPty } = await import("../pty");
 
     const mockSender = {
@@ -72,8 +72,7 @@ describe("spawnPty - session type handling", () => {
     const spawnedBinary = callArgs[0];
     const spawnedArgs = callArgs[1] as string[];
 
-    expect(spawnedBinary).toBe("gh");
-    expect(spawnedArgs[0]).toBe("copilot");
+    expect(spawnedBinary).toBe("copilot");
     expect(spawnedArgs).toContain("--extra-flag");
   });
 
@@ -484,9 +483,8 @@ describe("spawnPty - resumeArgs", () => {
     const spawnedBinary = callArgs[0];
     const spawnedArgs = callArgs[1] as string[];
 
-    expect(spawnedBinary).toBe("gh");
-    expect(spawnedArgs[0]).toBe("copilot");
-    expect(spawnedArgs).toEqual(["copilot", "--extra-flag", "--resume", "session42"]);
+    expect(spawnedBinary).toBe("copilot");
+    expect(spawnedArgs).toEqual(["--extra-flag", "--resume", "session42"]);
   });
 
   it("terminal sessions do NOT receive resumeArgs", async () => {

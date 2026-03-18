@@ -140,8 +140,8 @@ describe("CLI_REGISTRY", () => {
       expect(CLI_REGISTRY["gh-copilot"].displayName).toBe("GitHub Copilot");
     });
 
-    it("has binary set to gh (the parent CLI)", () => {
-      expect(CLI_REGISTRY["gh-copilot"].binary).toBe("gh");
+    it("has binary set to copilot (standalone binary)", () => {
+      expect(CLI_REGISTRY["gh-copilot"].binary).toBe("copilot");
     });
 
     it("has correct description", () => {
@@ -208,7 +208,7 @@ describe("getCliDefinition", () => {
     const def = getCliDefinition("gh-copilot");
     expect(def.id).toBe("gh-copilot");
     expect(def.displayName).toBe("GitHub Copilot");
-    expect(def.binary).toBe("gh");
+    expect(def.binary).toBe("copilot");
   });
 
   it("returns the same object as in the registry", () => {
@@ -302,7 +302,7 @@ describe("getAllCliBinaries", () => {
     expect(binaries).toContain("gemini");
     expect(binaries).toContain("codex");
     expect(binaries).toContain("cursor-agent");
-    expect(binaries).toContain("gh");
+    expect(binaries).toContain("copilot");
   });
 
   it("returns an array", () => {
@@ -317,9 +317,9 @@ describe("getAllCliBinaries", () => {
     });
   });
 
-  it("gh-copilot binary is 'gh'", () => {
+  it("gh-copilot binary is 'copilot'", () => {
     const binaries = getAllCliBinaries();
-    expect(binaries).toContain("gh");
+    expect(binaries).toContain("copilot");
   });
 });
 
