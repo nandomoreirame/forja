@@ -34,10 +34,27 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
   const isVisibleRef = useRef(isVisible);
   isVisibleRef.current = isVisible;
 
+  // RAF-coalesced write buffer: accumulate PTY data chunks and flush once per
+  // animation frame.  This prevents visible viewport "jumps" when the CLI's
+  // TUI framework (Ink) re-renders — its cursor-up + clear + rewrite escape
+  // sequences arrive across multiple IPC events and would otherwise be
+  // processed in separate xterm.js rendering batches, briefly showing
+  // intermediate viewport states (scroll jumping to the top).
+  const writeBufferRef = useRef("");
+  const writeRafRef = useRef(0);
+
   const { spawn, write, resize, close } = usePty({
     tabId,
     onData: (data) => {
-      terminalRef.current?.write(data);
+      writeBufferRef.current += data;
+      if (!writeRafRef.current) {
+        writeRafRef.current = requestAnimationFrame(() => {
+          writeRafRef.current = 0;
+          const buffered = writeBufferRef.current;
+          writeBufferRef.current = "";
+          terminalRef.current?.write(buffered);
+        });
+      }
     },
     onExit: () => {
       terminalRef.current?.write("\r\n\x1b[1;33m[Session ended]\x1b[0m\r\n");
@@ -334,6 +351,13 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       clearTimeout(resizeTimeout);
       resizeObserver?.disconnect();
       dataDisposable?.dispose();
+
+      // Cancel pending write-coalescing RAF and discard buffered data
+      if (writeRafRef.current) {
+        cancelAnimationFrame(writeRafRef.current);
+        writeRafRef.current = 0;
+      }
+      writeBufferRef.current = "";
 
       // Dispose WebGL before parking (can't survive DOM detachment)
       if (webglAddonRef.current) {
