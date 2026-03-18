@@ -7,6 +7,7 @@ import {
   readProjectConfig,
   patchProjectUi,
   patchProjectConfig,
+  clearProjectUi,
   type ForjaProjectConfig,
 } from "./project-config.js";
 
@@ -777,6 +778,23 @@ export function setPinnedPlugin(name: string | null): void {
 
 export function resetConfig(): void {
   store.clear();
+}
+
+/**
+ * Clears only UI-related cached state (layouts, panes, tabs, panel sizes)
+ * while preserving workspaces, projects, and plugin configuration.
+ */
+export function clearUiCache(): void {
+  const workspaces = store.get("workspaces");
+  const cleaned = workspaces.map((ws) => ({
+    ...ws,
+    uiPreferences: { ...DEFAULT_UI_PREFERENCES },
+    projects: ws.projects.map((p) => {
+      clearProjectUi(p.path);
+      return { ...p, ui_state: null };
+    }),
+  }));
+  store.set("workspaces", cleaned);
 }
 
 // ─── Test Helpers (only for use in tests) ────────────────────────────────────

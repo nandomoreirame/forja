@@ -9,6 +9,7 @@ import {
   writeProjectConfig,
   patchProjectConfig,
   patchProjectUi,
+  clearProjectUi,
   ensureGitignore,
 } from "../project-config.js";
 
@@ -84,13 +85,20 @@ describe("project-config", () => {
       expect(content.name).toBe("test-project");
     });
 
-    it("auto-adds .forja/ to .gitignore", () => {
+    it("auto-adds .forja/ to .gitignore in a git repo", () => {
+      fs.mkdirSync(path.join(tmpDir, ".git"));
+      fs.writeFileSync(path.join(tmpDir, ".gitignore"), "node_modules/\n");
+
       writeProjectConfig(tmpDir, { name: "test", ui: {} });
 
-      const gitignorePath = path.join(tmpDir, ".gitignore");
-      expect(fs.existsSync(gitignorePath)).toBe(true);
-      const content = fs.readFileSync(gitignorePath, "utf-8");
+      const content = fs.readFileSync(path.join(tmpDir, ".gitignore"), "utf-8");
       expect(content).toContain(".forja/");
+    });
+
+    it("does not create .gitignore in non-git directories", () => {
+      writeProjectConfig(tmpDir, { name: "test", ui: {} });
+
+      expect(fs.existsSync(path.join(tmpDir, ".gitignore"))).toBe(false);
     });
 
     it("overwrites existing config", () => {
@@ -114,16 +122,24 @@ describe("project-config", () => {
   });
 
   describe("ensureGitignore", () => {
-    it("creates .gitignore with .forja/ entry if missing", () => {
+    it("is a no-op when .git does not exist", () => {
       ensureGitignore(tmpDir);
 
       const gitignorePath = path.join(tmpDir, ".gitignore");
-      expect(fs.existsSync(gitignorePath)).toBe(true);
-      const content = fs.readFileSync(gitignorePath, "utf-8");
-      expect(content).toContain(".forja/");
+      expect(fs.existsSync(gitignorePath)).toBe(false);
     });
 
-    it("appends .forja/ to existing .gitignore", () => {
+    it("is a no-op when .gitignore does not exist even with .git", () => {
+      fs.mkdirSync(path.join(tmpDir, ".git"));
+
+      ensureGitignore(tmpDir);
+
+      const gitignorePath = path.join(tmpDir, ".gitignore");
+      expect(fs.existsSync(gitignorePath)).toBe(false);
+    });
+
+    it("appends .forja/ to existing .gitignore in a git repo", () => {
+      fs.mkdirSync(path.join(tmpDir, ".git"));
       const gitignorePath = path.join(tmpDir, ".gitignore");
       fs.writeFileSync(gitignorePath, "node_modules/\ndist/\n");
 
@@ -135,6 +151,7 @@ describe("project-config", () => {
     });
 
     it("does not duplicate .forja/ entry", () => {
+      fs.mkdirSync(path.join(tmpDir, ".git"));
       const gitignorePath = path.join(tmpDir, ".gitignore");
       fs.writeFileSync(gitignorePath, ".forja/\n");
 
@@ -146,6 +163,7 @@ describe("project-config", () => {
     });
 
     it("detects .forja/ even without trailing newline", () => {
+      fs.mkdirSync(path.join(tmpDir, ".git"));
       const gitignorePath = path.join(tmpDir, ".gitignore");
       fs.writeFileSync(gitignorePath, "node_modules/\n.forja/");
 
@@ -263,6 +281,53 @@ describe("project-config", () => {
       expect(result!.ui!.tabs).toHaveLength(2);
       expect(result!.ui!.tabs![0].cliSessionId).toBe("session-xyz-456");
       expect(result!.ui!.tabs![1].cliSessionId).toBeUndefined();
+    });
+  });
+
+  describe("clearProjectUi", () => {
+    it("removes ui field while preserving other fields", () => {
+      writeProjectConfig(tmpDir, {
+        name: "my-project",
+        icon_path: "/icon.png",
+        last_opened: "2026-03-18",
+        ui: {
+          sidebarOpen: true,
+          sidebarSize: 25,
+          tabs: [{ sessionType: "claude" }],
+          activeTabIndex: 0,
+        },
+      });
+
+      clearProjectUi(tmpDir);
+
+      const result = readProjectConfig(tmpDir);
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe("my-project");
+      expect(result!.icon_path).toBe("/icon.png");
+      expect(result!.last_opened).toBe("2026-03-18");
+      expect(result!.ui).toBeUndefined();
+    });
+
+    it("is a no-op when no config exists", () => {
+      clearProjectUi(tmpDir);
+
+      const result = readProjectConfig(tmpDir);
+      expect(result).toBeNull();
+    });
+
+    it("is a no-op when config has no ui field", () => {
+      writeProjectConfig(tmpDir, {
+        name: "no-ui-project",
+        last_opened: "2026-03-18",
+      });
+
+      clearProjectUi(tmpDir);
+
+      const result = readProjectConfig(tmpDir);
+      expect(result).not.toBeNull();
+      expect(result!.name).toBe("no-ui-project");
+      expect(result!.last_opened).toBe("2026-03-18");
+      expect(result!.ui).toBeUndefined();
     });
   });
 

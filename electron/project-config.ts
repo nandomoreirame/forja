@@ -83,21 +83,29 @@ export function patchProjectUi(
   writeProjectConfig(projectPath, { ...existing, ui: mergedUi });
 }
 
+export function clearProjectUi(projectPath: string): void {
+  const existing = readProjectConfig(projectPath);
+  if (!existing || !existing.ui) return;
+  const { ui: _removed, ...rest } = existing;
+  writeProjectConfig(projectPath, rest);
+}
+
 export function ensureGitignore(projectPath: string): void {
+  const gitDir = path.join(projectPath, ".git");
   const gitignorePath = path.join(projectPath, ".gitignore");
   const entry = ".forja/";
 
   try {
-    if (fs.existsSync(gitignorePath)) {
-      const content = fs.readFileSync(gitignorePath, "utf-8");
-      const lines = content.split("\n").map((l) => l.trim());
-      if (lines.includes(entry)) return;
+    // Only append to an existing .gitignore inside a git repository.
+    // Never create .gitignore from scratch to avoid polluting non-git dirs.
+    if (!fs.existsSync(gitDir) || !fs.existsSync(gitignorePath)) return;
 
-      const separator = content.endsWith("\n") ? "" : "\n";
-      fs.writeFileSync(gitignorePath, content + separator + entry + "\n");
-    } else {
-      fs.writeFileSync(gitignorePath, entry + "\n");
-    }
+    const content = fs.readFileSync(gitignorePath, "utf-8");
+    const lines = content.split("\n").map((l) => l.trim());
+    if (lines.includes(entry)) return;
+
+    const separator = content.endsWith("\n") ? "" : "\n";
+    fs.writeFileSync(gitignorePath, content + separator + entry + "\n");
   } catch {
     // Non-fatal: gitignore update failure
   }

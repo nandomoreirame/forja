@@ -874,7 +874,7 @@ ipcMain.handle("app:clearCache", async () => {
   await ses.clearStorageData();
   await ses.clearCache();
   const configMod = await getConfig();
-  configMod.resetConfig();
+  configMod.clearUiCache();
   const win = BrowserWindow.getFocusedWindow();
   if (win) win.webContents.reload();
 });
