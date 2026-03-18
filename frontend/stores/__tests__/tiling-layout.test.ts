@@ -1855,4 +1855,181 @@ describe("tiling-layout store", () => {
       expect(useTilingLayoutStore.getState().editingTabId).toBeNull();
     });
   });
+
+  describe("getTabsetIds", () => {
+    it("returns tabset-main for default layout", () => {
+      const ids = useTilingLayoutStore.getState().getTabsetIds();
+      expect(ids).toEqual([TABSET_IDS.main]);
+    });
+
+    it("returns multiple tabset IDs after splitting", () => {
+      // Add a terminal and split to create a second tabset
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-1",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const ids = useTilingLayoutStore.getState().getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+      expect(ids).toContain(TABSET_IDS.main);
+    });
+  });
+
+  describe("cycleActiveTabset", () => {
+    it("returns null with only one tabset", () => {
+      const result = useTilingLayoutStore.getState().cycleActiveTabset("forward");
+      expect(result).toBeNull();
+    });
+
+    it("cycles forward to next tabset", () => {
+      // Create two tabsets
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-1",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const ids = useTilingLayoutStore.getState().getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+
+      // Set first as active
+      const { model } = useTilingLayoutStore.getState();
+      model.doAction(Actions.setActiveTabset(ids[0]));
+
+      const result = useTilingLayoutStore.getState().cycleActiveTabset("forward");
+      expect(result).toBe(ids[1]);
+    });
+
+    it("cycles backward to previous tabset", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-1",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const ids = useTilingLayoutStore.getState().getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+
+      // Set second as active
+      const { model } = useTilingLayoutStore.getState();
+      model.doAction(Actions.setActiveTabset(ids[1]));
+
+      const result = useTilingLayoutStore.getState().cycleActiveTabset("backward");
+      expect(result).toBe(ids[0]);
+    });
+
+    it("wraps around forward from last to first", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-1",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const ids = useTilingLayoutStore.getState().getTabsetIds();
+      const lastId = ids[ids.length - 1];
+
+      // Set last as active
+      const { model } = useTilingLayoutStore.getState();
+      model.doAction(Actions.setActiveTabset(lastId));
+
+      const result = useTilingLayoutStore.getState().cycleActiveTabset("forward");
+      expect(result).toBe(ids[0]);
+    });
+
+    it("wraps around backward from first to last", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-1",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const ids = useTilingLayoutStore.getState().getTabsetIds();
+
+      // Set first as active
+      const { model } = useTilingLayoutStore.getState();
+      model.doAction(Actions.setActiveTabset(ids[0]));
+
+      const result = useTilingLayoutStore.getState().cycleActiveTabset("backward");
+      expect(result).toBe(ids[ids.length - 1]);
+    });
+  });
+
+  describe("cycleGlobalTab", () => {
+    it("returns null when there are no tabs at all", () => {
+      const result = useTilingLayoutStore.getState().cycleGlobalTab("forward");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when there is only one tab globally", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-only",
+      );
+      const result = useTilingLayoutStore.getState().cycleGlobalTab("forward");
+      expect(result).toBeNull();
+    });
+
+    it("cycles forward through tabs in the same tabset", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "tab-a",
+      );
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-b",
+      );
+      // tab-b is selected (last added), forward wraps to tab-a
+      const result = useTilingLayoutStore.getState().cycleGlobalTab("forward");
+      expect(result).toBe("tab-a");
+    });
+
+    it("cycles forward across tabsets when at last tab of current tabset", () => {
+      // Add tabs to main tabset
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "tab-a",
+      );
+      // Split to create a second tabset with a new tab
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      // Collect all tab IDs across all tabsets
+      const store = useTilingLayoutStore.getState();
+      const tabsetIds = store.getTabsetIds();
+      expect(tabsetIds.length).toBeGreaterThanOrEqual(2);
+
+      // Select tab-a (first tabset), then cycle forward — should go to second tabset
+      store.selectTab("tab-a");
+      const result = useTilingLayoutStore.getState().cycleGlobalTab("forward");
+      // Result should be a tab in the second tabset (not tab-a)
+      expect(result).not.toBe("tab-a");
+      expect(result).toBeTruthy();
+    });
+
+    it("cycles backward and wraps from first tab to last tab across tabsets", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "tab-a",
+      );
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-b",
+      );
+      // Select tab-a (first tab globally), backward should wrap to tab-b (last tab)
+      useTilingLayoutStore.getState().selectTab("tab-a");
+      const result = useTilingLayoutStore.getState().cycleGlobalTab("backward");
+      expect(result).toBe("tab-b");
+    });
+  });
 });

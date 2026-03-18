@@ -33,6 +33,12 @@ interface TilingLayoutState {
   renameBlock: (nodeId: string, name: string) => void;
   /** Sets (or clears) the node ID of the tab being renamed. */
   setEditingTabId: (id: string | null) => void;
+  /** Returns all tabset IDs in depth-first (left-to-right visual) order. */
+  getTabsetIds: () => string[];
+  /** Cycles active tabset forward/backward with wrap-around. Returns the new active tabset ID or null if only 1 tabset. */
+  cycleActiveTabset: (direction: "forward" | "backward") => string | null;
+  /** Cycles through ALL tabs across ALL tabsets globally (like Chrome's Ctrl+Tab). Returns the new tab ID or null. */
+  cycleGlobalTab: (direction: "forward" | "backward") => string | null;
 }
 
 let tabCounter = 0;
@@ -773,4 +779,79 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
   },
 
   setEditingTabId: (id) => set({ editingTabId: id }),
+
+  getTabsetIds: () => {
+    const ids: string[] = [];
+    get().model.visitNodes((node) => {
+      if (node.getType() === "tabset") {
+        ids.push(node.getId());
+      }
+    });
+    return ids;
+  },
+
+  cycleActiveTabset: (direction) => {
+    const { model } = get();
+    const ids = get().getTabsetIds();
+    if (ids.length <= 1) return null;
+
+    const activeTabset = model.getActiveTabset();
+    const activeId = activeTabset?.getId() ?? ids[0];
+    const currentIndex = ids.indexOf(activeId);
+    const idx = currentIndex === -1 ? 0 : currentIndex;
+
+    const nextIndex =
+      direction === "forward"
+        ? (idx + 1) % ids.length
+        : (idx - 1 + ids.length) % ids.length;
+
+    const nextId = ids[nextIndex];
+    model.doAction(Actions.setActiveTabset(nextId));
+    set({ model });
+    return nextId;
+  },
+
+  cycleGlobalTab: (direction) => {
+    const { model } = get();
+
+    // Collect all tab IDs across all tabsets in depth-first (visual) order
+    const allTabIds: string[] = [];
+    let currentSelectedId: string | null = null;
+
+    model.visitNodes((node) => {
+      if (node.getType() === "tab") {
+        allTabIds.push(node.getId());
+      }
+    });
+
+    if (allTabIds.length <= 1) return null;
+
+    // Find the currently selected tab in the active tabset
+    const activeTabset = model.getActiveTabset();
+    if (activeTabset) {
+      const selectedNode = activeTabset.getSelectedNode();
+      currentSelectedId = selectedNode?.getId() ?? null;
+    }
+
+    const currentIndex = currentSelectedId ? allTabIds.indexOf(currentSelectedId) : 0;
+    const idx = currentIndex === -1 ? 0 : currentIndex;
+
+    const nextIndex =
+      direction === "forward"
+        ? (idx + 1) % allTabIds.length
+        : (idx - 1 + allTabIds.length) % allTabIds.length;
+
+    const nextTabId = allTabIds[nextIndex];
+    model.doAction(Actions.selectTab(nextTabId));
+
+    // Also activate the parent tabset so the border follows
+    const nextNode = model.getNodeById(nextTabId);
+    const parentTabsetId = nextNode?.getParent()?.getId();
+    if (parentTabsetId) {
+      model.doAction(Actions.setActiveTabset(parentTabsetId));
+    }
+
+    set({ model });
+    return nextTabId;
+  },
 }));
