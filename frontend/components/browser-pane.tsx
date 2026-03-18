@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, RefreshCw, Globe, XCircle, AlertCircle, Camera, 
 import { normalizeUrl, isAllowedUrl } from "@/lib/browser-url";
 import { invoke } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
+import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 
 type ScreenshotState = "idle" | "success" | "error";
 
@@ -31,9 +32,10 @@ declare global {
 
 interface BrowserPaneProps {
   initialUrl?: string;
+  nodeId?: string;
 }
 
-export function BrowserPane({ initialUrl = "http://localhost:3000" }: BrowserPaneProps) {
+export function BrowserPane({ initialUrl = "http://localhost:3000", nodeId }: BrowserPaneProps) {
   const webviewRef = useRef<Electron.WebviewTag | null>(null);
   const [screenshotState, setScreenshotState] = useState<ScreenshotState>("idle");
   // Track whether the webview has been initialised (lazy mount guard)
@@ -66,6 +68,15 @@ export function BrowserPane({ initialUrl = "http://localhost:3000" }: BrowserPan
     const id = requestAnimationFrame(() => setWebviewMounted(true));
     return () => cancelAnimationFrame(id);
   }, []);
+
+  // Register focus callback for pane-focus cycling (Ctrl+Tab)
+  useEffect(() => {
+    if (!nodeId) return;
+    paneFocusRegistry.register(nodeId, () => {
+      (webviewRef.current as unknown as HTMLElement)?.focus();
+    });
+    return () => { paneFocusRegistry.unregister(nodeId); };
+  }, [nodeId]);
 
   // Inject custom scrollbar CSS into webview to match app theme
   const injectScrollbarCSS = useCallback((wv: Electron.WebviewTag) => {

@@ -4,6 +4,7 @@ import { routeLinkClick } from "@/lib/link-router";
 import { terminalCache } from "@/lib/terminal-instance-cache";
 import { invoke } from "@/lib/ipc";
 import { CLI_REGISTRY, type SessionType } from "@/lib/cli-registry";
+import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
@@ -418,6 +419,14 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       terminal.options.theme = buildTerminalTheme(theme, opacity);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Register focus callback for pane-focus cycling (Ctrl+Tab)
+  useEffect(() => {
+    paneFocusRegistry.register(tabId, () => {
+      terminalRef.current?.focus();
+    });
+    return () => { paneFocusRegistry.unregister(tabId); };
+  }, [tabId]);
 
   // Apply background opacity changes to terminal
   useEffect(() => {

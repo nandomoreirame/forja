@@ -6,15 +6,17 @@ import { useAgentChatStore } from "@/stores/agent-chat";
 import { useInstalledClis } from "@/hooks/use-installed-clis";
 import { useAgentChatEvents } from "@/hooks/use-agent-chat";
 import { cn } from "@/lib/utils";
+import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import { SlashCommandMenu, type SlashCommandMenuHandle } from "./slash-command-menu";
 import type { SlashCommandDef } from "@/lib/slash-commands";
 import { getCliDefinition } from "@/lib/cli-registry";
 
 interface ChatPanelProps {
   projectPath?: string | null;
+  nodeId?: string;
 }
 
-export function ChatPanel({ projectPath }: ChatPanelProps) {
+export function ChatPanel({ projectPath, nodeId }: ChatPanelProps) {
   const chat = useAgentChatStore();
   const { installedClis, loading: clisLoading } = useInstalledClis();
   const [inputText, setInputText] = useState("");
@@ -52,6 +54,16 @@ export function ChatPanel({ projectPath }: ChatPanelProps) {
   );
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Register focus callback for pane-focus cycling (Ctrl+Tab)
+  useEffect(() => {
+    if (!nodeId) return;
+    paneFocusRegistry.register(nodeId, () => {
+      textareaRef.current?.focus();
+    });
+    return () => { paneFocusRegistry.unregister(nodeId); };
+  }, [nodeId]);
+
   const slashMenuRef = useRef<SlashCommandMenuHandle>(null);
   const showSlashMenu = inputText.startsWith("/") && !!chat.sessionId;
   const slashQuery = showSlashMenu ? inputText.slice(1) : "";

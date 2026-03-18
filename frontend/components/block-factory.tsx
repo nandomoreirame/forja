@@ -25,15 +25,15 @@ export function blockFactory(node: TabNode): React.ReactNode {
         />
       );
     case "file-preview":
-      return <FilePreviewBlock config={config} />;
+      return <FilePreviewBlock config={config} nodeId={nodeId} />;
     case "browser":
-      return <BrowserBlock config={config} />;
+      return <BrowserBlock config={config} nodeId={nodeId} />;
     case "plugin":
-      return <PluginBlock config={config} />;
+      return <PluginBlock config={config} nodeId={nodeId} />;
     case "file-tree":
-      return <FileTreeBlock />;
+      return <FileTreeBlock nodeId={nodeId} />;
     case "agent-chat":
-      return <AgentChatBlock projectPath={projectPath} />;
+      return <AgentChatBlock projectPath={projectPath} nodeId={nodeId} />;
     case "marketplace":
       return <MarketplaceBlock />;
     default:

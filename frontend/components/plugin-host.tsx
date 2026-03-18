@@ -6,6 +6,7 @@ import { useThemeStore } from "@/stores/theme";
 import { useProjectsStore } from "@/stores/projects";
 import { buildPluginThemeCSS, buildPluginThemePayload, buildPluginOpacityCSS } from "@/lib/plugin-theme";
 import { useUserSettingsStore } from "@/stores/user-settings";
+import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import type { PluginPermission, PluginPermissionGrant } from "@/lib/plugin-types";
 
 declare global {
@@ -26,11 +27,12 @@ declare global {
 
 interface PluginHostProps {
   pluginName: string;
+  nodeId?: string;
 }
 
 type PluginStatus = "loading" | "ready" | "error" | "crashed";
 
-export function PluginHost({ pluginName }: PluginHostProps) {
+export function PluginHost({ pluginName, nodeId }: PluginHostProps) {
   const plugin = usePluginsStore((s) =>
     s.plugins.find((p) => p.manifest.name === pluginName)
   );
@@ -45,6 +47,15 @@ export function PluginHost({ pluginName }: PluginHostProps) {
       .then((path) => setPreloadPath(path ?? null))
       .catch(() => setPreloadPath(null));
   }, []);
+
+  // Register focus callback for pane-focus cycling (Ctrl+Tab)
+  useEffect(() => {
+    if (!nodeId) return;
+    paneFocusRegistry.register(nodeId, () => {
+      (webviewRef.current as unknown as HTMLElement)?.focus();
+    });
+    return () => { paneFocusRegistry.unregister(nodeId); };
+  }, [nodeId]);
 
   // Inject theme CSS variables into the webview
   const injectThemeCSS = useCallback(() => {
