@@ -216,7 +216,10 @@ describe("CommandPalette", () => {
 
     expect(screen.getByText("Session")).toBeInTheDocument();
     expect(screen.getByText("Panels & View")).toBeInTheDocument();
-    expect(screen.getByText("Terminal")).toBeInTheDocument();
+    expect(screen.getByText("Sessions")).toBeInTheDocument();
+    // "Terminal" appears both as a group heading and as a session item
+    const terminals = screen.getAllByText("Terminal");
+    expect(terminals.length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("Git")).toBeInTheDocument();
     expect(screen.getByText("Settings & Help")).toBeInTheDocument();
   });

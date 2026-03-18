@@ -11,6 +11,8 @@ import { useThemeStore } from "@/stores/theme";
 import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useProjectsStore } from "@/stores/projects";
 import { useFocusModeStore } from "@/stores/focus-mode";
+import { usePluginsStore, getOrderedEnabledPlugins } from "@/stores/plugins";
+import { getPluginIcon } from "@/lib/plugin-types";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
 import { invoke } from "@/lib/ipc";
 import {
@@ -30,6 +32,7 @@ import {
   RotateCcw,
   Settings,
   SplitSquareHorizontal,
+  Puzzle,
   TerminalSquare,
   ZoomIn,
   ZoomOut,
@@ -59,6 +62,11 @@ export function CommandPalette() {
   const { customThemes: themeCustom } = useThemeStore();
   const { projects, activeProjectPath, getProjectInitial, getProjectColor } = useProjectsStore();
   const isFileTreeOpen = useTilingLayoutStore((s) => s.hasBlock("tab-file-tree"));
+  const { plugins, pluginOrder } = usePluginsStore();
+  const enabledPlugins = useMemo(
+    () => getOrderedEnabledPlugins({ plugins, pluginOrder }),
+    [plugins, pluginOrder],
+  );
   const allThemes = useMemo(
     () => useThemeStore.getState().getAllThemes(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -119,6 +127,17 @@ export function CommandPalette() {
     const blockId = `browser-${Date.now().toString(36)}-${browserCounterRef.current}`;
     tilingStore.addBlock(
       { type: "browser", url: "https://github.com/nandomoreirame/forja" },
+      undefined,
+      blockId,
+    );
+    close();
+  };
+
+  const handleOpenPlugin = (pluginName: string, displayName?: string, icon?: string) => {
+    const tilingStore = useTilingLayoutStore.getState();
+    const blockId = `plugin-${pluginName}`;
+    tilingStore.addBlock(
+      { type: "plugin", pluginName, pluginDisplayName: displayName, pluginIcon: icon },
       undefined,
       blockId,
     );
@@ -407,6 +426,61 @@ export function CommandPalette() {
                 </CommandItem>
               )}
             </CommandGroup>
+
+            {currentPath && (
+              <CommandGroup heading="Sessions">
+                {clisLoading ? (
+                  <div className="flex items-center gap-2 px-2 py-3 text-app text-ctp-overlay1">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Detecting installed CLIs...
+                  </div>
+                ) : (
+                  <>
+                    {installedClis.map((cli) => (
+                      <CommandItem
+                        key={cli.id}
+                        value={`session-${cli.id}`}
+                        onSelect={() => handleSessionSelect(cli.id as SessionType)}
+                      >
+                        <CliIcon sessionType={cli.id as SessionType} className="h-4 w-4" />
+                        {cli.displayName}
+                      </CommandItem>
+                    ))}
+                    <CommandItem
+                      value="session-terminal"
+                      onSelect={() => handleSessionSelect("terminal")}
+                    >
+                      <TerminalSquare className="h-4 w-4 text-ctp-overlay1" strokeWidth={1.5} />
+                      Terminal
+                    </CommandItem>
+                  </>
+                )}
+              </CommandGroup>
+            )}
+
+            {enabledPlugins.length > 0 && (
+              <CommandGroup heading="Plugins">
+                {enabledPlugins.map((plugin) => {
+                  const Icon = getPluginIcon(plugin.manifest.icon) ?? Puzzle;
+                  return (
+                    <CommandItem
+                      key={plugin.manifest.name}
+                      value={`plugin-${plugin.manifest.name}`}
+                      onSelect={() =>
+                        handleOpenPlugin(
+                          plugin.manifest.name,
+                          plugin.manifest.displayName,
+                          plugin.manifest.icon,
+                        )
+                      }
+                    >
+                      <Icon className="h-4 w-4" strokeWidth={1.5} />
+                      {plugin.manifest.displayName}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            )}
 
             <CommandGroup heading="Terminal">
               <CommandItem
