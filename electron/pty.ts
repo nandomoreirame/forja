@@ -156,6 +156,7 @@ export function writePty(tabId: string, data: string): void {
 }
 
 export function resizePty(tabId: string, rows: number, cols: number): void {
+  if (rows <= 0 || cols <= 0) return;
   const session = sessions.get(tabId);
   if (session) {
     session.process.resize(cols, rows);
