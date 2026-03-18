@@ -747,7 +747,7 @@ function App({
   return (
     <AppErrorBoundary>
       <div className="relative flex h-full flex-col bg-ctp-mantle">
-        <div className={cn("transition-all duration-200", isFocusMode && "h-0 overflow-hidden opacity-0 pointer-events-none")}>
+        <div className={cn("transition-all duration-200", isFocusMode && "invisible h-0 overflow-hidden opacity-0 pointer-events-none")}>
           <Titlebar />
         </div>
         {panelPrefsLoaded && (
