@@ -42,6 +42,8 @@ linux:
         - x64
   icon: assets/icons/
   category: Development
+  executableArgs:
+    - --ozone-platform-hint=auto
 
 deb:
   artifactName: "forja_${version}_${arch}.${ext}"

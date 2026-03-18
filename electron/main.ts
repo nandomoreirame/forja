@@ -1,3 +1,9 @@
+// Ozone platform hint must be set before Electron/Chromium initializes.
+// Covers all packaging formats (dev, .deb, AppImage).
+if (process.platform === "linux" && !process.env.ELECTRON_OZONE_PLATFORM_HINT) {
+  process.env.ELECTRON_OZONE_PLATFORM_HINT = "auto";
+}
+
 import {
   app,
   BrowserWindow,
@@ -81,11 +87,10 @@ if (resolvedPerfMode !== "lite") {
   app.commandLine.appendSwitch("enable-zero-copy");
   app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
 
-  // Linux-specific GPU
+  // Linux GPU acceleration features (VAAPI)
   if (process.platform === "linux") {
     const isWayland = !!process.env.WAYLAND_DISPLAY;
     if (isWayland) {
-      app.commandLine.appendSwitch("ozone-platform", "wayland");
       app.commandLine.appendSwitch(
         "enable-features",
         "VaapiVideoDecoder,VaapiVideoEncoder,CanvasOopRasterization",
