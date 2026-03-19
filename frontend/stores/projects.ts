@@ -117,7 +117,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
         lastOpened: new Date().toISOString(),
         iconPath: null,
       };
-      set((state) => ({ projects: [newProject, ...state.projects] }));
+      set((state) => ({ projects: [...state.projects, newProject] }));
     }
     set({ activeProjectPath: projectPath });
     // Load icon only if the project has no custom icon already set
@@ -309,7 +309,19 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
           const hasInMemoryLayout = useTilingLayoutStore.getState().layoutByProject[projectPath] !== undefined;
           if (!hasInMemoryLayout) {
             const { parseLayoutJson } = await import("@/lib/layout-migration");
-            const layout = parseLayoutJson(savedState.layoutJson);
+            let layout = parseLayoutJson(savedState.layoutJson);
+
+            // Safety net: if the project has no registered terminal tabs,
+            // strip any terminal/browser blocks from the loaded layout.
+            // This prevents stale layout data (e.g. from a race condition
+            // where the persist effect saved another project's layout under
+            // this path) from leaking terminal blocks into a clean project.
+            const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
+            if (projectTabs.length === 0) {
+              const { stripProjectBlocksFromJson } = await import("./tiling-layout");
+              layout = stripProjectBlocksFromJson(layout);
+            }
+
             useTilingLayoutStore.getState().loadFromJson(layout);
           }
         }

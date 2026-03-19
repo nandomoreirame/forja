@@ -265,19 +265,29 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
 
         if (!selected) return;
 
-        await activateProject(selected);
-
         // Notify projects store so sidebar updates
         const { useProjectsStore } = await import("./projects");
+
+        // Capture previous project BEFORE addProject changes activeProjectPath
         const previousPath = useProjectsStore.getState().activeProjectPath;
+
+        // Register the project in the store (adds to list, persists to backend)
         await useProjectsStore.getState().addProject(selected);
 
         // switchToProject handles save/restore of layout, tabs, preview etc.
-        // addProject already set activeProjectPath to `selected`, so we
-        // restore previousPath so switchToProject properly saves the old layout.
-        if (previousPath && previousPath !== selected) {
+        // It also calls openProjectPath -> activateProject internally, so we
+        // must NOT call activateProject here — doing so would set currentPath
+        // before isSwitchingProject is true, causing the persist effect in
+        // App.tsx to save the outgoing project's layout under the new path.
+        if (previousPath !== selected) {
+          // Restore activeProjectPath (even if null) so switchToProject
+          // sees a different path and doesn't early return. This also
+          // lets switchToProject save the outgoing project's state.
           useProjectsStore.setState({ activeProjectPath: previousPath });
           await useProjectsStore.getState().switchToProject(selected);
+        } else {
+          // Re-opening the same project — just activate it directly
+          await activateProject(selected);
         }
       } catch (error) {
         console.error("Failed to load project directory:", error);
