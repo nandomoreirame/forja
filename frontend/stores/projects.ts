@@ -177,8 +177,11 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
 
     // --- Synchronous state changes (React 18 batches into one render) ---
 
-    // Exit focus mode before switching projects to avoid snapshot conflicts
-    if (useFocusModeStore.getState().isActive) {
+    // Preserve focus mode across project switch: exit (restore outgoing panels
+    // for correct save), switch projects (restore new layout), then re-enter
+    // (create fresh snapshot for the new project's panel state).
+    const wasFocusMode = useFocusModeStore.getState().isActive;
+    if (wasFocusMode) {
       useFocusModeStore.getState().exitFocusMode();
     }
 
@@ -231,6 +234,11 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     );
     tilingStore.restoreLayoutForProject(projectPath, projectTabIds);
     tabsStore.ensureBlocksForProjectTabs(projectPath);
+
+    // Re-enter focus mode if it was active before the switch
+    if (wasFocusMode) {
+      useFocusModeStore.getState().enterFocusMode();
+    }
 
     // --- Async operations below (separate render batch) ---
 

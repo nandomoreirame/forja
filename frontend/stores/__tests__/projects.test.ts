@@ -20,6 +20,18 @@ vi.mock("@/stores/file-tree", () => ({
   },
 }));
 
+const mockEnterFocusMode = vi.fn();
+const mockExitFocusMode = vi.fn();
+vi.mock("@/stores/focus-mode", () => ({
+  useFocusModeStore: {
+    getState: vi.fn(() => ({
+      isActive: false,
+      enterFocusMode: mockEnterFocusMode,
+      exitFocusMode: mockExitFocusMode,
+    })),
+  },
+}));
+
 const mockSavePreviewForProject = vi.fn();
 const mockRestorePreviewForProject = vi.fn();
 vi.mock("@/stores/file-preview", () => ({
@@ -47,6 +59,7 @@ vi.mock("@/stores/plugins", () => ({
 
 import { invoke } from "@/lib/ipc";
 import { useFileTreeStore } from "@/stores/file-tree";
+import { useFocusModeStore } from "@/stores/focus-mode";
 import { usePluginsStore } from "@/stores/plugins";
 import { useRightPanelStore } from "@/stores/right-panel";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
@@ -919,6 +932,64 @@ describe("useProjectsStore", () => {
 
       // Panel should remain closed since there's no pinned plugin
       expect(useRightPanelStore.getState().isOpen).toBe(false);
+    });
+  });
+
+  describe("focus mode preservation across project switch", () => {
+    it("re-enters focus mode after switching projects when it was active", async () => {
+      vi.mocked(useFocusModeStore.getState).mockReturnValue({
+        isActive: true,
+        enterFocusMode: mockEnterFocusMode,
+        exitFocusMode: mockExitFocusMode,
+      } as never);
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      expect(mockExitFocusMode).toHaveBeenCalled();
+      expect(mockEnterFocusMode).toHaveBeenCalled();
+    });
+
+    it("does not re-enter focus mode when it was not active before switch", async () => {
+      vi.mocked(useFocusModeStore.getState).mockReturnValue({
+        isActive: false,
+        enterFocusMode: mockEnterFocusMode,
+        exitFocusMode: mockExitFocusMode,
+      } as never);
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      expect(mockExitFocusMode).not.toHaveBeenCalled();
+      expect(mockEnterFocusMode).not.toHaveBeenCalled();
     });
   });
 

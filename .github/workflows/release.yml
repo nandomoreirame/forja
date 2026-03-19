@@ -91,7 +91,7 @@ jobs:
       - name: Upload artifacts
         uses: softprops/action-gh-release@v2
         with:
-          release_id: ${{ needs.create-release.outputs.release_id }}
+          tag_name: ${{ github.ref_name }}
           files: |
             release/**/*.dmg
             release/**/*.AppImage
