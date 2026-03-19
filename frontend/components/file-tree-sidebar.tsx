@@ -4,7 +4,7 @@ import {
   type FileNode,
 } from "@/stores/file-tree";
 import { ChevronsDownUp } from "lucide-react";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ErrorBoundary } from "./error-boundary";
 import { FileTreeNode } from "./file-tree-node";
@@ -13,13 +13,13 @@ import { GitChangesPane } from "./git-changes-pane";
 /** Maximum pixel width for the file tree sidebar resizable panel. */
 export const SIDEBAR_MAX_WIDTH = "500px";
 
-interface FlatNode {
+export interface FlatNode {
   node: FileNode;
   depth: number;
   projectPath: string;
 }
 
-function flattenVisibleNodes(
+export function flattenVisibleNodes(
   nodes: FileNode[],
   expandedPaths: Record<string, boolean>,
   projectPath: string,
@@ -61,6 +61,16 @@ function SingleTreeView({
     estimateSize: () => ITEM_HEIGHT,
     overscan: OVERSCAN,
   });
+
+  const focusedPath = useFileTreeStore((s) => s.focusedPath);
+
+  useEffect(() => {
+    if (!focusedPath) return;
+    const index = flatNodes.findIndex((fn) => fn.node.path === focusedPath);
+    if (index !== -1) {
+      virtualizer.scrollToIndex(index, { align: "auto" });
+    }
+  }, [focusedPath, flatNodes, virtualizer]);
 
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto pl-[12px]">

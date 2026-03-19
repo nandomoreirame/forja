@@ -84,8 +84,10 @@ interface FileTreeState {
   trees: Record<string, DirectoryTree>;
   activeProjectPath: string | null;
   isOpenByProject: Record<string, boolean>;
+  focusedPath: string | null;
 
   toggleSidebar: () => void;
+  setFocusedPath: (path: string | null) => void;
   openProject: () => Promise<void>;
   openProjectPath: (path: string) => Promise<void>;
   loadProjectTree: (projectPath: string) => Promise<void>;
@@ -134,8 +136,10 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     trees: {},
     activeProjectPath: null,
     isOpenByProject: {},
+    focusedPath: null,
 
     toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
+    setFocusedPath: (path) => set({ focusedPath: path }),
 
     loadProjectTree: async (projectPath: string) => {
       try {
@@ -338,7 +342,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
 
     isExpanded: (path: string) => !!get().expandedPaths[path],
 
-    collapseAll: () => set({ expandedPaths: {} }),
+    collapseAll: () => set({ expandedPaths: {}, focusedPath: null }),
 
     selectFile: async (path: string) => {
       useGitDiffStore.getState().clearSelection();

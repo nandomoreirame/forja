@@ -37,6 +37,7 @@ export const FileTreeNode = memo(function FileTreeNode({
   projectPath,
 }: FileTreeNodeProps) {
   const expanded = useFileTreeStore((s) => !!s.expandedPaths[node.path]);
+  const isFocused = useFileTreeStore((s) => s.focusedPath === node.path);
   const toggleExpanded = useFileTreeStore((s) => s.toggleExpanded);
   const selectFile = useFileTreeStore((s) => s.selectFile);
   const currentFile = useFilePreviewStore((s) => s.currentFile);
@@ -92,6 +93,7 @@ export const FileTreeNode = memo(function FileTreeNode({
 
   const handleClick = useCallback(() => {
     if (renaming) return;
+    useFileTreeStore.getState().setFocusedPath(node.path);
     if (node.isDir) {
       const wasExpanded = expanded;
       toggleExpanded(node.path);
@@ -192,6 +194,8 @@ export const FileTreeNode = memo(function FileTreeNode({
         ignoredOpacity
       } ${
         isActive ? "bg-ctp-surface0" : ""
+      } ${
+        isFocused ? "ring-1 ring-ctp-mauve/60 bg-ctp-surface0/50" : ""
       }`}
       style={{ paddingLeft: `${depth * 12 + 8}px` }}
       onClick={handleClick}
