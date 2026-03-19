@@ -65,8 +65,41 @@ describe("plugin-loader", () => {
   });
 
   it("skips non-directory entries", async () => {
-    const fileEntry = { name: "readme.txt", isDirectory: () => false } as any;
+    const fileEntry = { name: "readme.txt", isDirectory: () => false, isSymbolicLink: () => false } as any;
     vi.mocked(fs.readdir).mockResolvedValue([fileEntry]);
+    vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+
+    const { scanPlugins } = await import("../plugins/plugin-loader.js");
+    const plugins = await scanPlugins();
+    expect(plugins).toEqual([]);
+  });
+
+  it("loads plugins from symlinked directories", async () => {
+    const symlinkEntry = {
+      name: "symlinked-plugin",
+      isDirectory: () => false,
+      isSymbolicLink: () => true,
+    } as any;
+    vi.mocked(fs.readdir).mockResolvedValue([symlinkEntry]);
+    vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => true } as any);
+    vi.mocked(fs.readFile).mockResolvedValue(JSON.stringify(VALID_MANIFEST));
+    vi.mocked(fs.access).mockResolvedValue(undefined);
+    vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+
+    const { scanPlugins } = await import("../plugins/plugin-loader.js");
+    const plugins = await scanPlugins();
+    expect(plugins).toHaveLength(1);
+    expect(plugins[0].manifest.name).toBe("test-plugin");
+  });
+
+  it("skips symlinks that point to non-directories", async () => {
+    const symlinkEntry = {
+      name: "symlinked-file",
+      isDirectory: () => false,
+      isSymbolicLink: () => true,
+    } as any;
+    vi.mocked(fs.readdir).mockResolvedValue([symlinkEntry]);
+    vi.mocked(fs.stat).mockResolvedValue({ isDirectory: () => false } as any);
     vi.mocked(fs.mkdir).mockResolvedValue(undefined);
 
     const { scanPlugins } = await import("../plugins/plugin-loader.js");

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { invoke, getCurrentWindow } from "@/lib/ipc";
 import { ptyDispatcher } from "@/lib/pty-dispatcher";
+import { CLI_REGISTRY } from "@/lib/cli-registry";
+import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 
 interface UsePtyOptions {
   tabId: string;
@@ -20,10 +22,28 @@ export function usePty(options: UsePtyOptions) {
 
   useEffect(() => {
     const tabId = tabIdRef.current;
+    let sessionIdFound = false;
+    let chunkCount = 0;
 
     // Register with centralized dispatcher — O(1) routing, no per-session IPC listener
     ptyDispatcher.registerData(tabId, (data) => {
       onDataRef.current?.(data);
+
+      // Try to detect session ID from early output (session ID appears in the first chunks)
+      if (!sessionIdFound && chunkCount < 100) {
+        chunkCount++;
+        const tab = useTerminalTabsStore.getState().tabs.find((t) => t.id === tabId);
+        if (tab && tab.sessionType !== "terminal") {
+          const def = CLI_REGISTRY[tab.sessionType];
+          if (def?.sessionIdPattern) {
+            const match = data.match(def.sessionIdPattern);
+            if (match?.[1]) {
+              sessionIdFound = true;
+              useTerminalTabsStore.getState().setCliSessionId(tabId, match[1]);
+            }
+          }
+        }
+      }
     });
 
     ptyDispatcher.registerExit(tabId, (code) => {
@@ -37,12 +57,13 @@ export function usePty(options: UsePtyOptions) {
     };
   }, []);
 
-  const spawn = useCallback(async (path: string, sessionType?: string): Promise<string> => {
+  const spawn = useCallback(async (path: string, sessionType?: string, resumeArgs?: string[]): Promise<string> => {
     const tabId = await invoke<string>("spawn_pty", {
       tabId: tabIdRef.current,
       path,
       sessionType,
       windowLabel: getCurrentWindow().label,
+      ...(resumeArgs ? { resumeArgs } : {}),
     });
     setIsRunning(true);
     return tabId;

@@ -67,6 +67,13 @@ describe("buildTerminalTheme", () => {
     expect(result.red).toBe("#ff5555");
   });
 
+  it("uses highlight color for selection background (better contrast)", () => {
+    const result = buildTerminalTheme(mocha);
+    // selectionBackground should use highlight (not surface) for better contrast
+    expect(result.selectionBackground).toBe(mocha.colors.highlight);
+    expect(result.selectionForeground).toBe(mocha.colors.text);
+  });
+
   it("ignores opacity and always returns opaque background", () => {
     const result = buildTerminalTheme(mocha, 0.85);
     // WebGL renderer does not support rgba — always opaque
@@ -218,6 +225,37 @@ describe("overlay CSS variables (always opaque)", () => {
     applyTheme(draculaTheme);
     const style = document.documentElement.style;
     expect(style.getPropertyValue("--color-overlay-base")).toBe("#282a36");
+  });
+});
+
+describe("selection CSS variables", () => {
+  beforeEach(() => {
+    document.documentElement.className = "";
+    document.documentElement.style.cssText = "";
+  });
+
+  it("sets --selection-bg to theme highlight color", () => {
+    applyTheme(mocha);
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--selection-bg")).toBe(mocha.colors.highlight);
+  });
+
+  it("sets --selection-fg to theme text color", () => {
+    applyTheme(mocha);
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--selection-fg")).toBe(mocha.colors.text);
+  });
+
+  it("updates selection colors when theme changes", () => {
+    applyTheme(mocha);
+    applyTheme(draculaTheme);
+    const style = document.documentElement.style;
+    expect(style.getPropertyValue("--selection-bg")).toBe(
+      draculaTheme.colors.highlight,
+    );
+    expect(style.getPropertyValue("--selection-fg")).toBe(
+      draculaTheme.colors.text,
+    );
   });
 });
 

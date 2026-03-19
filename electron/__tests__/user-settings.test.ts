@@ -58,7 +58,6 @@ describe("user-settings module", () => {
       claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
       gemini: { args: ["--yolo"] },
       codex: { args: ["--full-auto"] },
-      opencode: {},
       "gh-copilot": {},
     });
   });
@@ -218,6 +217,31 @@ describe("user-settings module", () => {
     const result = await loadUserSettings();
 
     expect(result.sessions.claude.env).toEqual({ SAFE: "value" });
+  });
+
+  it("loadUserSettings defaults ui settings when absent", async () => {
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({ terminal: { fontSize: 14 } }),
+    );
+
+    const { loadUserSettings } = await import("../user-settings");
+    const result = await loadUserSettings();
+
+    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true });
+  });
+
+  it("loadUserSettings preserves explicit ui settings", async () => {
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({ ui: { activePaneHighlight: false, hoverToFocus: false } }),
+    );
+
+    const { loadUserSettings } = await import("../user-settings");
+    const result = await loadUserSettings();
+
+    expect(result.ui.activePaneHighlight).toBe(false);
+    expect(result.ui.hoverToFocus).toBe(false);
   });
 
   it("saveUserSettings throws on invalid JSON", async () => {

@@ -17,13 +17,6 @@ describe("session-persistence", () => {
       preview: { isOpen: true, currentFile: "/repo/src/a.ts" },
       terminal: {
         activeTabIndex: 1,
-        split: {
-          isEnabled: true,
-          orientation: "vertical",
-          ratio: 60,
-          splitTabIndex: 0,
-          secondarySessionType: "claude",
-        },
         tabs: [
           { path: "/repo", sessionType: "claude" },
           { path: "/repo", sessionType: "terminal" },
@@ -64,13 +57,6 @@ describe("session-persistence", () => {
       preview: { isOpen: true, currentFile: "/repo/src/a.ts" },
       terminal: {
         activeTabIndex: 99,
-        split: {
-          isEnabled: false,
-          orientation: "vertical",
-          ratio: 50,
-          splitTabIndex: 0,
-          secondarySessionType: null,
-        },
         tabs: [{ path: "/repo", sessionType: "claude" }],
       },
     });
@@ -90,41 +76,6 @@ describe("session-persistence", () => {
     const restored = loadPersistedSessionState();
     expect(restored?.activeProjectPath).toBe("/home/user/proj");
     expect(restored?.activeWorkspaceId).toBe("old-ws");
-    expect(restored?.terminal.split).toEqual({
-      isEnabled: false,
-      orientation: "vertical",
-      ratio: 50,
-      splitTabIndex: 0,
-      secondarySessionType: null,
-    });
-  });
-
-  it("parses secondarySessionType from stored data", () => {
-    window.localStorage.setItem(
-      "forja:session:v1",
-      JSON.stringify({
-        activeProjectPath: "/repo",
-        preview: { isOpen: false, currentFile: null },
-        terminal: {
-          activeTabIndex: 0,
-          split: {
-            isEnabled: true,
-            orientation: "horizontal",
-            ratio: 40,
-            splitTabIndex: 1,
-            secondarySessionType: "gemini",
-          },
-          tabs: [
-            { path: "/repo", sessionType: "claude" },
-            { path: "/repo", sessionType: "gemini" },
-          ],
-        },
-      }),
-    );
-
-    const restored = loadPersistedSessionState();
-    expect(restored?.terminal.split.splitTabIndex).toBe(1);
-    expect(restored?.terminal.split.secondarySessionType).toBe("gemini");
   });
 
   it("saves and loads tabs with customName", () => {
@@ -134,13 +85,6 @@ describe("session-persistence", () => {
       preview: { isOpen: false, currentFile: null },
       terminal: {
         activeTabIndex: 0,
-        split: {
-          isEnabled: false,
-          orientation: "vertical",
-          ratio: 50,
-          splitTabIndex: 0,
-          secondarySessionType: null,
-        },
         tabs: [
           { path: "/repo", sessionType: "claude", customName: "My Build" },
           { path: "/repo", sessionType: "terminal" },
@@ -176,7 +120,49 @@ describe("session-persistence", () => {
     expect(restored?.terminal.tabs[1].customName).toBeUndefined();
   });
 
-  it("handles legacy format with primaryTabIndex/secondaryTabIndex gracefully", () => {
+  it("saves and loads tabs with id", () => {
+    const state: PersistedSessionState = {
+      activeWorkspaceId: null,
+      activeProjectPath: "/repo",
+      preview: { isOpen: false, currentFile: null },
+      terminal: {
+        activeTabIndex: 0,
+        tabs: [
+          { path: "/repo", sessionType: "claude", id: "main-abc123-tab-1" },
+          { path: "/repo", sessionType: "terminal" },
+        ],
+      },
+    };
+
+    savePersistedSessionState(state);
+    const restored = loadPersistedSessionState();
+
+    expect(restored?.terminal.tabs[0].id).toBe("main-abc123-tab-1");
+    expect(restored?.terminal.tabs[1].id).toBeUndefined();
+  });
+
+  it("ignores non-string id values during parse", () => {
+    window.localStorage.setItem(
+      "forja:session:v1",
+      JSON.stringify({
+        activeProjectPath: "/repo",
+        preview: { isOpen: false, currentFile: null },
+        terminal: {
+          activeTabIndex: 0,
+          tabs: [
+            { path: "/repo", sessionType: "claude", id: 123 },
+            { path: "/repo", sessionType: "terminal", id: "" },
+          ],
+        },
+      }),
+    );
+
+    const restored = loadPersistedSessionState();
+    expect(restored?.terminal.tabs[0].id).toBeUndefined();
+    expect(restored?.terminal.tabs[1].id).toBeUndefined();
+  });
+
+  it("ignores legacy split data in stored JSON gracefully", () => {
     window.localStorage.setItem(
       "forja:session:v1",
       JSON.stringify({
@@ -200,8 +186,11 @@ describe("session-persistence", () => {
     );
 
     const restored = loadPersistedSessionState();
-    // Should still parse without crashing, splitTabIndex falls back to 0
-    expect(restored?.terminal.split.splitTabIndex).toBe(0);
-    expect(restored?.terminal.split.secondarySessionType).toBeNull();
+    // Should parse without crashing, split data is simply ignored
+    expect(restored).not.toBeNull();
+    expect(restored?.terminal.activeTabIndex).toBe(0);
+    expect(restored?.terminal.tabs).toHaveLength(2);
+    // No split property in the restored state
+    expect((restored?.terminal as Record<string, unknown>).split).toBeUndefined();
   });
 });

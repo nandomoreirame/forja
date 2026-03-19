@@ -52,15 +52,6 @@ vi.mock("@/hooks/use-installed-clis", () => ({
         description: "AI-assisted coding with Google Gemini",
         chatSupported: true,
       },
-      {
-        id: "opencode",
-        displayName: "OpenCode",
-        binary: "opencode",
-        icon: "./images/opencode.svg",
-        iconColor: "text-ctp-teal",
-        description: "Open source AI coding agent",
-        chatSupported: false,
-      },
     ],
     loading: false,
   }),
@@ -165,12 +156,9 @@ describe("ChatPanel", () => {
     expect(screen.getByText("Hi there!")).toBeDefined();
   });
 
-  it("has close button that toggles panel", () => {
+  it("does not render a redundant close button (close via tab X)", () => {
     render(<ChatPanel />);
-    const closeButton = screen.getByLabelText("Close chat panel");
-    expect(closeButton).toBeDefined();
-    fireEvent.click(closeButton);
-    expect(mockTogglePanel).toHaveBeenCalled();
+    expect(screen.queryByLabelText("Close chat panel")).toBeNull();
   });
 
   it("shows error when present", () => {
@@ -245,7 +233,7 @@ describe("ChatPanel", () => {
       render(<ChatPanel />);
       const switcherBtn = screen.getByLabelText("Switch AI agent");
       fireEvent.click(switcherBtn);
-      expect(screen.queryByTestId("cli-switcher-item-opencode")).toBeNull();
+      expect(screen.queryByTestId("cli-switcher-item-gh-copilot")).toBeNull();
     });
 
     it("toolbar is not shown when no session is active", () => {

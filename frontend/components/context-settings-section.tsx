@@ -83,7 +83,7 @@ export function ContextSection() {
         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-ctp-surface0">
           <FolderSync className="h-3.5 w-3.5 text-ctp-mauve" strokeWidth={1.5} />
         </div>
-        <h3 className="text-sm font-semibold text-ctp-text">Context Hub</h3>
+        <h3 className="text-app font-semibold text-ctp-text">Context Hub</h3>
       </div>
 
       {/* Toolbar */}
@@ -94,7 +94,7 @@ export function ContextSection() {
           onClick={() => initHub()}
           disabled={loading}
           className={cn(
-            "flex items-center gap-1.5 rounded-md border border-ctp-surface0 px-3 py-1.5 text-xs text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
+            "flex items-center gap-1.5 rounded-md border border-ctp-surface0 px-3 py-1.5 text-app-sm text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
             loading && "opacity-50",
           )}
         >
@@ -107,7 +107,7 @@ export function ContextSection() {
           onClick={() => syncOut()}
           disabled={loading}
           className={cn(
-            "flex items-center gap-1.5 rounded-md border border-ctp-surface0 px-3 py-1.5 text-xs text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
+            "flex items-center gap-1.5 rounded-md border border-ctp-surface0 px-3 py-1.5 text-app-sm text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
             loading && "opacity-50",
           )}
         >
@@ -120,7 +120,7 @@ export function ContextSection() {
           onClick={() => syncIn()}
           disabled={loading}
           className={cn(
-            "flex items-center gap-1.5 rounded-md border border-ctp-surface0 px-3 py-1.5 text-xs text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
+            "flex items-center gap-1.5 rounded-md border border-ctp-surface0 px-3 py-1.5 text-app-sm text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
             loading && "opacity-50",
           )}
         >
@@ -134,7 +134,7 @@ export function ContextSection() {
             onClick={() => setImportMenuOpen((v) => !v)}
             disabled={loading}
             className={cn(
-              "flex items-center gap-1.5 rounded-md border border-ctp-surface0 px-3 py-1.5 text-xs text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
+              "flex items-center gap-1.5 rounded-md border border-ctp-surface0 px-3 py-1.5 text-app-sm text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text",
               loading && "opacity-50",
             )}
           >
@@ -148,7 +148,7 @@ export function ContextSection() {
                   key={type}
                   type="button"
                   onClick={() => handleImport(type)}
-                  className="flex w-full items-center px-3 py-1.5 text-xs text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                  className="flex w-full items-center px-3 py-1.5 text-app-sm text-ctp-subtext0 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
                 >
                   Import {type.charAt(0).toUpperCase() + type.slice(1)}
                 </button>
@@ -160,7 +160,7 @@ export function ContextSection() {
 
       {/* Error */}
       {error && (
-        <div className="mb-3 rounded-md border border-ctp-red/30 bg-ctp-red/10 px-3 py-2 text-xs text-ctp-red">
+        <div className="mb-3 rounded-md border border-ctp-red/30 bg-ctp-red/10 px-3 py-2 text-app-sm text-ctp-red">
           {error}
         </div>
       )}
@@ -169,12 +169,12 @@ export function ContextSection() {
         {/* Item list */}
         <div className="w-48 shrink-0">
           {items.length === 0 ? (
-            <p className="py-4 text-center text-sm text-ctp-overlay1">No items found</p>
+            <p className="py-4 text-center text-app text-ctp-overlay1">No items found</p>
           ) : (
             <div className="space-y-3">
               {Object.entries(grouped).map(([type, typeItems]) => (
                 <div key={type}>
-                  <p className="mb-1 px-1 text-[10px] font-medium uppercase tracking-wider text-ctp-overlay0">
+                  <p className="mb-1 px-1 text-app-xs font-medium uppercase tracking-wider text-ctp-overlay0">
                     {typeLabels[type] ?? type}
                   </p>
                   <div className="space-y-0.5">
@@ -184,7 +184,7 @@ export function ContextSection() {
                         type="button"
                         onClick={() => handleItemClick(item.type, item.slug)}
                         className={cn(
-                          "flex w-full items-center rounded-md px-2 py-1 text-sm transition-colors",
+                          "flex w-full items-center rounded-md px-2 py-1 text-app transition-colors",
                           currentItem?.type === item.type && currentItem?.slug === item.slug
                             ? "bg-ctp-surface0 text-ctp-text"
                             : "text-ctp-subtext0 hover:bg-ctp-surface0/50 hover:text-ctp-text",
@@ -204,7 +204,7 @@ export function ContextSection() {
         {currentItem && (
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs text-ctp-overlay1">
+              <p className="text-app-sm text-ctp-overlay1">
                 {currentItem.type}/{currentItem.slug}
               </p>
               <button
@@ -212,7 +212,7 @@ export function ContextSection() {
                 aria-label="Save"
                 onClick={handleSave}
                 disabled={loading}
-                className="flex items-center gap-1.5 rounded-md bg-ctp-mauve px-3 py-1 text-xs text-ctp-base transition-colors hover:bg-ctp-mauve/90 disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-md bg-ctp-mauve px-3 py-1 text-app-sm text-ctp-base transition-colors hover:bg-ctp-mauve/90 disabled:opacity-50"
               >
                 <Save className="h-3 w-3" strokeWidth={1.5} />
                 Save
@@ -221,7 +221,7 @@ export function ContextSection() {
             <textarea
               value={displayContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="min-h-[300px] w-full resize-y rounded-md border border-ctp-surface0 bg-overlay-mantle p-3 font-mono text-xs text-ctp-text placeholder-ctp-overlay0 outline-none focus:border-ctp-mauve"
+              className="min-h-[300px] w-full resize-y rounded-md border border-ctp-surface0 bg-overlay-mantle p-3 font-mono text-app-sm text-ctp-text placeholder-ctp-overlay0 outline-none focus:border-ctp-mauve"
             />
           </div>
         )}

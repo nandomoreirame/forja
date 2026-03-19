@@ -5,7 +5,7 @@ export const TERMINAL_THEME: ITheme = {
   foreground: "#cdd6f4",
   cursor: "#f5e0dc",
   cursorAccent: "#11111b",
-  selectionBackground: "#313244",
+  selectionBackground: "#585b70",
   selectionForeground: "#cdd6f4",
   black: "#45475a",
   red: "#f38ba8",

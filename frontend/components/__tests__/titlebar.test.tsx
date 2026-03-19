@@ -23,6 +23,7 @@ vi.mock("@/lib/ipc", () => {
     isTilingDesktop: vi.fn().mockResolvedValue(false),
     isDev: vi.fn().mockResolvedValue(false),
     listen: vi.fn().mockResolvedValue(() => {}),
+    invoke: vi.fn().mockResolvedValue(null),
   };
 });
 
@@ -43,7 +44,6 @@ vi.mock("@/stores/file-tree", async () => {
     tree: null,
     trees: {} as Record<string, unknown>,
     currentPath: null as string | null,
-    toggleSidebar: vi.fn(),
     openProject: vi.fn(),
   }));
 
@@ -53,14 +53,38 @@ vi.mock("@/stores/file-tree", async () => {
   };
 });
 
-vi.mock("@/stores/browser-pane", async () => {
-  const { create } = await import("zustand");
-  const useBrowserPaneStore = create<{ isOpen: boolean; toggleOpen: () => void }>((set) => ({
-    isOpen: false,
-    toggleOpen: () => set((state) => ({ isOpen: !state.isOpen })),
-  }));
-  return { useBrowserPaneStore };
-});
+vi.mock("@/stores/workspace", () => ({
+  useWorkspaceStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = {
+        workspaces: [],
+        activeWorkspaceId: null,
+        loading: false,
+        loadWorkspaces: vi.fn(),
+        activateWorkspace: vi.fn(),
+        updateWorkspaceDetails: vi.fn(),
+        deleteWorkspace: vi.fn(),
+        createWorkspace: vi.fn(),
+        renameWorkspace: vi.fn(),
+        addProject: vi.fn(),
+        removeProject: vi.fn(),
+        setActiveWorkspace: vi.fn(),
+        openWorkspaceInNewWindow: vi.fn(),
+      };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({
+        workspaces: [],
+        activeWorkspaceId: null,
+        loading: false,
+        loadWorkspaces: vi.fn(),
+      }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    }
+  ),
+}));
 
 describe("Titlebar", () => {
   beforeEach(() => {
@@ -69,28 +93,6 @@ describe("Titlebar", () => {
       shortcutsOpen: false,
       settingsOpen: false,
     });
-  });
-
-  it("hides sidebar toggle button when no project is loaded", async () => {
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    (useFileTreeStore as any).setState({ tree: null, trees: {}, currentPath: null });
-
-    render(<Titlebar />);
-
-    expect(screen.queryByRole("button", { name: /sidebar/i })).not.toBeInTheDocument();
-  });
-
-  it("shows sidebar toggle button when a project is loaded", async () => {
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    (useFileTreeStore as any).setState({
-      tree: { root: { name: "test", path: "/test", isDir: true, children: [] } },
-      trees: {},
-      currentPath: "/test",
-    });
-
-    render(<Titlebar />);
-
-    expect(screen.getByRole("button", { name: /sidebar/i })).toBeInTheDocument();
   });
 
   it('shows "About" menu item in English', async () => {
@@ -130,36 +132,10 @@ describe("Titlebar", () => {
     expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();
   });
 
-  it("renders the browser toggle button when a project is loaded", async () => {
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    (useFileTreeStore as any).setState({
-      tree: { root: { name: "test", path: "/test", isDir: true, children: [] } },
-      trees: {},
-      currentPath: "/test",
-    });
-
+  it("does not render sidebar or browser toggle buttons", () => {
     render(<Titlebar />);
-
-    expect(screen.getByLabelText(/toggle browser/i)).toBeInTheDocument();
-  });
-
-  it("clicking browser toggle calls toggleOpen", async () => {
-    const user = userEvent.setup();
-    const { useFileTreeStore } = await import("@/stores/file-tree");
-    (useFileTreeStore as any).setState({
-      tree: { root: { name: "test", path: "/test", isDir: true, children: [] } },
-      trees: {},
-      currentPath: "/test",
-    });
-
-    const { useBrowserPaneStore } = await import("@/stores/browser-pane");
-
-    render(<Titlebar />);
-
-    await user.click(screen.getByLabelText(/toggle browser/i));
-    // The store's toggleOpen should have been called via the actual zustand store action
-    // Since we use a real zustand store mock, clicking should toggle isOpen
-    expect(useBrowserPaneStore.getState().isOpen).toBe(true);
+    expect(screen.queryByLabelText(/sidebar/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/toggle browser/i)).not.toBeInTheDocument();
   });
 
   describe("dev lite mode toggle", () => {

@@ -29,12 +29,11 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
       { label: "Go to Project", keys: [mod, "Shift", "L"] },
       { label: "Switch Project 1-9", keys: [mod, "Shift", "1-9"] },
       { label: "Add Project", keys: [mod, "Shift", "O"] },
-      { label: "Toggle Sidebar", keys: [mod, "Shift", "B"] },
-      { label: "Toggle Browser", keys: [mod, "Alt", "B"] },
-      { label: "Toggle File Preview", keys: [mod, "E"] },
+      { label: "Open Files", keys: [mod, "Shift", "E"] },
+      { label: "Open Browser", keys: [mod, "Shift", "B"] },
       { label: "Close File Preview", keys: [mod, "W"] },
+      { label: "Toggle Focus Mode", keys: [mod, "Alt", "F"] },
       { label: "Keyboard Shortcuts", keys: [mod, "?"] },
-      { label: "Toggle Terminal", keys: [mod, "J"] },
       { label: "Open Settings", keys: [mod, ","] },
     ],
   },
@@ -43,7 +42,6 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
     items: [
       { label: "New Tab", keys: [mod, "Shift", "T"] },
       { label: "Close Tab", keys: [mod, "Shift", "W"] },
-      { label: "Switch Tab 1-9", keys: [mod, "1-9"] },
       { label: "Next Tab", keys: ["Ctrl", "Tab"] },
       { label: "Previous Tab", keys: ["Ctrl", "Shift", "Tab"] },
     ],
@@ -67,7 +65,7 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-[11px] text-ctp-overlay1">
+    <kbd className="inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-app-xs text-ctp-overlay1">
       {children}
     </kbd>
   );
@@ -100,10 +98,10 @@ export function KeyboardShortcutsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-5 py-4">
+        <div className="max-h-[70vh] space-y-4 overflow-y-auto px-5 py-4">
           {shortcuts.map((group) => (
             <div key={group.section}>
-              <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-ctp-overlay0">
+              <h3 className="mb-2 text-app-sm font-medium uppercase tracking-wider text-ctp-overlay0">
                 {group.section}
               </h3>
               <div className="space-y-1.5">
@@ -112,14 +110,14 @@ export function KeyboardShortcutsDialog({
                     key={shortcut.label}
                     className="flex items-center justify-between py-1"
                   >
-                    <span className="text-sm text-ctp-subtext0">
+                    <span className="text-app text-ctp-subtext0">
                       {shortcut.label}
                     </span>
                     <span className="flex items-center gap-1">
                       {shortcut.keys.map((key, i) => (
                         <span key={i} className="flex items-center gap-1">
                           {i > 0 && (
-                            <span className="text-[11px] text-ctp-surface1">
+                            <span className="text-app-xs text-ctp-surface1">
                               +
                             </span>
                           )}

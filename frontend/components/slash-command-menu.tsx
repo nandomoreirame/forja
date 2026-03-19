@@ -67,7 +67,7 @@ export const SlashCommandMenu = forwardRef<
         data-testid="slash-command-menu"
         className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-lg border border-ctp-surface0 bg-overlay-base shadow-lg"
       >
-        <div className="py-6 text-center text-sm text-ctp-overlay1">
+        <div className="py-6 text-center text-app text-ctp-overlay1">
           No commands found
         </div>
       </div>
@@ -84,7 +84,7 @@ export const SlashCommandMenu = forwardRef<
       <div className="max-h-72 overflow-y-auto overflow-x-hidden p-1">
         {groups.map(([groupName, commands]) => (
           <div key={groupName}>
-            <div className="px-2 py-1.5 text-xs font-medium text-ctp-overlay1">
+            <div className="px-2 py-1.5 text-app-sm font-medium text-ctp-overlay1">
               {groupName}
             </div>
             {commands.map((cmd) => {
@@ -103,10 +103,10 @@ export const SlashCommandMenu = forwardRef<
                   )}
                 >
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-medium text-ctp-text">
+                    <span className="text-app-sm font-medium text-ctp-text">
                       {cmd.label}
                     </span>
-                    <span className="text-[11px] text-ctp-overlay1">
+                    <span className="text-app-xs text-ctp-overlay1">
                       {cmd.description}
                     </span>
                   </div>

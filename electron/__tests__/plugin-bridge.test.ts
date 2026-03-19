@@ -43,6 +43,15 @@ vi.mock("electron", () => ({
   }),
 }));
 
+const mockSuppressPath = vi.fn();
+vi.mock("../file-watcher.js", () => ({
+  suppressPath: mockSuppressPath,
+}));
+
+vi.mock("fs/promises", () => ({
+  writeFile: vi.fn(),
+}));
+
 describe("executeBridgeCall", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -133,5 +142,19 @@ describe("executeBridgeCall", () => {
     const result = await executeBridgeCall("test-plugin", "notifications.show", { title: "Test", body: "Hello" }, null);
     expect(result.success).toBe(true);
     expect(result.data).toEqual({ shown: true });
+  });
+
+  it("calls suppressPath before writing file via fs.writeFile", async () => {
+    const perms = await import("../plugins/plugin-permissions.js");
+    vi.mocked(perms.hasPermission).mockReturnValue(true);
+    const { executeBridgeCall } = await import("../plugins/plugin-bridge.js");
+    const result = await executeBridgeCall(
+      "test-plugin",
+      "fs.writeFile",
+      { path: "TASKS.md", content: "# Tasks" },
+      "/project",
+    );
+    expect(result.success).toBe(true);
+    expect(mockSuppressPath).toHaveBeenCalledWith("/project/TASKS.md");
   });
 });

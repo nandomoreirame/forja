@@ -5,6 +5,34 @@ vi.mock("@/lib/ipc", () => ({
   listen: vi.fn(() => Promise.resolve(() => {})),
 }));
 
+const mockAddBlock = vi.fn();
+const mockRemoveBlock = vi.fn();
+const mockHasBlock = vi.fn(() => false);
+
+vi.mock("@/stores/tiling-layout", () => ({
+  useTilingLayoutStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = {
+        hasBlock: mockHasBlock,
+        addBlock: mockAddBlock,
+        removeBlock: mockRemoveBlock,
+        model: { getNodeById: vi.fn() },
+      };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({
+        hasBlock: mockHasBlock,
+        addBlock: mockAddBlock,
+        removeBlock: mockRemoveBlock,
+        model: { getNodeById: vi.fn() },
+      }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    },
+  ),
+}));
+
 import { invoke } from "@/lib/ipc";
 import { useAgentChatStore } from "../agent-chat";
 
@@ -13,6 +41,9 @@ const mockInvoke = vi.mocked(invoke);
 describe("useAgentChatStore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAddBlock.mockClear();
+    mockRemoveBlock.mockClear();
+    mockHasBlock.mockReset().mockReturnValue(false);
     useAgentChatStore.setState({
       messages: [],
       sessionId: null,
@@ -31,6 +62,29 @@ describe("useAgentChatStore", () => {
       expect(useAgentChatStore.getState().isPanelOpen).toBe(true);
       useAgentChatStore.getState().togglePanel();
       expect(useAgentChatStore.getState().isPanelOpen).toBe(false);
+    });
+
+    it("adds agent-chat block to tiling layout when opening", () => {
+      mockHasBlock.mockReturnValue(false);
+      useAgentChatStore.getState().togglePanel();
+      expect(mockAddBlock).toHaveBeenCalledWith(
+        { type: "agent-chat" },
+        undefined,
+        "block-agent-chat",
+        expect.anything(),
+      );
+    });
+
+    it("does not add duplicate block if already present", () => {
+      mockHasBlock.mockReturnValue(true);
+      useAgentChatStore.getState().togglePanel();
+      expect(mockAddBlock).not.toHaveBeenCalled();
+    });
+
+    it("removes agent-chat block from tiling layout when closing", () => {
+      useAgentChatStore.setState({ isPanelOpen: true });
+      useAgentChatStore.getState().togglePanel();
+      expect(mockRemoveBlock).toHaveBeenCalledWith("block-agent-chat");
     });
   });
 

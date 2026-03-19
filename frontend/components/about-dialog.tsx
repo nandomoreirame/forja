@@ -44,7 +44,7 @@ function SubViewHeader({ title, onBack }: SubViewHeaderProps) {
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
       </button>
-      <span className="text-sm font-medium text-ctp-text">{title}</span>
+      <span className="text-app font-medium text-ctp-text">{title}</span>
       <DialogClose asChild>
         <button
           aria-label="Close"
@@ -67,7 +67,7 @@ function MenuItem({ label, icon, onClick }: MenuItemProps) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center justify-between px-4 py-3 text-sm text-ctp-text transition-colors hover:bg-ctp-surface1"
+      className="flex w-full items-center justify-between px-4 py-3 text-app text-ctp-text transition-colors hover:bg-ctp-surface1"
     >
       <span>{label}</span>
       {icon === "external" ? (
@@ -87,8 +87,8 @@ interface InfoRowProps {
 function InfoRow({ label, value }: InfoRowProps) {
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
-      <span className="text-sm text-ctp-subtext0">{label}</span>
-      <span className="font-mono text-sm text-ctp-text">{value}</span>
+      <span className="text-app text-ctp-subtext0">{label}</span>
+      <span className="font-mono text-app text-ctp-text">{value}</span>
     </div>
   );
 }
@@ -117,11 +117,11 @@ function HomeView({
       <h2 className="mt-4 text-xl font-semibold text-ctp-text">
         {appInfo.name}
       </h2>
-      <p className="mt-1 text-sm text-ctp-overlay1">
+      <p className="mt-1 text-app text-ctp-overlay1">
         A dedicated desktop client for vibe coders
       </p>
 
-      <span className="mt-3 rounded-full bg-ctp-surface0 px-3 py-1 font-mono text-xs text-ctp-subtext0">
+      <span className="mt-3 rounded-full bg-ctp-surface0 px-3 py-1 font-mono text-app-sm text-ctp-subtext0">
         {__APP_VERSION__}
       </span>
 
@@ -189,7 +189,7 @@ function CreditsView({ onBack }: { onBack: () => void }) {
       <SubViewHeader title="Credits" onBack={onBack} />
       <div className="space-y-4 px-5 py-4">
         <div>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-ctp-overlay0">
+          <h3 className="mb-2 text-app-sm font-medium uppercase tracking-wider text-ctp-overlay0">
             Created by
           </h3>
           <div className="overflow-hidden rounded-lg bg-ctp-surface0">
@@ -197,7 +197,7 @@ function CreditsView({ onBack }: { onBack: () => void }) {
               onClick={() =>
                 openExternal("https://github.com/nandomoreirame")
               }
-              className="flex w-full items-center justify-between px-4 py-3 text-sm text-ctp-text transition-colors hover:bg-ctp-surface1"
+              className="flex w-full items-center justify-between px-4 py-3 text-app text-ctp-text transition-colors hover:bg-ctp-surface1"
             >
               <span>Fernando Moreira</span>
               <ExternalLink
@@ -209,14 +209,14 @@ function CreditsView({ onBack }: { onBack: () => void }) {
         </div>
 
         <div>
-          <h3 className="mb-2 text-xs font-medium uppercase tracking-wider text-ctp-overlay0">
+          <h3 className="mb-2 text-app-sm font-medium uppercase tracking-wider text-ctp-overlay0">
             Built with
           </h3>
           <div className="divide-y divide-ctp-base/30 overflow-hidden rounded-lg bg-ctp-surface0">
             {["Electron", "React", "TypeScript", "xterm.js"].map((tech) => (
               <div
                 key={tech}
-                className="px-4 py-2.5 text-sm text-ctp-subtext0"
+                className="px-4 py-2.5 text-app text-ctp-subtext0"
               >
                 {tech}
               </div>
@@ -234,7 +234,7 @@ function LegalView({ onBack }: { onBack: () => void }) {
       <SubViewHeader title="Legal info" onBack={onBack} />
       <div className="space-y-2 px-5 py-4">
         <div className="overflow-hidden rounded-lg bg-ctp-surface0 px-4 py-3">
-          <p className="text-sm text-ctp-subtext0">
+          <p className="text-app text-ctp-subtext0">
             Copyright 2025-2026 Fernando Moreira
           </p>
         </div>
@@ -246,7 +246,7 @@ function LegalView({ onBack }: { onBack: () => void }) {
                 "https://github.com/nandomoreirame/forja/blob/main/LICENSE"
               )
             }
-            className="flex w-full items-center justify-between px-4 py-3 text-sm text-ctp-text transition-colors hover:bg-ctp-surface1"
+            className="flex w-full items-center justify-between px-4 py-3 text-app text-ctp-text transition-colors hover:bg-ctp-surface1"
           >
             <span>MIT License</span>
             <ExternalLink
@@ -257,7 +257,7 @@ function LegalView({ onBack }: { onBack: () => void }) {
         </div>
 
         <div className="overflow-hidden rounded-lg bg-ctp-surface0 px-4 py-3">
-          <p className="text-xs leading-relaxed text-ctp-overlay1">
+          <p className="text-app-sm leading-relaxed text-ctp-overlay1">
             This software is provided &quot;as is&quot;, without warranty of any
             kind, express or implied.
           </p>

@@ -13,8 +13,6 @@ describe("performance store", () => {
     vi.clearAllMocks();
     usePerformanceStore.setState({
       resolved: "full",
-      tabHibernation: false,
-      tabHibernationTimeoutMs: 0,
       loaded: false,
       isLite: false,
     });
@@ -23,8 +21,6 @@ describe("performance store", () => {
   it("initializes with full mode defaults", () => {
     const state = usePerformanceStore.getState();
     expect(state.resolved).toBe("full");
-    expect(state.tabHibernation).toBe(false);
-    expect(state.tabHibernationTimeoutMs).toBe(0);
     expect(state.loaded).toBe(false);
     expect(state.isLite).toBe(false);
   });
@@ -32,16 +28,12 @@ describe("performance store", () => {
   it("loads performance mode from IPC", async () => {
     vi.mocked(invoke).mockResolvedValue({
       resolved: "lite",
-      tabHibernation: true,
-      tabHibernationTimeoutMs: 60000,
     });
 
     await usePerformanceStore.getState().loadPerformanceMode();
 
     const state = usePerformanceStore.getState();
     expect(state.resolved).toBe("lite");
-    expect(state.tabHibernation).toBe(true);
-    expect(state.tabHibernationTimeoutMs).toBe(60000);
     expect(state.loaded).toBe(true);
     expect(invoke).toHaveBeenCalledWith("get_performance_mode");
   });
@@ -49,8 +41,6 @@ describe("performance store", () => {
   it("exposes isLite computed value", async () => {
     vi.mocked(invoke).mockResolvedValue({
       resolved: "lite",
-      tabHibernation: true,
-      tabHibernationTimeoutMs: 60000,
     });
 
     await usePerformanceStore.getState().loadPerformanceMode();
@@ -60,8 +50,6 @@ describe("performance store", () => {
   it("sets isLite to false for full mode", async () => {
     vi.mocked(invoke).mockResolvedValue({
       resolved: "full",
-      tabHibernation: false,
-      tabHibernationTimeoutMs: 0,
     });
 
     await usePerformanceStore.getState().loadPerformanceMode();
@@ -85,16 +73,12 @@ describe("performance store", () => {
       const state = usePerformanceStore.getState();
       expect(state.resolved).toBe("lite");
       expect(state.isLite).toBe(true);
-      expect(state.tabHibernation).toBe(true);
-      expect(state.tabHibernationTimeoutMs).toBe(60_000);
     });
 
     it("toggles from lite back to full mode", () => {
       usePerformanceStore.setState({
         resolved: "lite",
         isLite: true,
-        tabHibernation: true,
-        tabHibernationTimeoutMs: 60_000,
       });
 
       usePerformanceStore.getState().toggleLiteMode();
@@ -102,8 +86,6 @@ describe("performance store", () => {
       const state = usePerformanceStore.getState();
       expect(state.resolved).toBe("full");
       expect(state.isLite).toBe(false);
-      expect(state.tabHibernation).toBe(false);
-      expect(state.tabHibernationTimeoutMs).toBe(0);
     });
   });
 });

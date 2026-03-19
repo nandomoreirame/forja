@@ -7,6 +7,26 @@ vi.mock("@/lib/ipc", () => ({
   listen: vi.fn(() => Promise.resolve(() => {})),
 }));
 
+const mockHasBlock = vi.fn(() => false);
+const mockHasBlockOfType = vi.fn(() => false);
+const mockAddBlock = vi.fn();
+const mockRemoveBlock = vi.fn();
+const mockSelectTab = vi.fn();
+
+vi.mock("@/stores/tiling-layout", () => ({
+  useTilingLayoutStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = { hasBlock: mockHasBlock, hasBlockOfType: mockHasBlockOfType, addBlock: mockAddBlock, removeBlock: mockRemoveBlock, selectTab: mockSelectTab };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({ hasBlock: mockHasBlock, hasBlockOfType: mockHasBlockOfType, addBlock: mockAddBlock, removeBlock: mockRemoveBlock, selectTab: mockSelectTab }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    },
+  ),
+}));
+
 const mockTogglePanel = vi.fn();
 const mockSetActiveView = vi.fn();
 let mockIsOpen = false;
@@ -51,7 +71,7 @@ vi.mock("@/stores/app-dialogs", () => ({
 const mockSetActivePlugin = vi.fn();
 const mockReorderPlugins = vi.fn();
 let mockPlugins: Array<{
-  manifest: { name: string; displayName: string; icon: string; permissions: string[] };
+  manifest: { name: string; displayName: string; icon: string; permissions: string[]; scope?: string };
   enabled: boolean;
   path: string;
   entryUrl: string;
@@ -94,6 +114,8 @@ describe("RightSidebar", () => {
     mockIsOpen = false;
     mockPlugins = [];
     mockActivePluginName = null;
+    mockHasBlock.mockReturnValue(false);
+    mockHasBlockOfType.mockReturnValue(false);
   });
 
   it("renders the sidebar container", () => {
@@ -156,7 +178,7 @@ describe("RightSidebar", () => {
     expect(screen.queryByLabelText("Disabled")).toBeNull();
   });
 
-  it("highlights active plugin icon only when panel is open", () => {
+  it("plugin icon uses hover-only styling without active highlight", () => {
     mockIsOpen = true;
     mockPlugins = [
       {
@@ -169,27 +191,12 @@ describe("RightSidebar", () => {
     mockActivePluginName = "my-plugin";
     render(<RightSidebar hasProject />);
     const btn = screen.getByLabelText("My Plugin");
-    expect(btn.className).toContain("bg-ctp-surface0");
-    expect(btn.className).toContain("text-ctp-mauve");
-  });
-
-  it("does not highlight active plugin icon when panel is closed", () => {
-    mockIsOpen = false;
-    mockPlugins = [
-      {
-        manifest: { name: "my-plugin", displayName: "My Plugin", icon: "Sparkles", permissions: [] },
-        enabled: true,
-        path: "/mock",
-        entryUrl: "file:///mock/index.html",
-      },
-    ];
-    mockActivePluginName = "my-plugin";
-    render(<RightSidebar hasProject />);
-    const btn = screen.getByLabelText("My Plugin");
-    // Use split to avoid matching "hover:bg-ctp-surface0" as a false positive
     const classes = btn.className.split(" ");
+    // No active highlight — only hover classes
     expect(classes).not.toContain("bg-ctp-surface0");
     expect(classes).not.toContain("text-ctp-mauve");
+    expect(btn.className).toContain("hover:bg-ctp-surface0");
+    expect(btn.className).toContain("hover:text-ctp-text");
   });
 
   it("activates plugin and opens panel when plugin icon is clicked", () => {
@@ -205,12 +212,19 @@ describe("RightSidebar", () => {
     render(<RightSidebar hasProject />);
     fireEvent.click(screen.getByLabelText("Click Plugin"));
     expect(mockSetActivePlugin).toHaveBeenCalledWith("click-plugin");
+    expect(mockAddBlock).toHaveBeenCalledWith(
+      { type: "plugin", pluginName: "click-plugin", pluginDisplayName: "Click Plugin", pluginIcon: "Sparkles" },
+      undefined,
+      "block-plugin-click-plugin",
+      expect.anything(), // DockLocation.RIGHT
+    );
     expect(mockSetActiveView).toHaveBeenCalledWith("plugin");
     expect(mockTogglePanel).toHaveBeenCalledOnce();
   });
 
-  it("closes panel but keeps plugin active when active plugin icon is clicked", () => {
+  it("focuses plugin tab instead of removing when plugin icon is clicked and block exists", () => {
     mockIsOpen = true;
+    mockHasBlock.mockReturnValue(true);
     mockPlugins = [
       {
         manifest: { name: "active-plugin", displayName: "Active Plugin", icon: "Sparkles", permissions: [] },
@@ -222,9 +236,105 @@ describe("RightSidebar", () => {
     mockActivePluginName = "active-plugin";
     render(<RightSidebar hasProject />);
     fireEvent.click(screen.getByLabelText("Active Plugin"));
-    // Plugin stays active (webview keeps running for badge updates)
-    expect(mockSetActivePlugin).not.toHaveBeenCalled();
-    expect(mockSetActiveView).toHaveBeenCalledWith("empty");
-    expect(mockTogglePanel).toHaveBeenCalledOnce();
+    // Should focus the existing tab, not remove it
+    expect(mockSelectTab).toHaveBeenCalledWith("block-plugin-active-plugin");
+    expect(mockRemoveBlock).not.toHaveBeenCalled();
+    expect(mockSetActivePlugin).toHaveBeenCalledWith("active-plugin");
+  });
+
+  it("renders browser icon even without active project", () => {
+    render(<RightSidebar />);
+    expect(screen.getByLabelText("Browser")).toBeTruthy();
+  });
+
+  it("renders marketplace button even without active project", () => {
+    render(<RightSidebar />);
+    expect(screen.getByLabelText("Marketplace")).toBeTruthy();
+  });
+
+  it("opens browser block when browser icon is clicked", () => {
+    render(<RightSidebar hasProject />);
+    fireEvent.click(screen.getByLabelText("Browser"));
+    expect(mockAddBlock).toHaveBeenCalledWith(
+      { type: "browser", url: "https://github.com/nandomoreirame/forja" },
+      undefined,
+      expect.stringMatching(/^browser-/),
+    );
+  });
+
+  it("creates a new browser block on each click", () => {
+    render(<RightSidebar hasProject />);
+    fireEvent.click(screen.getByLabelText("Browser"));
+    fireEvent.click(screen.getByLabelText("Browser"));
+    expect(mockAddBlock).toHaveBeenCalledTimes(2);
+    const firstId = mockAddBlock.mock.calls[0][2];
+    const secondId = mockAddBlock.mock.calls[1][2];
+    expect(firstId).not.toBe(secondId);
+  });
+
+  it("browser button has consistent styling regardless of active browser blocks", () => {
+    mockHasBlockOfType.mockImplementation((type: string) => type === "browser");
+    render(<RightSidebar hasProject />);
+    const btn = screen.getByLabelText("Browser");
+    expect(btn.className).toContain("text-ctp-overlay1");
+  });
+
+  it("renders global-scope plugin even without active project", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "pomodoro", displayName: "Pomodoro", icon: "Timer", permissions: [], scope: "global" },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar />);
+    expect(screen.getByLabelText("Pomodoro")).toBeTruthy();
+  });
+
+  it("does not render project-scope plugin without active project", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "git-graph", displayName: "Git Graph", icon: "GitBranch", permissions: [], scope: "project" },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar />);
+    expect(screen.queryByLabelText("Git Graph")).toBeNull();
+  });
+
+  it("renders both global and project plugins when project is active", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "pomodoro", displayName: "Pomodoro", icon: "Timer", permissions: [], scope: "global" },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+      {
+        manifest: { name: "git-graph", displayName: "Git Graph", icon: "GitBranch", permissions: [], scope: "project" },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar hasProject />);
+    expect(screen.getByLabelText("Pomodoro")).toBeTruthy();
+    expect(screen.getByLabelText("Git Graph")).toBeTruthy();
+  });
+
+  it("treats plugin without scope as project-scope (backward compatibility)", () => {
+    mockPlugins = [
+      {
+        manifest: { name: "legacy-plugin", displayName: "Legacy", icon: "Sparkles", permissions: [] },
+        enabled: true,
+        path: "/mock",
+        entryUrl: "file:///mock/index.html",
+      },
+    ];
+    render(<RightSidebar />);
+    expect(screen.queryByLabelText("Legacy")).toBeNull();
   });
 });

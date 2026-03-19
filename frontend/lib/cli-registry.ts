@@ -1,4 +1,4 @@
-export type CliId = "claude" | "gemini" | "codex" | "cursor-agent" | "opencode" | "gh-copilot";
+export type CliId = "claude" | "gemini" | "codex" | "cursor-agent" | "gh-copilot";
 export type SessionType = CliId | "terminal";
 
 export interface CliDefinition {
@@ -9,6 +9,8 @@ export interface CliDefinition {
   iconColor: string;
   icon: string;
   chatSupported: boolean;
+  resumeFlag?: string;           // e.g. "--resume"
+  sessionIdPattern?: RegExp;     // regex to extract session ID from PTY output
 }
 
 export const TERMINAL_ICON = "./images/terminal.svg";
@@ -22,6 +24,8 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     iconColor: "text-brand",
     icon: "./images/claude.svg",
     chatSupported: true,
+    resumeFlag: "--resume",
+    sessionIdPattern: /session:\s+([a-f0-9-]+)/i,
   },
   gemini: {
     id: "gemini",
@@ -31,6 +35,8 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     iconColor: "text-ctp-blue",
     icon: "./images/gemini.svg",
     chatSupported: true,
+    resumeFlag: "--resume",
+    sessionIdPattern: /session[:\s]+([a-zA-Z0-9_-]+)/i,
   },
   codex: {
     id: "codex",
@@ -40,6 +46,8 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     iconColor: "text-ctp-green",
     icon: "./images/openai.svg",
     chatSupported: true,
+    resumeFlag: "--resume",
+    sessionIdPattern: /session[:\s]+([a-zA-Z0-9_-]+)/i,
   },
   "cursor-agent": {
     id: "cursor-agent",
@@ -49,20 +57,13 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     iconColor: "text-ctp-peach",
     icon: "./images/cursor.svg",
     chatSupported: true,
-  },
-  opencode: {
-    id: "opencode",
-    displayName: "OpenCode",
-    binary: "opencode",
-    description: "Open source AI coding agent",
-    iconColor: "text-ctp-teal",
-    icon: "./images/opencode.svg",
-    chatSupported: false,
+    resumeFlag: "--resume=",
+    sessionIdPattern: /chat[:\s]+([a-zA-Z0-9_-]+)/i,
   },
   "gh-copilot": {
     id: "gh-copilot",
     displayName: "GitHub Copilot",
-    binary: "gh",
+    binary: "copilot",
     description: "AI coding assistant by GitHub Copilot",
     iconColor: "text-ctp-lavender",
     icon: "./images/github-copilot.svg",
@@ -144,7 +145,6 @@ const CLI_DISPLAY_ORDER: CliId[] = [
   "codex",
   "gemini",
   "cursor-agent",
-  "opencode",
   "gh-copilot",
 ];
 
@@ -158,4 +158,19 @@ export function getAllCliBinaries(): string[] {
 
 export function getChatCliIds(): CliId[] {
   return getAllCliIds().filter((id) => CLI_REGISTRY[id].chatSupported);
+}
+
+/**
+ * Attempts to extract a CLI session ID from a chunk of PTY output.
+ *
+ * Returns the captured session ID string if the sessionType has a registered
+ * `sessionIdPattern` and the pattern matches. Returns `null` for terminal
+ * sessions, CLIs without a pattern, or when no match is found in the data.
+ */
+export function detectSessionId(sessionType: SessionType, data: string): string | null {
+  if (sessionType === "terminal") return null;
+  const def = CLI_REGISTRY[sessionType];
+  if (!def?.sessionIdPattern) return null;
+  const match = data.match(def.sessionIdPattern);
+  return match?.[1] ?? null;
 }

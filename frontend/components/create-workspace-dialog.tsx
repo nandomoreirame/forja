@@ -67,7 +67,7 @@ export function CreateWorkspaceDialog() {
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
-          <label htmlFor="workspace-name" className="mb-2 block text-sm text-ctp-subtext0">
+          <label htmlFor="workspace-name" className="mb-2 block text-app text-ctp-subtext0">
             Workspace name
           </label>
           <input
@@ -80,20 +80,20 @@ export function CreateWorkspaceDialog() {
             }}
             placeholder="My Workspace"
             autoFocus
-            className="w-full rounded-md border border-ctp-surface0 bg-overlay-mantle px-3 py-2 text-sm text-ctp-text placeholder:text-ctp-overlay0 focus:border-brand focus:outline-none"
+            className="w-full rounded-md border border-ctp-surface0 bg-overlay-mantle px-3 py-2 text-app text-ctp-text placeholder:text-ctp-overlay0 focus:border-brand focus:outline-none"
           />
         </div>
         <DialogFooter>
           <button
             onClick={() => handleOpenChange(false)}
-            className="rounded-md px-4 py-2 text-sm text-ctp-overlay1 transition-colors hover:text-ctp-text"
+            className="rounded-md px-4 py-2 text-app text-ctp-overlay1 transition-colors hover:text-ctp-text"
           >
             Cancel
           </button>
           <button
             onClick={handleCreate}
             disabled={!name.trim() || creating}
-            className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-ctp-base transition-colors hover:bg-brand/90 disabled:opacity-50"
+            className="rounded-md bg-brand px-4 py-2 text-app font-medium text-ctp-base transition-colors hover:bg-brand/90 disabled:opacity-50"
           >
             {creating ? (isRenameMode ? "Renaming..." : "Creating...") : isRenameMode ? "Rename" : "Create"}
           </button>

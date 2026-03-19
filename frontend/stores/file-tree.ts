@@ -2,6 +2,7 @@ import { invoke, open } from "@/lib/ipc";
 import { create } from "zustand";
 import { useFilePreviewStore } from "./file-preview";
 import { useGitDiffStore } from "./git-diff";
+import { useWorkspaceStore } from "./workspace";
 
 export const APP_NAME = "Forja";
 export const FILE_TREE_MAX_DEPTH = 2;
@@ -83,8 +84,10 @@ interface FileTreeState {
   trees: Record<string, DirectoryTree>;
   activeProjectPath: string | null;
   isOpenByProject: Record<string, boolean>;
+  focusedPath: string | null;
 
   toggleSidebar: () => void;
+  setFocusedPath: (path: string | null) => void;
   openProject: () => Promise<void>;
   openProjectPath: (path: string) => Promise<void>;
   loadProjectTree: (projectPath: string) => Promise<void>;
@@ -111,9 +114,12 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
       activeProjectPath: projectPath,
       tree: updatedTrees[projectPath] ?? null,
     });
-    invoke("add_recent_project", { path: projectPath }).catch((err) =>
-      console.warn("[file-tree] Failed to add recent project:", err),
-    );
+    const wsId = useWorkspaceStore.getState().activeWorkspaceId;
+    if (wsId) {
+      invoke("add_project_to_workspace", { workspaceId: wsId, projectPath }).catch((err) =>
+        console.warn("[file-tree] Failed to add project to workspace:", err),
+      );
+    }
     invoke("start_watcher", { path: projectPath }).catch((err) =>
       console.warn("[file-tree] Failed to start watcher:", err),
     );
@@ -130,8 +136,10 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     trees: {},
     activeProjectPath: null,
     isOpenByProject: {},
+    focusedPath: null,
 
     toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
+    setFocusedPath: (path) => set({ focusedPath: path }),
 
     loadProjectTree: async (projectPath: string) => {
       try {
@@ -261,7 +269,16 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
 
         // Notify projects store so sidebar updates
         const { useProjectsStore } = await import("./projects");
+        const previousPath = useProjectsStore.getState().activeProjectPath;
         await useProjectsStore.getState().addProject(selected);
+
+        // switchToProject handles save/restore of layout, tabs, preview etc.
+        // addProject already set activeProjectPath to `selected`, so we
+        // restore previousPath so switchToProject properly saves the old layout.
+        if (previousPath && previousPath !== selected) {
+          useProjectsStore.setState({ activeProjectPath: previousPath });
+          await useProjectsStore.getState().switchToProject(selected);
+        }
       } catch (error) {
         console.error("Failed to load project directory:", error);
       }
@@ -325,7 +342,7 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
 
     isExpanded: (path: string) => !!get().expandedPaths[path],
 
-    collapseAll: () => set({ expandedPaths: {} }),
+    collapseAll: () => set({ expandedPaths: {}, focusedPath: null }),
 
     selectFile: async (path: string) => {
       useGitDiffStore.getState().clearSelection();

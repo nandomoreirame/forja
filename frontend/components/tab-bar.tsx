@@ -179,7 +179,7 @@ export function TabBar({
                               handleTabKeyDown(e, index);
                             }
                           }}
-                          className={`group relative flex h-9 cursor-pointer items-center gap-2 px-3 text-xs transition-colors ${
+                          className={`group relative flex h-9 cursor-pointer items-center gap-2 px-3 text-app transition-colors ${
                             isActive
                               ? "text-ctp-text"
                               : "text-ctp-overlay1 hover:text-ctp-subtext0"
@@ -197,7 +197,7 @@ export function TabBar({
                                     : "bg-ctp-surface1"
                             }`}
                           />
-                          <CliIcon sessionType={tab.sessionType} className="h-3.5 w-3.5" />
+                          <CliIcon sessionType={tab.sessionType} className="h-3.5 w-3.5 shrink-0" />
                           <InlineEdit
                             value={displayName}
                             onSave={(newName) => handleRenameTab(tab.id, newName)}
@@ -236,7 +236,7 @@ export function TabBar({
                         }}
                       >
                         <ContextMenuItem
-                          className="gap-2 text-xs cursor-pointer focus:bg-ctp-surface0 focus:text-ctp-text"
+                          className="gap-2 text-app-sm cursor-pointer focus:bg-ctp-surface0 focus:text-ctp-text"
                           onSelect={() => {
                             pendingEditTabIdRef.current = tab.id;
                             setEditingTabId(tab.id);
@@ -247,11 +247,11 @@ export function TabBar({
                         </ContextMenuItem>
                         <ContextMenuSeparator className="bg-ctp-surface0" />
                         <ContextMenuItem
-                          className="gap-2 text-xs cursor-pointer text-ctp-red focus:bg-ctp-red/10 focus:text-ctp-red"
+                          className="gap-2 text-app-sm cursor-pointer text-ctp-red focus:bg-ctp-red/10 focus:text-ctp-red"
                           onSelect={() => onCloseTab(tab.id)}
                         >
                           <X className="h-3.5 w-3.5" strokeWidth={1.5} />
-                          Fechar tab
+                          Close tab
                         </ContextMenuItem>
                       </ContextMenuContent>
                     </ContextMenu>
@@ -277,7 +277,7 @@ export function TabBar({
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom">
-            <p>{isFullscreen ? "Exit fullscreen" : "Fullscreen"} <kbd className="ml-1 text-[10px] opacity-70">Ctrl+Shift+F</kbd></p>
+            <p>{isFullscreen ? "Exit fullscreen" : "Fullscreen"} <kbd className="ml-1 text-app-xs opacity-70">Ctrl+Shift+F</kbd></p>
           </TooltipContent>
         </Tooltip>
       </div>

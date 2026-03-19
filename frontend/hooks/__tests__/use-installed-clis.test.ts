@@ -26,7 +26,6 @@ describe("useInstalledClis", () => {
       gemini: false,
       codex: true,
       "cursor-agent": false,
-      opencode: false,
       "gh-copilot": false,
     });
 
@@ -40,13 +39,12 @@ describe("useInstalledClis", () => {
     expect(result.current.installedClis.map((c) => c.id)).toEqual(["claude", "codex"]);
   });
 
-  it("returns opencode and gh-copilot when installed", async () => {
+  it("returns gh-copilot when installed", async () => {
     mockInvoke.mockResolvedValue({
       claude: false,
       gemini: false,
       codex: false,
       "cursor-agent": false,
-      opencode: true,
       "gh-copilot": true,
     });
 
@@ -56,8 +54,7 @@ describe("useInstalledClis", () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.installedClis).toHaveLength(2);
-    expect(result.current.installedClis.map((c) => c.id)).toContain("opencode");
+    expect(result.current.installedClis).toHaveLength(1);
     expect(result.current.installedClis.map((c) => c.id)).toContain("gh-copilot");
   });
 
@@ -79,7 +76,7 @@ describe("useInstalledClis", () => {
     renderHook(() => useInstalledClis());
 
     expect(mockInvoke).toHaveBeenCalledWith("detect_installed_clis", {
-      cliIds: ["claude", "codex", "gemini", "cursor-agent", "opencode", "gh-copilot"],
+      cliIds: ["claude", "codex", "gemini", "cursor-agent", "gh-copilot"],
     });
   });
 });

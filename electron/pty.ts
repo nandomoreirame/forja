@@ -27,6 +27,7 @@ export interface SpawnOptions {
   sender: WebContents;
   extraArgs?: string[];
   extraEnv?: Record<string, string>;
+  resumeArgs?: string[];
 }
 
 const SAFE_ENV_KEYS = new Set([
@@ -64,21 +65,33 @@ function buildSafeEnv(extraEnv?: Record<string, string>): Record<string, string>
 }
 
 export function spawnPty(opts: SpawnOptions): string {
-  const { tabId, path: cwd, sessionType, windowId, sender, extraArgs, extraEnv } = opts;
+  const { tabId, path: cwd, sessionType, windowId, sender, extraArgs, extraEnv, resumeArgs } = opts;
 
   let shell: string;
   let args: string[];
 
   if (sessionType === "terminal") {
     shell = getUserShell();
+    // Terminal sessions do not support resume — resumeArgs intentionally excluded
     args = [...(extraArgs ?? [])];
   } else if (sessionType === "gh-copilot") {
-    // gh copilot is a gh extension: `gh copilot [args...]`
-    shell = "gh";
-    args = ["copilot", ...(extraArgs ?? [])];
+    // gh-copilot is a standalone binary: `copilot [args...]`
+    shell = "copilot";
+    args = [...(extraArgs ?? []), ...(resumeArgs ?? [])];
   } else {
     shell = sessionType || "claude";
-    args = [...(extraArgs ?? [])];
+    args = [...(extraArgs ?? []), ...(resumeArgs ?? [])];
+  }
+
+  // Before creating new session, kill any existing one with same tabId (prevents process leaks)
+  const existing = sessions.get(tabId);
+  if (existing) {
+    try {
+      existing.process.kill();
+    } catch {
+      // already dead
+    }
+    sessions.delete(tabId);
   }
 
   const ptyProcess = pty.spawn(shell, args, {
@@ -143,6 +156,7 @@ export function writePty(tabId: string, data: string): void {
 }
 
 export function resizePty(tabId: string, rows: number, cols: number): void {
+  if (rows <= 0 || cols <= 0) return;
   const session = sessions.get(tabId);
   if (session) {
     session.process.resize(cols, rows);
@@ -174,9 +188,24 @@ export function closeAllPtysForWindow(windowId: number): void {
   }
 }
 
+export function hasPty(tabId: string): boolean {
+  return sessions.has(tabId);
+}
+
 export function getSessionBuffer(tabId: string): string | null {
   const session = sessions.get(tabId);
   return session?.buffer.read() ?? null;
+}
+
+export function getAllSessionBuffers(): Array<{ tabId: string; projectPath: string; content: string }> {
+  const result: Array<{ tabId: string; projectPath: string; content: string }> = [];
+  for (const [tabId, session] of sessions) {
+    const content = session.buffer.read();
+    if (content) {
+      result.push({ tabId, projectPath: session.projectPath, content });
+    }
+  }
+  return result;
 }
 
 function getUserShell(): string {

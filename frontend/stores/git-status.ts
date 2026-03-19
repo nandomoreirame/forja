@@ -114,14 +114,22 @@ export const useGitStatusStore = create<GitStatusState>((set, get) => ({
       if (dirSet) return dirSet.has(normalized);
     }
 
-    // Fallback: linear scan for direct setState usage (e.g. tests)
-    let map = statuses;
+    // Fallback: compute dir set on-demand from flat statuses map
+    // and cache it to avoid O(n) scans on subsequent calls.
+    const map = effectiveProjectPath
+      ? (statusesByProject[effectiveProjectPath] ?? statuses)
+      : statuses;
+    if (Object.keys(map).length === 0) return false;
+    const computed = computeChangedDirs(map);
     if (effectiveProjectPath) {
-      const projectMap = statusesByProject[effectiveProjectPath];
-      map = projectMap && Object.keys(projectMap).length > 0 ? projectMap : statuses;
+      set((state) => ({
+        _changedDirsByProject: {
+          ...state._changedDirsByProject,
+          [effectiveProjectPath]: computed,
+        },
+      }));
     }
-    const prefix = normalized + "/";
-    return Object.keys(map).some((filePath) => filePath.startsWith(prefix));
+    return computed.has(normalized);
   },
 
   clearStatuses: (projectPath?: string) =>

@@ -1,3 +1,5 @@
+import { stripAnsi } from "./strip-ansi";
+
 /**
  * Regex to match localhost-like URLs in terminal output.
  * Matches:
@@ -8,12 +10,6 @@
  */
 const LOCALHOST_URL_REGEX =
   /https?:\/\/(?:localhost|127\.0\.0\.1|0\.0\.0\.0):\d{1,5}(?:\/[^\s)}\]"'`]*)*/i;
-
-/** Strip ANSI escape codes from terminal output */
-function stripAnsi(str: string): string {
-  // eslint-disable-next-line no-control-regex
-  return str.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, "");
-}
 
 /**
  * Extracts a localhost URL from a line of terminal output.

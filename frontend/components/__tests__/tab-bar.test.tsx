@@ -395,7 +395,7 @@ describe("TabBar", () => {
       onRenameTab.mockClear();
     });
 
-    it("shows context menu on right-click with 'Edit tab' and 'Fechar tab' options", async () => {
+    it("shows context menu on right-click with 'Edit tab' and 'Close tab' options", async () => {
       const user = userEvent.setup();
       const tabs: TerminalTab[] = [
         { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
@@ -414,10 +414,10 @@ describe("TabBar", () => {
       await user.pointer({ target: screen.getByRole("tab"), keys: "[MouseRight]" });
 
       expect(screen.getByText("Edit tab")).toBeInTheDocument();
-      expect(screen.getByText("Fechar tab")).toBeInTheDocument();
+      expect(screen.getByText("Close tab")).toBeInTheDocument();
     });
 
-    it("calls onCloseTab when 'Fechar tab' is clicked in context menu", async () => {
+    it("calls onCloseTab when 'Close tab' is clicked in context menu", async () => {
       const user = userEvent.setup();
       const tabs: TerminalTab[] = [
         { id: "tab-1", name: "Claude Code", path: "/a", isRunning: true, sessionType: "claude" },
@@ -434,7 +434,7 @@ describe("TabBar", () => {
       );
 
       await user.pointer({ target: screen.getByRole("tab"), keys: "[MouseRight]" });
-      await user.click(screen.getByText("Fechar tab"));
+      await user.click(screen.getByText("Close tab"));
 
       expect(onCloseTab).toHaveBeenCalledWith("tab-1");
     });

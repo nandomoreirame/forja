@@ -62,7 +62,13 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     watch: {
-      ignored: ["**/electron/**", "**/dist-electron/**", "**/backend/**"],
+      ignored: [
+        "**/electron/**",
+        "**/dist-electron/**",
+        "**/backend/**",
+        // Prevent @tailwindcss/vite from triggering full-reload when plugins write files
+        "**/*.md",
+      ],
     },
   },
 });

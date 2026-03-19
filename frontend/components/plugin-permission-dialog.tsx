@@ -86,16 +86,16 @@ export function PluginPermissionDialog() {
                   strokeWidth={1.5}
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-ctp-text">
+                  <p className="text-app font-medium text-ctp-text">
                     {info.label}
                   </p>
-                  <p className="text-xs text-ctp-subtext0">
+                  <p className="text-app-sm text-ctp-subtext0">
                     {info.description}
                   </p>
                 </div>
                 <span
                   className={cn(
-                    "mt-0.5 text-[10px] uppercase tracking-wider font-medium",
+                    "mt-0.5 text-app-xs uppercase tracking-wider font-medium",
                     riskStyle.color
                   )}
                 >
@@ -112,7 +112,7 @@ export function PluginPermissionDialog() {
               className="mt-0.5 h-4 w-4 shrink-0 text-ctp-peach"
               strokeWidth={1.5}
             />
-            <p className="text-xs text-ctp-subtext1">
+            <p className="text-app-sm text-ctp-subtext1">
               This plugin requests elevated permissions. Only grant if you trust
               the source.
             </p>

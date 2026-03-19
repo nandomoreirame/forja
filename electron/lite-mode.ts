@@ -12,8 +12,6 @@ export interface LiteModeConfig {
   metricsIntervalMs: number;
   fileWatcherDepth: number;
   disableGpuAcceleration: boolean;
-  tabHibernation: boolean;
-  tabHibernationTimeoutMs: number;
   v8SemiSpaceSize: number;
 }
 
@@ -23,8 +21,6 @@ const FULL_CONFIG: Omit<LiteModeConfig, "mode" | "resolved"> = {
   metricsIntervalMs: 2000,
   fileWatcherDepth: 3,
   disableGpuAcceleration: false,
-  tabHibernation: false,
-  tabHibernationTimeoutMs: 0,
   v8SemiSpaceSize: 64,
 };
 
@@ -32,8 +28,6 @@ const LITE_CONFIG: Omit<LiteModeConfig, "mode" | "resolved"> = {
   metricsIntervalMs: 10000,
   fileWatcherDepth: 1,
   disableGpuAcceleration: true,
-  tabHibernation: true,
-  tabHibernationTimeoutMs: 60000,
   v8SemiSpaceSize: 32,
 };
 
