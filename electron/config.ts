@@ -6,7 +6,6 @@ import { getForjaConfigDir, getForjaConfigName } from "./paths.js";
 import {
   readProjectConfig,
   patchProjectUi,
-  patchProjectConfig,
   clearProjectUi,
   type ForjaProjectConfig,
 } from "./project-config.js";
@@ -63,7 +62,6 @@ export interface WorkspaceProject {
   name: string;
   last_opened: string;
   icon_path?: string | null;
-  ui_state?: ProjectUiState | null;
 }
 
 export interface Workspace {
@@ -138,7 +136,6 @@ interface OldRecentProject {
   name: string;
   last_opened: string;
   icon_path?: string | null;
-  ui_state?: ProjectUiState | null;
 }
 
 function migrateConfigIfNeeded(): void {
@@ -160,7 +157,6 @@ function migrateConfigIfNeeded(): void {
       name: p.name,
       last_opened: p.last_opened,
       icon_path: p.icon_path ?? null,
-      ui_state: p.ui_state ?? null,
     });
   }
 
@@ -218,7 +214,6 @@ function migrateConfigIfNeeded(): void {
         name: p.name,
         last_opened: p.last_opened,
         icon_path: p.icon_path ?? null,
-        ui_state: p.ui_state ?? null,
       });
     }
   }
@@ -234,7 +229,6 @@ function migrateConfigIfNeeded(): void {
         name: p.name,
         last_opened: p.last_opened,
         icon_path: p.icon_path ?? null,
-        ui_state: p.ui_state ?? null,
       })),
       uiPreferences: { ...mergedUiPrefs },
       createdAt: now,
@@ -450,7 +444,7 @@ export function reorderWorkspaceProjects(
   store.set("workspaces", newWorkspaces);
 }
 
-// ─── Auto-migration: global → local .forja/config.json ────────────────────────
+// ─── Local .forja/config.json helpers ──────────────────────────────────────────
 
 /** Map local config ui fields to UiPreferences. */
 function _localUiToPreferences(ui: NonNullable<ForjaProjectConfig["ui"]>): UiPreferences {
@@ -467,132 +461,29 @@ function _localUiToPreferences(ui: NonNullable<ForjaProjectConfig["ui"]>): UiPre
   };
 }
 
-/**
- * Auto-migrate project state from global config to local .forja/config.json.
- * Merges WorkspaceProject.ui_state + Workspace.uiPreferences into one local file.
- * Clears ui_state from the global project entry after successful migration.
- * Returns true if migration succeeded, false otherwise.
- * Idempotent: re-calling after local was deleted re-triggers migration.
- */
-function _autoMigrateToLocal(workspaceId: string, projectPath: string): boolean {
-  try {
-    // Already migrated?
-    const existing = readProjectConfig(projectPath);
-    if (existing?.ui) return false;
-
-    const workspaces = store.get("workspaces");
-    const workspace = workspaces.find((ws) => ws.id === workspaceId);
-    if (!workspace) return false;
-
-    const project = workspace.projects.find((p) => p.path === projectPath);
-    const uiState = project?.ui_state;
-
-    // Nothing to migrate if there's no project ui_state in global
-    if (!uiState) return false;
-
-    const uiPrefs = workspace.uiPreferences ?? DEFAULT_UI_PREFERENCES;
-
-    // Merge: project ui_state (precedence) + workspace uiPreferences → local ui
-    const localUi: NonNullable<ForjaProjectConfig["ui"]> = {
-      sidebarOpen: uiState.sidebarOpen ?? uiPrefs.sidebarOpen,
-      sidebarSize: uiState.sidebarSize ?? uiPrefs.sidebarSize,
-      previewSize: uiState.previewSize ?? uiPrefs.previewSize,
-      rightPanelWidth: uiPrefs.rightPanelWidth,
-      terminalSplitEnabled: uiPrefs.terminalSplitEnabled,
-      terminalSplitOrientation: uiPrefs.terminalSplitOrientation,
-      terminalSplitRatio: uiPrefs.terminalSplitRatio,
-      previewFile: uiState.previewFile,
-      layoutJson: uiState.layoutJson ?? uiPrefs.layoutJson,
-      tabs: uiState.tabs,
-      activeTabIndex: uiState.activeTabIndex,
-    };
-
-    patchProjectUi(projectPath, localUi);
-
-    // Clear ui_state from global project entry
-    const wsIndex = workspaces.findIndex((ws) => ws.id === workspaceId);
-    if (wsIndex !== -1) {
-      const projIndex = workspace.projects.findIndex((p) => p.path === projectPath);
-      if (projIndex !== -1) {
-        const updatedProjects = [...workspace.projects];
-        updatedProjects[projIndex] = { ...updatedProjects[projIndex], ui_state: null };
-        const newWorkspaces = [...workspaces];
-        newWorkspaces[wsIndex] = { ...workspace, projects: updatedProjects };
-        store.set("workspaces", newWorkspaces);
-      }
-    }
-
-    console.log(`[config] Migrated project state to local .forja/config.json: ${projectPath}`);
-    return true;
-  } catch {
-    // Migration failed silently — will retry on next access
-    return false;
-  }
-}
-
 // ─── Project UI State (workspace-scoped) ─────────────────────────────────────
 
 export function getProjectUiState(
-  workspaceId: string,
+  _workspaceId: string,
   projectPath: string
 ): ProjectUiState | null {
-  // Try local .forja/config.json first
   const localConfig = readProjectConfig(projectPath);
   if (localConfig?.ui) {
     return localConfig.ui as ProjectUiState;
   }
-
-  // Fallback: read from global config (backward compat)
-  const workspaces = store.get("workspaces");
-  const workspace = workspaces.find((ws) => ws.id === workspaceId);
-  if (!workspace) return null;
-
-  const project = workspace.projects.find((p) => p.path === projectPath);
-  if (!project || !project.ui_state) return null;
-
-  // Auto-migrate to local .forja/config.json
-  _autoMigrateToLocal(workspaceId, projectPath);
-
-  return project.ui_state;
+  return null;
 }
 
 export function saveProjectUiState(
-  workspaceId: string,
+  _workspaceId: string,
   projectPath: string,
   state: Partial<ProjectUiState>
 ): void {
-  // Write to local .forja/config.json
   try {
     patchProjectUi(projectPath, state as NonNullable<ForjaProjectConfig["ui"]>);
   } catch {
-    // Fallback to global config on write failure
-    _saveProjectUiStateGlobal(workspaceId, projectPath, state);
-    return;
+    // Local write failed — silently ignore (project dir may not exist)
   }
-}
-
-/** Write project UI state to global config (legacy/fallback). */
-function _saveProjectUiStateGlobal(
-  workspaceId: string,
-  projectPath: string,
-  state: Partial<ProjectUiState>
-): void {
-  const workspaces = store.get("workspaces");
-  const wsIndex = workspaces.findIndex((ws) => ws.id === workspaceId);
-  if (wsIndex === -1) return;
-
-  const workspace = workspaces[wsIndex];
-  const projIndex = workspace.projects.findIndex((p) => p.path === projectPath);
-  if (projIndex === -1) return;
-
-  const current = workspace.projects[projIndex].ui_state ?? {};
-  const merged: ProjectUiState = { ...current, ...state };
-  const updatedProjects = [...workspace.projects];
-  updatedProjects[projIndex] = { ...updatedProjects[projIndex], ui_state: merged };
-
-  const newWorkspaces = [...workspaces];
-  newWorkspaces[wsIndex] = { ...workspace, projects: updatedProjects };
-  store.set("workspaces", newWorkspaces);
 }
 
 // ─── Last Active Project Path ─────────────────────────────────────────────────
@@ -623,24 +514,14 @@ export function getActiveWorkspace(): Workspace | null {
 // ─── UI Preferences (workspace-scoped) ───────────────────────────────────────
 
 export function getUiPreferences(workspaceId?: string, projectPath?: string): UiPreferences {
-  // Try local .forja/config.json first when projectPath is provided
   if (projectPath) {
     const localConfig = readProjectConfig(projectPath);
     if (localConfig?.ui) {
       return _localUiToPreferences(localConfig.ui);
     }
-
-    // Trigger auto-migration if global has project ui_state
-    const resolvedMigrateId = workspaceId ?? store.get("activeWorkspaceId");
-    if (resolvedMigrateId && _autoMigrateToLocal(resolvedMigrateId, projectPath)) {
-      const migratedConfig = readProjectConfig(projectPath);
-      if (migratedConfig?.ui) {
-        return _localUiToPreferences(migratedConfig.ui);
-      }
-    }
   }
 
-  // Fallback: workspace-level (global config)
+  // Fallback: workspace-level defaults
   const resolvedId = workspaceId ?? store.get("activeWorkspaceId");
   if (resolvedId) {
     const workspaces = store.get("workspaces");
@@ -791,7 +672,7 @@ export function clearUiCache(): void {
     uiPreferences: { ...DEFAULT_UI_PREFERENCES },
     projects: ws.projects.map((p) => {
       clearProjectUi(p.path);
-      return { ...p, ui_state: null };
+      return p;
     }),
   }));
   store.set("workspaces", cleaned);

@@ -374,40 +374,42 @@ describe("config module", () => {
     });
   });
 
-  // ─── Workspace-scoped Project UI State ─────────────────────────────────────
+  // ─── Workspace-scoped Project UI State (local-only) ──────────────────────────
 
   describe("workspace-scoped projectUiState", () => {
-    it("returns null for a project with no UI state", async () => {
-      const { createWorkspace, addProjectToWorkspace, getProjectUiState } = await import("../config");
-      createWorkspace("WS");
-      addProjectToWorkspace("test-uuid-1", "/home/user/my-app");
-      expect(getProjectUiState("test-uuid-1", "/home/user/my-app")).toBeNull();
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "forja-ui-state-test-"));
     });
 
-    it("returns null for an unknown project path", async () => {
-      const { createWorkspace, getProjectUiState } = await import("../config");
-      createWorkspace("WS");
-      expect(getProjectUiState("test-uuid-1", "/home/user/non-existent")).toBeNull();
+    afterEach(() => {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
     });
 
-    it("returns null for an unknown workspace", async () => {
+    it("returns null for a project with no local config", async () => {
       const { getProjectUiState } = await import("../config");
-      expect(getProjectUiState("nonexistent", "/home/user/my-app")).toBeNull();
+      expect(getProjectUiState("test-uuid-1", tmpDir)).toBeNull();
     });
 
-    it("saves and retrieves UI state for a project", async () => {
+    it("returns null for an unknown workspace (still reads local)", async () => {
+      const { getProjectUiState } = await import("../config");
+      expect(getProjectUiState("nonexistent", tmpDir)).toBeNull();
+    });
+
+    it("saves and retrieves UI state for a project via local config", async () => {
       const { createWorkspace, addProjectToWorkspace, saveProjectUiState, getProjectUiState } =
         await import("../config");
       createWorkspace("WS");
-      addProjectToWorkspace("test-uuid-1", "/home/user/my-app");
+      addProjectToWorkspace("test-uuid-1", tmpDir);
 
-      saveProjectUiState("test-uuid-1", "/home/user/my-app", {
+      saveProjectUiState("test-uuid-1", tmpDir, {
         sidebarOpen: false,
         rightPanelOpen: true,
         terminalFullscreen: true,
       });
 
-      const state = getProjectUiState("test-uuid-1", "/home/user/my-app");
+      const state = getProjectUiState("test-uuid-1", tmpDir);
       expect(state).not.toBeNull();
       expect(state!.sidebarOpen).toBe(false);
       expect(state!.rightPanelOpen).toBe(true);
@@ -418,30 +420,30 @@ describe("config module", () => {
       const { createWorkspace, addProjectToWorkspace, saveProjectUiState, getProjectUiState } =
         await import("../config");
       createWorkspace("WS");
-      addProjectToWorkspace("test-uuid-1", "/home/user/my-app");
+      addProjectToWorkspace("test-uuid-1", tmpDir);
 
-      saveProjectUiState("test-uuid-1", "/home/user/my-app", { sidebarOpen: false });
-      saveProjectUiState("test-uuid-1", "/home/user/my-app", { rightPanelOpen: true });
+      saveProjectUiState("test-uuid-1", tmpDir, { sidebarOpen: false });
+      saveProjectUiState("test-uuid-1", tmpDir, { rightPanelOpen: true });
 
-      const state = getProjectUiState("test-uuid-1", "/home/user/my-app");
+      const state = getProjectUiState("test-uuid-1", tmpDir);
       expect(state!.sidebarOpen).toBe(false);
       expect(state!.rightPanelOpen).toBe(true);
     });
 
-    it("is a no-op for an unknown project path", async () => {
-      const { createWorkspace, saveProjectUiState, getProjectUiState } = await import("../config");
-      createWorkspace("WS");
-      saveProjectUiState("test-uuid-1", "/home/user/non-existent", { sidebarOpen: false });
-      expect(getProjectUiState("test-uuid-1", "/home/user/non-existent")).toBeNull();
+    it("silently fails for non-writable project path", async () => {
+      const { saveProjectUiState, getProjectUiState } = await import("../config");
+      // Path under non-existent root — mkdirSync will throw ENOENT immediately
+      saveProjectUiState("test-uuid-1", "/zz-nonexistent-root/project", { sidebarOpen: false });
+      expect(getProjectUiState("test-uuid-1", "/zz-nonexistent-root/project")).toBeNull();
     });
 
     it("stores all ProjectUiState fields", async () => {
       const { createWorkspace, addProjectToWorkspace, saveProjectUiState, getProjectUiState } =
         await import("../config");
       createWorkspace("WS");
-      addProjectToWorkspace("test-uuid-1", "/home/user/my-app");
+      addProjectToWorkspace("test-uuid-1", tmpDir);
 
-      saveProjectUiState("test-uuid-1", "/home/user/my-app", {
+      saveProjectUiState("test-uuid-1", tmpDir, {
         sidebarOpen: true,
         rightPanelOpen: false,
         terminalFullscreen: true,
@@ -452,7 +454,7 @@ describe("config module", () => {
         previewSize: 40,
       });
 
-      const state = getProjectUiState("test-uuid-1", "/home/user/my-app");
+      const state = getProjectUiState("test-uuid-1", tmpDir);
       expect(state).toEqual({
         sidebarOpen: true,
         rightPanelOpen: false,
@@ -469,21 +471,21 @@ describe("config module", () => {
       const { createWorkspace, addProjectToWorkspace, saveProjectUiState, getProjectUiState } =
         await import("../config");
       createWorkspace("WS");
-      addProjectToWorkspace("test-uuid-1", "/home/user/my-app");
+      addProjectToWorkspace("test-uuid-1", tmpDir);
 
-      saveProjectUiState("test-uuid-1", "/home/user/my-app", {
+      saveProjectUiState("test-uuid-1", tmpDir, {
         tabs: [
-          { id: "tab-1", path: "/home/user/my-app", sessionType: "claude" },
-          { id: "tab-2", path: "/home/user/my-app", sessionType: "terminal" },
+          { id: "tab-1", path: tmpDir, sessionType: "claude" },
+          { id: "tab-2", path: tmpDir, sessionType: "terminal" },
         ],
         activeTabIndex: 1,
       });
 
-      const state = getProjectUiState("test-uuid-1", "/home/user/my-app");
+      const state = getProjectUiState("test-uuid-1", tmpDir);
       expect(state).not.toBeNull();
       expect(state!.tabs).toHaveLength(2);
-      expect(state!.tabs![0]).toEqual({ id: "tab-1", path: "/home/user/my-app", sessionType: "claude" });
-      expect(state!.tabs![1]).toEqual({ id: "tab-2", path: "/home/user/my-app", sessionType: "terminal" });
+      expect(state!.tabs![0]).toEqual({ id: "tab-1", path: tmpDir, sessionType: "claude" });
+      expect(state!.tabs![1]).toEqual({ id: "tab-2", path: tmpDir, sessionType: "terminal" });
       expect(state!.activeTabIndex).toBe(1);
     });
 
@@ -491,15 +493,15 @@ describe("config module", () => {
       const { createWorkspace, addProjectToWorkspace, saveProjectUiState, getProjectUiState } =
         await import("../config");
       createWorkspace("WS");
-      addProjectToWorkspace("test-uuid-1", "/home/user/my-app");
+      addProjectToWorkspace("test-uuid-1", tmpDir);
 
-      saveProjectUiState("test-uuid-1", "/home/user/my-app", { sidebarOpen: false });
-      saveProjectUiState("test-uuid-1", "/home/user/my-app", {
-        tabs: [{ id: "tab-1", path: "/home/user/my-app", sessionType: "claude" }],
+      saveProjectUiState("test-uuid-1", tmpDir, { sidebarOpen: false });
+      saveProjectUiState("test-uuid-1", tmpDir, {
+        tabs: [{ id: "tab-1", path: tmpDir, sessionType: "claude" }],
         activeTabIndex: 0,
       });
 
-      const state = getProjectUiState("test-uuid-1", "/home/user/my-app");
+      const state = getProjectUiState("test-uuid-1", tmpDir);
       expect(state!.sidebarOpen).toBe(false);
       expect(state!.activeTabIndex).toBe(0);
       expect(state!.tabs).toHaveLength(1);
@@ -509,21 +511,34 @@ describe("config module", () => {
       const { createWorkspace, addProjectToWorkspace, saveProjectUiState, getProjectUiState } =
         await import("../config");
       createWorkspace("WS");
-      addProjectToWorkspace("test-uuid-1", "/home/user/my-app");
+      addProjectToWorkspace("test-uuid-1", tmpDir);
 
-      saveProjectUiState("test-uuid-1", "/home/user/my-app", {
+      saveProjectUiState("test-uuid-1", tmpDir, {
         tabs: [
-          { id: "tab-1", path: "/home/user/my-app", sessionType: "claude", cliSessionId: "session-abc-123" },
-          { id: "tab-2", path: "/home/user/my-app", sessionType: "terminal" },
+          { id: "tab-1", path: tmpDir, sessionType: "claude", cliSessionId: "session-abc-123" },
+          { id: "tab-2", path: tmpDir, sessionType: "terminal" },
         ],
         activeTabIndex: 0,
       });
 
-      const state = getProjectUiState("test-uuid-1", "/home/user/my-app");
+      const state = getProjectUiState("test-uuid-1", tmpDir);
       expect(state).not.toBeNull();
       expect(state!.tabs).toHaveLength(2);
       expect(state!.tabs![0].cliSessionId).toBe("session-abc-123");
       expect(state!.tabs![1].cliSessionId).toBeUndefined();
+    });
+
+    it("does not write ui_state to global config", async () => {
+      const { createWorkspace, addProjectToWorkspace, saveProjectUiState, getWorkspaces } =
+        await import("../config");
+      createWorkspace("WS");
+      addProjectToWorkspace("test-uuid-1", tmpDir);
+
+      saveProjectUiState("test-uuid-1", tmpDir, { sidebarOpen: false });
+
+      const workspaces = getWorkspaces();
+      const project = workspaces[0].projects[0];
+      expect(project).not.toHaveProperty("ui_state");
     });
   });
 
@@ -745,179 +760,6 @@ describe("config module", () => {
 
       const workspaces = config.getWorkspaces();
       expect(workspaces).toEqual([]);
-    });
-  });
-
-  // ─── Auto-migration: global → local .forja/config.json ───────────────────
-
-  describe("auto-migration to local .forja/config.json", () => {
-    let tmpDir: string;
-
-    beforeEach(() => {
-      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "forja-migration-test-"));
-    });
-
-    afterEach(() => {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
-    });
-
-    it("getProjectUiState migrates ui_state from global to local config", async () => {
-      const config = await import("../config");
-      config.createWorkspace("WS");
-      config.addProjectToWorkspace("test-uuid-1", tmpDir);
-
-      // Manually inject ui_state into global (simulating pre-migration data)
-      const workspaces = config.getWorkspaces();
-      const ws = workspaces[0];
-      const updatedProjects = [...ws.projects];
-      updatedProjects[0] = {
-        ...updatedProjects[0],
-        ui_state: {
-          sidebarOpen: false,
-          tabs: [{ id: "tab-1", sessionType: "claude" }],
-          activeTabIndex: 0,
-          previewFile: "/src/main.ts",
-        },
-      };
-      config._testHelpers.setStoreValue("workspaces", [
-        { ...ws, projects: updatedProjects },
-      ]);
-
-      // Call getProjectUiState — should return data and trigger migration
-      const state = config.getProjectUiState("test-uuid-1", tmpDir);
-      expect(state).not.toBeNull();
-      expect(state!.sidebarOpen).toBe(false);
-      expect(state!.tabs).toHaveLength(1);
-
-      // Verify local .forja/config.json was created
-      const localConfigPath = path.join(tmpDir, ".forja", "config.json");
-      expect(fs.existsSync(localConfigPath)).toBe(true);
-
-      const localContent = JSON.parse(fs.readFileSync(localConfigPath, "utf-8"));
-      expect(localContent.ui.sidebarOpen).toBe(false);
-      expect(localContent.ui.tabs).toHaveLength(1);
-      expect(localContent.ui.previewFile).toBe("/src/main.ts");
-
-      // Global ui_state should be cleared
-      const migratedWorkspaces = config.getWorkspaces();
-      expect(migratedWorkspaces[0].projects[0].ui_state).toBeNull();
-    });
-
-    it("getProjectUiState merges workspace uiPreferences into local config", async () => {
-      const config = await import("../config");
-      config.createWorkspace("WS");
-      config.addProjectToWorkspace("test-uuid-1", tmpDir);
-
-      // Set custom workspace uiPreferences
-      config.saveUiPreferences({
-        sidebarSize: 30,
-        terminalSplitEnabled: true,
-        terminalSplitRatio: 60,
-        rightPanelWidth: 500,
-      }, "test-uuid-1");
-
-      // Inject ui_state into global project
-      const workspaces = config.getWorkspaces();
-      const ws = workspaces[0];
-      const updatedProjects = [...ws.projects];
-      updatedProjects[0] = {
-        ...updatedProjects[0],
-        ui_state: { sidebarOpen: false, tabs: [{ sessionType: "terminal" }] },
-      };
-      config._testHelpers.setStoreValue("workspaces", [
-        { ...ws, projects: updatedProjects },
-      ]);
-
-      config.getProjectUiState("test-uuid-1", tmpDir);
-
-      // Local config should have merged data from both sources
-      const localConfigPath = path.join(tmpDir, ".forja", "config.json");
-      const localContent = JSON.parse(fs.readFileSync(localConfigPath, "utf-8"));
-      expect(localContent.ui.sidebarOpen).toBe(false); // from ui_state (project precedence)
-      expect(localContent.ui.sidebarSize).toBe(30);    // from uiPreferences
-      expect(localContent.ui.terminalSplitEnabled).toBe(true); // from uiPreferences
-      expect(localContent.ui.rightPanelWidth).toBe(500); // from uiPreferences
-    });
-
-    it("getUiPreferences triggers migration and returns migrated data", async () => {
-      const config = await import("../config");
-      config.createWorkspace("WS");
-      config.addProjectToWorkspace("test-uuid-1", tmpDir);
-
-      // Set uiPreferences with layoutJson
-      const layoutJson = { global: {}, layout: { type: "row", children: [] } };
-      config.saveUiPreferences({
-        sidebarSize: 25,
-        layoutJson,
-      }, "test-uuid-1");
-
-      // Inject ui_state into global project
-      const workspaces = config.getWorkspaces();
-      const ws = workspaces[0];
-      const updatedProjects = [...ws.projects];
-      updatedProjects[0] = {
-        ...updatedProjects[0],
-        ui_state: { sidebarOpen: false },
-      };
-      config._testHelpers.setStoreValue("workspaces", [
-        { ...ws, projects: updatedProjects },
-      ]);
-
-      // Call getUiPreferences with projectPath — should trigger migration
-      const prefs = config.getUiPreferences("test-uuid-1", tmpDir);
-      expect(prefs.sidebarOpen).toBe(false);     // from ui_state
-      expect(prefs.sidebarSize).toBe(25);         // from uiPreferences
-      expect(prefs.layoutJson).toEqual(layoutJson); // from uiPreferences
-
-      // Verify migration happened
-      const localConfigPath = path.join(tmpDir, ".forja", "config.json");
-      expect(fs.existsSync(localConfigPath)).toBe(true);
-    });
-
-    it("migration is idempotent — does not re-migrate after local exists", async () => {
-      const config = await import("../config");
-      config.createWorkspace("WS");
-      config.addProjectToWorkspace("test-uuid-1", tmpDir);
-
-      // Inject ui_state into global
-      const workspaces = config.getWorkspaces();
-      const ws = workspaces[0];
-      const updatedProjects = [...ws.projects];
-      updatedProjects[0] = {
-        ...updatedProjects[0],
-        ui_state: { sidebarOpen: false },
-      };
-      config._testHelpers.setStoreValue("workspaces", [
-        { ...ws, projects: updatedProjects },
-      ]);
-
-      // First call triggers migration
-      config.getProjectUiState("test-uuid-1", tmpDir);
-
-      // Now save new data to local (simulating app usage after migration)
-      config.saveProjectUiState("test-uuid-1", tmpDir, {
-        sidebarOpen: true,
-        tabs: [{ sessionType: "claude" }, { sessionType: "terminal" }],
-      });
-
-      // Second call should read from local (not re-migrate)
-      const state = config.getProjectUiState("test-uuid-1", tmpDir);
-      expect(state!.sidebarOpen).toBe(true);
-      expect(state!.tabs).toHaveLength(2);
-    });
-
-    it("migration does nothing when project has no ui_state in global", async () => {
-      const config = await import("../config");
-      config.createWorkspace("WS");
-      config.addProjectToWorkspace("test-uuid-1", tmpDir);
-
-      // No ui_state set — migration should be a no-op
-      const state = config.getProjectUiState("test-uuid-1", tmpDir);
-      expect(state).toBeNull();
-
-      // No local config should be created
-      const localConfigPath = path.join(tmpDir, ".forja", "config.json");
-      expect(fs.existsSync(localConfigPath)).toBe(false);
     });
   });
 
