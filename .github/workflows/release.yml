@@ -96,7 +96,7 @@ jobs:
             release/**/*.dmg
             release/**/*.AppImage
             release/**/*.deb
-            release/**/*.exe
+            release/**/Forja Setup *.exe
 
   publish-release:
     name: Publish Release
