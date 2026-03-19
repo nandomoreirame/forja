@@ -28,7 +28,7 @@ export function FilePreviewBlock({ config, nodeId }: FilePreviewBlockProps) {
   }, [nodeId]);
 
   return (
-    <div ref={containerRef} tabIndex={0} className="h-full w-full overflow-hidden outline-none">
+    <div ref={containerRef} tabIndex={0} className="h-full w-full overflow-hidden outline-none focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-brand)]">
       <FilePreviewPane />
     </div>
   );
