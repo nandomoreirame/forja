@@ -41,6 +41,7 @@ interface ProjectsState {
   projects: Project[];
   activeProjectPath: string | null;
   loading: boolean;
+  isSwitchingProject: boolean;
   sessionStates: Record<string, SessionState>;
   unreadProjects: Set<string>;
   thinkingProjects: Set<string>;
@@ -67,6 +68,7 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   projects: [],
   activeProjectPath: null,
   loading: false,
+  isSwitchingProject: false,
   sessionStates: {},
   unreadProjects: new Set<string>(),
   thinkingProjects: new Set<string>(),
@@ -147,6 +149,9 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   switchToProject: async (projectPath: string) => {
     const previousPath = get().activeProjectPath;
     if (previousPath === projectPath) return;
+
+    set({ isSwitchingProject: true });
+    try {
 
     // Pre-resolve all dynamic imports in parallel so the state changes
     // below run in a single synchronous block (React 18 batches them).
@@ -329,6 +334,9 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     const project = get().projects.find((p) => p.path === projectPath);
     if (project && project.iconPath === null) {
       await get().loadProjectIcon(projectPath);
+    }
+    } finally {
+      set({ isSwitchingProject: false });
     }
   },
 

@@ -921,4 +921,51 @@ describe("useProjectsStore", () => {
       expect(useRightPanelStore.getState().isOpen).toBe(false);
     });
   });
+
+  describe("isSwitchingProject flag", () => {
+    it("defaults to false", () => {
+      expect(useProjectsStore.getState().isSwitchingProject).toBe(false);
+    });
+
+    it("is true during switchToProject and false after", async () => {
+      const observed: boolean[] = [];
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockImplementation(async () => {
+          observed.push(useProjectsStore.getState().isSwitchingProject);
+        }),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [{ path: "/project-x", name: "x", lastOpened: "" }],
+        activeProjectPath: null,
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-x");
+
+      expect(observed).toContain(true);
+      expect(useProjectsStore.getState().isSwitchingProject).toBe(false);
+    });
+
+    it("is false even if switchToProject throws", async () => {
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockRejectedValue(new Error("boom")),
+        saveSidebarStateForProject: vi.fn(),
+        restoreSidebarStateForProject: vi.fn(),
+        isOpenByProject: {},
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [{ path: "/project-x", name: "x", lastOpened: "" }],
+        activeProjectPath: null,
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-x").catch(() => {});
+
+      expect(useProjectsStore.getState().isSwitchingProject).toBe(false);
+    });
+  });
 });
