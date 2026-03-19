@@ -61,24 +61,8 @@ export function useKeyboardShortcuts({
         return;
       }
       if (mod && event.key.toLowerCase() === "w") {
-        // Ctrl+Alt+W: close active tab in tiling layout
-        if (event.altKey) {
-          event.preventDefault();
-          tilingStore.closeActiveTab();
-          return;
-        }
-        // Ctrl+Shift+W: close active tab in tiling layout
-        if (event.shiftKey) {
-          event.preventDefault();
-          tilingStore.closeActiveTab();
-          return;
-        }
-        // Ctrl+W: close file preview
         event.preventDefault();
-        const previewState = useFilePreviewStore.getState();
-        if (previewState.isOpen) {
-          previewState.closePreview();
-        }
+        tilingStore.closeActiveTab();
         return;
       }
       if (mod && event.altKey && event.key.toLowerCase() === "v") {

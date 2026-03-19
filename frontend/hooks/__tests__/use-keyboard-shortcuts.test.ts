@@ -321,8 +321,7 @@ describe("useKeyboardShortcuts tab management", () => {
     expect(tilingActions.closeActiveTab).toHaveBeenCalledTimes(1);
   });
 
-  it("Ctrl+W closes preview when preview is open", () => {
-    filePreviewActions.isOpen = true;
+  it("Ctrl+W closes active tab in tiling layout", () => {
     setupHook();
 
     window.dispatchEvent(
@@ -332,20 +331,7 @@ describe("useKeyboardShortcuts tab management", () => {
       }),
     );
 
-    expect(filePreviewActions.closePreview).toHaveBeenCalled();
-  });
-
-  it("Ctrl+W does NOT close a terminal tab", () => {
-    const { closeTab } = setupHook();
-
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "w",
-        ctrlKey: true,
-      }),
-    );
-
-    expect(closeTab).not.toHaveBeenCalled();
+    expect(tilingActions.closeActiveTab).toHaveBeenCalled();
   });
 });
 
