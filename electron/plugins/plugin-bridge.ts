@@ -89,6 +89,9 @@ async function executeMethod(
       const fullPath = path.default.resolve(projectPath, filePath);
       const { assertPathWithinScope } = await import("../path-validation.js");
       assertPathWithinScope(projectPath, filePath);
+      // Suppress file watcher for this path to avoid triggering files:changed
+      const { suppressPath } = await import("../file-watcher.js");
+      suppressPath(fullPath);
       const fs = await import("fs/promises");
       await fs.writeFile(fullPath, content, "utf-8");
       return { written: true };

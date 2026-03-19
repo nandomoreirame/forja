@@ -8,6 +8,120 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-03-19
+
+### Added
+- Persist and restore tiling layout JSON per project.
+- Persist browser URL in layout via debounced config sync.
+- Add tabset context menu with close option.
+- Add isSwitchingProject guard to projects store.
+- Add updateBlockConfig and closeTabset to tiling store.
+- Wire ui-save-gate and webview bridge into main.
+- Add webview keyboard bridge for app shortcuts.
+- Add UI save gate to suspend saves during cache clear.
+- Add keyboard navigation to file tree.
+- Replace tab cycling with global cross-pane Ctrl+Tab.
+- Register pane focus callbacks in all block components.
+- Add global tab cycling to tiling layout store.
+- Add pane focus registry for cross-pane tab cycling.
+- Add clearUiCache and safer ensureGitignore handling.
+- Add Sessions and Plugins groups to command palette.
+- Hide Collapse All Folders when file tree is closed.
+- Add developer commands and hide context-less items.
+- Add focus mode to hide UI chrome with Ctrl+Shift+M.
+- Persist and restore terminal tabs across project switches.
+- Add serializeTabsForSave and remove unused tabLastActiveAt.
+- Replace tab switching shortcut with project switching via Ctrl+Shift+number.
+- Integrate workspace system into App and main entry points.
+- Enhance terminal session with auto-close and block components.
+- Enhance tiling layout and tab management with rename support.
+- Add tab inline edit and name overlay components.
+- Add workspace switcher, empty state and titlebar integration.
+- Add workspace color and icon utilities, enhance CLI registry.
+- Enhance workspace, tiling-layout, projects and terminal-tabs stores.
+- Add workspace system with project config and buffer persistence.
+- Open file-tree panel at compact minimum size.
+- Scope-aware plugin filtering in right sidebar.
+- Add WIP alert to chat panel and remove redundant close button.
+- Add plugin scope type and validation.
+- Add clear cache button to resource usage popover.
+- Add cache clear and config reset functionality.
+- Add tiling layout block components.
+- Add tiling layout core components.
+- Add tiling layout core library and store.
+
+### Changed
+- Coalesce PTY writes with RAF to prevent viewport jumping.
+- Fix memory leaks and reduce unnecessary re-renders.
+
+### Fixed
+- Disable titlebar drag region in focus mode.
+- Prevent stale layout and zombie tabs on project switch.
+- Prevent orphan panes and stale layout on project switch.
+- Guard PTY resize against invalid dimensions.
+- Update focus mode shortcut to Ctrl+Alt+F.
+- Preserve cliSessionId on workspace restore.
+- Keep backend PTY alive when frontend cache evicts terminal.
+- Make chat and settings work without active project.
+---
+
+## [1.7.0] - 2026-03-19
+
+### Added
+- Add tiling layout system with core library, store, block components, and tab management.
+- Add workspace system with project config, buffer persistence, switcher, empty state, and titlebar integration.
+- Add focus mode to hide UI chrome (Ctrl+Alt+F).
+- Add keyboard navigation to file tree (arrow keys, Enter, Home/End).
+- Add global cross-pane tab cycling with Ctrl+Tab.
+- Add tabset context menu with close option.
+- Add tab inline edit and name overlay components.
+- Add Sessions and Plugins groups to command palette.
+- Add developer commands and hide context-less items in command palette.
+- Add clear cache button to resource usage popover.
+- Add cache clear and config reset functionality in backend.
+- Add UI save gate to suspend saves during cache clear.
+- Add webview keyboard bridge for app shortcuts.
+- Add plugin scope type and validation.
+- Add scope-aware plugin filtering in right sidebar.
+- Add WIP alert to chat panel.
+- Persist and restore tiling layout JSON per project.
+- Persist and restore terminal tabs across project switches.
+- Persist browser URL in layout via debounced config sync.
+- Replace tab switching shortcut with project switching via Ctrl+Shift+number.
+- Open file-tree panel at compact minimum size.
+- Hide Collapse All Folders button when file tree is closed.
+
+### Changed
+- Replace old terminal pane and split layout system with tiling layout.
+- Integrate tiling layout into App shell and panel components.
+- Migrate font sizes to dynamic scale across all UI components.
+- Rename agent-chat label from "Chat" to "AI Assistant".
+- Unify Ctrl+W to always close active tab.
+- Remove Alt key shortcut numbers from project icons.
+- Remove tab hibernation from lite mode config.
+- Remove opencode from CLI registry, detector, settings, and assets.
+- Use copilot standalone binary instead of gh extension.
+
+### Fixed
+- Guard PTY resize against invalid dimensions.
+- Keep backend PTY alive when frontend cache evicts terminal.
+- Prevent orphan panes and stale layout on project switch.
+- Prevent stale layout and zombie tabs on project switch.
+- Preserve cliSessionId on workspace restore.
+- Make chat and settings work without active project.
+- Disable titlebar drag region in focus mode.
+
+### Performance
+- Coalesce PTY writes with requestAnimationFrame to prevent viewport jumping.
+- Fix memory leaks and reduce unnecessary re-renders.
+- Add performance guardrails and lazy-load Monaco editors.
+- Coalesce git refresh by project with TTL caching.
+- Make app metrics sampling demand-driven.
+- Make file refresh selective by project and path.
+- Remove sync icon IO from main process.
+
+---
+
 ## [1.6.3] - 2026-03-14
 
 ### Fixed

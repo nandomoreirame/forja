@@ -5,12 +5,12 @@ import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useProjectsStore } from "@/stores/projects";
-import { useTerminalSplitLayoutStore } from "@/stores/terminal-split-layout";
-import { useRightPanelStore } from "@/stores/right-panel";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
-import { useBrowserPaneStore } from "@/stores/browser-pane";
+import { useFocusModeStore } from "@/stores/focus-mode";
+import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
 interface UseKeyboardShortcutsOptions {
@@ -27,16 +27,14 @@ export function useKeyboardShortcuts({
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
-      const splitStore = useTerminalSplitLayoutStore.getState();
+      const tilingStore = useTilingLayoutStore.getState();
 
-      const createSplit = (orientation: "horizontal" | "vertical") => {
-        if (splitStore.orientation !== "none") return;
+      const createSplit = (direction: "horizontal" | "vertical") => {
         const activeId = activeTabIdRef.current;
         if (!activeId) return;
         const activeTab = tabsRef.current?.find((t) => t.id === activeId);
         const sessionType = activeTab?.sessionType ?? "terminal";
-        splitStore.openSplit(orientation, activeId, sessionType);
-        splitStore.setFocusedPane("secondary");
+        tilingStore.splitActiveTabset(direction, sessionType);
       };
 
       if (mod && event.key === "s") {
@@ -52,20 +50,6 @@ export function useKeyboardShortcuts({
         useAppDialogsStore.getState().setSettingsOpen(true);
         return;
       }
-      // Ctrl/Cmd+Alt+B — toggle browser pane
-      if (mod && event.altKey && event.key.toLowerCase() === "b") {
-        event.preventDefault();
-        useBrowserPaneStore.getState().toggleOpen();
-        return;
-      }
-      if (mod && event.shiftKey && event.key.toLowerCase() === "b") {
-        event.preventDefault();
-        const { tree: t, trees: tr } = useFileTreeStore.getState();
-        if (t !== null || Object.keys(tr).length > 0) {
-          useFileTreeStore.getState().toggleSidebar();
-        }
-        return;
-      }
       if (mod && event.shiftKey && event.key.toLowerCase() === "o") {
         event.preventDefault();
         useFileTreeStore.getState().openProject();
@@ -77,25 +61,8 @@ export function useKeyboardShortcuts({
         return;
       }
       if (mod && event.key.toLowerCase() === "w") {
-        // Ctrl+Alt+W: close split (unchanged)
-        if (event.altKey && splitStore.orientation !== "none") {
-          event.preventDefault();
-          splitStore.closeSplit();
-          return;
-        }
-        // Ctrl+Shift+W: close terminal tab
-        if (event.shiftKey) {
-          event.preventDefault();
-          const id = activeTabIdRef.current;
-          if (id) closeTab(id);
-          return;
-        }
-        // Ctrl+W: close file preview
         event.preventDefault();
-        const previewState = useFilePreviewStore.getState();
-        if (previewState.isOpen) {
-          previewState.closePreview();
-        }
+        tilingStore.closeActiveTab();
         return;
       }
       if (mod && event.altKey && event.key.toLowerCase() === "v") {
@@ -108,14 +75,7 @@ export function useKeyboardShortcuts({
         createSplit("horizontal");
         return;
       }
-      if (mod && event.altKey && (event.key === "[" || event.key === "]")) {
-        event.preventDefault();
-        if (splitStore.orientation === "none") return;
-        splitStore.setFocusedPane(
-          splitStore.focusedPane === "primary" ? "secondary" : "primary",
-        );
-        return;
-      }
+      // Ctrl+Alt+[/] focus switching removed — flexlayout handles focus natively
       if (mod && event.shiftKey && event.key.toLowerCase() === "p") {
         event.preventDefault();
         useCommandPaletteStore.getState().open("commands");
@@ -174,14 +134,35 @@ export function useKeyboardShortcuts({
         useTerminalTabsStore.getState().toggleTerminalFullscreen();
         return;
       }
-      if (mod && event.key === "j") {
+      if (mod && event.shiftKey && event.key.toLowerCase() === "e") {
         event.preventDefault();
-        useRightPanelStore.getState().togglePanel();
+        if (tilingStore.hasBlock("tab-file-tree")) {
+          tilingStore.selectTab("tab-file-tree");
+        } else {
+          const tree = useFileTreeStore.getState().tree;
+          const projectName = tree?.root?.name;
+          tilingStore.addBlock(
+            { type: "file-tree", projectName },
+            undefined,
+            "tab-file-tree",
+          );
+        }
         return;
       }
-      if (mod && event.key === "e") {
+      if (mod && event.shiftKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
-        useFilePreviewStore.getState().togglePreview();
+        const blockId = `browser-${Date.now().toString(36)}`;
+        tilingStore.addBlock(
+          { type: "browser", url: "https://github.com/nandomoreirame/forja" },
+          undefined,
+          blockId,
+        );
+        return;
+      }
+      // Ctrl/Cmd+Alt+F — toggle focus mode
+      if (mod && event.altKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        useFocusModeStore.getState().toggleFocusMode();
         return;
       }
       if (mod && event.altKey && (event.key === "=" || event.key === "+")) {
@@ -199,41 +180,29 @@ export function useKeyboardShortcuts({
         useTerminalZoomStore.getState().resetZoom();
         return;
       }
-      // Ctrl+1..9: switch tabs by position
-      if (mod && !event.shiftKey && !event.altKey && event.key >= "1" && event.key <= "9") {
-        event.preventDefault();
-        const projectPath = useFileTreeStore.getState().currentPath;
-        if (!projectPath) return;
-        const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
-        const index = parseInt(event.key, 10) - 1;
-        if (index < projectTabs.length) {
-          useTerminalTabsStore.getState().setActiveTab(projectTabs[index].id);
-        }
-        return;
-      }
       // Ctrl/Cmd+Shift+1..9: switch projects by position
-      if (mod && event.shiftKey && !event.altKey && event.key >= "1" && event.key <= "9") {
+      // Uses event.code (Digit1-Digit9) because event.key returns symbols (!, @, #) when Shift is held
+      const digitMatch = event.code?.match(/^Digit([1-9])$/);
+      if (mod && event.shiftKey && !event.altKey && digitMatch) {
         event.preventDefault();
-        const index = parseInt(event.key, 10) - 1;
+        const index = parseInt(digitMatch[1], 10) - 1;
         const { projects, switchToProject: swp } = useProjectsStore.getState();
         if (index < projects.length) {
           swp(projects[index].path);
         }
         return;
       }
-      // Ctrl+Tab / Ctrl+Shift+Tab: cycle tabs
+      // Ctrl+Tab / Ctrl+Shift+Tab: cycle ALL tabs across ALL panes (like Chrome)
       if (event.ctrlKey && event.key === "Tab") {
         event.preventDefault();
-        const currentTabs = tabsRef.current;
-        const currentActive = activeTabIdRef.current;
-        if (currentTabs && currentTabs.length > 1 && currentActive) {
-          const currentIndex = currentTabs.findIndex(
-            (t) => t.id === currentActive,
-          );
-          const nextIndex = event.shiftKey
-            ? (currentIndex - 1 + currentTabs.length) % currentTabs.length
-            : (currentIndex + 1) % currentTabs.length;
-          useTerminalTabsStore.getState().setActiveTab(currentTabs[nextIndex].id);
+        const direction = event.shiftKey ? "backward" : "forward";
+        const nextTabId = tilingStore.cycleGlobalTab(direction);
+        if (nextTabId) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              paneFocusRegistry.focus(nextTabId);
+            });
+          });
         }
       }
     };

@@ -35,6 +35,7 @@ describe("DEFAULT_SETTINGS", () => {
         custom: [],
       },
       performance: { mode: "auto" },
+      ui: { activePaneHighlight: true, hoverToFocus: true },
     });
   });
 });
@@ -117,6 +118,39 @@ describe("mergeWithDefaults", () => {
     const result = mergeWithDefaults(input);
     expect(result.terminal.fontSize).toBe(20);
     expect(result.terminal.fontFamily).toBe("Another Font, monospace");
+  });
+});
+
+describe("ui settings", () => {
+  it("defaults ui.activePaneHighlight to true", () => {
+    const result = mergeWithDefaults({});
+    expect(result.ui.activePaneHighlight).toBe(true);
+  });
+
+  it("defaults ui.hoverToFocus to true", () => {
+    const result = mergeWithDefaults({});
+    expect(result.ui.hoverToFocus).toBe(true);
+  });
+
+  it("preserves explicit ui settings", () => {
+    const result = mergeWithDefaults({
+      ui: { activePaneHighlight: false, hoverToFocus: false },
+    } as Partial<UserSettings>);
+    expect(result.ui.activePaneHighlight).toBe(false);
+    expect(result.ui.hoverToFocus).toBe(false);
+  });
+
+  it("merges partial ui settings with defaults", () => {
+    const result = mergeWithDefaults({
+      ui: { activePaneHighlight: false },
+    } as Partial<UserSettings>);
+    expect(result.ui.activePaneHighlight).toBe(false);
+    expect(result.ui.hoverToFocus).toBe(true);
+  });
+
+  it("defaults ui when given undefined input", () => {
+    const result = mergeWithDefaults(undefined as unknown as Partial<UserSettings>);
+    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true });
   });
 });
 

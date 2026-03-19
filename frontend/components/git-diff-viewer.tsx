@@ -23,7 +23,7 @@ export function GitDiffViewer({
 }: GitDiffViewerProps) {
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-ctp-overlay1">
+      <div className="flex h-full items-center justify-center text-app text-ctp-overlay1">
         Loading diff...
       </div>
     );
@@ -31,7 +31,7 @@ export function GitDiffViewer({
 
   if (!diff) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-ctp-overlay1">
+      <div className="flex h-full items-center justify-center text-app text-ctp-overlay1">
         Select a changed file to see its diff.
       </div>
     );
@@ -39,7 +39,7 @@ export function GitDiffViewer({
 
   if (diff.isBinary) {
     return (
-      <div className="flex h-full items-center justify-center p-4 text-sm text-ctp-overlay1">
+      <div className="flex h-full items-center justify-center p-4 text-app text-ctp-overlay1">
         Binary file diff is not supported in the viewer.
       </div>
     );
@@ -52,7 +52,7 @@ export function GitDiffViewer({
   return (
     <div data-testid="git-diff-viewer" className="flex h-full min-h-0 flex-col">
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
-        <span className="truncate text-xs text-ctp-overlay1">
+        <span className="truncate text-app-sm text-ctp-overlay1">
           {diff.path}
         </span>
         <div className="inline-flex items-center rounded bg-ctp-surface0 p-0.5">
@@ -61,7 +61,7 @@ export function GitDiffViewer({
             aria-pressed={mode === "split"}
             aria-label="Split view"
             onClick={() => onModeChange("split")}
-            className={`rounded px-2 py-0.5 text-[11px] ${
+            className={`rounded px-2 py-0.5 text-app-xs ${
               mode === "split" ? "bg-ctp-surface1 text-ctp-text" : "text-ctp-overlay1"
             }`}
           >
@@ -72,7 +72,7 @@ export function GitDiffViewer({
             aria-pressed={mode === "unified"}
             aria-label="Unified view"
             onClick={() => onModeChange("unified")}
-            className={`rounded px-2 py-0.5 text-[11px] ${
+            className={`rounded px-2 py-0.5 text-app-xs ${
               mode === "unified" ? "bg-ctp-surface1 text-ctp-text" : "text-ctp-overlay1"
             }`}
           >
@@ -92,13 +92,13 @@ export function GitDiffViewer({
             />
           </Suspense>
         ) : (
-          <div className="flex h-full items-center justify-center p-4 text-sm text-ctp-overlay1">
+          <div className="flex h-full items-center justify-center p-4 text-app text-ctp-overlay1">
             No content available for diff view.
           </div>
         )}
       </div>
       {diff.truncated && (
-        <div className="shrink-0 border-t border-ctp-surface0 px-3 py-1 text-[11px] text-ctp-yellow">
+        <div className="shrink-0 border-t border-ctp-surface0 px-3 py-1 text-app-xs text-ctp-yellow">
           Diff is truncated for performance.
         </div>
       )}

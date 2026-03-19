@@ -1,6 +1,8 @@
+import { DockLocation } from "flexlayout-react";
 import { invoke } from "@/lib/ipc";
 import { create } from "zustand";
 import { useGitDiffStore } from "./git-diff";
+import { useTilingLayoutStore } from "./tiling-layout";
 
 export interface FileContent {
   path: string;
@@ -46,14 +48,44 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
   editDirty: false,
   previewByProject: {},
 
-  togglePreview: () => set((state) => ({ isOpen: !state.isOpen })),
+  togglePreview: () => {
+    const { isOpen } = get();
+    const tiling = useTilingLayoutStore.getState();
+    if (isOpen) {
+      tiling.removeBlock("block-file-preview");
+    } else if (!tiling.hasBlock("block-file-preview")) {
+      const fileTreeNode = tiling.model.getNodeById("tab-file-tree");
+      const fileTreeTabsetId = fileTreeNode?.getParent()?.getId();
+      tiling.addBlock(
+        { type: "file-preview" },
+        fileTreeTabsetId,
+        "block-file-preview",
+        DockLocation.RIGHT,
+      );
+    }
+    set({ isOpen: !isOpen });
+  },
 
-  openPreview: () => set({ isOpen: true }),
+  openPreview: () => {
+    const tiling = useTilingLayoutStore.getState();
+    if (!tiling.hasBlock("block-file-preview")) {
+      const fileTreeNode = tiling.model.getNodeById("tab-file-tree");
+      const fileTreeTabsetId = fileTreeNode?.getParent()?.getId();
+      tiling.addBlock(
+        { type: "file-preview" },
+        fileTreeTabsetId,
+        "block-file-preview",
+        DockLocation.RIGHT,
+      );
+    }
+    set({ isOpen: true });
+  },
 
   closePreview: () => {
     useGitDiffStore.getState().clearSelection();
+    useTilingLayoutStore.getState().removeBlock("block-file-preview");
     set({
-      isOpen: true,
+      isOpen: false,
       currentFile: null,
       content: null,
       error: null,
@@ -65,6 +97,24 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
 
   loadFile: async (path: string) => {
     set({ isLoading: true, currentFile: path, error: null, isEditing: false, editContent: null, editDirty: false });
+
+    // Ensure a file-preview block exists in the tiling layout
+    const tiling = useTilingLayoutStore.getState();
+    if (!tiling.hasBlock("block-file-preview")) {
+      // Find the tabset containing the file-tree block to split beside it
+      const fileTreeNode = tiling.model.getNodeById("tab-file-tree");
+      const fileTreeTabsetId = fileTreeNode?.getParent()?.getId();
+
+      tiling.addBlock(
+        { type: "file-preview", filePath: path },
+        fileTreeTabsetId,
+        "block-file-preview",
+        DockLocation.RIGHT,
+      );
+    } else {
+      // Block already exists — update the tab name to reflect the new file.
+      tiling.updateFilePreviewTabName(path);
+    }
 
     try {
       const result = await invoke<FileContent>("read_file_command", {

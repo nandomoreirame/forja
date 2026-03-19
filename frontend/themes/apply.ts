@@ -126,6 +126,9 @@ const CSS_VAR_MAP: Record<string, (t: ThemeDefinition) => string> = {
   // Used by dialogs, command palette, tooltips, and other floating UI.
   "--color-overlay-base": (t) => t.colors.base,
   "--color-overlay-mantle": (t) => t.colors.mantle,
+  // Selection colors (used by ::selection CSS)
+  "--selection-bg": (t) => t.colors.highlight,
+  "--selection-fg": (t) => t.colors.text,
 };
 
 export function applyTheme(theme: ThemeDefinition): void {
@@ -153,7 +156,7 @@ export function buildTerminalTheme(theme: ThemeDefinition, _opacity?: number): I
     foreground: theme.colors.text,
     cursor: theme.colors.text,
     cursorAccent: theme.colors.base,
-    selectionBackground: theme.colors.surface,
+    selectionBackground: theme.colors.highlight,
     selectionForeground: theme.colors.text,
     ...theme.terminal,
   };

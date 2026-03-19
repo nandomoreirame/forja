@@ -42,7 +42,7 @@ function CodeBlock({
 }) {
   return (
     <pre
-      className="my-2 overflow-x-auto rounded-md bg-ctp-mantle p-3 text-sm text-ctp-text"
+      className="my-2 overflow-x-auto rounded-md bg-ctp-mantle p-3 text-app text-ctp-text"
       data-language={language}
       style={{
         fontFamily: "var(--font-mono)",
@@ -75,7 +75,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
       if (isInline) {
         return (
           <code
-            className="rounded bg-ctp-mantle px-1.5 py-0.5 font-mono text-[13px] text-ctp-rosewater"
+            className="rounded bg-ctp-mantle px-1.5 py-0.5 font-mono text-app-sm text-ctp-rosewater"
             {...props}
           >
             {children}
@@ -115,7 +115,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
     table({ children }) {
       return (
         <div className="my-2 overflow-x-auto">
-          <table className="w-full border-collapse text-sm">{children}</table>
+          <table className="w-full border-collapse text-app">{children}</table>
         </div>
       );
     },
@@ -136,7 +136,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   };
 
   return (
-    <div className="markdown prose text-sm leading-relaxed text-ctp-text">
+    <div className="markdown prose text-app leading-relaxed text-ctp-text">
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkStripHtmlComments]} components={components}>
         {content}
       </ReactMarkdown>

@@ -35,10 +35,10 @@ export function SettingsEditor() {
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <Settings className="h-4 w-4 shrink-0 text-ctp-overlay1" strokeWidth={1.5} />
-          <span className="truncate text-sm font-semibold text-ctp-text">
+          <span className="truncate text-app font-semibold text-ctp-text">
             settings.json
           </span>
-          <span className="inline-flex shrink-0 items-center rounded bg-ctp-mauve/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-ctp-mauve">
+          <span className="inline-flex shrink-0 items-center rounded bg-ctp-mauve/15 px-1.5 py-0.5 text-app-xs font-medium uppercase tracking-wider text-ctp-mauve">
             Editing
           </span>
         </div>
@@ -69,7 +69,7 @@ export function SettingsEditor() {
 
       {/* Footer */}
       <div className="flex h-9 items-center justify-between border-t border-ctp-surface0 px-3">
-        <p id="settings-status" role="status" aria-live="polite" className="text-xs text-ctp-overlay1">
+        <p id="settings-status" role="status" aria-live="polite" className="text-app-sm text-ctp-overlay1">
           {editorError ? (
             <span className="text-ctp-red">{editorError}</span>
           ) : editorDirty ? (
@@ -78,7 +78,7 @@ export function SettingsEditor() {
             <span className="text-ctp-green">Saved</span>
           )}
         </p>
-        <p className="text-xs text-ctp-overlay0">
+        <p className="text-app-sm text-ctp-overlay0">
           {editorDirty ? "Ctrl+S to save" : ""}
         </p>
       </div>

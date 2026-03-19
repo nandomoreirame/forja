@@ -1,3 +1,7 @@
+export type PluginScope = "global" | "project";
+
+export const VALID_SCOPES: readonly PluginScope[] = ["global", "project"] as const;
+
 export type PluginPermission =
   | "project.active"
   | "git.status"
@@ -32,6 +36,7 @@ export interface PluginManifest {
   icon: string;
   entry: string;
   permissions: PluginPermission[];
+  scope?: PluginScope;
   minForjaVersion?: string;
 }
 
@@ -102,6 +107,13 @@ export function validateManifest(raw: unknown): ValidationResult {
   }
 
   if (
+    obj.scope !== undefined &&
+    !VALID_SCOPES.includes(obj.scope as PluginScope)
+  ) {
+    errors.push(`Invalid scope: "${obj.scope}" (must be "global" or "project")`);
+  }
+
+  if (
     obj.minForjaVersion !== undefined &&
     (typeof obj.minForjaVersion !== "string" || !SEMVER_RE.test(obj.minForjaVersion))
   ) {
@@ -126,6 +138,7 @@ export interface RegistryPlugin {
   sha256: string;
   tags: string[];
   downloads: number;
+  scope?: PluginScope;
   minForjaVersion?: string;
   permissions: PluginPermission[];
 }

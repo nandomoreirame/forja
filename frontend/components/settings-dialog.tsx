@@ -80,12 +80,12 @@ function Sidebar({ activeSection, onSelect, onOpenSettingsFile, version }: Sideb
       {/* Logo area */}
       <div className="flex items-center gap-2 border-b border-ctp-surface0 px-3 py-3">
         <Settings className="h-4 w-4 text-ctp-mauve" strokeWidth={1.5} />
-        <span className="text-sm font-semibold text-ctp-text">Settings</span>
+        <span className="text-app font-semibold text-ctp-text">Settings</span>
       </div>
 
       {/* Nav items */}
       <nav className="flex-1 space-y-0.5 p-2" aria-label="Settings sections">
-        <p className="mb-1 px-2 text-[10px] font-medium uppercase tracking-wider text-ctp-overlay0">
+        <p className="mb-1 px-2 text-app-xs font-medium uppercase tracking-wider text-ctp-overlay0">
           Desktop
         </p>
         {NAV_ITEMS.map((item) => (
@@ -96,7 +96,7 @@ function Sidebar({ activeSection, onSelect, onOpenSettingsFile, version }: Sideb
             data-active={activeSection === item.id ? "true" : "false"}
             onClick={() => onSelect(item.id)}
             className={cn(
-              "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
+              "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-app transition-colors",
               activeSection === item.id
                 ? "bg-ctp-surface0 text-ctp-text"
                 : "text-ctp-subtext0 hover:bg-ctp-surface0 hover:text-ctp-text",
@@ -114,14 +114,14 @@ function Sidebar({ activeSection, onSelect, onOpenSettingsFile, version }: Sideb
           role="button"
           aria-label="Open settings.json"
           onClick={onOpenSettingsFile}
-          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+          className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-app-sm text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
         >
           <ExternalLink className="h-3 w-3" strokeWidth={1.5} />
           Open settings.json
         </button>
         <div
           data-testid="settings-version-info"
-          className="px-2 py-1 text-[10px] text-ctp-overlay0"
+          className="px-2 py-1 text-app-xs text-ctp-overlay0"
         >
           v{version}
         </div>
@@ -142,10 +142,10 @@ interface SettingItemProps {
 function SettingItem({ category, label, description, children }: SettingItemProps) {
   return (
     <div className="border-b border-ctp-surface0/50 py-4 last:border-b-0">
-      <p className="mb-0.5 text-sm text-ctp-subtext0">
+      <p className="mb-0.5 text-app text-ctp-subtext0">
         {category}: <span className="font-semibold text-ctp-text">{label}</span>
       </p>
-      <p className="mb-2 text-xs text-ctp-overlay1">{description}</p>
+      <p className="mb-2 text-app-sm text-ctp-overlay1">{description}</p>
       {children}
     </div>
   );
@@ -157,7 +157,7 @@ function SectionHeader({ title, icon }: { title: string; icon: React.ReactNode }
       <div className="flex h-7 w-7 items-center justify-center rounded-md bg-ctp-surface0">
         {icon}
       </div>
-      <h3 className="text-sm font-semibold text-ctp-text">{title}</h3>
+      <h3 className="text-app font-semibold text-ctp-text">{title}</h3>
     </div>
   );
 }
@@ -165,10 +165,10 @@ function SectionHeader({ title, icon }: { title: string; icon: React.ReactNode }
 // ─── Inputs ──────────────────────────────────────────────────────────────────
 
 const inputClass =
-  "h-7 w-72 rounded-sm border border-ctp-surface1 bg-overlay-mantle px-2 text-sm text-ctp-text placeholder-ctp-overlay0 focus:border-ctp-mauve focus:outline-none";
+  "h-7 w-72 rounded-sm border border-ctp-surface1 bg-overlay-mantle px-2 text-app text-ctp-text placeholder-ctp-overlay0 focus:border-ctp-mauve focus:outline-none";
 
 const numberInputClass =
-  "h-7 w-24 rounded-sm border border-ctp-surface1 bg-overlay-mantle px-2 text-sm text-ctp-text focus:border-ctp-mauve focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+  "h-7 w-24 rounded-sm border border-ctp-surface1 bg-overlay-mantle px-2 text-app text-ctp-text focus:border-ctp-mauve focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 // ─── Appearance Section ───────────────────────────────────────────────────────
 
@@ -439,14 +439,14 @@ function ShortcutsSection() {
             key={shortcut.label}
             className="flex items-center justify-between px-4 py-2.5"
           >
-            <span className="text-sm text-ctp-subtext0">{shortcut.label}</span>
+            <span className="text-app text-ctp-subtext0">{shortcut.label}</span>
             <span className="flex items-center gap-1">
               {shortcut.keys.map((key, i) => (
                 <span key={i} className="flex items-center gap-1">
                   {i > 0 && (
-                    <span className="text-[11px] text-ctp-surface1">+</span>
+                    <span className="text-app-xs text-ctp-surface1">+</span>
                   )}
-                  <kbd className="inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-[11px] text-ctp-overlay1">
+                  <kbd className="inline-flex min-w-6 items-center justify-center rounded bg-ctp-surface0 px-1.5 py-0.5 font-mono text-app-xs text-ctp-overlay1">
                     {key}
                   </kbd>
                 </span>
@@ -501,7 +501,7 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
             className="rounded-lg border border-ctp-surface0 bg-overlay-mantle p-4"
           >
             <div className="mb-3 flex items-center gap-2">
-              <span className="font-mono text-sm font-medium text-ctp-text">
+              <span className="font-mono text-app font-medium text-ctp-text">
                 {name}
               </span>
             </div>
@@ -509,7 +509,7 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
               <div>
                 <label
                   htmlFor={`session-args-${name}`}
-                  className="mb-1 block text-xs text-ctp-overlay1"
+                  className="mb-1 block text-app-sm text-ctp-overlay1"
                 >
                   Extra arguments
                 </label>
@@ -519,7 +519,7 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
                   value={(config.args ?? []).join(" ")}
                   onChange={(e) => updateArgs(name, e.target.value)}
                   placeholder="--arg1 --arg2"
-                  className="h-7 w-full rounded-md border border-ctp-surface0 bg-overlay-base px-2 font-mono text-xs text-ctp-text placeholder-ctp-overlay0 focus:border-ctp-mauve focus:outline-none"
+                  className="h-7 w-full rounded-md border border-ctp-surface0 bg-overlay-base px-2 font-mono text-app-sm text-ctp-text placeholder-ctp-overlay0 focus:border-ctp-mauve focus:outline-none"
                 />
               </div>
             </div>
@@ -527,7 +527,7 @@ function SessionsSection({ settings, onSave }: SessionsSectionProps) {
         ))}
         {sessionEntries.length === 0 && (
           <div className="rounded-lg border border-ctp-surface0 bg-overlay-mantle px-4 py-8 text-center">
-            <p className="text-sm text-ctp-overlay1">No sessions configured</p>
+            <p className="text-app text-ctp-overlay1">No sessions configured</p>
           </div>
         )}
       </div>
@@ -550,7 +550,7 @@ function PerformanceSection({ settings, onSave }: { settings: UserSettings; onSa
       <SettingItem
         category="Performance"
         label="Mode"
-        description="Controls resource usage. Auto detects your hardware and adjusts accordingly. Lite reduces GPU, metrics, watchers, and hibernates inactive tabs."
+        description="Controls resource usage. Auto detects your hardware and adjusts accordingly. Lite reduces GPU, metrics, and watchers."
       >
         <select
           value={settings.performance.mode}
@@ -569,9 +569,9 @@ function PerformanceSection({ settings, onSave }: { settings: UserSettings; onSa
 
       {resolved === "lite" && (
         <div className="mt-3 rounded-md border border-ctp-yellow/20 bg-ctp-yellow/5 p-3">
-          <p className="text-xs text-ctp-yellow">
+          <p className="text-app-sm text-ctp-yellow">
             Lite mode is active. GPU acceleration is disabled, metrics polling is reduced,
-            file watchers are shallow, and inactive tabs will be hibernated after 60 seconds.
+            and file watchers are shallow.
           </p>
         </div>
       )}
@@ -641,7 +641,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
           <div className="flex min-w-0 flex-1 flex-col">
             {/* Header */}
             <div className="flex h-11 shrink-0 items-center justify-between border-b border-ctp-surface0 px-5">
-              <span className="text-sm font-semibold text-ctp-text">
+              <span className="text-app font-semibold text-ctp-text">
                 {NAV_ITEMS.find((i) => i.id === activeSection)?.label ?? "Settings"}
               </span>
               <button

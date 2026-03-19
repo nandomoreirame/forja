@@ -190,4 +190,33 @@ describe("usePty", () => {
       windowLabel: "main",
     });
   });
+
+  it("spawn passes resumeArgs to spawn_pty IPC when provided", async () => {
+    mockInvoke.mockResolvedValueOnce("tab-1");
+    const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
+
+    await act(async () => {
+      await result.current.spawn("/test/path", "claude", ["--resume", "abc-def-123"]);
+    });
+
+    expect(mockInvoke).toHaveBeenCalledWith("spawn_pty", {
+      tabId: "tab-1",
+      path: "/test/path",
+      sessionType: "claude",
+      windowLabel: "main",
+      resumeArgs: ["--resume", "abc-def-123"],
+    });
+  });
+
+  it("spawn works without resumeArgs — invoke does not include resumeArgs field", async () => {
+    mockInvoke.mockResolvedValueOnce("tab-1");
+    const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
+
+    await act(async () => {
+      await result.current.spawn("/test/path", "claude");
+    });
+
+    const callArgs = mockInvoke.mock.calls[0];
+    expect(callArgs[1]).not.toHaveProperty("resumeArgs");
+  });
 });

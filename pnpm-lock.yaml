@@ -53,6 +53,9 @@ importers:
       electron-store:
         specifier: ^10.0.0
         version: 10.1.0
+      flexlayout-react:
+        specifier: ^0.8.19
+        version: 0.8.19(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       lucide-react:
         specifier: ^0.469.0
         version: 0.469.0(react@19.2.4)
@@ -2422,6 +2425,12 @@ packages:
 
   filelist@1.0.6:
     resolution: {integrity: sha512-5giy2PkLYY1cP39p17Ech+2xlpTRL9HLspOfEgm0L6CwBXBTgsK5ou0JtzYuepxkaQ/tvhCFIJ5uXo0OrM2DxA==}
+
+  flexlayout-react@0.8.19:
+    resolution: {integrity: sha512-OC8PvAZ7ElYutiSQhLbuycpzxXdIQuyREozWGu8Wx3+6G4r3ctBMUiSYEVKICgiW1wLOPwvZOSpOFqddG3eoVg==}
+    peerDependencies:
+      react: ^18.0.0 || ^19.0.0
+      react-dom: ^18.0.0 || ^19.0.0
 
   follow-redirects@1.15.11:
     resolution: {integrity: sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ==}
@@ -6555,6 +6564,11 @@ snapshots:
   filelist@1.0.6:
     dependencies:
       minimatch: 5.1.9
+
+  flexlayout-react@0.8.19(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+    dependencies:
+      react: 19.2.4
+      react-dom: 19.2.4(react@19.2.4)
 
   follow-redirects@1.15.11: {}
 

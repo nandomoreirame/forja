@@ -37,6 +37,7 @@ export const FileTreeNode = memo(function FileTreeNode({
   projectPath,
 }: FileTreeNodeProps) {
   const expanded = useFileTreeStore((s) => !!s.expandedPaths[node.path]);
+  const isFocused = useFileTreeStore((s) => s.focusedPath === node.path);
   const toggleExpanded = useFileTreeStore((s) => s.toggleExpanded);
   const selectFile = useFileTreeStore((s) => s.selectFile);
   const currentFile = useFilePreviewStore((s) => s.currentFile);
@@ -92,6 +93,7 @@ export const FileTreeNode = memo(function FileTreeNode({
 
   const handleClick = useCallback(() => {
     if (renaming) return;
+    useFileTreeStore.getState().setFocusedPath(node.path);
     if (node.isDir) {
       const wasExpanded = expanded;
       toggleExpanded(node.path);
@@ -192,6 +194,8 @@ export const FileTreeNode = memo(function FileTreeNode({
         ignoredOpacity
       } ${
         isActive ? "bg-ctp-surface0" : ""
+      } ${
+        isFocused ? "ring-1 ring-ctp-mauve/60 bg-ctp-surface0/50" : ""
       }`}
       style={{ paddingLeft: `${depth * 12 + 8}px` }}
       onClick={handleClick}
@@ -211,13 +215,14 @@ export const FileTreeNode = memo(function FileTreeNode({
         isDir={node.isDir}
         extension={node.extension}
         isOpen={expanded}
+        className="shrink-0"
       />
 
       {renaming ? (
         <input
           ref={renameInputRef}
           type="text"
-          className="min-w-0 flex-1 rounded bg-ctp-surface1 px-1 py-0 text-sm text-ctp-text outline-none ring-1 ring-ctp-mauve"
+          className="min-w-0 flex-1 rounded bg-ctp-surface1 px-1 py-0 text-app text-ctp-text outline-none ring-1 ring-ctp-mauve"
           value={renameValue}
           onChange={(e) => setRenameValue(e.target.value)}
           onKeyDown={handleRenameKeyDown}
@@ -225,14 +230,14 @@ export const FileTreeNode = memo(function FileTreeNode({
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <span className={`truncate text-sm ${nameColor}`}>
+        <span className={`truncate text-app ${nameColor}`}>
           {node.name}
         </span>
       )}
 
       {isProjectRoot && projectCounters && projectCounters.total > 0 && (
         <span
-          className="ml-auto shrink-0 text-[10px] font-medium text-ctp-overlay1"
+          className="ml-auto shrink-0 text-app-xs font-medium text-ctp-overlay1"
           aria-label={`Changes: M:${projectCounters.modified} A:${projectCounters.added} D:${projectCounters.deleted} U:${projectCounters.untracked}`}
         >
           M:{projectCounters.modified} A:{projectCounters.added} D:{projectCounters.deleted} U:{projectCounters.untracked}
@@ -242,7 +247,7 @@ export const FileTreeNode = memo(function FileTreeNode({
       {/* Git status badge for files */}
       {!node.isDir && badgeLetter && statusColor && !isProjectRoot && (
         <span
-          className={`ml-auto shrink-0 text-xs font-medium ${statusColor}`}
+          className={`ml-auto shrink-0 text-app-sm font-medium ${statusColor}`}
           aria-label={`Git status: ${badgeLetter}`}
         >
           {badgeLetter}
@@ -267,7 +272,7 @@ export const FileTreeNode = memo(function FileTreeNode({
         </ContextMenuTrigger>
         <ContextMenuContent className="min-w-44 border-ctp-surface1 bg-overlay-mantle">
           <ContextMenuItem
-            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+            className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
             onSelect={handleRenameStart}
           >
             <Pencil className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -275,7 +280,7 @@ export const FileTreeNode = memo(function FileTreeNode({
           </ContextMenuItem>
 
           <ContextMenuItem
-            className="gap-2 text-xs text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
+            className="gap-2 text-app-sm text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
             onSelect={() => setDeleteDialogOpen(true)}
           >
             <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -287,7 +292,7 @@ export const FileTreeNode = memo(function FileTreeNode({
             <>
               <ContextMenuSeparator className="bg-ctp-surface0" />
               <ContextMenuItem
-                className="gap-2 text-xs text-ctp-overlay1 focus:bg-ctp-surface0 focus:text-ctp-text"
+                className="gap-2 text-app-sm text-ctp-overlay1 focus:bg-ctp-surface0 focus:text-ctp-text"
                 onSelect={handleRemoveFromWorkspace}
               >
                 <FolderMinus className="h-3.5 w-3.5" strokeWidth={1.5} />

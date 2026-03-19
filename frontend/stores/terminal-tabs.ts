@@ -1,6 +1,7 @@
 import { getCurrentWindow } from "@/lib/ipc";
 import { computeTabDisplayNames, getSessionDisplayName, type SessionType } from "@/lib/cli-registry";
 import { create } from "zustand";
+import { useTilingLayoutStore } from "./tiling-layout";
 
 const RENDERER_INSTANCE_ID = `${Date.now().toString(36)}-${Math.random()
   .toString(36)
@@ -14,6 +15,8 @@ export interface TerminalTab {
   sessionType: SessionType;
   /** User-defined custom name for the tab. When set, overrides the auto-generated display name. */
   customName?: string;
+  /** Detected CLI session ID for resume. Set when the CLI reports its session ID via output parsing. */
+  cliSessionId?: string;
 }
 
 interface TerminalTabsState {
@@ -22,11 +25,12 @@ interface TerminalTabsState {
   counter: number;
   isTerminalFullscreen: boolean;
   activeTabIdByProject: Record<string, string>;
-  tabLastActiveAt: Record<string, number>;
   isFullscreenByProject: Record<string, boolean>;
 
   nextTabId: () => string;
   addTab: (id: string, path: string, sessionType?: SessionType) => void;
+  /** Registers tab metadata WITHOUT creating a layout block. Used for non-active project tabs during session restore. */
+  registerTab: (id: string, path: string, sessionType?: SessionType, customName?: string) => void;
   removeTab: (id: string) => void;
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
@@ -39,7 +43,16 @@ interface TerminalTabsState {
   getTabsForProject: (projectPath: string) => TerminalTab[];
   /** Reorders tabs by moving the tab with activeId to the position of overId. */
   reorderTabs: (activeId: string, overId: string) => void;
+  /** Creates layout blocks for project tabs that were registered without blocks (e.g., non-active project tabs during session restore). */
+  ensureBlocksForProjectTabs: (projectPath: string) => void;
   hasTab: (tabId: string) => boolean;
+  /** Serializes tabs for a specific project path into a disk-persistable format. */
+  serializeTabsForSave: (projectPath: string) => {
+    tabs: Array<{ id: string; sessionType: string; cliSessionId?: string; exited?: boolean }>;
+    activeTabIndex: number;
+  };
+  /** Stores the detected CLI session ID on the specified tab for future resume capability. */
+  setCliSessionId: (tabId: string, sessionId: string) => void;
   /** Saves current activeTabId for the given project path. */
   saveActiveTabForProject: (projectPath: string) => void;
   /** Restores activeTabId for the given project path (falls back to first tab or null). */
@@ -56,7 +69,6 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   counter: 0,
   isTerminalFullscreen: false,
   activeTabIdByProject: {},
-  tabLastActiveAt: {},
   isFullscreenByProject: {},
 
   nextTabId: () => {
@@ -77,7 +89,29 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     set((state) => ({
       tabs: [...state.tabs, tab],
       activeTabId: id,
-      tabLastActiveAt: { ...state.tabLastActiveAt, [id]: Date.now() },
+    }));
+
+    // Create a terminal block in the tiling layout (use tabId as nodeId)
+    useTilingLayoutStore.getState().addBlock(
+      { type: "terminal", tabId: id, sessionType },
+      undefined,
+      id,
+    );
+  },
+
+  registerTab: (id: string, path: string, sessionType: SessionType = 'claude', customName?: string) => {
+    const tab: TerminalTab = {
+      id,
+      name: getSessionDisplayName(sessionType),
+      path,
+      isRunning: true,
+      sessionType,
+    };
+    if (customName) {
+      tab.customName = customName;
+    }
+    set((state) => ({
+      tabs: [...state.tabs, tab],
     }));
   },
 
@@ -102,13 +136,13 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     }
 
     set({ tabs: newTabs, activeTabId: newActiveTabId });
+
+    // Remove the block from the tiling layout
+    useTilingLayoutStore.getState().removeBlock(id);
   },
 
   setActiveTab: (id: string) =>
-    set((state) => ({
-      activeTabId: id,
-      tabLastActiveAt: { ...state.tabLastActiveAt, [id]: Date.now() },
-    })),
+    set({ activeTabId: id }),
 
   markTabExited: (id: string) =>
     set((state) => ({
@@ -153,9 +187,44 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     set({ tabs: newTabs });
   },
 
+  ensureBlocksForProjectTabs: (projectPath: string) => {
+    const projectTabs = get().tabs.filter((t) => t.path === projectPath);
+    const tilingStore = useTilingLayoutStore.getState();
+    for (const tab of projectTabs) {
+      if (!tilingStore.hasBlock(tab.id)) {
+        tilingStore.addBlock(
+          { type: "terminal", tabId: tab.id, sessionType: tab.sessionType },
+          undefined,
+          tab.id,
+        );
+      }
+    }
+  },
+
   hasTab: (tabId: string) => {
     return get().tabs.some((t) => t.id === tabId);
   },
+
+  serializeTabsForSave: (projectPath: string) => {
+    const projectTabs = get().tabs.filter((t) => t.path === projectPath);
+    const activeIdx = projectTabs.findIndex((t) => t.id === get().activeTabId);
+    return {
+      tabs: projectTabs.map((tab) => ({
+        id: tab.id,
+        sessionType: tab.sessionType,
+        ...(tab.cliSessionId ? { cliSessionId: tab.cliSessionId } : {}),
+        ...(!tab.isRunning ? { exited: true } : {}),
+      })),
+      activeTabIndex: activeIdx >= 0 ? activeIdx : 0,
+    };
+  },
+
+  setCliSessionId: (tabId: string, sessionId: string) =>
+    set((state) => ({
+      tabs: state.tabs.map((t) =>
+        t.id === tabId ? { ...t, cliSessionId: sessionId } : t
+      ),
+    })),
 
   saveActiveTabForProject: (projectPath: string) => {
     const { activeTabId, activeTabIdByProject } = get();

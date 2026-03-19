@@ -6,6 +6,8 @@ export interface PersistedSessionTab {
   path: string;
   sessionType: SessionType;
   customName?: string;
+  /** Tab ID used to match layout blocks across reloads (prevents duplication). */
+  id?: string;
 }
 
 export interface PersistedSessionState {
@@ -17,13 +19,6 @@ export interface PersistedSessionState {
   };
   terminal: {
     activeTabIndex: number;
-    split: {
-      isEnabled: boolean;
-      orientation: "horizontal" | "vertical";
-      ratio: number;
-      splitTabIndex: number;
-      secondarySessionType: SessionType | null;
-    };
     tabs: PersistedSessionTab[];
   };
 }
@@ -43,7 +38,6 @@ function parse(input: unknown): PersistedSessionState | null {
   const raw = input as Record<string, unknown>;
   const preview = (raw.preview ?? {}) as Record<string, unknown>;
   const terminal = (raw.terminal ?? {}) as Record<string, unknown>;
-  const split = (terminal.split ?? {}) as Record<string, unknown>;
   const tabsRaw = Array.isArray(terminal.tabs) ? terminal.tabs : [];
 
   const tabs: PersistedSessionTab[] = tabsRaw
@@ -53,6 +47,9 @@ function parse(input: unknown): PersistedSessionState | null {
       const parsed: PersistedSessionTab = { path: t.path, sessionType: t.sessionType };
       if (typeof t.customName === "string" && t.customName.length > 0) {
         parsed.customName = t.customName;
+      }
+      if (typeof t.id === "string" && t.id.length > 0) {
+        parsed.id = t.id;
       }
       return parsed;
     })
@@ -72,21 +69,6 @@ function parse(input: unknown): PersistedSessionState | null {
         typeof terminal.activeTabIndex === "number" && terminal.activeTabIndex >= 0
           ? Math.floor(terminal.activeTabIndex)
           : 0,
-      split: {
-        isEnabled: split.isEnabled === true,
-        orientation:
-          split.orientation === "horizontal" ? "horizontal" : "vertical",
-        ratio:
-          typeof split.ratio === "number" && Number.isFinite(split.ratio)
-            ? Math.max(10, Math.min(90, Math.round(split.ratio)))
-            : 50,
-        splitTabIndex:
-          typeof split.splitTabIndex === "number" && split.splitTabIndex >= 0
-            ? Math.floor(split.splitTabIndex)
-            : 0,
-        secondarySessionType:
-          isSessionType(split.secondarySessionType) ? split.secondarySessionType : null,
-      },
       tabs,
     },
   };

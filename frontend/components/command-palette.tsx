@@ -3,36 +3,41 @@ import { useCommandPaletteStore } from "@/stores/command-palette";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
-import { useRightPanelStore } from "@/stores/right-panel";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
-import { useAgentChatStore } from "@/stores/agent-chat";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useGitStatusStore } from "@/stores/git-status";
 import { useThemeStore } from "@/stores/theme";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useProjectsStore } from "@/stores/projects";
+import { useFocusModeStore } from "@/stores/focus-mode";
+import { usePluginsStore, getOrderedEnabledPlugins } from "@/stores/plugins";
+import { getPluginIcon } from "@/lib/plugin-types";
 import { flattenFileTree } from "@/lib/flatten-file-tree";
+import { invoke } from "@/lib/ipc";
 import {
   ChevronsDownUp,
+  Eraser,
   FolderOpen,
+  FolderTree,
   GitCompareArrows,
+  Globe,
   Info,
   Keyboard,
   Loader2,
-  MessageSquare,
+  Minimize2,
   Palette,
-  PanelLeft,
-  PanelRight,
   Plus,
   RefreshCw,
   RotateCcw,
   Settings,
   SplitSquareHorizontal,
+  Puzzle,
   TerminalSquare,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { useInstalledClis } from "@/hooks/use-installed-clis";
 import { CliIcon } from "./cli-icon";
 import { FileIcon } from "./file-icon";
@@ -56,6 +61,12 @@ export function CommandPalette() {
   const { installedClis, loading: clisLoading } = useInstalledClis();
   const { customThemes: themeCustom } = useThemeStore();
   const { projects, activeProjectPath, getProjectInitial, getProjectColor } = useProjectsStore();
+  const isFileTreeOpen = useTilingLayoutStore((s) => s.hasBlock("tab-file-tree"));
+  const { plugins, pluginOrder } = usePluginsStore();
+  const enabledPlugins = useMemo(
+    () => getOrderedEnabledPlugins({ plugins, pluginOrder }),
+    [plugins, pluginOrder],
+  );
   const allThemes = useMemo(
     () => useThemeStore.getState().getAllThemes(),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -94,6 +105,45 @@ export function CommandPalette() {
     close();
   };
 
+  const browserCounterRef = useRef(0);
+
+  const handleOpenFiles = () => {
+    const tilingStore = useTilingLayoutStore.getState();
+    if (!tilingStore.hasBlock("tab-file-tree")) {
+      const tree = useFileTreeStore.getState().tree;
+      const projectName = tree?.root.name;
+      tilingStore.addBlock(
+        { type: "file-tree", projectName },
+        undefined,
+        "tab-file-tree",
+      );
+    }
+    close();
+  };
+
+  const handleOpenBrowser = () => {
+    const tilingStore = useTilingLayoutStore.getState();
+    browserCounterRef.current += 1;
+    const blockId = `browser-${Date.now().toString(36)}-${browserCounterRef.current}`;
+    tilingStore.addBlock(
+      { type: "browser", url: "https://github.com/nandomoreirame/forja" },
+      undefined,
+      blockId,
+    );
+    close();
+  };
+
+  const handleOpenPlugin = (pluginName: string, displayName?: string, icon?: string) => {
+    const tilingStore = useTilingLayoutStore.getState();
+    const blockId = `plugin-${pluginName}`;
+    tilingStore.addBlock(
+      { type: "plugin", pluginName, pluginDisplayName: displayName, pluginIcon: icon },
+      undefined,
+      blockId,
+    );
+    close();
+  };
+
   const handleProjectSelect = (projectPath: string) => {
     useProjectsStore.getState().switchToProject(projectPath);
     close();
@@ -110,12 +160,6 @@ export function CommandPalette() {
       case "open-project":
         useFileTreeStore.getState().openProject();
         break;
-      case "toggle-sidebar":
-        useFileTreeStore.getState().toggleSidebar();
-        break;
-      case "toggle-file-preview":
-        useFilePreviewStore.getState().togglePreview();
-        break;
       case "keyboard-shortcuts":
         useAppDialogsStore.getState().setShortcutsOpen(true);
         break;
@@ -125,12 +169,6 @@ export function CommandPalette() {
       case "open-settings":
         useUserSettingsStore.getState().openSettingsEditor();
         useFilePreviewStore.getState().openPreview();
-        break;
-      case "toggle-right-panel":
-        useRightPanelStore.getState().togglePanel();
-        break;
-      case "toggle-chat":
-        useAgentChatStore.getState().togglePanel();
         break;
       case "collapse-all":
         useFileTreeStore.getState().collapseAll();
@@ -160,6 +198,9 @@ export function CommandPalette() {
         diffState.selectChangedFile(projectPath, targetPath);
         break;
       }
+      case "toggle-focus-mode":
+        useFocusModeStore.getState().toggleFocusMode();
+        break;
       case "toggle-diff-mode": {
         const diff = useGitDiffStore.getState();
         diff.setDiffMode(diff.diffMode === "split" ? "unified" : "split");
@@ -170,6 +211,12 @@ export function CommandPalette() {
         if (path) useGitStatusStore.getState().forceFetchStatuses(path);
         break;
       }
+      case "dev-reload":
+        window.location.reload();
+        return; // no close() needed — page reloads
+      case "dev-clear-cache":
+        invoke("app:clearCache").catch(() => {});
+        return; // no close() needed — page reloads after cache clear
     }
     close();
   };
@@ -223,7 +270,7 @@ export function CommandPalette() {
         {mode === "sessions" && (
           <CommandGroup heading="New Session">
             {clisLoading ? (
-              <div className="flex items-center gap-2 px-2 py-3 text-sm text-ctp-overlay1">
+              <div className="flex items-center gap-2 px-2 py-3 text-app text-ctp-overlay1">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Detecting installed CLIs...
               </div>
@@ -265,7 +312,7 @@ export function CommandPalette() {
                 />
                 {theme.name}
                 {theme.type === "light" && (
-                  <span className="ml-auto text-xs text-ctp-overlay1">Light</span>
+                  <span className="ml-auto text-app-sm text-ctp-overlay1">Light</span>
                 )}
               </CommandItem>
             ))}
@@ -292,14 +339,14 @@ export function CommandPalette() {
                     />
                   ) : (
                     <span
-                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] font-bold"
+                      className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-app-xs font-bold"
                       style={{ backgroundColor: `${color}22`, color }}
                     >
                       {initial}
                     </span>
                   )}
                   <span className="flex-1 truncate">{project.name}</span>
-                  <span className="ml-2 truncate text-xs text-ctp-overlay1">{project.path}</span>
+                  <span className="ml-2 truncate text-app-sm text-ctp-overlay1">{project.path}</span>
                   {isActive && (
                     <FolderOpen className="ml-2 h-3.5 w-3.5 shrink-0 text-ctp-mauve" strokeWidth={1.5} />
                   )}
@@ -312,22 +359,26 @@ export function CommandPalette() {
         {mode === "commands" && (
           <>
             <CommandGroup heading="Session">
-              <CommandItem
-                value="New Session"
-                onSelect={() => handleCommand("new-session")}
-              >
-                <Plus className="h-4 w-4" strokeWidth={1.5} />
-                New Session
-                <CommandShortcut>{mod}+Shift+T</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                value="Go to Project"
-                onSelect={() => handleCommand("go-to-project")}
-              >
-                <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
-                Go to Project
-                <CommandShortcut>{mod}+Shift+L</CommandShortcut>
-              </CommandItem>
+              {currentPath && (
+                <CommandItem
+                  value="New Session"
+                  onSelect={() => handleCommand("new-session")}
+                >
+                  <Plus className="h-4 w-4" strokeWidth={1.5} />
+                  New Session
+                  <CommandShortcut>{mod}+Shift+T</CommandShortcut>
+                </CommandItem>
+              )}
+              {projects.length > 0 && (
+                <CommandItem
+                  value="Go to Project"
+                  onSelect={() => handleCommand("go-to-project")}
+                >
+                  <FolderOpen className="h-4 w-4" strokeWidth={1.5} />
+                  Go to Project
+                  <CommandShortcut>{mod}+Shift+L</CommandShortcut>
+                </CommandItem>
+              )}
               <CommandItem
                 value="Add Project"
                 onSelect={() => handleCommand("open-project")}
@@ -339,45 +390,97 @@ export function CommandPalette() {
             </CommandGroup>
 
             <CommandGroup heading="Panels & View">
+              {currentPath && (
+                <CommandItem
+                  value="Open Files"
+                  onSelect={handleOpenFiles}
+                >
+                  <FolderTree className="h-4 w-4" strokeWidth={1.5} />
+                  Open Files
+                  <CommandShortcut>{mod}+Shift+E</CommandShortcut>
+                </CommandItem>
+              )}
               <CommandItem
-                value="Toggle Sidebar"
-                onSelect={() => handleCommand("toggle-sidebar")}
+                value="Open Browser"
+                onSelect={handleOpenBrowser}
               >
-                <PanelLeft className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Sidebar
+                <Globe className="h-4 w-4" strokeWidth={1.5} />
+                Open Browser
                 <CommandShortcut>{mod}+Shift+B</CommandShortcut>
               </CommandItem>
               <CommandItem
-                value="Toggle File Preview"
-                onSelect={() => handleCommand("toggle-file-preview")}
+                value="Toggle Focus Mode"
+                onSelect={() => handleCommand("toggle-focus-mode")}
               >
-                <PanelRight className="h-4 w-4" strokeWidth={1.5} />
-                Toggle File Preview
-                <CommandShortcut>{mod}+E</CommandShortcut>
+                <Minimize2 className="h-4 w-4" strokeWidth={1.5} />
+                Toggle Focus Mode
+                <CommandShortcut>{mod}+Alt+F</CommandShortcut>
               </CommandItem>
-              <CommandItem
-                value="Toggle Right Panel"
-                onSelect={() => handleCommand("toggle-right-panel")}
-              >
-                <PanelRight className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Right Panel
-                <CommandShortcut>{mod}+J</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                value="Toggle Chat Panel"
-                onSelect={() => handleCommand("toggle-chat")}
-              >
-                <MessageSquare className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Chat Panel
-              </CommandItem>
-              <CommandItem
-                value="Collapse All Folders"
-                onSelect={() => handleCommand("collapse-all")}
-              >
-                <ChevronsDownUp className="h-4 w-4" strokeWidth={1.5} />
-                Collapse All Folders
-              </CommandItem>
+              {currentPath && isFileTreeOpen && (
+                <CommandItem
+                  value="Collapse All Folders"
+                  onSelect={() => handleCommand("collapse-all")}
+                >
+                  <ChevronsDownUp className="h-4 w-4" strokeWidth={1.5} />
+                  Collapse All Folders
+                </CommandItem>
+              )}
             </CommandGroup>
+
+            {currentPath && (
+              <CommandGroup heading="Sessions">
+                {clisLoading ? (
+                  <div className="flex items-center gap-2 px-2 py-3 text-app text-ctp-overlay1">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Detecting installed CLIs...
+                  </div>
+                ) : (
+                  <>
+                    {installedClis.map((cli) => (
+                      <CommandItem
+                        key={cli.id}
+                        value={`session-${cli.id}`}
+                        onSelect={() => handleSessionSelect(cli.id as SessionType)}
+                      >
+                        <CliIcon sessionType={cli.id as SessionType} className="h-4 w-4" />
+                        {cli.displayName}
+                      </CommandItem>
+                    ))}
+                    <CommandItem
+                      value="session-terminal"
+                      onSelect={() => handleSessionSelect("terminal")}
+                    >
+                      <TerminalSquare className="h-4 w-4 text-ctp-overlay1" strokeWidth={1.5} />
+                      Terminal
+                    </CommandItem>
+                  </>
+                )}
+              </CommandGroup>
+            )}
+
+            {enabledPlugins.length > 0 && (
+              <CommandGroup heading="Plugins">
+                {enabledPlugins.map((plugin) => {
+                  const Icon = getPluginIcon(plugin.manifest.icon) ?? Puzzle;
+                  return (
+                    <CommandItem
+                      key={plugin.manifest.name}
+                      value={`plugin-${plugin.manifest.name}`}
+                      onSelect={() =>
+                        handleOpenPlugin(
+                          plugin.manifest.name,
+                          plugin.manifest.displayName,
+                          plugin.manifest.icon,
+                        )
+                      }
+                    >
+                      <Icon className="h-4 w-4" strokeWidth={1.5} />
+                      {plugin.manifest.displayName}
+                    </CommandItem>
+                  );
+                })}
+              </CommandGroup>
+            )}
 
             <CommandGroup heading="Terminal">
               <CommandItem
@@ -406,30 +509,32 @@ export function CommandPalette() {
               </CommandItem>
             </CommandGroup>
 
-            <CommandGroup heading="Git">
-              <CommandItem
-                value="View Git Changes"
-                onSelect={() => handleCommand("git-changes")}
-              >
-                <GitCompareArrows className="h-4 w-4" strokeWidth={1.5} />
-                View Git Changes
-                <CommandShortcut>{mod}+Shift+G</CommandShortcut>
-              </CommandItem>
-              <CommandItem
-                value="Toggle Diff Mode"
-                onSelect={() => handleCommand("toggle-diff-mode")}
-              >
-                <SplitSquareHorizontal className="h-4 w-4" strokeWidth={1.5} />
-                Toggle Diff Mode
-              </CommandItem>
-              <CommandItem
-                value="Refresh Git Status"
-                onSelect={() => handleCommand("refresh-git")}
-              >
-                <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
-                Refresh Git Status
-              </CommandItem>
-            </CommandGroup>
+            {currentPath && (
+              <CommandGroup heading="Git">
+                <CommandItem
+                  value="View Git Changes"
+                  onSelect={() => handleCommand("git-changes")}
+                >
+                  <GitCompareArrows className="h-4 w-4" strokeWidth={1.5} />
+                  View Git Changes
+                  <CommandShortcut>{mod}+Shift+G</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  value="Toggle Diff Mode"
+                  onSelect={() => handleCommand("toggle-diff-mode")}
+                >
+                  <SplitSquareHorizontal className="h-4 w-4" strokeWidth={1.5} />
+                  Toggle Diff Mode
+                </CommandItem>
+                <CommandItem
+                  value="Refresh Git Status"
+                  onSelect={() => handleCommand("refresh-git")}
+                >
+                  <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
+                  Refresh Git Status
+                </CommandItem>
+              </CommandGroup>
+            )}
 
             <CommandGroup heading="Settings & Help">
               <CommandItem
@@ -461,6 +566,23 @@ export function CommandPalette() {
               >
                 <Info className="h-4 w-4" strokeWidth={1.5} />
                 About
+              </CommandItem>
+            </CommandGroup>
+
+            <CommandGroup heading="Developer">
+              <CommandItem
+                value="Developer Reload Window"
+                onSelect={() => handleCommand("dev-reload")}
+              >
+                <RefreshCw className="h-4 w-4" strokeWidth={1.5} />
+                Developer: Reload Window
+              </CommandItem>
+              <CommandItem
+                value="Developer Clear Cache"
+                onSelect={() => handleCommand("dev-clear-cache")}
+              >
+                <Eraser className="h-4 w-4" strokeWidth={1.5} />
+                Developer: Clear Cache
               </CommandItem>
             </CommandGroup>
           </>

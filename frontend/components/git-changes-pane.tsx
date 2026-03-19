@@ -41,7 +41,7 @@ export function GitChangesPane({ projectPaths }: GitChangesPaneProps) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-ctp-overlay1 transition-colors hover:bg-ctp-surface0"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-app-xs font-semibold uppercase tracking-wide text-ctp-overlay1 transition-colors hover:bg-ctp-surface0"
         aria-label={expanded ? "Collapse changes" : "Expand changes"}
         aria-expanded={expanded}
       >
@@ -51,7 +51,7 @@ export function GitChangesPane({ projectPaths }: GitChangesPaneProps) {
         />
         <span>Changes</span>
         <span
-          className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-ctp-surface1 bg-ctp-surface0 px-1.5 text-[10px] font-semibold leading-none text-ctp-subtext0"
+          className="ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full border border-ctp-surface1 bg-ctp-surface0 px-1.5 text-app-xs font-semibold leading-none text-ctp-subtext0"
           aria-label={`${totalChanges} changed files`}
         >
           {totalChanges}
@@ -64,7 +64,7 @@ export function GitChangesPane({ projectPaths }: GitChangesPaneProps) {
           const counters = group.counters;
           return (
             <div key={group.path} className="mb-1">
-              <div className="px-3 py-1 text-[11px] text-ctp-overlay1">
+              <div className="px-3 py-1 text-app-xs text-ctp-overlay1">
                 <span className="font-medium text-ctp-subtext0">{group.name}</span>
                 {counters && (
                   <span className="ml-2">
@@ -85,7 +85,7 @@ export function GitChangesPane({ projectPaths }: GitChangesPaneProps) {
                       openPreview();
                       selectChangedFile(group.path, file.path);
                     }}
-                    className={`flex w-full items-center gap-2 px-3 py-1 text-left text-xs transition-colors ${
+                    className={`flex w-full items-center gap-2 px-3 py-1 text-left text-app-sm transition-colors ${
                       active ? "bg-ctp-surface0" : "hover:bg-ctp-surface0/60"
                     }`}
                   >

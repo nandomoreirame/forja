@@ -1,10 +1,18 @@
 import { useRef, useCallback, useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, RefreshCw, X, Globe, XCircle, AlertCircle, Camera, Check } from "lucide-react";
-import { useBrowserPaneStore } from "@/stores/browser-pane";
+import { ArrowLeft, ArrowRight, RefreshCw, Globe, XCircle, AlertCircle, Camera, Check } from "lucide-react";
+import { normalizeUrl, isAllowedUrl } from "@/lib/browser-url";
 import { invoke } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
+import { paneFocusRegistry } from "@/lib/pane-focus-registry";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 
 type ScreenshotState = "idle" | "success" | "error";
+
+interface BrowserError {
+  code: number;
+  description: string;
+  url: string;
+}
 
 // Electron's <webview> is not in @types/react; extend JSX
 declare global {
@@ -23,27 +31,37 @@ declare global {
   }
 }
 
-export function BrowserPane() {
+interface BrowserPaneProps {
+  initialUrl?: string;
+  nodeId?: string;
+}
+
+export function BrowserPane({ initialUrl = "http://localhost:3000", nodeId }: BrowserPaneProps) {
   const webviewRef = useRef<Electron.WebviewTag | null>(null);
   const [screenshotState, setScreenshotState] = useState<ScreenshotState>("idle");
   // Track whether the webview has been initialised (lazy mount guard)
   const [webviewMounted, setWebviewMounted] = useState(false);
 
-  const url = useBrowserPaneStore((s) => s.url);
-  const committedUrl = useBrowserPaneStore((s) => s.committedUrl);
-  const isLoading = useBrowserPaneStore((s) => s.isLoading);
-  const canGoBack = useBrowserPaneStore((s) => s.canGoBack);
-  const canGoForward = useBrowserPaneStore((s) => s.canGoForward);
-  const setUrl = useBrowserPaneStore((s) => s.setUrl);
-  const navigate = useBrowserPaneStore((s) => s.navigate);
-  const closePane = useBrowserPaneStore((s) => s.closePane);
-  const setLoading = useBrowserPaneStore((s) => s.setLoading);
-  const setNavigationState = useBrowserPaneStore((s) => s.setNavigationState);
-  const setTitle = useBrowserPaneStore((s) => s.setTitle);
-  const onDidNavigate = useBrowserPaneStore((s) => s.onDidNavigate);
-  const error = useBrowserPaneStore((s) => s.error);
-  const setError = useBrowserPaneStore((s) => s.setError);
-  const clearError = useBrowserPaneStore((s) => s.clearError);
+  // Local state (replaces global store)
+  const [url, setUrl] = useState(initialUrl);
+  const [committedUrl, setCommittedUrl] = useState(initialUrl);
+  const [isLoading, setLoading] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+  const [error, setError] = useState<BrowserError | null>(null);
+
+  const clearError = useCallback(() => setError(null), []);
+
+  const navigate = useCallback(() => {
+    const normalized = normalizeUrl(url);
+    if (!isAllowedUrl(normalized)) {
+      console.warn("[BrowserPane] Blocked URL:", normalized);
+      return;
+    }
+    setCommittedUrl(normalized);
+    setUrl(normalized);
+    setError(null);
+  }, [url]);
 
   // Lazy-mount: only render the <webview> after the first paint so the
   // rest of the React tree is not blocked by Electron's webview initialisation.
@@ -52,21 +70,14 @@ export function BrowserPane() {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Aggressive unmount: reset transient loading state when BrowserPane itself
-  // is removed from the tree (the parent already conditionally renders it only
-  // when isOpen=true, but we also clean up store state on our way out so the
-  // next mount starts fresh).
+  // Register focus callback for pane-focus cycling (Ctrl+Tab)
   useEffect(() => {
-    return () => {
-      // Synchronously reset transient webview state when the pane unmounts.
-      // Navigation history (canGoBack/canGoForward) is per-webview-instance
-      // and will be rebuilt when a new <webview> is created.
-      // Use the captured store actions (stable refs) to avoid capturing stale
-      // closures in this cleanup effect.
-      setLoading(false);
-      setNavigationState({ canGoBack: false, canGoForward: false });
-    };
-  }, [setLoading, setNavigationState]);
+    if (!nodeId) return;
+    paneFocusRegistry.register(nodeId, () => {
+      (webviewRef.current as unknown as HTMLElement)?.focus();
+    });
+    return () => { paneFocusRegistry.unregister(nodeId); };
+  }, [nodeId]);
 
   // Inject custom scrollbar CSS into webview to match app theme
   const injectScrollbarCSS = useCallback((wv: Electron.WebviewTag) => {
@@ -78,9 +89,16 @@ export function BrowserPane() {
     `);
   }, []);
 
-  // Wire webview events to store — runs after webviewMounted becomes true.
-  // All listeners are removed in the cleanup function, preventing leaks if the
-  // component is unmounted while the webview is still alive.
+  // Debounced config sync — batches rapid redirects (e.g., google.com → www.google.com)
+  // into a single FlexLayout model update to avoid unnecessary re-renders.
+  const configSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (configSyncTimerRef.current) clearTimeout(configSyncTimerRef.current);
+    };
+  }, []);
+
+  // Wire webview events — runs after webviewMounted becomes true.
   useEffect(() => {
     if (!webviewMounted) return;
     const wv = webviewRef.current;
@@ -89,17 +107,27 @@ export function BrowserPane() {
     const handleLoadStart = () => setLoading(true);
     const handleLoadStop = () => {
       setLoading(false);
-      setNavigationState({
-        canGoBack: wv.canGoBack(),
-        canGoForward: wv.canGoForward(),
-      });
+      setCanGoBack(wv.canGoBack());
+      setCanGoForward(wv.canGoForward());
       injectScrollbarCSS(wv);
     };
     const handleDidNavigate = (e: Event & { url?: string }) => {
-      if (e.url) onDidNavigate(e.url);
+      if (e.url) {
+        setUrl(e.url);
+        setCommittedUrl(e.url);
+        setError(null);
+        // Debounced sync to FlexLayout model so it persists with the layout
+        if (nodeId) {
+          if (configSyncTimerRef.current) clearTimeout(configSyncTimerRef.current);
+          const navUrl = e.url;
+          configSyncTimerRef.current = setTimeout(() => {
+            useTilingLayoutStore.getState().updateBlockConfig(nodeId, { type: "browser", url: navUrl });
+          }, 1000);
+        }
+      }
     };
-    const handleTitleUpdate = (e: Event & { title?: string }) => {
-      if (e.title) setTitle(e.title);
+    const handleTitleUpdate = () => {
+      // Title is tracked by the webview itself; no local state needed
     };
     const handleDidFailLoad = (
       e: Event & { errorCode?: number; errorDescription?: string; validatedURL?: string },
@@ -133,7 +161,7 @@ export function BrowserPane() {
       wv.removeEventListener("page-title-updated", handleTitleUpdate);
       wv.removeEventListener("did-fail-load", handleDidFailLoad);
     };
-  }, [webviewMounted, setLoading, setNavigationState, setTitle, onDidNavigate, injectScrollbarCSS]);
+  }, [webviewMounted, injectScrollbarCSS]);
 
   const handleGoBack = useCallback(() => {
     webviewRef.current?.goBack();
@@ -225,7 +253,7 @@ export function BrowserPane() {
             onChange={(e) => setUrl(e.target.value)}
             onKeyDown={handleKeyDown}
             spellCheck={false}
-            className="h-7 w-full rounded bg-ctp-surface0 pl-7 pr-2 text-xs text-ctp-text placeholder-ctp-overlay0 outline-none ring-0 focus:ring-1 focus:ring-brand"
+            className="h-7 w-full rounded bg-ctp-surface0 pl-7 pr-2 text-app-sm text-ctp-text placeholder-ctp-overlay0 outline-none ring-0 focus:ring-1 focus:ring-brand"
           />
         </div>
 
@@ -254,15 +282,6 @@ export function BrowserPane() {
           ) : (
             <Camera className="h-3.5 w-3.5" strokeWidth={1.5} />
           )}
-        </button>
-
-        {/* Close button */}
-        <button
-          onClick={closePane}
-          aria-label="Close browser pane"
-          className="inline-flex h-7 w-7 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-        >
-          <X className="h-3.5 w-3.5" strokeWidth={1.5} />
         </button>
       </div>
 
@@ -294,7 +313,7 @@ export function BrowserPane() {
               <h2 className="text-base font-medium text-ctp-text">
                 Could not access this site
               </h2>
-              <p className="text-sm font-semibold text-ctp-subtext0">
+              <p className="text-app font-semibold text-ctp-subtext0">
                 {(() => {
                   try {
                     return new URL(error.url).hostname;
@@ -303,14 +322,14 @@ export function BrowserPane() {
                   }
                 })()}
               </p>
-              <p className="mt-1 text-xs text-ctp-overlay1">{error.description}</p>
+              <p className="mt-1 text-app-sm text-ctp-overlay1">{error.description}</p>
             </div>
             <button
               onClick={() => {
                 clearError();
                 webviewRef.current?.reload();
               }}
-              className="mt-2 rounded bg-ctp-surface1 px-4 py-1.5 text-sm text-ctp-text transition-colors hover:bg-ctp-surface2"
+              className="mt-2 rounded bg-ctp-surface1 px-4 py-1.5 text-app text-ctp-text transition-colors hover:bg-ctp-surface2"
             >
               Reload
             </button>

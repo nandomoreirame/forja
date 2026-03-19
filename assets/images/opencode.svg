@@ -1,6 +1,0 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- OpenCode: stylized flame/spark icon -->
-  <path d="M12 2C12 2 7 6.5 7 11.5C7 14.538 9.239 17 12 17C14.761 17 17 14.538 17 11.5C17 6.5 12 2Z" fill="#89b4fa"/>
-  <path d="M12 7C12 7 9.5 9.5 9.5 12C9.5 13.381 10.619 14.5 12 14.5C13.381 14.5 14.5 13.381 14.5 12C14.5 9.5 12 7Z" fill="#1e1e2e"/>
-  <path d="M12 22C12 22 9 20.5 9 18H15C15 20.5 12 22 12 22Z" fill="#89b4fa" opacity="0.6"/>
-</svg>

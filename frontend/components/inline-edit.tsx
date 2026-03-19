@@ -18,6 +18,7 @@ export function InlineEdit({ value, onSave, className, isEditing: externalIsEdit
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rafRef = useRef<number>(0);
 
   const editing = isControlled ? externalIsEditing : internalEditing;
 
@@ -28,18 +29,25 @@ export function InlineEdit({ value, onSave, className, isEditing: externalIsEdit
   }, [editing, value]);
 
   useEffect(() => {
-    if (editing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
+    if (!editing) return;
+
+    // Use requestAnimationFrame to ensure parent layout libraries (e.g., FlexLayout)
+    // have finished their post-render DOM/focus operations before we claim focus.
+    rafRef.current = requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    });
+
+    return () => cancelAnimationFrame(rafRef.current);
   }, [editing]);
 
-  // Cleanup blur timeout on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (blurTimeoutRef.current) {
         clearTimeout(blurTimeoutRef.current);
       }
+      cancelAnimationFrame(rafRef.current);
     };
   }, []);
 
@@ -96,16 +104,17 @@ export function InlineEdit({ value, onSave, className, isEditing: externalIsEdit
   }
 
   function handleBlur() {
-    // Use a short timeout to allow focus to settle before saving.
-    // This prevents issues when focus is being restored by parent components
-    // (e.g., Radix UI Context Menu restoring focus to trigger after close).
+    // In controlled mode, layout libraries (e.g., FlexLayout) may briefly steal
+    // focus during re-renders. Use a longer timeout to allow the rAF-based
+    // refocus to restore focus before we decide to save/close.
+    const delay = isControlled ? 150 : 0;
     blurTimeoutRef.current = setTimeout(() => {
       blurTimeoutRef.current = null;
       // Only save if input is no longer focused
       if (document.activeElement !== inputRef.current) {
         save();
       }
-    }, 0);
+    }, delay);
   }
 
   if (editing) {
@@ -118,7 +127,7 @@ export function InlineEdit({ value, onSave, className, isEditing: externalIsEdit
         onKeyDown={handleKeyDown}
         onBlur={handleBlur}
         className={cn(
-          "rounded border border-ctp-surface1 bg-ctp-surface0 px-1 text-sm text-ctp-text outline-none focus:border-brand",
+          "rounded border border-ctp-surface1 bg-ctp-surface0 px-1 text-app text-ctp-text outline-none focus:border-brand",
           className,
         )}
       />

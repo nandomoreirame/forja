@@ -2,6 +2,8 @@ import type { LucideIcon } from "lucide-react";
 import * as icons from "lucide-react";
 
 // Mirror types from electron/plugins/types.ts
+export type PluginScope = "global" | "project";
+
 export type PluginPermission =
   | "project.active"
   | "git.status"
@@ -36,6 +38,7 @@ export interface PluginManifest {
   icon: string;
   entry: string;
   permissions: PluginPermission[];
+  scope?: PluginScope;
   minForjaVersion?: string;
 }
 
@@ -126,6 +129,7 @@ export interface RegistryPlugin {
   sha256: string;
   tags: string[];
   downloads: number;
+  scope?: PluginScope;
   minForjaVersion?: string;
   permissions: PluginPermission[];
 }

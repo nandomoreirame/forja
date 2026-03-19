@@ -5,9 +5,8 @@ import {
   SplitSquareVertical,
   SplitSquareHorizontal,
   X,
-  PanelLeftClose,
 } from "lucide-react";
-import { useTerminalSplitLayoutStore } from "@/stores/terminal-split-layout";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import {
   ContextMenu,
@@ -31,38 +30,18 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
   onPaste,
   children,
 }: TerminalContextMenuProps) {
-  const openSplit = useTerminalSplitLayoutStore((s) => s.openSplit);
-  const closeSplit = useTerminalSplitLayoutStore((s) => s.closeSplit);
-  const splitOrientation = useTerminalSplitLayoutStore((s) => s.orientation);
-  const splitTabId = useTerminalSplitLayoutStore((s) => s.splitTabId);
   const removeTab = useTerminalTabsStore((s) => s.removeTab);
 
-  // Detect if this context menu is in the secondary (split) pane
-  const isSplitPane = tabId.endsWith(":split");
-  const baseTabId = isSplitPane ? tabId.slice(0, -":split".length) : tabId;
-
-  // Split is active for this tab context (works for both primary and secondary panes)
-  const isSplitActive =
-    splitOrientation !== "none" && (splitTabId === tabId || splitTabId === baseTabId);
-
   const handleSplitVertical = () => {
-    openSplit("vertical", baseTabId, "terminal");
+    useTilingLayoutStore.getState().splitActiveTabset("vertical");
   };
 
   const handleSplitHorizontal = () => {
-    openSplit("horizontal", baseTabId, "terminal");
+    useTilingLayoutStore.getState().splitActiveTabset("horizontal");
   };
 
   const handleCloseTerminal = () => {
-    if (isSplitActive) {
-      closeSplit();
-      return;
-    }
     removeTab(tabId);
-  };
-
-  const handleCloseSplit = () => {
-    closeSplit();
   };
 
   return (
@@ -74,7 +53,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
       <ContextMenuContent className="min-w-48 border-ctp-surface1 bg-overlay-mantle">
         {/* Copy / Paste */}
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+          className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
           onSelect={onCopy}
         >
           <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -83,7 +62,7 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
         </ContextMenuItem>
 
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
+          className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
           onSelect={onPaste}
         >
           <Clipboard className="h-3.5 w-3.5" strokeWidth={1.5} />
@@ -93,41 +72,28 @@ export const TerminalContextMenu = memo(function TerminalContextMenu({
 
         <ContextMenuSeparator className="bg-ctp-surface0" />
 
-        {/* Split options */}
+        {/* Split options — always available, flexlayout supports unlimited splits */}
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text data-disabled:opacity-40"
+          className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
           onSelect={handleSplitVertical}
-          disabled={isSplitActive}
         >
           <SplitSquareHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} />
           Split Vertical
         </ContextMenuItem>
 
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text data-disabled:opacity-40"
+          className="gap-2 text-app-sm text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
           onSelect={handleSplitHorizontal}
-          disabled={isSplitActive}
         >
           <SplitSquareVertical className="h-3.5 w-3.5" strokeWidth={1.5} />
           Split Horizontal
         </ContextMenuItem>
 
-        {/* Close Split — only shown when split is active */}
-        {isSplitActive && (
-          <ContextMenuItem
-            className="gap-2 text-xs text-ctp-subtext0 focus:bg-ctp-surface0 focus:text-ctp-text"
-            onSelect={handleCloseSplit}
-          >
-            <PanelLeftClose className="h-3.5 w-3.5" strokeWidth={1.5} />
-            Close Split
-          </ContextMenuItem>
-        )}
-
         <ContextMenuSeparator className="bg-ctp-surface0" />
 
         {/* Close Terminal */}
         <ContextMenuItem
-          className="gap-2 text-xs text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
+          className="gap-2 text-app-sm text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
           onSelect={handleCloseTerminal}
         >
           <X className="h-3.5 w-3.5" strokeWidth={1.5} />

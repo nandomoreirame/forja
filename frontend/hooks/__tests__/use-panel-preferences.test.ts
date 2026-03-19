@@ -35,7 +35,7 @@ describe("usePanelPreferences", () => {
       orientation: "horizontal",
       ratio: 62,
     });
-    expect(mockInvoke).toHaveBeenCalledWith("get_ui_preferences");
+    expect(mockInvoke).toHaveBeenCalledWith("get_ui_preferences", {});
   });
 
   it("falls back to defaults when loading preferences fails", async () => {

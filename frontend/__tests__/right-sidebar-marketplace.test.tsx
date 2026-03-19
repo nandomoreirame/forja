@@ -6,12 +6,32 @@ vi.mock("@/lib/ipc", () => ({
   listen: vi.fn(() => () => {}),
 }));
 
+const mockHasBlock = vi.fn(() => false);
+const mockHasBlockOfType = vi.fn(() => false);
+const mockAddBlock = vi.fn();
+const mockRemoveBlock = vi.fn();
+
+vi.mock("@/stores/tiling-layout", () => ({
+  useTilingLayoutStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = { hasBlock: mockHasBlock, hasBlockOfType: mockHasBlockOfType, addBlock: mockAddBlock, removeBlock: mockRemoveBlock };
+      return selector ? selector(state) : state;
+    },
+    {
+      getState: () => ({ hasBlock: mockHasBlock, hasBlockOfType: mockHasBlockOfType, addBlock: mockAddBlock, removeBlock: mockRemoveBlock }),
+      setState: vi.fn(),
+      subscribe: vi.fn(() => () => {}),
+    },
+  ),
+}));
+
 import { RightSidebar } from "../components/right-sidebar";
 import { useRightPanelStore } from "../stores/right-panel";
 import { usePluginsStore } from "../stores/plugins";
 
 describe("right-sidebar marketplace button", () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     useRightPanelStore.setState({
       isOpen: false,
       activeView: "empty",
@@ -35,26 +55,31 @@ describe("right-sidebar marketplace button", () => {
     expect(screen.getByLabelText("Marketplace")).toBeTruthy();
   });
 
-  it("opens marketplace pane on click", () => {
+  it("adds marketplace block on click", () => {
+    mockHasBlock.mockReturnValue(false);
     render(<RightSidebar hasProject />);
     fireEvent.click(screen.getByLabelText("Marketplace"));
 
+    expect(mockAddBlock).toHaveBeenCalledWith(
+      { type: "marketplace" },
+      undefined,
+      "block-marketplace",
+    );
+
     const state = useRightPanelStore.getState();
-    expect(state.isOpen).toBe(true);
     expect(state.activeView).toBe("marketplace");
   });
 
-  it("toggles marketplace off when already active", () => {
-    useRightPanelStore.setState({ isOpen: true, activeView: "marketplace" });
+  it("removes marketplace block when already active", () => {
+    mockHasBlock.mockReturnValue(true);
     render(<RightSidebar hasProject />);
     fireEvent.click(screen.getByLabelText("Marketplace"));
 
-    const state = useRightPanelStore.getState();
-    expect(state.activeView).toBe("empty");
+    expect(mockRemoveBlock).toHaveBeenCalledWith("block-marketplace");
   });
 
-  it("does not render marketplace button when no project is active", () => {
+  it("renders marketplace button even without active project", () => {
     render(<RightSidebar hasProject={false} />);
-    expect(screen.queryByLabelText("Marketplace")).toBeNull();
+    expect(screen.getByLabelText("Marketplace")).toBeTruthy();
   });
 });

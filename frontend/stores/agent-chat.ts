@@ -1,6 +1,8 @@
+import { DockLocation } from "flexlayout-react";
 import { invoke } from "@/lib/ipc";
 import { create } from "zustand";
 import { parseContextCommand, type ContextCommand } from "@/lib/chat-context-commands";
+import { useTilingLayoutStore } from "./tiling-layout";
 
 export interface ChatMessage {
   id: string;
@@ -107,7 +109,21 @@ export const useAgentChatStore = create<AgentChatState>((set, get) => ({
   error: null,
   isPanelOpen: false,
 
-  togglePanel: () => set((s) => ({ isPanelOpen: !s.isPanelOpen })),
+  togglePanel: () => {
+    const { isPanelOpen } = get();
+    const tiling = useTilingLayoutStore.getState();
+    if (isPanelOpen) {
+      tiling.removeBlock("block-agent-chat");
+    } else if (!tiling.hasBlock("block-agent-chat")) {
+      tiling.addBlock(
+        { type: "agent-chat" },
+        undefined,
+        "block-agent-chat",
+        DockLocation.LEFT,
+      );
+    }
+    set({ isPanelOpen: !isPanelOpen });
+  },
 
   startSession: async (cliId, projectPath) => {
     const sessionId = makeSessionId();

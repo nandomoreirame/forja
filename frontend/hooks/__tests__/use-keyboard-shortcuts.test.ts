@@ -2,16 +2,20 @@ import { renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useKeyboardShortcuts } from "../use-keyboard-shortcuts";
 
-const splitActions = {
-  openSplit: vi.fn(),
-  closeSplit: vi.fn(),
-  setFocusedPane: vi.fn(),
-  orientation: "none" as "none" | "horizontal" | "vertical",
+const tilingActions = {
+  splitActiveTabset: vi.fn(),
+  closeActiveTab: vi.fn(),
+  hasBlock: vi.fn(() => false),
+  addBlock: vi.fn(),
+  selectTab: vi.fn(),
+  cycleActiveTabset: vi.fn(() => null),
+  cycleGlobalTab: vi.fn(() => null),
+  model: {},
 };
 
-vi.mock("@/stores/terminal-split-layout", () => ({
-  useTerminalSplitLayoutStore: {
-    getState: () => splitActions,
+vi.mock("@/stores/tiling-layout", () => ({
+  useTilingLayoutStore: {
+    getState: () => tilingActions,
   },
 }));
 
@@ -87,8 +91,13 @@ vi.mock("@/stores/git-diff", () => ({
   },
 }));
 
+const projectStoreActions = {
+  projects: [] as { path: string }[],
+  switchToProject: vi.fn(),
+};
+
 vi.mock("@/stores/projects", () => ({
-  useProjectsStore: { getState: () => ({ projects: [], switchToProject: vi.fn() }) },
+  useProjectsStore: { getState: () => projectStoreActions },
 }));
 
 vi.mock("@/stores/terminal-zoom", () => ({
@@ -105,12 +114,20 @@ vi.mock("@/stores/user-settings", () => ({
   },
 }));
 
-const browserPaneActions = {
-  toggleOpen: vi.fn(),
-};
-
 vi.mock("@/stores/browser-pane", () => ({
-  useBrowserPaneStore: { getState: () => browserPaneActions },
+  useBrowserPaneStore: { getState: () => ({}) },
+}));
+
+const mockFocusActiveTabInTabset = vi.fn();
+vi.mock("@/lib/pane-focus", () => ({
+  focusActiveTabInTabset: (...args: unknown[]) => mockFocusActiveTabInTabset(...args),
+}));
+
+const mockPaneFocusRegistryFocus = vi.fn();
+vi.mock("@/lib/pane-focus-registry", () => ({
+  paneFocusRegistry: {
+    focus: (...args: unknown[]) => mockPaneFocusRegistryFocus(...args),
+  },
 }));
 
 function setupHook() {
@@ -121,19 +138,17 @@ function setupHook() {
   return { tabsRef, activeTabIdRef, closeTab };
 }
 
-describe("useKeyboardShortcuts split", () => {
+describe("useKeyboardShortcuts split (tiling layout)", () => {
   beforeEach(() => {
-    splitActions.openSplit.mockReset();
-    splitActions.closeSplit.mockReset();
-    splitActions.setFocusedPane.mockReset();
-    splitActions.orientation = "none";
+    tilingActions.splitActiveTabset.mockReset();
+    tilingActions.closeActiveTab.mockReset();
     fileTreeActions.openProject.mockReset();
     fileTreeActions.toggleSidebar.mockReset();
     fileTreeActions.tree = null;
     fileTreeActions.trees = {};
   });
 
-  it("creates vertical split with sessionType from active tab (no addTab)", () => {
+  it("creates vertical split with sessionType from active tab", () => {
     const tabsRef = { current: [{ id: "tab-1", sessionType: "claude" }] };
     const activeTabIdRef = { current: "tab-1" };
     const closeTab = vi.fn();
@@ -147,8 +162,7 @@ describe("useKeyboardShortcuts split", () => {
       }),
     );
 
-    expect(splitActions.openSplit).toHaveBeenCalledWith("vertical", "tab-1", "claude");
-    expect(splitActions.setFocusedPane).toHaveBeenCalledWith("secondary");
+    expect(tilingActions.splitActiveTabset).toHaveBeenCalledWith("vertical", "claude");
   });
 
   it("creates horizontal split inheriting terminal sessionType", () => {
@@ -165,7 +179,7 @@ describe("useKeyboardShortcuts split", () => {
       }),
     );
 
-    expect(splitActions.openSplit).toHaveBeenCalledWith("horizontal", "tab-1", "terminal");
+    expect(tilingActions.splitActiveTabset).toHaveBeenCalledWith("horizontal", "terminal");
   });
 
   it("inherits gemini sessionType when splitting a gemini tab", () => {
@@ -182,7 +196,7 @@ describe("useKeyboardShortcuts split", () => {
       }),
     );
 
-    expect(splitActions.openSplit).toHaveBeenCalledWith("vertical", "tab-1", "gemini");
+    expect(tilingActions.splitActiveTabset).toHaveBeenCalledWith("vertical", "gemini");
   });
 
   it("defaults to terminal when active tab not found in tabsRef", () => {
@@ -199,13 +213,12 @@ describe("useKeyboardShortcuts split", () => {
       }),
     );
 
-    expect(splitActions.openSplit).toHaveBeenCalledWith("vertical", "tab-1", "terminal");
+    expect(tilingActions.splitActiveTabset).toHaveBeenCalledWith("vertical", "terminal");
   });
 
-  it("does NOT open split when split is already active", () => {
-    splitActions.orientation = "vertical";
+  it("does not split when no active tab id", () => {
     const tabsRef = { current: [{ id: "tab-1", sessionType: "terminal" }] };
-    const activeTabIdRef = { current: "tab-1" };
+    const activeTabIdRef = { current: null };
     const closeTab = vi.fn();
     renderHook(() => useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab }));
 
@@ -217,29 +230,10 @@ describe("useKeyboardShortcuts split", () => {
       }),
     );
 
-    expect(splitActions.openSplit).not.toHaveBeenCalled();
+    expect(tilingActions.splitActiveTabset).not.toHaveBeenCalled();
   });
 
-  it("does NOT open horizontal split when split is already active", () => {
-    splitActions.orientation = "horizontal";
-    const tabsRef = { current: [{ id: "tab-1", sessionType: "terminal" }] };
-    const activeTabIdRef = { current: "tab-1" };
-    const closeTab = vi.fn();
-    renderHook(() => useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab }));
-
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "h",
-        metaKey: true,
-        altKey: true,
-      }),
-    );
-
-    expect(splitActions.openSplit).not.toHaveBeenCalled();
-  });
-
-  it("closes split with Mod+Alt+W when split is active", () => {
-    splitActions.orientation = "horizontal";
+  it("closes active tab with Mod+Alt+W", () => {
     const tabsRef = { current: [{ id: "tab-1" }] };
     const activeTabIdRef = { current: "tab-1" };
     const closeTab = vi.fn();
@@ -253,14 +247,14 @@ describe("useKeyboardShortcuts split", () => {
       }),
     );
 
-    expect(splitActions.closeSplit).toHaveBeenCalledTimes(1);
+    expect(tilingActions.closeActiveTab).toHaveBeenCalledTimes(1);
   });
 });
 
 describe("useKeyboardShortcuts tab management", () => {
   beforeEach(() => {
-    splitActions.orientation = "none";
-    splitActions.closeSplit.mockReset();
+    tilingActions.splitActiveTabset.mockReset();
+    tilingActions.closeActiveTab.mockReset();
     tabStoreActions.setActiveTab.mockReset();
     tabStoreActions.nextTabId.mockReset().mockReturnValue("new-tab-1");
     tabStoreActions.addTab.mockReset();
@@ -313,8 +307,8 @@ describe("useKeyboardShortcuts tab management", () => {
     expect(tabStoreActions.addTab).not.toHaveBeenCalled();
   });
 
-  it("Ctrl+Shift+W closes the active terminal tab", () => {
-    const { closeTab } = setupHook();
+  it("Ctrl+Shift+W closes active tab in tiling layout", () => {
+    setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
@@ -324,11 +318,10 @@ describe("useKeyboardShortcuts tab management", () => {
       }),
     );
 
-    expect(closeTab).toHaveBeenCalledWith("tab-1");
+    expect(tilingActions.closeActiveTab).toHaveBeenCalledTimes(1);
   });
 
-  it("Ctrl+W closes preview when preview is open", () => {
-    filePreviewActions.isOpen = true;
+  it("Ctrl+W closes active tab in tiling layout", () => {
     setupHook();
 
     window.dispatchEvent(
@@ -338,20 +331,7 @@ describe("useKeyboardShortcuts tab management", () => {
       }),
     );
 
-    expect(filePreviewActions.closePreview).toHaveBeenCalled();
-  });
-
-  it("Ctrl+W does NOT close a terminal tab", () => {
-    const { closeTab } = setupHook();
-
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "w",
-        ctrlKey: true,
-      }),
-    );
-
-    expect(closeTab).not.toHaveBeenCalled();
+    expect(tilingActions.closeActiveTab).toHaveBeenCalled();
   });
 });
 
@@ -375,12 +355,12 @@ describe("useKeyboardShortcuts fullscreen toggle", () => {
   });
 });
 
-describe("useKeyboardShortcuts right panel toggle", () => {
+describe("useKeyboardShortcuts right panel toggle (removed)", () => {
   beforeEach(() => {
     rightPanelActions.togglePanel.mockReset();
   });
 
-  it("Ctrl+J toggles right panel", () => {
+  it("Ctrl+J no longer toggles right panel", () => {
     setupHook();
 
     window.dispatchEvent(
@@ -390,51 +370,16 @@ describe("useKeyboardShortcuts right panel toggle", () => {
       }),
     );
 
-    expect(rightPanelActions.togglePanel).toHaveBeenCalledTimes(1);
+    expect(rightPanelActions.togglePanel).not.toHaveBeenCalled();
   });
 });
 
-describe("useKeyboardShortcuts browser pane toggle", () => {
-  beforeEach(() => {
-    browserPaneActions.toggleOpen.mockReset();
-  });
 
-  it("Ctrl+Alt+B toggles browser pane", () => {
-    setupHook();
-
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "B",
-        ctrlKey: true,
-        altKey: true,
-      }),
-    );
-
-    expect(browserPaneActions.toggleOpen).toHaveBeenCalledTimes(1);
-  });
-
-  it("Ctrl+Shift+B does NOT toggle browser pane", () => {
-    setupHook();
-
-    window.dispatchEvent(
-      new KeyboardEvent("keydown", {
-        key: "B",
-        ctrlKey: true,
-        shiftKey: true,
-      }),
-    );
-
-    expect(browserPaneActions.toggleOpen).not.toHaveBeenCalled();
-  });
-});
-
-describe("useKeyboardShortcuts project and sidebar shortcuts", () => {
+describe("useKeyboardShortcuts project shortcuts", () => {
   beforeEach(() => {
     fileTreeActions.openProject.mockReset();
-    fileTreeActions.toggleSidebar.mockReset();
     fileTreeActions.tree = null;
     fileTreeActions.trees = {};
-    browserPaneActions.toggleOpen.mockReset();
   });
 
   it("Ctrl+Shift+O opens project picker", () => {
@@ -463,9 +408,133 @@ describe("useKeyboardShortcuts project and sidebar shortcuts", () => {
 
     expect(fileTreeActions.openProject).not.toHaveBeenCalled();
   });
+});
 
-  it("Ctrl+Shift+B toggles sidebar when a tree is loaded", () => {
-    fileTreeActions.tree = { root: {} };
+describe("useKeyboardShortcuts project switching with Ctrl+Shift+number", () => {
+  beforeEach(() => {
+    projectStoreActions.switchToProject.mockReset();
+    projectStoreActions.projects = [];
+  });
+
+  it("Ctrl+Shift+1 switches to the first project", () => {
+    projectStoreActions.projects = [
+      { path: "/project-a" },
+      { path: "/project-b" },
+    ];
+
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "!",
+        code: "Digit1",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(projectStoreActions.switchToProject).toHaveBeenCalledWith("/project-a");
+  });
+
+  it("Ctrl+Shift+2 switches to the second project", () => {
+    projectStoreActions.projects = [
+      { path: "/project-a" },
+      { path: "/project-b" },
+      { path: "/project-c" },
+    ];
+
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "@",
+        code: "Digit2",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(projectStoreActions.switchToProject).toHaveBeenCalledWith("/project-b");
+  });
+
+  it("Ctrl+Shift+9 does nothing when fewer than 9 projects exist", () => {
+    projectStoreActions.projects = [
+      { path: "/project-a" },
+      { path: "/project-b" },
+    ];
+
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "(",
+        code: "Digit9",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(projectStoreActions.switchToProject).not.toHaveBeenCalled();
+  });
+});
+
+describe("useKeyboardShortcuts open files and browser", () => {
+  beforeEach(() => {
+    tilingActions.hasBlock.mockReset().mockReturnValue(false);
+    tilingActions.addBlock.mockReset();
+    tilingActions.selectTab.mockReset();
+    fileTreeActions.currentPath = "/project";
+    fileTreeActions.tree = { root: { name: "my-project" } } as any;
+  });
+
+  it("Ctrl+Shift+E opens file-tree block when not already open", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "E",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tilingActions.addBlock).toHaveBeenCalledWith(
+      { type: "file-tree", projectName: "my-project" },
+      undefined,
+      "tab-file-tree",
+    );
+  });
+
+  it("Ctrl+Shift+E selects existing file-tree block when already open", () => {
+    tilingActions.hasBlock.mockReturnValue(true);
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "E",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tilingActions.selectTab).toHaveBeenCalledWith("tab-file-tree");
+    expect(tilingActions.addBlock).not.toHaveBeenCalled();
+  });
+
+  it("Ctrl+E (without shift) does not open files", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "e",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(tilingActions.addBlock).not.toHaveBeenCalled();
+  });
+
+  it("Ctrl+Shift+B opens browser block", () => {
     setupHook();
 
     window.dispatchEvent(
@@ -476,87 +545,97 @@ describe("useKeyboardShortcuts project and sidebar shortcuts", () => {
       }),
     );
 
-    expect(fileTreeActions.toggleSidebar).toHaveBeenCalledTimes(1);
-    expect(browserPaneActions.toggleOpen).not.toHaveBeenCalled();
+    expect(tilingActions.addBlock).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "browser" }),
+      undefined,
+      expect.stringContaining("browser-"),
+    );
   });
 
-  it("Ctrl+B (without shift) does NOT toggle sidebar", () => {
-    fileTreeActions.tree = { root: {} };
+  it("Ctrl+J does not toggle right panel anymore", () => {
+    rightPanelActions.togglePanel.mockReset();
     setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "b",
+        key: "j",
         ctrlKey: true,
       }),
     );
 
-    expect(fileTreeActions.toggleSidebar).not.toHaveBeenCalled();
+    expect(rightPanelActions.togglePanel).not.toHaveBeenCalled();
   });
 });
 
-describe("useKeyboardShortcuts tab switching with Ctrl+number", () => {
+describe("useKeyboardShortcuts global tab cycling (Ctrl+Tab)", () => {
+  let origRAF: typeof requestAnimationFrame;
+
   beforeEach(() => {
-    splitActions.orientation = "none";
-    tabStoreActions.setActiveTab.mockReset();
-    tabStoreActions.getTabsForProject.mockReset();
+    tilingActions.cycleGlobalTab.mockReset().mockReturnValue(null);
+    mockFocusActiveTabInTabset.mockReset();
+    mockPaneFocusRegistryFocus.mockReset();
+    origRAF = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => { cb(0); return 0; };
   });
 
-  it("Ctrl+2 navigates to the second tab of the project", () => {
-    const projectTabs = [
-      { id: "tab-1", path: "/project", sessionType: "claude" },
-      { id: "tab-2", path: "/project", sessionType: "terminal" },
-      { id: "tab-3", path: "/project", sessionType: "gemini" },
-    ];
-    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
+  afterEach(() => {
+    globalThis.requestAnimationFrame = origRAF;
+  });
 
+  it("Ctrl+Tab calls cycleGlobalTab with forward", () => {
     setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "2",
+        key: "Tab",
         ctrlKey: true,
       }),
     );
 
-    expect(tabStoreActions.setActiveTab).toHaveBeenCalledWith("tab-2");
+    expect(tilingActions.cycleGlobalTab).toHaveBeenCalledWith("forward");
   });
 
-  it("Ctrl+1 navigates to the first tab", () => {
-    const projectTabs = [
-      { id: "tab-1", path: "/project", sessionType: "claude" },
-      { id: "tab-2", path: "/project", sessionType: "terminal" },
-    ];
-    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
-
+  it("Ctrl+Shift+Tab calls cycleGlobalTab with backward", () => {
     setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "1",
+        key: "Tab",
         ctrlKey: true,
+        shiftKey: true,
       }),
     );
 
-    expect(tabStoreActions.setActiveTab).toHaveBeenCalledWith("tab-1");
+    expect(tilingActions.cycleGlobalTab).toHaveBeenCalledWith("backward");
   });
 
-  it("Ctrl+9 does nothing when fewer than 9 tabs exist", () => {
-    const projectTabs = [
-      { id: "tab-1", path: "/project", sessionType: "claude" },
-      { id: "tab-2", path: "/project", sessionType: "terminal" },
-    ];
-    tabStoreActions.getTabsForProject.mockReturnValue(projectTabs);
-
+  it("focuses the new tab via paneFocusRegistry when cycleGlobalTab returns a tab ID", () => {
+    tilingActions.cycleGlobalTab.mockReturnValue("tab-2");
+    mockPaneFocusRegistryFocus.mockReset();
     setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "9",
+        key: "Tab",
         ctrlKey: true,
       }),
     );
 
-    expect(tabStoreActions.setActiveTab).not.toHaveBeenCalled();
+    expect(mockPaneFocusRegistryFocus).toHaveBeenCalledWith("tab-2");
+  });
+
+  it("does not focus when cycleGlobalTab returns null", () => {
+    tilingActions.cycleGlobalTab.mockReturnValue(null);
+    mockPaneFocusRegistryFocus.mockReset();
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "Tab",
+        ctrlKey: true,
+      }),
+    );
+
+    expect(mockPaneFocusRegistryFocus).not.toHaveBeenCalled();
   });
 });
