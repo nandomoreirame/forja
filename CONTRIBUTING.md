@@ -100,27 +100,29 @@ pnpm build:electron
 
 Build output goes to `release/`. App ID: `dev.forja.terminal`.
 
-## Branching Strategy (Git Flow)
+## Branching Strategy (Trunk-Based Development)
 
 | Branch | Purpose |
 |--------|---------|
-| `main` | Production releases (tagged) |
-| `develop` | Integration branch (default) |
-| `feature/*` | New features (branch from `develop`) |
-| `bugfix/*` | Bug fixes (branch from `develop`) |
-| `hotfix/*` | Urgent fixes (branch from `main`) |
-| `release/*` | Release preparation (branch from `develop`) |
+| `main` | Trunk (all development, PRs target here) |
+| `feature/*` | New features (branch from `main`) |
+| `fix/*` | Bug fixes (branch from `main`) |
+| `release/X.Y` | Release preparation (cut from `main`) |
 
 ### Workflow
 
 1. Fork the repository
-2. Create a branch from `develop`:
+2. Create a branch from `main`:
    - `feature/your-feature-name` for new features
-   - `bugfix/your-fix-name` for bug fixes
+   - `fix/your-fix-name` for bug fixes
 3. Make your changes following the code style below
 4. Write tests (TDD: Red-Green-Refactor)
 5. Ensure all tests pass (`pnpm test`)
-6. Submit a pull request to `develop`
+6. Submit a pull request to `main`
+
+### Releases
+
+Release branches (`release/X.Y`) are cut from `main` when ready to ship. Fixes go to `main` first, then cherry-pick to the release branch if needed.
 
 ## Commit Convention
 

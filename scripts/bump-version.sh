@@ -22,21 +22,9 @@ echo "Bumping version to $VERSION..."
 sed -i'' -e "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$REPO_ROOT/package.json"
 echo "  Updated package.json"
 
-# backend/Cargo.toml (only the package version, not dependency versions)
-sed -i'' -e "0,/^version = \"[^\"]*\"/s//version = \"$VERSION\"/" "$REPO_ROOT/backend/Cargo.toml"
-echo "  Updated backend/Cargo.toml"
-
-# backend/tauri.conf.json
-sed -i'' -e "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$REPO_ROOT/backend/tauri.conf.json"
-echo "  Updated backend/tauri.conf.json"
-
-# Regenerate Cargo.lock
-(cd "$REPO_ROOT/backend" && cargo generate-lockfile 2>/dev/null) || true
-echo "  Regenerated Cargo.lock"
-
 echo ""
-echo "Version bumped to $VERSION in all files."
+echo "Version bumped to $VERSION."
 echo "Next steps:"
-echo "  git add -A && git commit -m \"🧹 chore: bump version to $VERSION\""
+echo "  git add -A && git commit -m \"chore: bump version to $VERSION\""
 echo "  git tag v$VERSION"
 echo "  git push origin v$VERSION"

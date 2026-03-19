@@ -308,3 +308,4 @@ Full guidelines in `docs/design/DESIGN-GUIDELINES.md`.
 8. **Shallow file tree** - On-demand subdirectory loading for performance
 9. **Demand-driven metrics** - System metrics sampled only when visible
 10. **TTL-cached git** - Git refresh coalesced per project with cache
+11. **Trunk-Based Development** - main is the single trunk, release/X.Y branches for releases, no develop branch
