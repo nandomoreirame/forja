@@ -39,6 +39,10 @@ interface TilingLayoutState {
   cycleActiveTabset: (direction: "forward" | "backward") => string | null;
   /** Cycles through ALL tabs across ALL tabsets globally (like Chrome's Ctrl+Tab). Returns the new tab ID or null. */
   cycleGlobalTab: (direction: "forward" | "backward") => string | null;
+  /** Updates the config of a tab node (e.g., browser URL). */
+  updateBlockConfig: (nodeId: string, config: Record<string, unknown>) => void;
+  /** Closes all tabs in the given tabset and removes it from the layout. */
+  closeTabset: (tabsetId: string) => void;
 }
 
 let tabCounter = 0;
@@ -104,17 +108,35 @@ function findCenterTabset(model: Model, preferredId: string): string | null {
     }
   });
 
-  // 1. Prefer a tabset that already has center content (terminal/browser)
+  // 1. Preferred tabset already has center content — use it directly
+  if (preferredId && !sideTabsets.has(preferredId) && model.getNodeById(preferredId)) {
+    // Check if preferred tabset has center content
+    let preferredHasCenter = false;
+    const prefNode = model.getNodeById(preferredId);
+    if (prefNode) {
+      const children = (prefNode as any).getChildren?.() ?? [];
+      for (const child of children) {
+        const comp = (child as any).getComponent?.();
+        if (comp && CENTER_CONTENT_TYPES.has(comp)) {
+          preferredHasCenter = true;
+          break;
+        }
+      }
+    }
+    if (preferredHasCenter) return preferredId;
+  }
+
+  // 2. Coalesce: tabset that already has center content (terminal/browser)
   if (centerContentTabsetId && !sideTabsets.has(centerContentTabsetId)) {
     return centerContentTabsetId;
   }
 
-  // 2. Preferred tabset exists and is not a side pane — use it
+  // 3. Preferred tabset exists and is not a side pane (e.g. empty active tabset)
   if (model.getNodeById(preferredId) && !sideTabsets.has(preferredId)) {
     return preferredId;
   }
 
-  // 3. Try active tabset if it's not a side pane
+  // 4. Try active tabset if it's not a side pane
   const activeTabset = model.getActiveTabset();
   if (activeTabset && !sideTabsets.has(activeTabset.getId())) {
     return activeTabset.getId();
@@ -256,9 +278,14 @@ export function stripProjectBlocksFromJson(json: IJsonModel): IJsonModel {
 }
 
 /**
- * Strips terminal/browser blocks whose node ID is NOT in the given valid set.
- * Used during project switch to remove stale blocks from a cached layout
- * BEFORE creating the FlexLayout model, preventing a visible flash.
+ * Strips terminal blocks whose node ID is NOT in the given valid set.
+ * Used during project switch to remove stale terminal blocks from a cached
+ * layout BEFORE creating the FlexLayout model, preventing a visible flash.
+ *
+ * Browser blocks are NOT stripped here — they are layout-managed and don't
+ * have entries in the terminal tabs store, so they would always appear
+ * "orphaned". They are only stripped by stripProjectBlocksFromJson() when
+ * switching to a project with no saved layout at all.
  */
 function stripOrphanTerminalBlocksFromJson(
   json: IJsonModel,
@@ -275,7 +302,7 @@ function stripOrphanTerminalBlocksFromJson(
       .filter((child) => {
         if (
           child.type === "tab" &&
-          PROJECT_SPECIFIC_BLOCK_TYPES.has(child.component) &&
+          child.component === "terminal" &&
           !validIds.has(child.id)
         ) {
           return false;
@@ -420,6 +447,19 @@ export function buildTabName(config: BlockConfig): string {
   }
 }
 
+/**
+ * Syncs terminal-tabs store when a tab is removed from the FlexLayout model
+ * outside of FlexLayout's own action pipeline (e.g. store methods that call
+ * model.doAction directly).  Without this, the terminal-tabs store retains
+ * stale entries and the persisted config.json never drops closed tabs.
+ */
+function syncTerminalTabRemoval(nodeId: string): void {
+  const tabsStore = useTerminalTabsStore.getState();
+  if (tabsStore.hasTab(nodeId)) {
+    tabsStore.removeTab(nodeId);
+  }
+}
+
 export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
   model: Model.fromJson(DEFAULT_LAYOUT),
   tabCount: 0,
@@ -489,7 +529,8 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
 
   addBlock: (config, targetTabsetId, nodeId, dockLocation) => {
     let { model } = get();
-    const tabsetId = targetTabsetId ?? TABSET_IDS.main;
+    const activeTabsetId = model.getActiveTabset()?.getId();
+    const tabsetId = targetTabsetId ?? activeTabsetId ?? TABSET_IDS.main;
     const id = nodeId ?? nextBlockId();
 
     // Avoid duplicate blocks with the same ID
@@ -642,6 +683,31 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     model.doAction(Actions.deleteTab(nodeId));
     removeEmptyTabsets(model);
     set({ model, tabCount: countTabs(model) });
+    syncTerminalTabRemoval(nodeId);
+  },
+
+  closeTabset: (tabsetId) => {
+    const { model } = get();
+    const tabsetNode = model.getNodeById(tabsetId);
+    if (!tabsetNode || tabsetNode.getType() !== "tabset") return;
+
+    // Delete all child tabs first, collecting IDs for terminal-tabs sync
+    const children = (tabsetNode as any).getChildren() as { getId: () => string }[];
+    const childIds = children.map((c) => c.getId());
+    for (const child of [...children]) {
+      model.doAction(Actions.deleteTab(child.getId()));
+    }
+
+    // Force-delete the tabset (including tabset-main)
+    if (model.getNodeById(tabsetId)) {
+      model.doAction(Actions.deleteTabset(tabsetId));
+    }
+
+    set({ model, tabCount: countTabs(model) });
+
+    for (const id of childIds) {
+      syncTerminalTabRemoval(id);
+    }
   },
 
   hasBlock: (nodeId) => {
@@ -711,9 +777,11 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     const selectedNode = activeTabset.getSelectedNode();
     if (!selectedNode) return;
 
-    model.doAction(Actions.deleteTab(selectedNode.getId()));
+    const nodeId = selectedNode.getId();
+    model.doAction(Actions.deleteTab(nodeId));
     removeEmptyTabsets(model);
     set({ model, tabCount: countTabs(model) });
+    syncTerminalTabRemoval(nodeId);
   },
 
   selectTab: (nodeId) => {
@@ -775,6 +843,13 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
       useTerminalTabsStore.getState().renameTab(nodeId, name);
     }
 
+    set({ model });
+  },
+
+  updateBlockConfig: (nodeId, config) => {
+    const { model } = get();
+    if (!model.getNodeById(nodeId)) return;
+    model.doAction(Actions.updateNodeAttributes(nodeId, { config }));
     set({ model });
   },
 
@@ -842,6 +917,7 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
         : (idx - 1 + allTabIds.length) % allTabIds.length;
 
     const nextTabId = allTabIds[nextIndex];
+
     model.doAction(Actions.selectTab(nextTabId));
 
     // Also activate the parent tabset so the border follows

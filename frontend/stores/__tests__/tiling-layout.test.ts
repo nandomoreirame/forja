@@ -55,6 +55,36 @@ describe("tiling-layout store", () => {
       expect(json).toContain("agent-chat");
     });
 
+    it("adds terminal to active tabset when no targetTabsetId is provided", () => {
+      const store = useTilingLayoutStore.getState();
+
+      // Add a terminal to tabset-main and split RIGHT to create a second tabset
+      store.addBlock({ type: "terminal", sessionType: "terminal" }, TABSET_IDS.main, "t1");
+      store.addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "t2",
+        DockLocation.RIGHT,
+      );
+
+      // Find the second tabset (where t2 lives)
+      const { model } = useTilingLayoutStore.getState();
+      const t2Node = model.getNodeById("t2");
+      const secondTabsetId = t2Node?.getParent()?.getId();
+      expect(secondTabsetId).toBeDefined();
+      expect(secondTabsetId).not.toBe(TABSET_IDS.main);
+
+      // Make the second tabset the active one
+      model.doAction(Actions.setActiveTabset(secondTabsetId!));
+
+      // Add a new terminal WITHOUT specifying targetTabsetId
+      store.addBlock({ type: "terminal", sessionType: "claude" }, undefined, "t3");
+
+      // It should land in the active (second) tabset, not tabset-main
+      const t3Node = useTilingLayoutStore.getState().model.getNodeById("t3");
+      expect(t3Node?.getParent()?.getId()).toBe(secondTabsetId);
+    });
+
     it("falls back to another tabset when target tabset does not exist", () => {
       const config: BlockConfig = { type: "browser", url: "https://fallback.test" };
       useTilingLayoutStore.getState().addBlock(config, "nonexistent-tabset");
@@ -140,6 +170,107 @@ describe("tiling-layout store", () => {
     });
   });
 
+  describe("closeTabset", () => {
+    it("removes all tabs from the given tabset and deletes it", () => {
+      const store = useTilingLayoutStore.getState();
+
+      // Add a terminal block and capture its tabset ID
+      store.addBlock({ type: "terminal", sessionType: "claude" }, TABSET_IDS.main, "tab-term-1");
+
+      // Add a second block in a split to create a second tabset
+      store.addBlock(
+        { type: "browser", url: "https://example.com" },
+        TABSET_IDS.main,
+        "tab-browser-1",
+        DockLocation.RIGHT,
+      );
+
+      const { model } = useTilingLayoutStore.getState();
+      const browserNode = model.getNodeById("tab-browser-1");
+      const browserTabsetId = browserNode?.getParent()?.getId();
+      expect(browserTabsetId).toBeDefined();
+
+      // Close the tabset that contains the browser
+      store.closeTabset(browserTabsetId!);
+
+      const updated = useTilingLayoutStore.getState().model;
+      expect(updated.getNodeById("tab-browser-1")).toBeUndefined();
+    });
+
+    it("is a no-op when tabset id does not exist", () => {
+      const store = useTilingLayoutStore.getState();
+      // Should not throw
+      expect(() => store.closeTabset("non-existent-tabset")).not.toThrow();
+    });
+
+    it("removes tabset-main when other tabsets exist", () => {
+      const store = useTilingLayoutStore.getState();
+
+      // Add a tab to tabset-main
+      store.addBlock({ type: "terminal", sessionType: "claude" }, TABSET_IDS.main, "tab-main-t");
+
+      // Create a second tabset via split
+      store.addBlock(
+        { type: "browser", url: "https://example.com" },
+        TABSET_IDS.main,
+        "tab-side-b",
+        DockLocation.RIGHT,
+      );
+
+      // Verify tabset-main exists before close
+      expect(useTilingLayoutStore.getState().model.getNodeById(TABSET_IDS.main)).toBeDefined();
+
+      // Close tabset-main — should remove it and its tabs
+      store.closeTabset(TABSET_IDS.main);
+
+      const updated = useTilingLayoutStore.getState().model;
+      expect(updated.getNodeById("tab-main-t")).toBeUndefined();
+      expect(updated.getNodeById(TABSET_IDS.main)).toBeUndefined();
+    });
+
+    it("decrements tabCount when closing a tabset with tabs", () => {
+      const store = useTilingLayoutStore.getState();
+
+      store.addBlock({ type: "terminal", sessionType: "claude" }, TABSET_IDS.main, "tab-term-2");
+      store.addBlock(
+        { type: "browser", url: "https://example.com" },
+        TABSET_IDS.main,
+        "tab-browser-2",
+        DockLocation.RIGHT,
+      );
+
+      const countBefore = useTilingLayoutStore.getState().tabCount;
+
+      const { model } = useTilingLayoutStore.getState();
+      const browserNode = model.getNodeById("tab-browser-2");
+      const browserTabsetId = browserNode?.getParent()?.getId();
+      store.closeTabset(browserTabsetId!);
+
+      const countAfter = useTilingLayoutStore.getState().tabCount;
+      expect(countAfter).toBeLessThan(countBefore);
+    });
+  });
+
+  describe("updateBlockConfig", () => {
+    it("updates the config of an existing browser block", () => {
+      const store = useTilingLayoutStore.getState();
+      const nodeId = "browser-test-1";
+      store.addBlock({ type: "browser", url: "https://github.com" }, undefined, nodeId);
+
+      store.updateBlockConfig(nodeId, { type: "browser", url: "https://whatsapp.com" });
+
+      const json = JSON.stringify(store.model.toJson());
+      expect(json).toContain("https://whatsapp.com");
+      expect(json).not.toContain("https://github.com");
+    });
+
+    it("is a no-op for non-existent node", () => {
+      const store = useTilingLayoutStore.getState();
+      // Should not throw
+      store.updateBlockConfig("non-existent", { type: "browser", url: "https://x.com" });
+    });
+  });
+
   describe("getModelJson", () => {
     it("returns serializable JSON", () => {
       const json = useTilingLayoutStore.getState().getModelJson();
@@ -195,6 +326,39 @@ describe("tiling-layout store", () => {
         .restoreLayoutForProject("/nonexistent");
       const { model } = useTilingLayoutStore.getState();
       expect(model.getNodeById(TABSET_IDS.main)).toBeDefined();
+    });
+
+    it("preserves browser blocks in saved layout when validTerminalIds is provided", () => {
+      const store = useTilingLayoutStore.getState();
+
+      // Add a terminal and a browser block, save for project A
+      store.addBlock(
+        { type: "terminal", tabId: "term-1", sessionType: "claude" },
+        undefined,
+        "term-1",
+      );
+      store.addBlock(
+        { type: "browser", url: "https://google.com" },
+        undefined,
+        "browser-1",
+      );
+      store.saveLayoutForProject("/project-a");
+
+      // Switch away and back — simulate by resetting model and restoring
+      store.resetToDefault();
+      expect(store.hasBlock("browser-1")).toBe(false);
+
+      // Restore with validTerminalIds containing only the terminal ID
+      store.restoreLayoutForProject("/project-a", new Set(["term-1"]));
+
+      // Browser block should be preserved (it's NOT orphaned, it's layout-managed)
+      expect(useTilingLayoutStore.getState().hasBlock("browser-1")).toBe(true);
+      // Terminal block should also be preserved (ID is in validIds)
+      expect(useTilingLayoutStore.getState().hasBlock("term-1")).toBe(true);
+
+      // URL should be intact
+      const json = JSON.stringify(useTilingLayoutStore.getState().model.toJson());
+      expect(json).toContain("https://google.com");
     });
 
     it("preserves structural blocks (file-tree) and strips terminal blocks when no saved layout exists", () => {
@@ -2030,6 +2194,145 @@ describe("tiling-layout store", () => {
       useTilingLayoutStore.getState().selectTab("tab-a");
       const result = useTilingLayoutStore.getState().cycleGlobalTab("backward");
       expect(result).toBe("tab-b");
+    });
+
+    it("includes file-tree tab when cycling across panes", () => {
+      // Add a terminal tab in the main tabset
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "tab-terminal",
+      );
+      // Add a file-tree block (docks LEFT in its own tabset)
+      useTilingLayoutStore.getState().addBlock(
+        { type: "file-tree", projectName: "test" },
+        undefined,
+        "tab-file-tree",
+      );
+
+      // Collect all tab IDs to confirm file-tree is included
+      const { model } = useTilingLayoutStore.getState();
+      const allTabIds: string[] = [];
+      model.visitNodes((node) => {
+        if (node.getType() === "tab") allTabIds.push(node.getId());
+      });
+      expect(allTabIds).toContain("tab-file-tree");
+      expect(allTabIds).toContain("tab-terminal");
+
+      // Select the terminal tab and cycle forward — should reach file-tree
+      useTilingLayoutStore.getState().selectTab("tab-terminal");
+      const result = useTilingLayoutStore.getState().cycleGlobalTab("forward");
+      expect(result).toBe("tab-file-tree");
+    });
+
+    it("cycles from file-tree tab back to terminal tab", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "tab-terminal",
+      );
+      useTilingLayoutStore.getState().addBlock(
+        { type: "file-tree", projectName: "test" },
+        undefined,
+        "tab-file-tree",
+      );
+
+      // Select file-tree and cycle forward — should go to terminal
+      useTilingLayoutStore.getState().selectTab("tab-file-tree");
+      const result = useTilingLayoutStore.getState().cycleGlobalTab("forward");
+      expect(result).toBe("tab-terminal");
+    });
+
+    it("repeated cycling visits file-tree among multiple terminal tabs", () => {
+      // Setup: 3 terminals + 1 file-tree (4 tabs total)
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "tab-t1",
+      );
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-t2",
+      );
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-t3",
+      );
+      useTilingLayoutStore.getState().addBlock(
+        { type: "file-tree", projectName: "test" },
+        undefined,
+        "tab-file-tree",
+      );
+
+      // Start from first terminal
+      useTilingLayoutStore.getState().selectTab("tab-t1");
+
+      // Cycle forward through all 4 tabs and collect results
+      const visited: string[] = [];
+      for (let i = 0; i < 4; i++) {
+        const next = useTilingLayoutStore.getState().cycleGlobalTab("forward");
+        expect(next).not.toBeNull();
+        visited.push(next!);
+      }
+
+      // Must visit file-tree at some point
+      expect(visited).toContain("tab-file-tree");
+      // Must visit all unique tabs (full cycle returns to start)
+      expect(new Set(visited).size).toBe(4);
+    });
+  });
+
+  describe("terminal-tabs sync on tab deletion", () => {
+    beforeEach(() => {
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null, counter: 0 });
+    });
+
+    it("closeActiveTab removes the tab from terminal-tabs store", () => {
+      const tilingStore = useTilingLayoutStore.getState();
+      const tabsStore = useTerminalTabsStore.getState();
+
+      // Add a terminal tab (creates layout block + terminal-tabs entry)
+      tabsStore.addTab("term-sync-1", "/project", "terminal");
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(1);
+      expect(tilingStore.hasBlock("term-sync-1")).toBe(true);
+
+      // Select the tab so it's the active one
+      tilingStore.selectTab("term-sync-1");
+
+      // Close via closeActiveTab (bypasses FlexLayout onAction)
+      useTilingLayoutStore.getState().closeActiveTab();
+
+      // Terminal-tabs store must be synced
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(0);
+      expect(useTerminalTabsStore.getState().activeTabId).toBeNull();
+    });
+
+    it("removeBlock removes the tab from terminal-tabs store", () => {
+      const tabsStore = useTerminalTabsStore.getState();
+
+      tabsStore.addTab("term-sync-2", "/project", "claude");
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(1);
+
+      // Remove via removeBlock
+      useTilingLayoutStore.getState().removeBlock("term-sync-2");
+
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(0);
+    });
+
+    it("closeTabset removes all child terminal tabs from terminal-tabs store", () => {
+      const tabsStore = useTerminalTabsStore.getState();
+
+      // Add two tabs to main tabset
+      tabsStore.addTab("term-ts-1", "/project", "terminal");
+      tabsStore.addTab("term-ts-2", "/project", "claude");
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(2);
+
+      // Close the entire tabset
+      useTilingLayoutStore.getState().closeTabset(TABSET_IDS.main);
+
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(0);
     });
   });
 });
