@@ -135,15 +135,36 @@
   box-shadow: none;
 }
 
-/* Tab button active indicator — brand color accent line */
+/* All tabs get a transparent bottom border to reserve space and prevent layout shift */
+.flexlayout__tabset_tabbar_inner_tab_container_top .flexlayout__tab_button {
+  border-bottom: 2px solid transparent;
+  padding: 6px 8px;
+  min-height: 36px;
+}
+
+/* Active tab — brand color bottom accent + rounded top corners */
 .flexlayout__tabset_tabbar_inner_tab_container_top
   .flexlayout__tab_button--selected {
-  border-top: 2px solid var(--color-brand);
+  border-top: none;
+  border-bottom: 2px solid var(--color-brand);
+  border-radius: 8px 8px 0 0;
+}
+
+/* Bottom tab container — same logic inverted */
+.flexlayout__tabset_tabbar_inner_tab_container_bottom .flexlayout__tab_button {
+  border-top: 2px solid transparent;
 }
 
 .flexlayout__tabset_tabbar_inner_tab_container_bottom
   .flexlayout__tab_button--selected {
-  border-bottom: 2px solid var(--color-brand);
+  border-bottom: none;
+  border-top: 2px solid var(--color-brand);
+  border-radius: 0 0 8px 8px;
+}
+
+/* Inactive tabs — subtle transparency */
+.flexlayout__tab_button:not(.flexlayout__tab_button--selected) {
+  opacity: 0.8;
 }
 
 /* Rounded splitter hover for a polished look */
@@ -156,7 +177,7 @@
    makes the strip ~26-28px; without tabs the toolbar alone is only ~16px.
    min-height ensures panes align regardless of tab count. */
 .flexlayout__tabset_tabbar_outer {
-  min-height: 30px;
+  min-height: 38px;
   align-items: center;
 }
 
