@@ -8,6 +8,10 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-03-19
+
+---
+
 ## [1.6.3] - 2026-03-14
 
 ### Fixed
