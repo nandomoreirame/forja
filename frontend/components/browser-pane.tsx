@@ -4,6 +4,7 @@ import { normalizeUrl, isAllowedUrl } from "@/lib/browser-url";
 import { invoke } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { paneFocusRegistry } from "@/lib/pane-focus-registry";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 
 type ScreenshotState = "idle" | "success" | "error";
 
@@ -88,6 +89,15 @@ export function BrowserPane({ initialUrl = "http://localhost:3000", nodeId }: Br
     `);
   }, []);
 
+  // Debounced config sync — batches rapid redirects (e.g., google.com → www.google.com)
+  // into a single FlexLayout model update to avoid unnecessary re-renders.
+  const configSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    return () => {
+      if (configSyncTimerRef.current) clearTimeout(configSyncTimerRef.current);
+    };
+  }, []);
+
   // Wire webview events — runs after webviewMounted becomes true.
   useEffect(() => {
     if (!webviewMounted) return;
@@ -106,6 +116,14 @@ export function BrowserPane({ initialUrl = "http://localhost:3000", nodeId }: Br
         setUrl(e.url);
         setCommittedUrl(e.url);
         setError(null);
+        // Debounced sync to FlexLayout model so it persists with the layout
+        if (nodeId) {
+          if (configSyncTimerRef.current) clearTimeout(configSyncTimerRef.current);
+          const navUrl = e.url;
+          configSyncTimerRef.current = setTimeout(() => {
+            useTilingLayoutStore.getState().updateBlockConfig(nodeId, { type: "browser", url: navUrl });
+          }, 1000);
+        }
       }
     };
     const handleTitleUpdate = () => {

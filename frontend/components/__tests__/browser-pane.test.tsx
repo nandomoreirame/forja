@@ -23,6 +23,7 @@ document.createElement = ((tagName: string, options?: ElementCreationOptions) =>
 }) as typeof document.createElement;
 
 import { BrowserPane } from "../browser-pane";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 
 describe("BrowserPane", () => {
   beforeEach(() => {
@@ -164,6 +165,103 @@ describe("BrowserPane", () => {
 
       // Should be back in idle state after error
       expect(screen.getByLabelText(/take screenshot/i)).toBeInTheDocument();
+    });
+  });
+
+  describe("layout config sync", () => {
+    it("updates block config in tiling-layout store on did-navigate (debounced)", async () => {
+      vi.useFakeTimers();
+      const nodeId = "browser-nav-test";
+
+      // Add a browser block to the layout model
+      useTilingLayoutStore.getState().resetToDefault();
+      useTilingLayoutStore.getState().addBlock(
+        { type: "browser", url: "https://github.com" },
+        undefined,
+        nodeId,
+      );
+
+      // Mount with rAF flush so webview is mounted and events are wired
+      let rafCb: FrameRequestCallback | null = null;
+      const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
+        rafCb = cb;
+        return 1;
+      });
+
+      render(<BrowserPane initialUrl="https://github.com" nodeId={nodeId} />);
+      await act(async () => {
+        if (rafCb) rafCb(performance.now());
+      });
+      rafSpy.mockRestore();
+
+      // Simulate the webview's did-navigate event
+      const webview = screen.getByTestId("browser-webview");
+      const navEvent = new Event("did-navigate");
+      (navEvent as Event & { url: string }).url = "https://web.whatsapp.com";
+      await act(async () => {
+        webview.dispatchEvent(navEvent);
+      });
+
+      // Before debounce fires, URL should still be old
+      const jsonBefore = JSON.stringify(useTilingLayoutStore.getState().model.toJson());
+      expect(jsonBefore).toContain("https://github.com");
+
+      // Flush the debounce timer
+      await act(async () => {
+        vi.advanceTimersByTime(1100);
+      });
+
+      // Now the layout model should have the new URL
+      const json = JSON.stringify(useTilingLayoutStore.getState().model.toJson());
+      expect(json).toContain("https://web.whatsapp.com");
+
+      vi.useRealTimers();
+    });
+
+    it("batches rapid redirects into a single config update", async () => {
+      vi.useFakeTimers();
+      const nodeId = "browser-redirect-test";
+
+      useTilingLayoutStore.getState().resetToDefault();
+      useTilingLayoutStore.getState().addBlock(
+        { type: "browser", url: "https://google.com" },
+        undefined,
+        nodeId,
+      );
+
+      let rafCb: FrameRequestCallback | null = null;
+      const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
+        rafCb = cb;
+        return 1;
+      });
+      render(<BrowserPane initialUrl="https://google.com" nodeId={nodeId} />);
+      await act(async () => {
+        if (rafCb) rafCb(performance.now());
+      });
+      rafSpy.mockRestore();
+
+      const webview = screen.getByTestId("browser-webview");
+
+      // Simulate rapid redirects: google.com → www.google.com → google.com.br
+      for (const url of ["https://www.google.com", "https://www.google.com.br"]) {
+        const ev = new Event("did-navigate");
+        (ev as Event & { url: string }).url = url;
+        await act(async () => {
+          webview.dispatchEvent(ev);
+        });
+      }
+
+      // Flush debounce
+      await act(async () => {
+        vi.advanceTimersByTime(1100);
+      });
+
+      // Only the final URL should be in the model
+      const json = JSON.stringify(useTilingLayoutStore.getState().model.toJson());
+      expect(json).toContain("https://www.google.com.br");
+      expect(json).not.toContain("https://www.google.com\"");
+
+      vi.useRealTimers();
     });
   });
 
