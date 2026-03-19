@@ -116,6 +116,44 @@ describe("useProjectsStore", () => {
     expect(invoke).toHaveBeenCalledWith("add_project_to_workspace", { workspaceId: "ws-test", projectPath: "/home/user/new-project" });
   });
 
+  it("addProject appends new project at the END of the list", async () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    useProjectsStore.setState({
+      projects: [
+        { path: "/existing-a", name: "a", lastOpened: "" },
+        { path: "/existing-b", name: "b", lastOpened: "" },
+      ],
+    });
+
+    await useProjectsStore.getState().addProject("/new-project");
+
+    const { projects } = useProjectsStore.getState();
+    expect(projects).toHaveLength(3);
+    // New project must be at the END, not at the beginning
+    expect(projects[0].path).toBe("/existing-a");
+    expect(projects[1].path).toBe("/existing-b");
+    expect(projects[2].path).toBe("/new-project");
+  });
+
+  it("addProject does not duplicate an existing project", async () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    useProjectsStore.setState({
+      projects: [
+        { path: "/existing-a", name: "a", lastOpened: "" },
+        { path: "/existing-b", name: "b", lastOpened: "" },
+      ],
+    });
+
+    await useProjectsStore.getState().addProject("/existing-a");
+
+    const { projects } = useProjectsStore.getState();
+    expect(projects).toHaveLength(2);
+    expect(projects[0].path).toBe("/existing-a");
+    expect(projects[1].path).toBe("/existing-b");
+  });
+
   it("removes a project from the list and persists to disk", () => {
     vi.mocked(invoke).mockResolvedValue(undefined);
 
