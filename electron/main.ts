@@ -31,6 +31,8 @@ const __dirname = path.dirname(__filename);
 
 // PTY must be eager (resolveShellPath used at module scope)
 import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers } from "./pty.js";
+import { isUiSaveSuspended, suspendUiSaves, resumeUiSaves } from "./ui-save-gate.js";
+import { attachWebviewKeyboardBridge } from "./webview-keyboard-bridge.js";
 
 // Type-only imports for signatures
 import type { UiPreferences, ProjectUiState, WorkspaceProject } from "./config.js";
@@ -233,7 +235,20 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
 // Guard webviews: enforce security settings before they are attached.
 // This prevents a compromised renderer from spawning webviews with elevated
 // privileges (nodeIntegration, custom preloads, dangerous partition names).
+// Also bridges app-level keyboard shortcuts from webview webContents so
+// Ctrl+Tab, Ctrl+W, etc. still work when a plugin/browser pane has focus.
 app.on("web-contents-created", (_event, contents) => {
+  // Keyboard bridge: forward app shortcuts from webview to renderer via IPC
+  if (contents.getType() === "webview") {
+    attachWebviewKeyboardBridge(contents, (payload) => {
+      for (const win of BrowserWindow.getAllWindows()) {
+        if (!win.isDestroyed()) {
+          win.webContents.send("webview:shortcut-forwarded", payload);
+        }
+      }
+    });
+  }
+
   contents.on("will-attach-webview", (_e, webPreferences, params) => {
     // Allow plugin webviews to use the plugin preload script
     const isPluginWebview = (params as Record<string, unknown>).partition?.toString().startsWith("persist:plugin-");
@@ -469,6 +484,7 @@ ipcMain.handle("get_ui_preferences", async (_event, args?: { workspaceId?: strin
 });
 
 ipcMain.handle("save_ui_preferences", async (_event, args: Partial<UiPreferences> & { workspaceId?: string; projectPath?: string }) => {
+  if (isUiSaveSuspended()) return;
   const { workspaceId, projectPath, ...prefs } = args;
   const config = await getConfig();
   config.saveUiPreferences(prefs, workspaceId, projectPath);
@@ -481,6 +497,7 @@ ipcMain.handle("get_project_ui_state", async (_event, args: { workspaceId: strin
 });
 
 ipcMain.handle("save_project_ui_state", async (_event, args: { workspaceId: string; path: string; state: Partial<ProjectUiState> }) => {
+  if (isUiSaveSuspended()) return;
   const config = await getConfig();
   config.saveProjectUiState(args.workspaceId, args.path, args.state);
 });
@@ -870,13 +887,27 @@ ipcMain.handle("app:isDev", () => isDev);
 ipcMain.handle("app:getForjaConfigPath", () => getForjaConfigDir());
 
 ipcMain.handle("app:clearCache", async () => {
+  suspendUiSaves();
+  const win = BrowserWindow.getFocusedWindow();
+  if (win) {
+    closeAllPtysForWindow(win.id);
+  }
   const ses = session.defaultSession;
   await ses.clearStorageData();
   await ses.clearCache();
   const configMod = await getConfig();
   configMod.clearUiCache();
-  const win = BrowserWindow.getFocusedWindow();
-  if (win) win.webContents.reload();
+  if (win) {
+    win.webContents.reload();
+    const resume = () => { resumeUiSaves(); };
+    win.webContents.once("did-finish-load", resume);
+    setTimeout(() => {
+      win.webContents.removeListener("did-finish-load", resume);
+      resumeUiSaves();
+    }, 10_000);
+  } else {
+    resumeUiSaves();
+  }
 });
 
 ipcMain.handle("get_performance_mode", () => {
