@@ -33,6 +33,7 @@ import { ForjaEmptyState } from "@/components/forja-empty-state";
 import { CliIcon } from "@/components/cli-icon";
 import { TabNameOverlay } from "@/components/tab-name-overlay";
 import { TabContextMenu } from "@/components/tab-context-menu";
+import { TabsetContextMenu } from "@/components/tabset-context-menu";
 import { invoke } from "@/lib/ipc";
 import { getPluginIcon } from "@/lib/plugin-types";
 import type { BlockConfig } from "@/lib/block-registry";
@@ -104,6 +105,7 @@ export function TilingLayout() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [contextMenu, setContextMenu] = useState<{ nodeId: string; x: number; y: number; canRename: boolean } | null>(null);
+  const [tabsetContextMenu, setTabsetContextMenu] = useState<{ tabsetId: string; x: number; y: number } | null>(null);
 
   // Subscribe to session state changes to trigger re-renders for tab dots
   const sessionStates = useSessionStateStore((s) => s.states);
@@ -288,12 +290,21 @@ export function TilingLayout() {
 
   const onContextMenu = useCallback(
     (node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent) => {
-      if (node.getType() !== "tab") return;
       event.preventDefault();
       event.stopPropagation();
-      const component = (node as TabNode).getComponent?.() ?? "";
-      const canRename = RENAMABLE_BLOCK_TYPES.has(component);
-      setContextMenu({ nodeId: node.getId(), x: event.clientX, y: event.clientY, canRename });
+
+      if (node.getType() === "tab") {
+        const component = (node as TabNode).getComponent?.() ?? "";
+        const canRename = RENAMABLE_BLOCK_TYPES.has(component);
+        setTabsetContextMenu(null);
+        setContextMenu({ nodeId: node.getId(), x: event.clientX, y: event.clientY, canRename });
+        return;
+      }
+
+      if (node.getType() === "tabset") {
+        setContextMenu(null);
+        setTabsetContextMenu({ tabsetId: node.getId(), x: event.clientX, y: event.clientY });
+      }
     },
     [],
   );
@@ -325,6 +336,13 @@ export function TilingLayout() {
             // without this the InlineEdit input blurs immediately.
             setTimeout(() => useTilingLayoutStore.getState().setEditingTabId(id), 80);
           }}
+        />
+      )}
+      {tabsetContextMenu && (
+        <TabsetContextMenu
+          tabsetId={tabsetContextMenu.tabsetId}
+          position={{ x: tabsetContextMenu.x, y: tabsetContextMenu.y }}
+          onClose={() => setTabsetContextMenu(null)}
         />
       )}
     </div>

@@ -50,6 +50,7 @@ import { useFocusModeStore } from "./stores/focus-mode";
 import { PluginPermissionDialog } from "./components/plugin-permission-dialog";
 import { FocusModeIndicator } from "./components/focus-mode-indicator";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
+import { useWebviewShortcutBridge } from "./hooks/use-webview-shortcut-bridge";
 import {
   usePanelPreferences,
 } from "./hooks/use-panel-preferences";
@@ -276,7 +277,16 @@ function App({
         tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string }>;
         activeTabIndex?: number;
         previewFile?: string | null;
+        layoutJson?: Record<string, unknown>;
       } | null>("get_project_ui_state", { workspaceId: wsId, path: projectPath });
+
+      // Restore tiling layout from saved state BEFORE restoring tabs,
+      // so terminal block IDs in the layout match the tab IDs.
+      if (uiState?.layoutJson) {
+        const { parseLayoutJson } = await import("@/lib/layout-migration");
+        const layout = parseLayoutJson(uiState.layoutJson);
+        useTilingLayoutStore.getState().loadFromJson(layout);
+      }
 
       if (!uiState || !uiState.tabs || uiState.tabs.length === 0) {
         // Still open the project so the file tree loads and UI is usable,
@@ -687,8 +697,9 @@ function App({
   useEffect(() => {
     if (!sessionRestoreDone) return;
     if (initialWorkspaceId) return;
+    if (useProjectsStore.getState().isSwitchingProject) return;
 
-    // Persist full tab data (id, path, sessionType, activeTabIndex) to config.json per project
+    // Persist full tab data + layout to config.json per project
     if (currentPath) {
       const wsId = useWorkspaceStore.getState().activeWorkspaceId;
       if (wsId) {
@@ -696,7 +707,10 @@ function App({
         invoke("save_project_ui_state", {
           workspaceId: wsId,
           path: currentPath,
-          state: tabsStore.serializeTabsForSave(currentPath),
+          state: {
+            ...tabsStore.serializeTabsForSave(currentPath),
+            layoutJson: useTilingLayoutStore.getState().getModelJson() as Record<string, unknown>,
+          },
         }).catch((err: unknown) => console.warn("[App] Failed to save project tab state:", err));
 
         invoke("set_last_active_project_path", {
@@ -712,6 +726,7 @@ function App({
     previewCurrentFile,
     tabs,
     activeTabId,
+    tilingTabCount,
   ]);
 
   // Safety net: save ALL projects' terminal tabs on window close.
@@ -725,12 +740,16 @@ function App({
       const wsId = useWorkspaceStore.getState().activeWorkspaceId;
       if (!wsId) return;
 
+      const layoutJson = useTilingLayoutStore.getState().getModelJson() as Record<string, unknown>;
       const projectPaths = new Set(tabsStore.tabs.map((t) => t.path));
       for (const projectPath of projectPaths) {
         invoke("save_project_ui_state", {
           workspaceId: wsId,
           path: projectPath,
-          state: tabsStore.serializeTabsForSave(projectPath),
+          state: {
+            ...tabsStore.serializeTabsForSave(projectPath),
+            layoutJson,
+          },
         }).catch(() => {});
       }
     };
@@ -741,6 +760,9 @@ function App({
 
   // Keyboard shortcuts extracted to dedicated hook
   useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab });
+
+  // Bridge keyboard shortcuts from webview webContents (main process IPC)
+  useWebviewShortcutBridge();
 
   const isFocusMode = useFocusModeStore((s) => s.isActive);
 
