@@ -8,6 +8,22 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.7.4] - 2026-03-23
+
+### Added
+- Add Ctrl+Shift+Arrow directional pane navigation.
+- Resolve relative image paths in markdown preview.
+
+### Fixed
+- Remap cedilla composition on all Linux display servers.
+- Dock file preview in center when file-tree is absent.
+- Sync tabCount after DELETE_TAB to show welcome screen.
+- Close empty tabset when no active tab to close.
+- Hide all window controls on tiling desktop sessions.
+- Prevent new project from inheriting active sessions.
+- Restrict Windows artifact upload to installer only.
+---
+
 ## [1.7.3] - 2026-03-23
 
 ### Fixed
