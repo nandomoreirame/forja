@@ -8,6 +8,12 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.7.3] - 2026-03-23
+
+### Fixed
+- Dock file preview in center when file-tree is absent.
+---
+
 ## [1.7.2] - 2026-03-19
 
 ### Fixed
