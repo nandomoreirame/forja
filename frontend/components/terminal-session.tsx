@@ -1,6 +1,7 @@
 import { usePty } from "@/hooks/use-pty";
 import { TERMINAL_OPTIONS } from "@/lib/terminal-theme";
 import { routeLinkClick } from "@/lib/link-router";
+import { remapCedilla } from "@/lib/cedilla-remap";
 import { terminalCache } from "@/lib/terminal-instance-cache";
 import { invoke } from "@/lib/ipc";
 import { CLI_REGISTRY, type SessionType } from "@/lib/cli-registry";
@@ -164,15 +165,6 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
           // isComposing is already false but the character was already emitted.
           if (event.isComposing || event.key === "Dead" || composingRef.current) return false;
 
-          // Cedilla fix: Chromium/Ozone on Wayland composes dead_acute+c as ć
-          // (c-acute) instead of ç (c-cedilla). Remap at application level.
-          const CEDILLA_MAP: Record<string, string> = { "\u0107": "\u00E7", "\u0106": "\u00C7" };
-          const cedillaReplacement = CEDILLA_MAP[event.key];
-          if (cedillaReplacement && event.type === "keydown") {
-            writeRef.current(cedillaReplacement);
-            return false;
-          }
-
           const mod = event.metaKey || event.ctrlKey;
           if (!mod) return true;
 
@@ -250,7 +242,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       fitAddonRef.current = fitAddon;
 
       dataDisposable = terminal.onData((data) => {
-        write(data);
+        write(remapCedilla(data));
       });
 
       // Wait for layout to stabilize before fitting and spawning

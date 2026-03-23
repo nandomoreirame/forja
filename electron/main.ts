@@ -181,9 +181,9 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
     });
   }
 
-  // Cedilla fix: Chromium/Ozone on Wayland composes dead_acute+c as ć
-  // instead of ç. Intercept at the application level and remap.
-  if (process.platform === "linux" && process.env.WAYLAND_DISPLAY) {
+  // Cedilla fix: Chromium/Ozone composes dead_acute+c as ć instead of ç
+  // on Linux (both X11 and Wayland). Intercept at the application level and remap.
+  if (process.platform === "linux") {
     win.webContents.on("before-input-event", (event, input) => {
       if (input.type !== "keyDown") return;
       const replacement = remapDeadKeyResult(input.key);

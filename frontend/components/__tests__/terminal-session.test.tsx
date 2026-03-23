@@ -10,7 +10,11 @@ const mockOpen = vi.fn((container: HTMLElement) => {
 });
 const mockWrite = vi.fn();
 const mockDispose = vi.fn();
-const mockOnData = vi.fn().mockReturnValue({ dispose: vi.fn() });
+let capturedOnDataCallback: ((data: string) => void) | undefined;
+const mockOnData = vi.fn().mockImplementation((cb: (data: string) => void) => {
+  capturedOnDataCallback = cb;
+  return { dispose: vi.fn() };
+});
 const mockLoadAddon = vi.fn();
 const mockFocus = vi.fn();
 const mockGetSelection = vi.fn().mockReturnValue("");
@@ -141,7 +145,10 @@ describe("TerminalSession", () => {
     mockOpen.mockClear();
     mockWrite.mockClear();
     mockDispose.mockClear();
-    mockOnData.mockClear().mockReturnValue({ dispose: vi.fn() });
+    mockOnData.mockClear().mockImplementation((cb: (data: string) => void) => {
+      capturedOnDataCallback = cb;
+      return { dispose: vi.fn() };
+    });
     mockLoadAddon.mockClear();
     mockFocus.mockClear();
     mockPtyWrite.mockClear();
@@ -154,6 +161,7 @@ describe("TerminalSession", () => {
     mockStoreTabs.length = 0;
     capturedWebLinksHandler = undefined;
     capturedKeyHandler = undefined;
+    capturedOnDataCallback = undefined;
     mockGetSelection.mockReset().mockReturnValue("");
     webglInstances.length = 0;
     terminalInstances.length = 0;
@@ -573,6 +581,97 @@ describe("TerminalSession", () => {
       const result = capturedKeyHandler!(event);
 
       expect(result).toBe(true);
+    });
+
+    it("does NOT remap ć in attachCustomKeyEventHandler (dead code removed)", async () => {
+      // The CEDILLA_MAP block in attachCustomKeyEventHandler is unreachable during
+      // composition because the composingRef guard returns false before it.
+      // After Fix 3, the dead code block should be removed entirely.
+      // This test verifies that ć events during composition are blocked (return false),
+      // NOT remapped via writeRef (which would be wrong — the character is already
+      // being handled by the onData cedilla remap at the PTY level).
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(capturedKeyHandler).toBeDefined();
+
+      mockPtyWrite.mockClear();
+
+      // ć arrives AFTER composition (composingRef is true)
+      const container = screen.getByRole("region", { name: /terminal/i });
+      const textarea = container.querySelector("textarea")!;
+      textarea.dispatchEvent(new Event("compositionstart"));
+      textarea.dispatchEvent(new Event("compositionend"));
+
+      const cedillaEvent = new KeyboardEvent("keydown", {
+        key: "\u0107", // ć
+        isComposing: false,
+      });
+      const result = capturedKeyHandler!(cedillaEvent);
+
+      // Should return false (blocked by composingRef), NOT write via PTY
+      expect(result).toBe(false);
+      expect(mockPtyWrite).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("cedilla remap in onData", () => {
+    it("remaps ć to ç when onData callback is called", async () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(capturedOnDataCallback).toBeDefined();
+
+      // Simulate xterm emitting ć (wrong composition result)
+      capturedOnDataCallback!("\u0107"); // ć
+
+      // Should write ç (correct cedilla) to PTY
+      expect(mockPtyWrite).toHaveBeenCalledWith("ç");
+    });
+
+    it("remaps Ć to Ç when onData callback is called", async () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(capturedOnDataCallback).toBeDefined();
+
+      capturedOnDataCallback!("\u0106"); // Ć
+
+      expect(mockPtyWrite).toHaveBeenCalledWith("Ç");
+    });
+
+    it("passes through normal characters unchanged via onData", async () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(capturedOnDataCallback).toBeDefined();
+
+      capturedOnDataCallback!("hello");
+
+      expect(mockPtyWrite).toHaveBeenCalledWith("hello");
+    });
+
+    it("passes through ç unchanged via onData (already correct)", async () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(capturedOnDataCallback).toBeDefined();
+
+      capturedOnDataCallback!("ç");
+
+      expect(mockPtyWrite).toHaveBeenCalledWith("ç");
+    });
+
+    it("remaps ć embedded in escape sequences via onData", async () => {
+      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(capturedOnDataCallback).toBeDefined();
+
+      // ć followed by cursor escape sequence
+      capturedOnDataCallback!("\u0107\u001b[A");
+
+      expect(mockPtyWrite).toHaveBeenCalledWith("ç\u001b[A");
     });
   });
 

@@ -1,9 +1,10 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { Components } from "react-markdown";
 import type { Root, Content } from "mdast";
 import { routeLinkClick } from "@/lib/link-router";
+import { invoke } from "@/lib/ipc";
 
 const HTML_COMMENT_REGEX = /^<!--[\s\S]*-->$/;
 
@@ -31,6 +32,73 @@ function remarkStripHtmlComments() {
 
 interface MarkdownRendererProps {
   content: string;
+  basePath?: string;
+}
+
+const IMAGE_MIME_TYPES: Record<string, string> = {
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  svg: "image/svg+xml",
+  ico: "image/x-icon",
+  bmp: "image/bmp",
+};
+
+function isRelativePath(src: string): boolean {
+  return !src.startsWith("http://") && !src.startsWith("https://") && !src.startsWith("data:");
+}
+
+function MarkdownImage({
+  src,
+  alt,
+  basePath,
+}: {
+  src?: string;
+  alt?: string;
+  basePath?: string;
+}) {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+  const shouldResolve = Boolean(src && basePath && isRelativePath(src));
+
+  useEffect(() => {
+    if (!shouldResolve || !src || !basePath) return;
+
+    const absolutePath = `${basePath}/${src}`;
+    const ext = src.split(".").pop()?.toLowerCase() || "";
+    const mime = IMAGE_MIME_TYPES[ext] || "image/png";
+
+    invoke<{ content: string; encoding: string }>("read_file_command", {
+      path: absolutePath,
+    })
+      .then((result) => {
+        setDataUrl(`data:${mime};base64,${result.content}`);
+      })
+      .catch(() => {
+        setError(true);
+      });
+  }, [src, basePath, shouldResolve]);
+
+  if (error) {
+    return (
+      <span className="text-app-sm text-ctp-overlay1" role="img" aria-label={alt}>
+        {alt || "Image failed to load"}
+      </span>
+    );
+  }
+
+  if (shouldResolve) {
+    if (!dataUrl) {
+      return (
+        <span className="inline-block h-4 w-4 animate-pulse rounded bg-ctp-surface0" />
+      );
+    }
+    return <img src={dataUrl} alt={alt || ""} className="max-w-full" />;
+  }
+
+  return <img src={src} alt={alt || ""} className="max-w-full" />;
 }
 
 function CodeBlock({
@@ -63,6 +131,7 @@ function extractLanguage(className?: string): string {
 
 export const MarkdownRenderer = memo(function MarkdownRenderer({
   content,
+  basePath,
 }: MarkdownRendererProps) {
   const openExternalLink = useCallback((href: string) => {
     routeLinkClick(href);
@@ -104,6 +173,9 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
           {children}
         </a>
       );
+    },
+    img({ src, alt }) {
+      return <MarkdownImage src={src} alt={alt} basePath={basePath} />;
     },
     blockquote({ children }) {
       return (

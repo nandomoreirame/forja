@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-15
 **Branch:** `feature/tiling-layout` (current branch)
-**Status:** Planning
+**Status:** Done (missing: color picker UI — tracked in #19)
 
 ---
 

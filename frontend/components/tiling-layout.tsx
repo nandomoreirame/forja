@@ -151,6 +151,12 @@ export function TilingLayout() {
           useAgentChatStore.setState({ isPanelOpen: false });
         }
       }
+
+      // Safety net: reconcile tabCount after FlexLayout processes the action.
+      // Covers edge cases where onModelChange might not fire.
+      queueMicrotask(() => {
+        useTilingLayoutStore.getState().syncTabCount();
+      });
     }
     return action;
   }, []);

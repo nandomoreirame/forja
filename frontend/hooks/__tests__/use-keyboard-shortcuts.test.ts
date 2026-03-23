@@ -10,6 +10,7 @@ const tilingActions = {
   selectTab: vi.fn(),
   cycleActiveTabset: vi.fn(() => null),
   cycleGlobalTab: vi.fn(() => null),
+  navigateToAdjacentTabset: vi.fn(() => null),
   model: {},
 };
 
@@ -564,6 +565,107 @@ describe("useKeyboardShortcuts open files and browser", () => {
     );
 
     expect(rightPanelActions.togglePanel).not.toHaveBeenCalled();
+  });
+});
+
+describe("useKeyboardShortcuts directional pane navigation (Ctrl+Shift+Arrow)", () => {
+  let origRAF: typeof requestAnimationFrame;
+
+  beforeEach(() => {
+    tilingActions.navigateToAdjacentTabset.mockReset().mockReturnValue(null);
+    mockPaneFocusRegistryFocus.mockReset();
+    origRAF = globalThis.requestAnimationFrame;
+    globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => { cb(0); return 0; };
+  });
+
+  afterEach(() => {
+    globalThis.requestAnimationFrame = origRAF;
+  });
+
+  it("Ctrl+Shift+ArrowRight calls navigateToAdjacentTabset with right", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tilingActions.navigateToAdjacentTabset).toHaveBeenCalledWith("right");
+  });
+
+  it("Ctrl+Shift+ArrowLeft calls navigateToAdjacentTabset with left", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowLeft",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tilingActions.navigateToAdjacentTabset).toHaveBeenCalledWith("left");
+  });
+
+  it("Ctrl+Shift+ArrowDown calls navigateToAdjacentTabset with down", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowDown",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tilingActions.navigateToAdjacentTabset).toHaveBeenCalledWith("down");
+  });
+
+  it("Ctrl+Shift+ArrowUp calls navigateToAdjacentTabset with up", () => {
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowUp",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tilingActions.navigateToAdjacentTabset).toHaveBeenCalledWith("up");
+  });
+
+  it("focuses the new tab via paneFocusRegistry when navigateToAdjacentTabset returns a tab ID", () => {
+    tilingActions.navigateToAdjacentTabset.mockReturnValue("tab-right");
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(mockPaneFocusRegistryFocus).toHaveBeenCalledWith("tab-right");
+  });
+
+  it("does not focus when navigateToAdjacentTabset returns null", () => {
+    tilingActions.navigateToAdjacentTabset.mockReturnValue(null);
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "ArrowRight",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(mockPaneFocusRegistryFocus).not.toHaveBeenCalled();
   });
 });
 

@@ -4,7 +4,7 @@ A dedicated GUI client for Vibe Coders (and other AI coding CLIs), built with El
 
 ## Screenshot
 
-![Forja - Home Screen](screenshot.png)
+![Forja - Workspaces with Projects](screenshots/0.workspaces-with-projects.png)
 
 ## Concept
 

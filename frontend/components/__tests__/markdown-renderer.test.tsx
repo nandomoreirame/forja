@@ -8,10 +8,16 @@ vi.mock("@/lib/link-router", () => ({
   routeLinkClick: (...args: unknown[]) => mockRouteLinkClick(...args),
 }));
 
+const mockInvoke = vi.fn();
+vi.mock("@/lib/ipc", () => ({
+  invoke: (...args: unknown[]) => mockInvoke(...args),
+}));
+
 describe("MarkdownRenderer", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockRouteLinkClick.mockClear();
+    mockInvoke.mockClear();
   });
 
   it("renders plain text content", () => {
@@ -162,6 +168,66 @@ describe("MarkdownRenderer", () => {
       expect(container.textContent).not.toContain("<!--");
       expect(container.textContent).toContain("Text between");
       expect(container.textContent).toContain("More text");
+    });
+  });
+
+  describe("image resolution with basePath", () => {
+    it("renders external URL images unchanged", () => {
+      render(
+        <MarkdownRenderer
+          content="![logo](https://example.com/logo.png)"
+          basePath="/home/user/project"
+        />
+      );
+      const img = document.querySelector("img");
+      expect(img).not.toBeNull();
+      expect(img?.getAttribute("src")).toBe("https://example.com/logo.png");
+    });
+
+    it("resolves relative image path using basePath via IPC", async () => {
+      mockInvoke.mockResolvedValue({
+        content: "aWNvbg==",
+        encoding: "base64",
+        size: 4,
+      });
+
+      render(
+        <MarkdownRenderer
+          content="![screenshot](image.png)"
+          basePath="/home/user/project/screenshots"
+        />
+      );
+
+      expect(mockInvoke).toHaveBeenCalledWith("read_file_command", {
+        path: "/home/user/project/screenshots/image.png",
+      });
+
+      const img = await screen.findByRole("img");
+      expect(img.getAttribute("src")).toBe("data:image/png;base64,aWNvbg==");
+      expect(img.getAttribute("alt")).toBe("screenshot");
+    });
+
+    it("renders relative image as-is when no basePath provided", () => {
+      render(
+        <MarkdownRenderer content="![photo](photo.jpg)" />
+      );
+      const img = document.querySelector("img");
+      expect(img).not.toBeNull();
+      expect(img?.getAttribute("src")).toBe("photo.jpg");
+    });
+
+    it("shows alt text on IPC load error", async () => {
+      mockInvoke.mockRejectedValue(new Error("File not found"));
+
+      render(
+        <MarkdownRenderer
+          content="![my alt text](missing.png)"
+          basePath="/home/user/project"
+        />
+      );
+
+      const altText = await screen.findByText("my alt text");
+      expect(altText).toBeDefined();
     });
   });
 

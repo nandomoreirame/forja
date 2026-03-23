@@ -164,33 +164,29 @@ export function Titlebar() {
           </button>
         )}
         <ResourceUsagePopover />
-        {!isMac && (
+        {!isMac && !tilingDesktop && (
           <>
-            {!tilingDesktop && (
-              <>
-                <button
-                  onClick={() => getAppWindow().minimize()}
-                  className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-                  aria-label="Minimize"
-                >
-                  <Minus className="h-3.5 w-3.5" strokeWidth={1.5} />
-                </button>
+            <button
+              onClick={() => getAppWindow().minimize()}
+              className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+              aria-label="Minimize"
+            >
+              <Minus className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </button>
 
-                <button
-                  onClick={() =>
-                    maximized ? getAppWindow().unmaximize() : getAppWindow().maximize()
-                  }
-                  className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
-                  aria-label={maximized ? "Restore" : "Maximize"}
-                >
-                  {maximized ? (
-                    <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  ) : (
-                    <Square className="h-3.5 w-3.5" strokeWidth={1.5} />
-                  )}
-                </button>
-              </>
-            )}
+            <button
+              onClick={() =>
+                maximized ? getAppWindow().unmaximize() : getAppWindow().maximize()
+              }
+              className="inline-flex h-8 w-10 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+              aria-label={maximized ? "Restore" : "Maximize"}
+            >
+              {maximized ? (
+                <Copy className="h-3.5 w-3.5" strokeWidth={1.5} />
+              ) : (
+                <Square className="h-3.5 w-3.5" strokeWidth={1.5} />
+              )}
+            </button>
 
             <button
               onClick={() => getAppWindow().close()}

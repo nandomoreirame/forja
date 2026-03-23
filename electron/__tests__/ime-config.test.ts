@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { resolveImeConfig, remapDeadKeyResult } from "../ime-config.js";
+import { resolveImeConfig, remapDeadKeyResult, remapCedillaInString } from "../ime-config.js";
 
 describe("resolveImeConfig", () => {
   test("does not return wayland IME switch (avoids double dead-key input)", () => {
@@ -130,5 +130,39 @@ describe("remapDeadKeyResult", () => {
 
   test("returns undefined for empty string", () => {
     expect(remapDeadKeyResult("")).toBeUndefined();
+  });
+});
+
+describe("remapCedillaInString", () => {
+  test("replaces ć with ç within a string", () => {
+    expect(remapCedillaInString("ć")).toBe("ç");
+  });
+
+  test("replaces Ć with Ç within a string", () => {
+    expect(remapCedillaInString("Ć")).toBe("Ç");
+  });
+
+  test("replaces all occurrences of ć in a longer string", () => {
+    expect(remapCedillaInString("ću\u001b[A")).toBe("çu\u001b[A");
+  });
+
+  test("replaces multiple cedilla-candidates in one string", () => {
+    expect(remapCedillaInString("ćĆ")).toBe("çÇ");
+  });
+
+  test("returns the string unchanged when no cedilla-candidates present", () => {
+    expect(remapCedillaInString("hello world")).toBe("hello world");
+  });
+
+  test("returns empty string unchanged", () => {
+    expect(remapCedillaInString("")).toBe("");
+  });
+
+  test("preserves already-correct ç and Ç unchanged", () => {
+    expect(remapCedillaInString("ç Ç")).toBe("ç Ç");
+  });
+
+  test("preserves other accented characters unchanged", () => {
+    expect(remapCedillaInString("éàü")).toBe("éàü");
   });
 });

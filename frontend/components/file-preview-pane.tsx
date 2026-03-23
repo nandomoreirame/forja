@@ -225,7 +225,10 @@ function FilePreviewPaneContent() {
             <ImageViewer content={content.content} filename={filename} />
           ) : isMarkdown && !isEditing ? (
             <div className="h-full overflow-y-auto p-4">
-              <MarkdownRenderer content={content.content} />
+              <MarkdownRenderer
+                content={content.content}
+                basePath={currentFile ? currentFile.substring(0, currentFile.lastIndexOf("/")) : undefined}
+              />
             </div>
           ) : isEditing ? (
             <Suspense fallback={<div className="h-full w-full bg-ctp-base" />}>

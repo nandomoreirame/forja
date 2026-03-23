@@ -1,5 +1,7 @@
 # Plan: Fix PTY Session Persistence
 
+**Status:** Done
+
 ## Problem
 
 Terminal sessions (especially AI CLI sessions like Claude/Gemini/Codex) are being killed and restarted when switching between projects or workspaces. The root cause is a 30-second frontend cache TTL that destroys xterm instances without killing backend PTY processes, combined with missing reconnection logic.

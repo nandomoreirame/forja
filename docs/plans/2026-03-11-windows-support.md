@@ -1,7 +1,7 @@
 # Windows Support Plan
 
 **Date:** 2026-03-11
-**Status:** Draft
+**Status:** Done
 **Complexity:** Medium
 
 ## Goal

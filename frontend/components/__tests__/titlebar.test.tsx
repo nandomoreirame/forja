@@ -120,13 +120,15 @@ describe("Titlebar", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows only close button on tiling desktop sessions", async () => {
+  it("hides all window controls on tiling desktop sessions", async () => {
     const { isTilingDesktop } = await import("@/lib/ipc");
     vi.mocked(isTilingDesktop).mockResolvedValueOnce(true);
 
     render(<Titlebar />);
 
-    expect(await screen.findByRole("button", { name: "Close" })).toBeInTheDocument();
+    // Wait for the tiling desktop state to resolve
+    await screen.findByRole("button", { name: "Menu" });
+    expect(screen.queryByRole("button", { name: "Close" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Minimize" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Maximize" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Restore" })).not.toBeInTheDocument();

@@ -205,6 +205,32 @@ export function useKeyboardShortcuts({
           });
         }
       }
+      // Ctrl+Shift+Arrow: navigate between visible panes directionally
+      if (
+        mod &&
+        event.shiftKey &&
+        (event.key === "ArrowRight" ||
+          event.key === "ArrowLeft" ||
+          event.key === "ArrowDown" ||
+          event.key === "ArrowUp")
+      ) {
+        event.preventDefault();
+        const dirMap: Record<string, "right" | "left" | "down" | "up"> = {
+          ArrowRight: "right",
+          ArrowLeft: "left",
+          ArrowDown: "down",
+          ArrowUp: "up",
+        };
+        const dir = dirMap[event.key];
+        const nextTabId = tilingStore.navigateToAdjacentTabset(dir);
+        if (nextTabId) {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              paneFocusRegistry.focus(nextTabId);
+            });
+          });
+        }
+      }
     };
 
     window.addEventListener("keydown", handler);

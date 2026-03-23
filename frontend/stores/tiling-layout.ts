@@ -39,10 +39,18 @@ interface TilingLayoutState {
   cycleActiveTabset: (direction: "forward" | "backward") => string | null;
   /** Cycles through ALL tabs across ALL tabsets globally (like Chrome's Ctrl+Tab). Returns the new tab ID or null. */
   cycleGlobalTab: (direction: "forward" | "backward") => string | null;
+  /**
+   * Navigates to the nearest visible tabset in the given direction (left, right, up, down)
+   * relative to the currently active tabset. Uses the tabset's visual rect position.
+   * Returns the selected tab ID in the target tabset, or null if no adjacent tabset exists.
+   */
+  navigateToAdjacentTabset: (direction: "left" | "right" | "up" | "down") => string | null;
   /** Updates the config of a tab node (e.g., browser URL). */
   updateBlockConfig: (nodeId: string, config: Record<string, unknown>) => void;
   /** Closes all tabs in the given tabset and removes it from the layout. */
   closeTabset: (tabsetId: string) => void;
+  /** Reconciles tabCount with the actual number of tabs in the model. */
+  syncTabCount: () => void;
 }
 
 let tabCounter = 0;
@@ -775,7 +783,10 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     if (!activeTabset) return;
 
     const selectedNode = activeTabset.getSelectedNode();
-    if (!selectedNode) return;
+    if (!selectedNode) {
+      get().closeTabset(activeTabset.getId());
+      return;
+    }
 
     const nodeId = selectedNode.getId();
     model.doAction(Actions.deleteTab(nodeId));
@@ -929,5 +940,75 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
 
     set({ model });
     return nextTabId;
+  },
+
+  navigateToAdjacentTabset: (direction) => {
+    const { model } = get();
+
+    // Collect all tabset IDs and their rects
+    const tabsets: { id: string; cx: number; cy: number }[] = [];
+    model.visitNodes((node) => {
+      if (node.getType() === "tabset") {
+        const rect = node.getRect();
+        tabsets.push({
+          id: node.getId(),
+          cx: rect.x + rect.width / 2,
+          cy: rect.y + rect.height / 2,
+        });
+      }
+    });
+
+    if (tabsets.length <= 1) return null;
+
+    const activeTabset = model.getActiveTabset();
+    if (!activeTabset) return null;
+
+    const activeId = activeTabset.getId();
+    const active = tabsets.find((t) => t.id === activeId);
+    if (!active) return null;
+
+    // Filter candidates in the requested direction
+    let candidates: typeof tabsets;
+    switch (direction) {
+      case "right":
+        candidates = tabsets.filter((t) => t.cx > active.cx);
+        break;
+      case "left":
+        candidates = tabsets.filter((t) => t.cx < active.cx);
+        break;
+      case "down":
+        candidates = tabsets.filter((t) => t.cy > active.cy);
+        break;
+      case "up":
+        candidates = tabsets.filter((t) => t.cy < active.cy);
+        break;
+    }
+
+    if (candidates.length === 0) return null;
+
+    // Pick the closest candidate
+    const target = candidates.reduce((closest, current) => {
+      const dClosest =
+        Math.abs(closest.cx - active.cx) + Math.abs(closest.cy - active.cy);
+      const dCurrent =
+        Math.abs(current.cx - active.cx) + Math.abs(current.cy - active.cy);
+      return dCurrent < dClosest ? current : closest;
+    });
+
+    // Activate the target tabset and return its selected tab ID
+    model.doAction(Actions.setActiveTabset(target.id));
+    set({ model });
+
+    const targetNode = model.getNodeById(target.id);
+    const selectedNode = (targetNode as any)?.getSelectedNode?.();
+    return selectedNode?.getId() ?? null;
+  },
+
+  syncTabCount: () => {
+    const { model, tabCount } = get();
+    const actual = countTabs(model);
+    if (actual !== tabCount) {
+      set({ tabCount: actual });
+    }
   },
 }));

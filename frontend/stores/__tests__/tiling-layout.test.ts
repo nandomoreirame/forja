@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { Model, Actions, DockLocation } from "flexlayout-react";
+import { Model, Actions, DockLocation, Rect } from "flexlayout-react";
 import { useTilingLayoutStore } from "../tiling-layout";
 import { useTerminalTabsStore } from "../terminal-tabs";
 import { DEFAULT_LAYOUT, TABSET_IDS } from "@/lib/default-layout";
@@ -1689,6 +1689,45 @@ describe("tiling-layout store", () => {
       expect(after.getNodeById(TABSET_IDS.main)).toBeDefined();
     });
 
+    it("closeActiveTab closes empty tabset via closeTabset", () => {
+      const store = useTilingLayoutStore.getState();
+
+      // Add a tab to main, then split to create a secondary tabset
+      store.addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-in-main",
+      );
+      store.addBlock(
+        { type: "browser", url: "https://example.com" },
+        TABSET_IDS.main,
+        "tab-in-secondary",
+        DockLocation.RIGHT,
+      );
+
+      const { model } = useTilingLayoutStore.getState();
+
+      // Make main the active tabset (while it still has a tab)
+      model.doAction(Actions.setActiveTabset(TABSET_IDS.main));
+
+      // Now delete its tab directly (bypass updateModel to avoid removeEmptyTabsets)
+      // tabset-main persists because enableDeleteWhenEmpty=false
+      model.doAction(Actions.deleteTab("tab-in-main"));
+      useTilingLayoutStore.setState({ model });
+
+      // Verify: main is active, empty, but still exists
+      const activeTabset = model.getActiveTabset();
+      expect(activeTabset?.getId()).toBe(TABSET_IDS.main);
+      expect(activeTabset?.getSelectedNode()).toBeFalsy();
+
+      // closeActiveTab should close the empty tabset
+      useTilingLayoutStore.getState().closeActiveTab();
+
+      const { model: after } = useTilingLayoutStore.getState();
+      expect(after.getNodeById(TABSET_IDS.main)).toBeUndefined();
+      expect(after.getNodeById("tab-in-secondary")).toBeDefined();
+    });
+
     it("removeBlock cleans up empty non-main tabsets", () => {
       // Create a secondary tabset by docking RIGHT
       useTilingLayoutStore.getState().addBlock(
@@ -2003,6 +2042,36 @@ describe("tiling-layout store", () => {
     });
   });
 
+  describe("syncTabCount", () => {
+    it("corrects stale tabCount when model has fewer tabs than stored count", () => {
+      const store = useTilingLayoutStore.getState();
+      store.addBlock({ type: "terminal", sessionType: "terminal" }, undefined, "t1");
+      store.addBlock({ type: "terminal", sessionType: "terminal" }, undefined, "t2");
+      expect(useTilingLayoutStore.getState().tabCount).toBe(2);
+
+      // Simulate stale state: model has tabs removed but tabCount not updated
+      const { model } = useTilingLayoutStore.getState();
+      model.doAction(Actions.deleteTab("t1"));
+      model.doAction(Actions.deleteTab("t2"));
+      // Manually set stale tabCount without going through updateModel
+      useTilingLayoutStore.setState({ tabCount: 2 });
+
+      // syncTabCount should reconcile
+      useTilingLayoutStore.getState().syncTabCount();
+      expect(useTilingLayoutStore.getState().tabCount).toBe(0);
+    });
+
+    it("is a no-op when tabCount already matches model", () => {
+      const store = useTilingLayoutStore.getState();
+      store.addBlock({ type: "terminal", sessionType: "terminal" }, undefined, "t1");
+      expect(useTilingLayoutStore.getState().tabCount).toBe(1);
+
+      // syncTabCount should not change anything
+      useTilingLayoutStore.getState().syncTabCount();
+      expect(useTilingLayoutStore.getState().tabCount).toBe(1);
+    });
+  });
+
   describe("editingTabId", () => {
     it("initializes as null", () => {
       expect(useTilingLayoutStore.getState().editingTabId).toBeNull();
@@ -2281,6 +2350,212 @@ describe("tiling-layout store", () => {
       expect(visited).toContain("tab-file-tree");
       // Must visit all unique tabs (full cycle returns to start)
       expect(new Set(visited).size).toBe(4);
+    });
+  });
+
+  describe("navigateToAdjacentTabset", () => {
+    it("returns null when there is only one tabset", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "term-nav-only",
+      );
+
+      const result = useTilingLayoutStore.getState().navigateToAdjacentTabset("right");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when there are no tabsets", () => {
+      const result = useTilingLayoutStore.getState().navigateToAdjacentTabset("left");
+      expect(result).toBeNull();
+    });
+
+    it("navigates directionally using rect positions when two tabsets exist side by side", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-left",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const store = useTilingLayoutStore.getState();
+      const ids = store.getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+
+      // Mock rects: tabset-main at x=0, second tabset at x=500
+      const model = store.model;
+      const leftTabset = model.getNodeById(ids[0]);
+      const rightTabset = model.getNodeById(ids[1]);
+
+      if (leftTabset && rightTabset) {
+        vi.spyOn(leftTabset, "getRect").mockReturnValue(new Rect(0, 0, 500, 600));
+        vi.spyOn(rightTabset, "getRect").mockReturnValue(new Rect(500, 0, 500, 600));
+
+        // Activate left tabset
+        model.doAction(Actions.setActiveTabset(ids[0]));
+
+        // Navigate right
+        const result = store.navigateToAdjacentTabset("right");
+        expect(result).toBeTruthy();
+
+        // The active tabset should now be the right one
+        const activeAfter = model.getActiveTabset();
+        expect(activeAfter?.getId()).toBe(ids[1]);
+      }
+    });
+
+    it("navigates left from right tabset to left tabset", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-nav-left-a",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const store = useTilingLayoutStore.getState();
+      const ids = store.getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+
+      const model = store.model;
+      const leftTabset = model.getNodeById(ids[0]);
+      const rightTabset = model.getNodeById(ids[1]);
+
+      if (leftTabset && rightTabset) {
+        vi.spyOn(leftTabset, "getRect").mockReturnValue(new Rect(0, 0, 500, 600));
+        vi.spyOn(rightTabset, "getRect").mockReturnValue(new Rect(500, 0, 500, 600));
+
+        // Activate right tabset
+        model.doAction(Actions.setActiveTabset(ids[1]));
+
+        // Navigate left
+        store.navigateToAdjacentTabset("left");
+
+        // The active tabset should now be the left one
+        const activeAfter = model.getActiveTabset();
+        expect(activeAfter?.getId()).toBe(ids[0]);
+      }
+    });
+
+    it("navigates down from top tabset to bottom tabset", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-nav-top",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("horizontal", "terminal");
+
+      const store = useTilingLayoutStore.getState();
+      const ids = store.getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+
+      const model = store.model;
+      const topTabset = model.getNodeById(ids[0]);
+      const bottomTabset = model.getNodeById(ids[1]);
+
+      if (topTabset && bottomTabset) {
+        vi.spyOn(topTabset, "getRect").mockReturnValue(new Rect(0, 0, 1000, 300));
+        vi.spyOn(bottomTabset, "getRect").mockReturnValue(new Rect(0, 300, 1000, 300));
+
+        // Activate top tabset
+        model.doAction(Actions.setActiveTabset(ids[0]));
+
+        // Navigate down
+        store.navigateToAdjacentTabset("down");
+
+        // The active tabset should now be the bottom one
+        const activeAfter = model.getActiveTabset();
+        expect(activeAfter?.getId()).toBe(ids[1]);
+      }
+    });
+
+    it("navigates up from bottom tabset to top tabset", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-nav-bottom",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("horizontal", "terminal");
+
+      const store = useTilingLayoutStore.getState();
+      const ids = store.getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+
+      const model = store.model;
+      const topTabset = model.getNodeById(ids[0]);
+      const bottomTabset = model.getNodeById(ids[1]);
+
+      if (topTabset && bottomTabset) {
+        vi.spyOn(topTabset, "getRect").mockReturnValue(new Rect(0, 0, 1000, 300));
+        vi.spyOn(bottomTabset, "getRect").mockReturnValue(new Rect(0, 300, 1000, 300));
+
+        // Activate bottom tabset
+        model.doAction(Actions.setActiveTabset(ids[1]));
+
+        // Navigate up
+        store.navigateToAdjacentTabset("up");
+
+        // The active tabset should now be the top one
+        const activeAfter = model.getActiveTabset();
+        expect(activeAfter?.getId()).toBe(ids[0]);
+      }
+    });
+
+    it("returns the selected tab ID in the target tabset", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-nav-return",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const store = useTilingLayoutStore.getState();
+      const ids = store.getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+
+      const model = store.model;
+      const leftTabset = model.getNodeById(ids[0]);
+      const rightTabset = model.getNodeById(ids[1]);
+
+      if (leftTabset && rightTabset) {
+        vi.spyOn(leftTabset, "getRect").mockReturnValue(new Rect(0, 0, 500, 600));
+        vi.spyOn(rightTabset, "getRect").mockReturnValue(new Rect(500, 0, 500, 600));
+
+        // Activate left tabset
+        model.doAction(Actions.setActiveTabset(ids[0]));
+
+        const result = store.navigateToAdjacentTabset("right");
+        // Should return the tab ID of the selected tab in the right tabset
+        expect(typeof result).toBe("string");
+        expect(result).toBeTruthy();
+      }
+    });
+
+    it("returns null when no tabset exists in the requested direction", () => {
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "term-nav-noop",
+      );
+      useTilingLayoutStore.getState().splitActiveTabset("vertical", "terminal");
+
+      const store = useTilingLayoutStore.getState();
+      const ids = store.getTabsetIds();
+      expect(ids.length).toBeGreaterThanOrEqual(2);
+
+      const model = store.model;
+      const leftTabset = model.getNodeById(ids[0]);
+      const rightTabset = model.getNodeById(ids[1]);
+
+      if (leftTabset && rightTabset) {
+        vi.spyOn(leftTabset, "getRect").mockReturnValue(new Rect(0, 0, 500, 600));
+        vi.spyOn(rightTabset, "getRect").mockReturnValue(new Rect(500, 0, 500, 600));
+
+        // Activate right tabset (rightmost) — nothing further right
+        model.doAction(Actions.setActiveTabset(ids[1]));
+
+        const result = store.navigateToAdjacentTabset("right");
+        expect(result).toBeNull();
+      }
     });
   });
 

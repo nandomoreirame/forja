@@ -57,3 +57,9 @@ const DEAD_KEY_REMAP: Record<string, string> = {
 export function remapDeadKeyResult(key: string): string | undefined {
   return DEAD_KEY_REMAP[key];
 }
+
+// Remaps cedilla-candidates within a full string (for use in terminal onData callbacks).
+// Replaces ć → ç and Ć → Ç anywhere in the string, preserving all other characters.
+export function remapCedillaInString(data: string): string {
+  return data.replace(/\u0107/g, "\u00E7").replace(/\u0106/g, "\u00C7");
+}
