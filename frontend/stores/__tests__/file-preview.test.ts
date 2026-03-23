@@ -229,6 +229,29 @@ describe("useFilePreviewStore", () => {
       expect(mockUpdateFilePreviewTabName).not.toHaveBeenCalled();
     });
 
+    it("docks preview in CENTER when file-tree panel is not open", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      const { DockLocation } = await import("flexlayout-react");
+      vi.mocked(invoke).mockResolvedValue({
+        path: "/test/file.ts",
+        content: "test content",
+        size: 12,
+      });
+
+      // file-tree does NOT exist in the model
+      mockGetNodeById.mockReturnValue(undefined);
+      mockHasBlock.mockReturnValue(false);
+
+      await useFilePreviewStore.getState().loadFile("/test/file.ts");
+
+      expect(mockAddBlock).toHaveBeenCalledWith(
+        { type: "file-preview", filePath: "/test/file.ts" },
+        undefined,
+        "block-file-preview",
+        DockLocation.CENTER,
+      );
+    });
+
     it("places preview block to the RIGHT of the file-tree tabset", async () => {
       const { invoke } = await import("@/lib/ipc");
       const { DockLocation } = await import("flexlayout-react");
