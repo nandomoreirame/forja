@@ -56,11 +56,14 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
     } else if (!tiling.hasBlock("block-file-preview")) {
       const fileTreeNode = tiling.model.getNodeById("tab-file-tree");
       const fileTreeTabsetId = fileTreeNode?.getParent()?.getId();
+      const location = fileTreeTabsetId
+        ? DockLocation.RIGHT
+        : DockLocation.CENTER;
       tiling.addBlock(
         { type: "file-preview" },
         fileTreeTabsetId,
         "block-file-preview",
-        DockLocation.RIGHT,
+        location,
       );
     }
     set({ isOpen: !isOpen });
@@ -71,11 +74,14 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
     if (!tiling.hasBlock("block-file-preview")) {
       const fileTreeNode = tiling.model.getNodeById("tab-file-tree");
       const fileTreeTabsetId = fileTreeNode?.getParent()?.getId();
+      const location = fileTreeTabsetId
+        ? DockLocation.RIGHT
+        : DockLocation.CENTER;
       tiling.addBlock(
         { type: "file-preview" },
         fileTreeTabsetId,
         "block-file-preview",
-        DockLocation.RIGHT,
+        location,
       );
     }
     set({ isOpen: true });
@@ -105,11 +111,17 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
       const fileTreeNode = tiling.model.getNodeById("tab-file-tree");
       const fileTreeTabsetId = fileTreeNode?.getParent()?.getId();
 
+      // When the file-tree panel is open, dock preview to its RIGHT.
+      // When file-tree is absent, dock in CENTER to avoid a ghost empty panel.
+      const location = fileTreeTabsetId
+        ? DockLocation.RIGHT
+        : DockLocation.CENTER;
+
       tiling.addBlock(
         { type: "file-preview", filePath: path },
         fileTreeTabsetId,
         "block-file-preview",
-        DockLocation.RIGHT,
+        location,
       );
     } else {
       // Block already exists — update the tab name to reflect the new file.
