@@ -1,3 +1,4 @@
+import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import { SessionStatusBar } from "../session-status-bar";
@@ -36,6 +37,17 @@ vi.mock("@/stores/terminal-tabs", () => {
   storeFn.getState = () => ({ tabs: mockTabs, renameTab: mockRenameTab });
   return { useTerminalTabsStore: storeFn };
 });
+
+// Mock tooltip components (Radix Portal doesn't work in happy-dom)
+vi.mock("../ui/tooltip", () => ({
+  TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children, asChild, ...props }: { children: React.ReactNode; asChild?: boolean }) =>
+    asChild ? <>{children}</> : <span {...props}>{children}</span>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => (
+    <span data-testid="tooltip-content" className="sr-only">{children}</span>
+  ),
+}));
 
 // Mock cli-registry
 vi.mock("@/lib/cli-registry", () => ({
@@ -152,8 +164,7 @@ describe("SessionStatusBar", () => {
 
       await flushPromises();
 
-      expect(screen.getByText(/my-project/)).toBeInTheDocument();
-      expect(screen.getByText(/main/)).toBeInTheDocument();
+      expect(screen.getByText(/my-project git:\(main\)/)).toBeInTheDocument();
     });
 
     it("renders dirty indicator when git has modifications", async () => {
@@ -329,7 +340,7 @@ describe("SessionStatusBar", () => {
 
       await flushPromises();
 
-      expect(screen.getByText(/main/)).toBeInTheDocument();
+      expect(screen.getByText(/project git:\(main\)/)).toBeInTheDocument();
     });
 
     it("does not show session state for terminal sessions", async () => {
@@ -441,7 +452,7 @@ describe("SessionStatusBar", () => {
       await flushPromises();
 
       // Should still render git info without crashing
-      expect(screen.getByText(/main/)).toBeInTheDocument();
+      expect(screen.getByText(/project git:\(main\)/)).toBeInTheDocument();
     });
   });
 
