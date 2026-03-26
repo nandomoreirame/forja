@@ -140,7 +140,7 @@ export function Titlebar() {
         </div>
         <WorkspaceSwitcher />
         <div className="mx-2 h-4 w-px bg-ctp-surface1" />
-        <QuickActions />
+        <QuickActions position="left" />
       </div>
 
       <span
@@ -149,8 +149,9 @@ export function Titlebar() {
         {title}
       </span>
 
-      {/* Right: resource usage + window controls */}
+      {/* Right: quick actions + resource usage + window controls */}
       <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
+        <QuickActions position="right" />
         {devMode && (
           <button
             onClick={toggleLiteMode}

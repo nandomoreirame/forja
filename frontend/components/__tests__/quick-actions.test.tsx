@@ -62,8 +62,15 @@ vi.mock("@/lib/plugin-types", () => ({
   getPluginIcon: () => null,
 }));
 
+vi.mock("@/stores/file-tree", () => ({
+  useFileTreeStore: (selector?: (s: unknown) => unknown) => {
+    const state = { currentPath: "/test/project" };
+    return selector ? selector(state) : state;
+  },
+}));
+
 // Quick actions store mock
-let mockActions: Array<{ actionId: string }> = [];
+let mockActions: Array<{ actionId: string; position?: string }> = [];
 let mockLoaded = true;
 
 vi.mock("@/stores/quick-actions", () => ({
@@ -75,7 +82,9 @@ vi.mock("@/stores/quick-actions", () => ({
       addAction: vi.fn(),
       removeAction: vi.fn(),
       moveAction: vi.fn(),
+      moveToPosition: vi.fn(),
       isPinned: (id: string) => mockActions.some((a) => a.actionId === id),
+      getActionsForPosition: (pos: string) => mockActions.filter((a) => (a.position ?? "left") === pos),
     };
     return selector ? selector(state) : state;
   },
@@ -112,7 +121,7 @@ describe("QuickActions", () => {
 
   it("renders the add button with correct aria-label when no actions are pinned", async () => {
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     expect(
       screen.getByRole("button", { name: "Add quick action" })
@@ -120,10 +129,10 @@ describe("QuickActions", () => {
   });
 
   it("renders pinned action buttons with correct aria-labels", async () => {
-    mockActions = [{ actionId: "open-settings" }, { actionId: "zoom-in" }];
+    mockActions = [{ actionId: "open-settings", position: "left" }, { actionId: "zoom-in", position: "left" }];
 
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     expect(
       screen.getByRole("button", { name: "Open Settings" })
@@ -134,10 +143,10 @@ describe("QuickActions", () => {
   });
 
   it("renders the add button after the pinned action buttons", async () => {
-    mockActions = [{ actionId: "open-settings" }];
+    mockActions = [{ actionId: "open-settings", position: "left" }];
 
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     const buttons = screen.getAllByRole("button");
     const addButton = screen.getByRole("button", { name: "Add quick action" });
@@ -150,11 +159,11 @@ describe("QuickActions", () => {
   });
 
   it("calls executeAction with the correct action id on button click", async () => {
-    mockActions = [{ actionId: "open-settings" }];
+    mockActions = [{ actionId: "open-settings", position: "left" }];
     const user = userEvent.setup();
 
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     const settingsButton = screen.getByRole("button", { name: "Open Settings" });
     await user.click(settingsButton);
@@ -168,7 +177,7 @@ describe("QuickActions", () => {
     const user = userEvent.setup();
 
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     const zoomButton = screen.getByRole("button", { name: "Zoom In" });
     await user.click(zoomButton);
@@ -180,7 +189,7 @@ describe("QuickActions", () => {
     const user = userEvent.setup();
 
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     const addButton = screen.getByRole("button", { name: "Add quick action" });
     await user.click(addButton);
@@ -193,7 +202,7 @@ describe("QuickActions", () => {
     mockLoaded = false;
 
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     expect(mockLoadActions).toHaveBeenCalledTimes(1);
   });
@@ -202,16 +211,16 @@ describe("QuickActions", () => {
     mockLoaded = true;
 
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     expect(mockLoadActions).not.toHaveBeenCalled();
   });
 
   it("skips rendering buttons for unknown action ids", async () => {
-    mockActions = [{ actionId: "nonexistent-action" }];
+    mockActions = [{ actionId: "nonexistent-action", position: "left" }];
 
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     // Only the add button should be present
     const buttons = screen.getAllByRole("button");
