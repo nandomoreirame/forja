@@ -8,6 +8,40 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.7.5] - 2026-03-25
+
+### Added
+- Add multi-CLI session readers and unified dispatcher.
+- Detect Claude session IDs from filesystem instead of PTY regex.
+- Add CLI session discovery from filesystem.
+- Show local-only plugins with badge.
+- Add editor.open API to plugin SDK.
+- Add tags field to plugin manifest.
+- Enable Ctrl+R and F5 reload in browser pane only.
+- Extract AI output context for OS notifications.
+- Add project notification rings with sidebar UI.
+- Improve navigation usability and pane styling.
+
+### Changed
+- Disable tabset maximize globally.
+- Make .forja/config.json single source of truth for project UI state.
+
+### Fixed
+- Prevent new tabs from resuming old CLI sessions.
+- Prevent new sessions from resuming old session IDs.
+- Replace snapshot+poll with lazy session detection.
+- Replace require() with ESM import for cli-sessions.
+- Persist cliSessionId to disk immediately after detection.
+- Restore AI sessions with --resume on workspace switch and app restart.
+- Suppress false notifications on workspace switch.
+- Block shortcuts and session creation without active project.
+- Prevent stale layout flash on startup.
+- Add RAF-coalesced writes in terminal cache.
+- Flush write buffer on unmount and refresh on reattach.
+- Persist custom tab names across app restarts.
+- Trigger on thinking→ready transition with deduplication.
+---
+
 ## [1.7.0] - 2026-03-19
 
 ### Added
