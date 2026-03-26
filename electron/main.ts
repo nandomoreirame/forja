@@ -209,6 +209,16 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
     windowWorkspaceMap.set(win.id, workspaceId);
   }
 
+  // When a workspace window gains focus, persist it as the active workspace
+  // so the app reopens to the last used workspace on next launch.
+  win.on("focus", async () => {
+    const wsId = windowWorkspaceMap.get(win.id);
+    if (wsId) {
+      const config = await getConfig();
+      config.setActiveWorkspace(wsId);
+    }
+  });
+
   win.on("closed", async () => {
     windowWorkspaceMap.delete(win.id);
     closeAllPtysForWindow(win.id);
