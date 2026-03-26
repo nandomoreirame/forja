@@ -111,9 +111,12 @@ export const SessionStatusBar = memo(function SessionStatusBar({
     return () => clearInterval(interval);
   }, [isAiCli, tab?.createdAt]);
 
-  // Fetch model name (only for AI sessions with a detected session ID)
+  // Fetch model name (only for AI sessions with a detected session ID).
+  // Re-fetches when sessionState changes — the JSONL may not have an
+  // assistant message yet when the session ID is first detected, but it
+  // will once the CLI starts responding (state → "thinking").
   useEffect(() => {
-    if (!isAiCli || !tab?.cliSessionId) return;
+    if (!isAiCli || !tab?.cliSessionId || modelName) return;
     let cancelled = false;
     invoke<string | null>("get_session_model", {
       cliId: sessionType,
@@ -124,7 +127,7 @@ export const SessionStatusBar = memo(function SessionStatusBar({
     }).catch(() => {});
 
     return () => { cancelled = true; };
-  }, [isAiCli, sessionType, path, tab?.cliSessionId]);
+  }, [isAiCli, sessionType, path, tab?.cliSessionId, sessionState, modelName]);
 
   const projectName = path.split("/").pop() ?? path;
   const branchDisplay = gitInfo
