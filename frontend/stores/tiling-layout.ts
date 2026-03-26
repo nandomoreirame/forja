@@ -50,6 +50,114 @@ interface TilingLayoutState {
   syncTabCount: () => void;
 }
 
+/**
+ * Remembers the weight FRACTION (0-1) of side-pane tabsets relative to
+ * their parent row when closed. On re-open, the fraction is used to
+ * restore the exact visual proportion by adjusting only the new pane
+ * and its dock target sibling, leaving other siblings untouched.
+ */
+const savedPaneWeightFractions = new Map<string, number>();
+const DEFAULT_SIDE_PANE_FRACTION = 0.15;
+
+/**
+ * Saves the weight fraction of a side-pane tabset before it is removed.
+ */
+function savePaneWeightFraction(
+  model: Model,
+  nodeId: string,
+  blockType: string,
+): void {
+  const node = model.getNodeById(nodeId);
+  if (!node) return;
+  const tabset = node.getParent();
+  if (!tabset) return;
+  const row = tabset.getParent();
+  if (!row) return;
+
+  const children: any[] = (row as any).getChildren?.() ?? [];
+  if (children.length < 2) return;
+
+  const tabsetWeight: number = (tabset as any).getWeight?.() ?? 1;
+  const totalWeight = children.reduce(
+    (sum: number, c: any) => sum + ((c as any).getWeight?.() ?? 1),
+    0,
+  );
+  if (totalWeight > 0) {
+    savedPaneWeightFractions.set(blockType, tabsetWeight / totalWeight);
+  }
+}
+
+/**
+ * Restores the saved weight fraction of a side-pane tabset after it has
+ * been re-added via a dock (LEFT/RIGHT split).
+ *
+ * Only adjusts the NEW tabset and the DOCK TARGET (the tabset that was
+ * split). Other siblings in the row are left untouched.
+ *
+ * @param dockTargetWeightBefore The dock target's weight BEFORE addNode.
+ */
+function restorePaneWeightFraction(
+  model: Model,
+  nodeId: string,
+  blockType: string,
+  dockTargetWeightBefore: number,
+): void {
+  const node = model.getNodeById(nodeId);
+  if (!node) return;
+  const newTabset = node.getParent();
+  if (!newTabset) return;
+  const row = newTabset.getParent();
+  if (!row) return;
+
+  const children: any[] = (row as any).getChildren?.() ?? [];
+  if (children.length < 2) return;
+
+  const fraction =
+    savedPaneWeightFractions.get(blockType) ?? DEFAULT_SIDE_PANE_FRACTION;
+
+  // Total weight of the row (after the split).
+  const totalWeight = children.reduce(
+    (sum: number, c: any) => sum + ((c as any).getWeight?.() ?? 1),
+    0,
+  );
+
+  // Desired weight for the new pane.
+  const desiredWeight = Math.max(fraction * totalWeight, 1);
+
+  // The dock target gave up its weight for the split. Restore it to
+  // (originalWeight - desiredWeight) so all other panes stay put.
+  const dockTargetNewWeight = Math.max(dockTargetWeightBefore - desiredWeight, 1);
+
+  // Set new pane weight.
+  model.doAction(
+    Actions.updateNodeAttributes(newTabset.getId(), { weight: desiredWeight }),
+  );
+
+  // Find the dock target: the sibling whose current weight + newTabset
+  // weight ≈ dockTargetWeightBefore (they share the original weight).
+  const newTabsetWeight: number = (newTabset as any).getWeight?.() ?? 1;
+  const expectedSibWeight = dockTargetWeightBefore - newTabsetWeight;
+  let bestSibling: any = null;
+  let bestDelta = Infinity;
+  for (const child of children) {
+    if (child === newTabset) continue;
+    const w: number = (child as any).getWeight?.() ?? 0;
+    const delta = Math.abs(w - expectedSibWeight);
+    if (delta < bestDelta) {
+      bestDelta = delta;
+      bestSibling = child;
+    }
+  }
+
+  if (bestSibling) {
+    model.doAction(
+      Actions.updateNodeAttributes(bestSibling.getId(), {
+        weight: dockTargetNewWeight,
+      }),
+    );
+  }
+}
+
 let tabCounter = 0;
 
 function nextBlockId(): string {
@@ -527,6 +635,17 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
       }
     }
 
+    // Capture the dock target's weight BEFORE the split so we can
+    // redistribute only the split portion when restoring pane proportions.
+    const isSidePaneDock =
+      resolvedDockLocation !== DockLocation.CENTER &&
+      SIDE_PANE_BLOCK_TYPES.has(config.type);
+    let dockTargetWeightBefore = 0;
+    if (isSidePaneDock) {
+      const targetNode = model.getNodeById(resolvedTabsetId);
+      dockTargetWeightBefore = (targetNode as any)?.getWeight?.() ?? 100;
+    }
+
     model.doAction(
       Actions.addNode(
         {
@@ -543,14 +662,20 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
       ),
     );
 
-    // File-tree tabset: disable maximize
+    // File-tree tabset: disable maximize + minWidth + restore proportions
     if (config.type === "file-tree") {
       const treeNode = model.getNodeById(id);
       const parentTabsetId = treeNode?.getParent()?.getId();
       if (parentTabsetId) {
         model.doAction(
-          Actions.updateNodeAttributes(parentTabsetId, { enableMaximize: false }),
+          Actions.updateNodeAttributes(parentTabsetId, {
+            enableMaximize: false,
+            minWidth: FILE_TREE_TABSET_MIN_WIDTH,
+          }),
         );
+      }
+      if (isSidePaneDock) {
+        restorePaneWeightFraction(model, id, "file-tree", dockTargetWeightBefore);
       }
     }
 
@@ -573,36 +698,19 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
       const node = model.getNodeById(id);
       const parentTabsetId = node?.getParent()?.getId();
       if (parentTabsetId) {
-        const attrs: Record<string, unknown> = {
-          enableDrop: false,
-          minWidth: PLUGIN_TABSET_MIN_WIDTH,
-        };
-        // When creating the tabset for the first time, use a small weight so
-        // the pane opens at exactly minWidth (400px) instead of 50% of the space.
-        if (isNewSidePaneTabset) {
-          attrs.weight = 1;
-        }
-        model.doAction(
-          Actions.updateNodeAttributes(parentTabsetId, attrs),
-        );
-      }
-    }
-
-    // Apply minWidth and compact weight to file-tree tabset
-    if (config.type === "file-tree") {
-      const node = model.getNodeById(id);
-      const parentTabsetId = node?.getParent()?.getId();
-      if (parentTabsetId) {
         model.doAction(
           Actions.updateNodeAttributes(parentTabsetId, {
-            minWidth: FILE_TREE_TABSET_MIN_WIDTH,
-            weight: 1,
+            enableDrop: false,
+            minWidth: PLUGIN_TABSET_MIN_WIDTH,
           }),
         );
       }
+      if (isNewSidePaneTabset && isSidePaneDock) {
+        restorePaneWeightFraction(model, id, config.type, dockTargetWeightBefore);
+      }
     }
 
-    // Agent-chat: open in a compact left pane (minWidth 400, small weight)
+    // Agent-chat: open in a compact left pane (minWidth 400)
     if (config.type === "agent-chat") {
       const node = model.getNodeById(id);
       const parentTabsetId = node?.getParent()?.getId();
@@ -610,9 +718,11 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
         model.doAction(
           Actions.updateNodeAttributes(parentTabsetId, {
             minWidth: AGENT_CHAT_TABSET_MIN_WIDTH,
-            weight: 1,
           }),
         );
+      }
+      if (isSidePaneDock) {
+        restorePaneWeightFraction(model, id, "agent-chat", dockTargetWeightBefore);
       }
     }
 
@@ -622,9 +732,60 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
 
   removeBlock: (nodeId) => {
     const { model } = get();
-    if (!model.getNodeById(nodeId)) return;
+    const node = model.getNodeById(nodeId);
+    if (!node) return;
+
+    // Save weight fraction for side-pane blocks before removal.
+    const component = (node as any).getComponent?.() as string | undefined;
+    if (component && SIDE_PANE_BLOCK_TYPES.has(component)) {
+      savePaneWeightFraction(model, nodeId, component);
+    }
+
+    // Before deletion, snapshot all sibling weights in the same row so we
+    // can absorb the freed weight into the correct sibling and keep other
+    // panes' visual proportions stable.
+    const tabset = node.getParent();
+    const row = tabset?.getParent();
+    const removedWeight: number = (tabset as any)?.getWeight?.() ?? 0;
+    const siblingsBefore: { id: string; weight: number; isSidePane: boolean }[] = [];
+    if (row) {
+      const rowChildren: any[] = (row as any).getChildren?.() ?? [];
+      for (const child of rowChildren) {
+        if (child === tabset) continue;
+        const childId: string = child.getId();
+        // Check if this sibling contains only side-pane blocks
+        const childChildren: any[] = child.getChildren?.() ?? [];
+        const hasSidePane = childChildren.some(
+          (cc: any) => cc.getComponent && SIDE_PANE_BLOCK_TYPES.has(cc.getComponent()),
+        );
+        siblingsBefore.push({
+          id: childId,
+          weight: (child as any).getWeight?.() ?? 1,
+          isSidePane: hasSidePane,
+        });
+      }
+    }
+
     model.doAction(Actions.deleteTab(nodeId));
     removeEmptyTabsets(model);
+
+    // Absorb the freed weight into a non-side-pane sibling (center content)
+    // so that other side panes' absolute weights and visual proportions
+    // are preserved.
+    if (removedWeight > 0 && siblingsBefore.length > 0) {
+      // Prefer a center-content sibling to absorb the weight
+      const absorber =
+        siblingsBefore.find((s) => !s.isSidePane && model.getNodeById(s.id)) ??
+        siblingsBefore.find((s) => model.getNodeById(s.id));
+      if (absorber) {
+        model.doAction(
+          Actions.updateNodeAttributes(absorber.id, {
+            weight: absorber.weight + removedWeight,
+          }),
+        );
+      }
+    }
+
     set({ model, tabCount: countTabs(model) });
     syncTerminalTabRemoval(nodeId);
   },
@@ -634,8 +795,36 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     const tabsetNode = model.getNodeById(tabsetId);
     if (!tabsetNode || tabsetNode.getType() !== "tabset") return;
 
-    // Delete all child tabs first, collecting IDs for terminal-tabs sync
-    const children = (tabsetNode as any).getChildren() as { getId: () => string }[];
+    // Save weight fractions for side-pane blocks before closing.
+    const children = (tabsetNode as any).getChildren() as { getId: () => string; getComponent?: () => string }[];
+    for (const child of children) {
+      const comp = child.getComponent?.();
+      if (comp && SIDE_PANE_BLOCK_TYPES.has(comp)) {
+        savePaneWeightFraction(model, child.getId(), comp);
+        break;
+      }
+    }
+
+    // Snapshot siblings for weight absorption (same logic as removeBlock).
+    const row = tabsetNode.getParent();
+    const removedWeight: number = (tabsetNode as any).getWeight?.() ?? 0;
+    const siblingsBefore: { id: string; weight: number; isSidePane: boolean }[] = [];
+    if (row) {
+      const rowChildren: any[] = (row as any).getChildren?.() ?? [];
+      for (const child of rowChildren) {
+        if (child === tabsetNode) continue;
+        const cChildren: any[] = child.getChildren?.() ?? [];
+        const hasSidePane = cChildren.some(
+          (cc: any) => cc.getComponent && SIDE_PANE_BLOCK_TYPES.has(cc.getComponent()),
+        );
+        siblingsBefore.push({
+          id: child.getId(),
+          weight: (child as any).getWeight?.() ?? 1,
+          isSidePane: hasSidePane,
+        });
+      }
+    }
+
     const childIds = children.map((c) => c.getId());
     for (const child of [...children]) {
       model.doAction(Actions.deleteTab(child.getId()));
@@ -644,6 +833,20 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     // Force-delete the tabset (including tabset-main)
     if (model.getNodeById(tabsetId)) {
       model.doAction(Actions.deleteTabset(tabsetId));
+    }
+
+    // Absorb freed weight into a non-side-pane sibling.
+    if (removedWeight > 0 && siblingsBefore.length > 0) {
+      const absorber =
+        siblingsBefore.find((s) => !s.isSidePane && model.getNodeById(s.id)) ??
+        siblingsBefore.find((s) => model.getNodeById(s.id));
+      if (absorber) {
+        model.doAction(
+          Actions.updateNodeAttributes(absorber.id, {
+            weight: absorber.weight + removedWeight,
+          }),
+        );
+      }
     }
 
     set({ model, tabCount: countTabs(model) });
