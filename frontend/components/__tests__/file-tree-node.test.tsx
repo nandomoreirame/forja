@@ -257,7 +257,7 @@ describe("FileTreeNode", () => {
 
     render(<FileTreeNode node={fileNode} depth={0} />);
 
-    expect(screen.getByRole("button")).toHaveClass("bg-ctp-surface0/50");
+    expect(screen.getByRole("button")).toHaveClass("bg-ctp-mauve/15");
   });
 
   it("should not apply selection highlight when node path is not in selectedPaths", () => {
@@ -276,6 +276,6 @@ describe("FileTreeNode", () => {
 
     const button = screen.getByRole("button");
     // The active highlight bg-ctp-surface0 might be present, but not the selection variant
-    expect(button).not.toHaveClass("bg-ctp-surface0/50");
+    expect(button).not.toHaveClass("bg-ctp-mauve/15");
   });
 });

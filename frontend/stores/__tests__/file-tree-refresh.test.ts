@@ -499,9 +499,11 @@ describe("findNode helper", () => {
     expect(result).toBeNull();
   });
 
-  it("skips file nodes during traversal", () => {
+  it("finds file nodes by exact path match", () => {
     const result = findNode(tree, "/project/src/index.ts");
-    // index.ts is a file, not a directory — findNode only traverses dirs
-    expect(result).toBeNull();
+    // findNode returns any node whose path matches exactly, including files
+    expect(result).not.toBeNull();
+    expect(result?.name).toBe("index.ts");
+    expect(result?.isDir).toBe(false);
   });
 });
