@@ -85,7 +85,7 @@ export function executeAction(actionId: string): boolean {
       browserCounter += 1;
       const blockId = `browser-${Date.now().toString(36)}-${browserCounter}`;
       tilingStore.addBlock(
-        { type: "browser", url: "https://github.com" },
+        { type: "browser", url: "https://github.com/nandomoreirame/forja" },
         undefined,
         blockId,
       );

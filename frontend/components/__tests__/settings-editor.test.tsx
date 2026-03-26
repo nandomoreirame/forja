@@ -17,6 +17,9 @@ vi.mock("monaco-editor", () => {
     onDidDispose: vi.fn(() => disposable),
     layout: vi.fn(), updateOptions: vi.fn(), focus: vi.fn(),
     getAction: vi.fn(), addCommand: vi.fn(),
+    setPosition: vi.fn(), revealPositionInCenter: vi.fn(), setScrollTop: vi.fn(),
+    onDidChangeCursorPosition: vi.fn(() => disposable),
+    onDidScrollChange: vi.fn(() => disposable),
   };
   return {
     editor: { create: vi.fn(() => mockEditor), defineTheme: vi.fn(), setTheme: vi.fn() },

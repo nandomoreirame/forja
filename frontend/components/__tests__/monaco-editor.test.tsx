@@ -22,6 +22,11 @@ vi.mock("monaco-editor", () => {
     focus: vi.fn(),
     getAction: vi.fn(),
     addCommand: vi.fn(),
+    setPosition: vi.fn(),
+    revealPositionInCenter: vi.fn(),
+    setScrollTop: vi.fn(),
+    onDidChangeCursorPosition: vi.fn(() => disposable),
+    onDidScrollChange: vi.fn(() => disposable),
   };
 
   return {

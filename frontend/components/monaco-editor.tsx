@@ -3,6 +3,7 @@ import * as monaco from "monaco-editor";
 import { getMonacoThemeName, getMonacoThemeData } from "@/lib/monaco-theme";
 import { useThemeStore } from "@/stores/theme";
 import { useUserSettingsStore } from "@/stores/user-settings";
+import { useFilePreviewStore } from "@/stores/file-preview";
 
 function ensureTheme(): string {
   const themeName = getMonacoThemeName();
@@ -71,6 +72,33 @@ export function MonacoEditor({
 
     editorRef.current = editor;
 
+    let cursorDisposable: monaco.IDisposable | null = null;
+    let scrollDisposable: monaco.IDisposable | null = null;
+
+    if (!readOnly) {
+      // Restore cursor position from store, or start at line 1
+      const savedPosition = useFilePreviewStore.getState().cursorPosition;
+      const savedScrollTop = useFilePreviewStore.getState().scrollTop;
+      if (savedPosition) {
+        editor.setPosition(savedPosition);
+        editor.revealPositionInCenter(savedPosition);
+      } else {
+        editor.setPosition({ lineNumber: 1, column: 1 });
+      }
+      if (savedScrollTop != null) {
+        editor.setScrollTop(savedScrollTop);
+      }
+      editor.focus();
+
+      // Save cursor position on change
+      cursorDisposable = editor.onDidChangeCursorPosition((e) => {
+        useFilePreviewStore.setState({ cursorPosition: { lineNumber: e.position.lineNumber, column: e.position.column } });
+      });
+      scrollDisposable = editor.onDidScrollChange((e) => {
+        useFilePreviewStore.setState({ scrollTop: e.scrollTop });
+      });
+    }
+
     if (!readOnly && onChange) {
       const disposable = editor.onDidChangeModelContent(() => {
         const currentValue = editor.getValue();
@@ -96,6 +124,8 @@ export function MonacoEditor({
     });
 
     return () => {
+      cursorDisposable?.dispose();
+      scrollDisposable?.dispose();
       unsubTheme();
       editor.dispose();
       editorRef.current = null;

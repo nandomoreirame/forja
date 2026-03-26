@@ -84,6 +84,38 @@ describe("BrowserPane", () => {
     expect(input).toHaveValue("http://localhost:4000");
   });
 
+  describe("devtools button", () => {
+    it("renders the devtools inspect button in the toolbar", () => {
+      render(<BrowserPane />);
+      expect(screen.getByLabelText(/open devtools/i)).toBeInTheDocument();
+    });
+
+    it("calls invoke with browser:open-devtools when clicked", async () => {
+      // Flush the lazy-mount rAF so webviewRef is populated before clicking.
+      let rafCb: FrameRequestCallback | null = null;
+      const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation((cb) => {
+        rafCb = cb;
+        return 1;
+      });
+      render(<BrowserPane />);
+      await act(async () => {
+        if (rafCb) rafCb(performance.now());
+      });
+      rafSpy.mockRestore();
+
+      const devtoolsBtn = screen.getByLabelText(/open devtools/i);
+
+      await act(async () => {
+        fireEvent.click(devtoolsBtn);
+      });
+
+      expect(mockInvoke).toHaveBeenCalledWith(
+        "browser:open-devtools",
+        expect.objectContaining({ webContentsId: expect.any(Number) }),
+      );
+    });
+  });
+
   describe("screenshot button", () => {
     it("renders the screenshot button in the toolbar", () => {
       render(<BrowserPane />);

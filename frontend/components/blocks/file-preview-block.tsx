@@ -15,7 +15,7 @@ export function FilePreviewBlock({ config, nodeId }: FilePreviewBlockProps) {
   useEffect(() => {
     const filePath = config?.filePath as string | undefined;
     if (filePath && !useFilePreviewStore.getState().currentFile) {
-      useFilePreviewStore.getState().loadFile(filePath);
+      useFilePreviewStore.getState().loadFile(filePath, { pin: true });
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

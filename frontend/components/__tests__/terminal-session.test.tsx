@@ -751,7 +751,7 @@ describe("TerminalSession", () => {
 
       // The hostElement should be appended to the container
       const container = screen.getByRole("region", { name: /terminal/i });
-      const innerContainer = container.querySelector(".h-full.w-full.pt-3");
+      const innerContainer = container.querySelector(".h-full.pt-3");
       expect(innerContainer?.querySelector("div")?.contains(mockHost)).toBe(true);
     });
 
@@ -1006,6 +1006,60 @@ describe("TerminalSession", () => {
       await Promise.resolve();
 
       expect(mockWrite).toHaveBeenCalledWith("\x1b[?25l");
+    });
+
+    it("strips show-cursor sequences from PTY data stream for AI CLI sessions", async () => {
+      mockStoreTabs.push({ id: "tab-strip-cursor", sessionType: "claude", isRunning: true });
+      mockCacheGet.mockReturnValue(undefined);
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "pty:has-session") return Promise.resolve(false);
+        if (channel === "pty:load-persisted-buffer") return Promise.resolve(null);
+        return Promise.resolve(undefined);
+      });
+
+      render(<TerminalSession tabId="tab-strip-cursor" path="/test" isVisible={true} sessionType="claude" />);
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      mockWrite.mockClear();
+
+      // Simulate PTY sending show-cursor escape mixed with content
+      const ptyOnData = (globalThis as Record<string, unknown>).__ptyOnData as (data: string) => void;
+      ptyOnData("hello\x1b[?25hworld");
+
+      // Flush the RAF-coalesced write buffer
+      await vi.advanceTimersByTimeAsync(20);
+
+      // The show-cursor sequence should be stripped, content preserved
+      expect(mockWrite).toHaveBeenCalledWith("helloworld");
+    });
+
+    it("does NOT strip show-cursor sequences for plain terminal sessions", async () => {
+      mockStoreTabs.push({ id: "tab-term-keep-cursor", sessionType: "terminal", isRunning: true });
+      mockCacheGet.mockReturnValue(undefined);
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "pty:has-session") return Promise.resolve(false);
+        if (channel === "pty:load-persisted-buffer") return Promise.resolve(null);
+        return Promise.resolve(undefined);
+      });
+
+      render(<TerminalSession tabId="tab-term-keep-cursor" path="/test" isVisible={true} sessionType="terminal" />);
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      mockWrite.mockClear();
+
+      const ptyOnData = (globalThis as Record<string, unknown>).__ptyOnData as (data: string) => void;
+      ptyOnData("hello\x1b[?25hworld");
+
+      await vi.advanceTimersByTimeAsync(20);
+
+      // Plain terminal should preserve show-cursor sequences
+      expect(mockWrite).toHaveBeenCalledWith("hello\x1b[?25hworld");
     });
   });
 

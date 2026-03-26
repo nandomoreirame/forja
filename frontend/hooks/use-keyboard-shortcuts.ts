@@ -63,7 +63,28 @@ export function useKeyboardShortcuts({
       }
       if (mod && event.key.toLowerCase() === "w") {
         event.preventDefault();
+        // Check if closing file-preview with unsaved changes
+        const previewStore = useFilePreviewStore.getState();
+        const model = tilingStore.model;
+        const activeTabset = model.getActiveTabset();
+        const selectedNode = activeTabset?.getSelectedNode();
+        const selectedId = selectedNode?.getId();
+        if (selectedId === "block-file-preview" && previewStore.isEditing && previewStore.editDirty) {
+          previewStore.setShowUnsavedDialog(true);
+          return;
+        }
         tilingStore.closeActiveTab();
+        // Focus file-tree container if no other content tabs remain
+        requestAnimationFrame(() => {
+          const model = tilingStore.model;
+          const active = model.getActiveTabset();
+          const selected = active?.getSelectedNode();
+          const isFileTree = selected?.getId() === "tab-file-tree";
+          if (!selected || isFileTree) {
+            const container = document.querySelector<HTMLElement>('[data-testid="file-tree-sidebar"]')?.closest<HTMLElement>('[tabindex="0"]');
+            container?.focus();
+          }
+        });
         return;
       }
       if (mod && event.altKey && event.key.toLowerCase() === "v") {
@@ -134,6 +155,16 @@ export function useKeyboardShortcuts({
         event.preventDefault();
         useTerminalTabsStore.getState().toggleTerminalFullscreen();
         return;
+      }
+      // Ctrl/Cmd+Enter — toggle file editor (only if a file is loaded)
+      if (mod && event.key === "Enter") {
+        const previewStore = useFilePreviewStore.getState();
+        if (previewStore.currentFile) {
+          event.preventDefault();
+          previewStore.toggleEditing();
+          return;
+        }
+        // Don't consume the event if no file is loaded — let file-tree handler use it
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "e") {
         event.preventDefault();

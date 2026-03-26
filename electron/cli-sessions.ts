@@ -439,3 +439,59 @@ export function getCliSessions(
       return [];
   }
 }
+
+// ---------------------------------------------------------------------------
+// Model extraction
+// ---------------------------------------------------------------------------
+
+/**
+ * Extracts the model ID from a JSONL session file by finding the first
+ * assistant message and reading its `message.model` field.
+ *
+ * Returns null if the file doesn't exist, can't be parsed, or contains
+ * no assistant messages with a model field.
+ */
+export function getSessionModel(jsonlPath: string): string | null {
+  try {
+    const content = fs.readFileSync(jsonlPath, "utf-8");
+    for (const line of content.split("\n")) {
+      if (!line.trim()) continue;
+      try {
+        const obj = JSON.parse(line) as {
+          type?: string;
+          message?: { model?: string };
+        };
+        if (obj.type === "assistant" && obj.message?.model) {
+          return obj.message.model;
+        }
+      } catch {
+        // Skip malformed lines
+      }
+    }
+  } catch {
+    // File doesn't exist or can't be read
+  }
+  return null;
+}
+
+/**
+ * Resolves the active model for a running CLI session.
+ *
+ * For Claude Code: reads the session JSONL from ~/.claude/projects/<encoded-path>/<sessionId>.jsonl.
+ * Returns null for terminal sessions, CLIs without JSONL support, or when no model is found.
+ */
+export function getActiveSessionModel(
+  cliId: string,
+  projectPath: string,
+  sessionId?: string
+): string | null {
+  if (cliId === "terminal" || cliId === "gh-copilot") return null;
+
+  if (cliId === "claude" && sessionId) {
+    const projectDir = getClaudeProjectDir(projectPath);
+    const jsonlPath = path.join(projectDir, `${sessionId}.jsonl`);
+    return getSessionModel(jsonlPath);
+  }
+
+  return null;
+}

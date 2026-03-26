@@ -510,5 +510,286 @@ describe("useFilePreviewStore", () => {
     });
   });
 
+  describe("savePreviewForProject", () => {
+    it("saves current open preview state keyed by project path", () => {
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-a/src/main.ts",
+        content: {
+          path: "/project-a/src/main.ts",
+          content: "export default {};",
+          size: 18,
+        },
+      });
+
+      useFilePreviewStore.getState().savePreviewForProject("/project-a");
+
+      const { previewByProject } = useFilePreviewStore.getState();
+      expect(previewByProject["/project-a"]).toEqual({
+        currentFile: "/project-a/src/main.ts",
+        content: {
+          path: "/project-a/src/main.ts",
+          content: "export default {};",
+          size: 18,
+        },
+      });
+    });
+
+    it("saves null when preview is closed", () => {
+      useFilePreviewStore.setState({
+        isOpen: false,
+        currentFile: null,
+        content: null,
+      });
+
+      useFilePreviewStore.getState().savePreviewForProject("/project-a");
+
+      const { previewByProject } = useFilePreviewStore.getState();
+      expect(previewByProject["/project-a"]).toBeNull();
+    });
+
+    it("saves null when preview is open but has no currentFile", () => {
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: null,
+        content: null,
+      });
+
+      useFilePreviewStore.getState().savePreviewForProject("/project-a");
+
+      const { previewByProject } = useFilePreviewStore.getState();
+      expect(previewByProject["/project-a"]).toBeNull();
+    });
+
+    it("does not overwrite saved state for other projects", () => {
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-a/file.ts",
+        content: { path: "/project-a/file.ts", content: "a", size: 1 },
+        previewByProject: {
+          "/project-b": {
+            currentFile: "/project-b/file.ts",
+            content: { path: "/project-b/file.ts", content: "b", size: 1 },
+          },
+        },
+      });
+
+      useFilePreviewStore.getState().savePreviewForProject("/project-a");
+
+      const { previewByProject } = useFilePreviewStore.getState();
+      expect(previewByProject["/project-b"]).toBeDefined();
+      expect(previewByProject["/project-b"]?.currentFile).toBe("/project-b/file.ts");
+    });
+  });
+
+  describe("preview mode state (isPinned / previewTabId)", () => {
+    it("has default values of isPinned=false and previewTabId=null", () => {
+      useFilePreviewStore.setState({ isPinned: false, previewTabId: null });
+      const state = useFilePreviewStore.getState();
+      expect(state.isPinned).toBe(false);
+      expect(state.previewTabId).toBeNull();
+    });
+
+    describe("pinFile", () => {
+      it("sets isPinned to true", () => {
+        useFilePreviewStore.setState({ isPinned: false });
+        useFilePreviewStore.getState().pinFile();
+        expect(useFilePreviewStore.getState().isPinned).toBe(true);
+      });
+
+      it("does not change previewTabId", () => {
+        useFilePreviewStore.setState({ isPinned: false, previewTabId: "tab-123" });
+        useFilePreviewStore.getState().pinFile();
+        expect(useFilePreviewStore.getState().previewTabId).toBe("tab-123");
+      });
+    });
+
+    describe("clearPreviewTab", () => {
+      it("resets previewTabId to null", () => {
+        useFilePreviewStore.setState({ previewTabId: "tab-abc" });
+        useFilePreviewStore.getState().clearPreviewTab();
+        expect(useFilePreviewStore.getState().previewTabId).toBeNull();
+      });
+
+      it("resets isPinned to false", () => {
+        useFilePreviewStore.setState({ isPinned: true });
+        useFilePreviewStore.getState().clearPreviewTab();
+        expect(useFilePreviewStore.getState().isPinned).toBe(false);
+      });
+    });
+
+    describe("loadFile with pin option", () => {
+      it("sets isPinned=true when called with { pin: true }", async () => {
+        const { invoke } = await import("@/lib/ipc");
+        vi.mocked(invoke).mockResolvedValue({
+          path: "/test/file.ts",
+          content: "content",
+          size: 7,
+        });
+        mockHasBlock.mockReturnValue(true);
+
+        await useFilePreviewStore.getState().loadFile("/test/file.ts", { pin: true });
+
+        expect(useFilePreviewStore.getState().isPinned).toBe(true);
+      });
+
+      it("sets isPinned=false when called with { pin: false }", async () => {
+        const { invoke } = await import("@/lib/ipc");
+        vi.mocked(invoke).mockResolvedValue({
+          path: "/test/file.ts",
+          content: "content",
+          size: 7,
+        });
+        mockHasBlock.mockReturnValue(true);
+
+        await useFilePreviewStore.getState().loadFile("/test/file.ts", { pin: false });
+
+        expect(useFilePreviewStore.getState().isPinned).toBe(false);
+      });
+
+      it("defaults to isPinned=false when no options are passed", async () => {
+        const { invoke } = await import("@/lib/ipc");
+        vi.mocked(invoke).mockResolvedValue({
+          path: "/test/file.ts",
+          content: "content",
+          size: 7,
+        });
+        mockHasBlock.mockReturnValue(true);
+
+        await useFilePreviewStore.getState().loadFile("/test/file.ts");
+
+        expect(useFilePreviewStore.getState().isPinned).toBe(false);
+      });
+    });
+
+    describe("loadFilePreview", () => {
+      it("loads a file in preview mode (isPinned=false)", async () => {
+        const { invoke } = await import("@/lib/ipc");
+        vi.mocked(invoke).mockResolvedValue({
+          path: "/test/preview.ts",
+          content: "preview content",
+          size: 15,
+        });
+        mockHasBlock.mockReturnValue(true);
+
+        await useFilePreviewStore.getState().loadFilePreview("/test/preview.ts");
+
+        const state = useFilePreviewStore.getState();
+        expect(state.currentFile).toBe("/test/preview.ts");
+        expect(state.isPinned).toBe(false);
+        expect(state.isLoading).toBe(false);
+        expect(state.isOpen).toBe(true);
+      });
+
+      it("does not pin the file", async () => {
+        const { invoke } = await import("@/lib/ipc");
+        vi.mocked(invoke).mockResolvedValue({
+          path: "/test/file.ts",
+          content: "x",
+          size: 1,
+        });
+        useFilePreviewStore.setState({ isPinned: true });
+        mockHasBlock.mockReturnValue(true);
+
+        await useFilePreviewStore.getState().loadFilePreview("/test/file.ts");
+
+        expect(useFilePreviewStore.getState().isPinned).toBe(false);
+      });
+    });
+  });
+
+  describe("restorePreviewForProject", () => {
+    it("restores saved preview state for a project", () => {
+      useFilePreviewStore.setState({
+        isOpen: false,
+        currentFile: null,
+        content: null,
+        previewByProject: {
+          "/project-a": {
+            currentFile: "/project-a/src/main.ts",
+            content: {
+              path: "/project-a/src/main.ts",
+              content: "export default {};",
+              size: 18,
+            },
+          },
+        },
+      });
+
+      useFilePreviewStore.getState().restorePreviewForProject("/project-a");
+
+      const state = useFilePreviewStore.getState();
+      expect(state.isOpen).toBe(true);
+      expect(state.currentFile).toBe("/project-a/src/main.ts");
+      expect(state.content).toEqual({
+        path: "/project-a/src/main.ts",
+        content: "export default {};",
+        size: 18,
+      });
+    });
+
+    it("keeps panel open but clears file when saved state is null", () => {
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/some/file.ts",
+        content: { path: "/some/file.ts", content: "x", size: 1 },
+        previewByProject: { "/project-a": null },
+      });
+
+      useFilePreviewStore.getState().restorePreviewForProject("/project-a");
+
+      const state = useFilePreviewStore.getState();
+      expect(state.isOpen).toBe(true);
+      expect(state.currentFile).toBeNull();
+      expect(state.content).toBeNull();
+    });
+
+    it("keeps panel open but clears file when no saved state exists for project", () => {
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/some/file.ts",
+        content: { path: "/some/file.ts", content: "x", size: 1 },
+        previewByProject: {},
+      });
+
+      useFilePreviewStore.getState().restorePreviewForProject("/project-unknown");
+
+      const state = useFilePreviewStore.getState();
+      expect(state.isOpen).toBe(true);
+      expect(state.currentFile).toBeNull();
+      expect(state.content).toBeNull();
+    });
+
+    it("round-trip: save project A, switch to project B, save B, restore A", () => {
+      // Start at project A with a file open
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-a/index.ts",
+        content: { path: "/project-a/index.ts", content: "A content", size: 9 },
+        previewByProject: {},
+      });
+
+      // Save project A's state
+      useFilePreviewStore.getState().savePreviewForProject("/project-a");
+
+      // Switch to project B - open a different file
+      useFilePreviewStore.setState({
+        isOpen: true,
+        currentFile: "/project-b/main.ts",
+        content: { path: "/project-b/main.ts", content: "B content", size: 9 },
+      });
+
+      // Save project B's state
+      useFilePreviewStore.getState().savePreviewForProject("/project-b");
+
+      // Now restore project A
+      useFilePreviewStore.getState().restorePreviewForProject("/project-a");
+
+      const state = useFilePreviewStore.getState();
+      expect(state.isOpen).toBe(true);
+      expect(state.currentFile).toBe("/project-a/index.ts");
+      expect(state.content?.content).toBe("A content");
+    });
+  });
 });
 

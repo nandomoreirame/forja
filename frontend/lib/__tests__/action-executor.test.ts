@@ -321,7 +321,7 @@ describe("executeAction — open-browser", () => {
   it("calls addBlock with browser type and github url", () => {
     executeAction("open-browser");
     expect(mockTilingLayoutState.addBlock).toHaveBeenCalledWith(
-      expect.objectContaining({ type: "browser", url: "https://github.com" }),
+      expect.objectContaining({ type: "browser", url: "https://github.com/nandomoreirame/forja" }),
       undefined,
       expect.stringContaining("browser-"),
     );

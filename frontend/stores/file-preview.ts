@@ -20,18 +20,31 @@ interface FilePreviewState {
   isEditing: boolean;
   editContent: string | null;
   editDirty: boolean;
+  cursorPosition: { lineNumber: number; column: number } | null;
+  scrollTop: number | null;
+  previewByProject: Record<string, { currentFile: string; content: FileContent | null } | null>;
+  isPinned: boolean;
+  previewTabId: string | null;
+  showUnsavedDialog: boolean;
 
   togglePreview: () => void;
   openPreview: () => void;
   closePreview: () => void;
-  loadFile: (path: string) => Promise<void>;
+  loadFile: (path: string, options?: { pin?: boolean }) => Promise<void>;
+  loadFilePreview: (path: string) => Promise<void>;
+  pinFile: () => void;
+  clearPreviewTab: () => void;
   reloadCurrentFile: () => Promise<void>;
   reloadCurrentFileForProject: (projectPath: string) => Promise<void>;
   reloadCurrentFileIfChanged: (projectPath: string, changedPaths: string[]) => Promise<void>;
   clearError: () => void;
   setEditing: (editing: boolean) => void;
+  toggleEditing: () => void;
   setEditContent: (content: string) => void;
+  setShowUnsavedDialog: (show: boolean) => void;
   saveFile: () => Promise<void>;
+  savePreviewForProject: (projectPath: string) => void;
+  restorePreviewForProject: (projectPath: string) => void;
 }
 
 export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
@@ -43,6 +56,12 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
   isEditing: false,
   editContent: null,
   editDirty: false,
+  cursorPosition: null,
+  scrollTop: null,
+  previewByProject: {},
+  isPinned: false,
+  previewTabId: null,
+  showUnsavedDialog: false,
 
   togglePreview: () => {
     const { isOpen } = get();
@@ -97,8 +116,20 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
     });
   },
 
-  loadFile: async (path: string) => {
-    set({ isLoading: true, currentFile: path, error: null, isEditing: false, editContent: null, editDirty: false });
+  loadFile: async (path: string, options?: { pin?: boolean }) => {
+    const pin = options?.pin ?? false;
+    set({
+      isLoading: true,
+      currentFile: path,
+      error: null,
+      isEditing: false,
+      editContent: null,
+      editDirty: false,
+      cursorPosition: null,
+      scrollTop: null,
+      isPinned: pin,
+      previewTabId: pin ? null : "block-file-preview",
+    });
 
     // Ensure a file-preview block exists in the tiling layout
     const tiling = useTilingLayoutStore.getState();
@@ -150,6 +181,18 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
         error: errorMessage,
       });
     }
+  },
+
+  loadFilePreview: async (path: string) => {
+    await get().loadFile(path, { pin: false });
+  },
+
+  pinFile: () => {
+    set({ isPinned: true });
+  },
+
+  clearPreviewTab: () => {
+    set({ previewTabId: null, isPinned: false });
   },
 
   reloadCurrentFile: async () => {
@@ -218,8 +261,19 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
       editDirty: false,
     })),
 
+  toggleEditing: () => {
+    const { isEditing, editDirty } = get();
+    if (isEditing && editDirty) {
+      set({ showUnsavedDialog: true });
+    } else {
+      get().setEditing(!isEditing);
+    }
+  },
+
   setEditContent: (content) =>
     set({ editContent: content, editDirty: true }),
+
+  setShowUnsavedDialog: (show) => set({ showUnsavedDialog: show }),
 
   saveFile: async () => {
     const state = get();
@@ -232,5 +286,50 @@ export const useFilePreviewStore = create<FilePreviewState>((set, get) => ({
         ? { ...prevState.content, content: editContent, size: editContent.length }
         : null,
     }));
+  },
+
+  savePreviewForProject: (projectPath: string) => {
+    const { isOpen, currentFile, content, previewByProject } = get();
+    if (isOpen && currentFile) {
+      set({
+        previewByProject: {
+          ...previewByProject,
+          [projectPath]: { currentFile, content },
+        },
+      });
+    } else {
+      set({
+        previewByProject: {
+          ...previewByProject,
+          [projectPath]: null,
+        },
+      });
+    }
+  },
+
+  restorePreviewForProject: (projectPath: string) => {
+    const { previewByProject } = get();
+    const saved = previewByProject[projectPath];
+    if (saved) {
+      set({
+        isOpen: true,
+        currentFile: saved.currentFile,
+        content: saved.content,
+        error: null,
+        isEditing: false,
+        editContent: null,
+        editDirty: false,
+      });
+    } else {
+      set({
+        isOpen: true,
+        currentFile: null,
+        content: null,
+        error: null,
+        isEditing: false,
+        editContent: null,
+        editDirty: false,
+      });
+    }
   },
 }));

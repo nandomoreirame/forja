@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("fs/promises");
 
-import { renameFileOrDir, deleteFileOrDir } from "../file-operations";
+import { renameFileOrDir, deleteFileOrDir, copyFileOrDir, moveFileOrDir, createFile, createDirectory } from "../file-operations";
 import * as fs from "fs/promises";
 
 describe("renameFileOrDir", () => {
@@ -129,6 +129,207 @@ describe("deleteFileOrDir", () => {
   it("blocks deletion of system paths", async () => {
     await expect(
       deleteFileOrDir("/home/user/project", "/usr/bin/evil")
+    ).rejects.toThrow("Path traversal blocked");
+  });
+});
+
+describe("copyFileOrDir", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("copies a file to a target directory within the project scope", async () => {
+    vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fs.cp).mockResolvedValue(undefined);
+
+    const dest = await copyFileOrDir(
+      "/home/user/project",
+      "/home/user/project/src/file.ts",
+      "/home/user/project/lib"
+    );
+
+    expect(fs.mkdir).toHaveBeenCalledWith("/home/user/project/lib", { recursive: true });
+    expect(fs.cp).toHaveBeenCalledWith(
+      "/home/user/project/src/file.ts",
+      "/home/user/project/lib/file.ts",
+      { recursive: true }
+    );
+    expect(dest).toBe("/home/user/project/lib/file.ts");
+  });
+
+  it("copies a directory recursively to a target directory", async () => {
+    vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fs.cp).mockResolvedValue(undefined);
+
+    const dest = await copyFileOrDir(
+      "/home/user/project",
+      "/home/user/project/src",
+      "/home/user/project/backup"
+    );
+
+    expect(fs.cp).toHaveBeenCalledWith(
+      "/home/user/project/src",
+      "/home/user/project/backup/src",
+      { recursive: true }
+    );
+    expect(dest).toBe("/home/user/project/backup/src");
+  });
+
+  it("blocks copy from path outside project scope", async () => {
+    await expect(
+      copyFileOrDir(
+        "/home/user/project",
+        "/etc/passwd",
+        "/home/user/project/lib"
+      )
+    ).rejects.toThrow("Path traversal blocked");
+  });
+
+  it("blocks copy to target directory outside project scope", async () => {
+    await expect(
+      copyFileOrDir(
+        "/home/user/project",
+        "/home/user/project/file.ts",
+        "/tmp/evil"
+      )
+    ).rejects.toThrow("Path traversal blocked");
+  });
+
+  it("blocks traversal via ../ in source", async () => {
+    await expect(
+      copyFileOrDir(
+        "/home/user/project",
+        "/home/user/project/../../../etc/passwd",
+        "/home/user/project/lib"
+      )
+    ).rejects.toThrow("Path traversal blocked");
+  });
+});
+
+describe("moveFileOrDir", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("moves a file to a target directory within the project scope", async () => {
+    vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fs.rename).mockResolvedValue(undefined);
+
+    const dest = await moveFileOrDir(
+      "/home/user/project",
+      "/home/user/project/src/file.ts",
+      "/home/user/project/lib"
+    );
+
+    expect(fs.mkdir).toHaveBeenCalledWith("/home/user/project/lib", { recursive: true });
+    expect(fs.rename).toHaveBeenCalledWith(
+      "/home/user/project/src/file.ts",
+      "/home/user/project/lib/file.ts"
+    );
+    expect(dest).toBe("/home/user/project/lib/file.ts");
+  });
+
+  it("calls rename so source no longer exists after move", async () => {
+    vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+    vi.mocked(fs.rename).mockResolvedValue(undefined);
+
+    await moveFileOrDir(
+      "/home/user/project",
+      "/home/user/project/src/old.ts",
+      "/home/user/project/dist"
+    );
+
+    // fs.rename is called (which atomically moves the file, removing source)
+    expect(fs.rename).toHaveBeenCalledWith(
+      "/home/user/project/src/old.ts",
+      "/home/user/project/dist/old.ts"
+    );
+    // cp is NOT called (this is a move, not copy)
+    expect(fs.cp).not.toHaveBeenCalled();
+  });
+
+  it("blocks move from path outside project scope", async () => {
+    await expect(
+      moveFileOrDir(
+        "/home/user/project",
+        "/etc/passwd",
+        "/home/user/project/lib"
+      )
+    ).rejects.toThrow("Path traversal blocked");
+  });
+
+  it("blocks move to target directory outside project scope", async () => {
+    await expect(
+      moveFileOrDir(
+        "/home/user/project",
+        "/home/user/project/file.ts",
+        "/tmp/evil"
+      )
+    ).rejects.toThrow("Path traversal blocked");
+  });
+});
+
+describe("createFile", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("creates an empty file within the project scope", async () => {
+    vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+    await createFile("/home/user/project", "/home/user/project/src/new.ts");
+
+    expect(fs.writeFile).toHaveBeenCalledWith(
+      "/home/user/project/src/new.ts",
+      "",
+      "utf-8"
+    );
+  });
+
+  it("blocks creation of file outside project scope", async () => {
+    await expect(
+      createFile("/home/user/project", "/etc/evil.ts")
+    ).rejects.toThrow("Path traversal blocked");
+  });
+
+  it("blocks traversal via ../ in file path", async () => {
+    await expect(
+      createFile("/home/user/project", "/home/user/project/../../etc/evil.ts")
+    ).rejects.toThrow("Path traversal blocked");
+  });
+
+  it("blocks creation of file in system paths", async () => {
+    await expect(
+      createFile("/home/user/project", "/usr/bin/evil")
+    ).rejects.toThrow("Path traversal blocked");
+  });
+});
+
+describe("createDirectory", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("creates a new directory within the project scope", async () => {
+    vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+
+    await createDirectory("/home/user/project", "/home/user/project/src/components");
+
+    expect(fs.mkdir).toHaveBeenCalledWith(
+      "/home/user/project/src/components",
+      { recursive: true }
+    );
+  });
+
+  it("blocks creation of directory outside project scope", async () => {
+    await expect(
+      createDirectory("/home/user/project", "/tmp/evil-dir")
+    ).rejects.toThrow("Path traversal blocked");
+  });
+
+  it("blocks traversal via ../ in directory path", async () => {
+    await expect(
+      createDirectory("/home/user/project", "/home/user/project/../../etc/evil")
     ).rejects.toThrow("Path traversal blocked");
   });
 });

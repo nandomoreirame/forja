@@ -11,7 +11,11 @@ const tilingActions = {
   cycleActiveTabset: vi.fn(() => null),
   cycleGlobalTab: vi.fn(() => null),
   navigateToAdjacentTabset: vi.fn(() => null),
-  model: {},
+  model: {
+    getActiveTabset: vi.fn(() => ({
+      getSelectedNode: vi.fn(() => ({ getId: vi.fn(() => "some-tab") })),
+    })),
+  },
 };
 
 vi.mock("@/stores/tiling-layout", () => ({

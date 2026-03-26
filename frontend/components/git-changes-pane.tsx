@@ -41,7 +41,7 @@ export function GitChangesPane({ projectPaths }: GitChangesPaneProps) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-app-xs font-semibold uppercase tracking-wide text-ctp-overlay1 transition-colors hover:bg-ctp-surface0"
+        className="flex h-9 w-full items-center gap-3 px-3 text-left font-mono text-app-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0"
         aria-label={expanded ? "Collapse changes" : "Expand changes"}
         aria-expanded={expanded}
       >

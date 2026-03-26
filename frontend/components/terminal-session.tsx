@@ -19,6 +19,7 @@ import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { usePerformanceStore } from "@/stores/performance";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { TerminalContextMenu } from "./terminal-context-menu";
+import { SessionStatusBar } from "./session-status-bar";
 
 interface TerminalSessionProps {
   tabId: string;
@@ -45,6 +46,13 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
   const writeBufferRef = useRef("");
   const writeRafRef = useRef(0);
 
+  // For AI CLI sessions, strip DECTCEM show-cursor sequences (\x1b[?25h)
+  // from the PTY data stream.  TUI frameworks (Ink) periodically emit
+  // show-cursor as part of their render cycle, which re-enables the
+  // xterm.js hardware cursor and causes a phantom second cursor alongside
+  // the TUI's own visual cursor in the input field.
+  const isAiCli = sessionType !== "terminal";
+
   const { spawn, write, resize, close } = usePty({
     tabId,
     onData: (data) => {
@@ -52,8 +60,11 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       if (!writeRafRef.current) {
         writeRafRef.current = requestAnimationFrame(() => {
           writeRafRef.current = 0;
-          const buffered = writeBufferRef.current;
+          let buffered = writeBufferRef.current;
           writeBufferRef.current = "";
+          if (isAiCli) {
+            buffered = buffered.replaceAll("\x1b[?25h", "");
+          }
           terminalRef.current?.write(buffered);
         });
       }
@@ -502,14 +513,15 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     <div
       role="region"
       aria-label="Claude Code Terminal"
-      className={`h-full w-full bg-overlay-base ${!isVisible ? "hidden" : ""}`}
+      className={`flex h-full w-full flex-col bg-overlay-base ${!isVisible ? "hidden" : ""}`}
     >
       <TerminalContextMenu tabId={tabId} onCopy={handleCopy} onPaste={handlePaste}>
-        <div className="h-full w-full pt-3 pl-4 pb-3">
+        <div className="h-full pt-3 pl-4 pb-1">
           <div ref={containerRef} className="h-full w-full" />
           <div role="status" aria-live="polite" className="sr-only" />
         </div>
       </TerminalContextMenu>
+      <SessionStatusBar tabId={tabId} path={path} sessionType={sessionType} />
     </div>
   );
 });

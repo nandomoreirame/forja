@@ -70,7 +70,7 @@ describe("FilePreviewBlock", () => {
 
   it("calls loadFile on mount when config has filePath and store has no currentFile", () => {
     render(<FilePreviewBlock config={{ type: "file-preview", filePath: "/test/config.json" }} />);
-    expect(mockLoadFile).toHaveBeenCalledWith("/test/config.json");
+    expect(mockLoadFile).toHaveBeenCalledWith("/test/config.json", { pin: true });
   });
 
   it("does not call loadFile when store already has a currentFile", () => {

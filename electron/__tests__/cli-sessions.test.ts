@@ -473,4 +473,78 @@ describe("cli-sessions", () => {
       expect(result).toEqual([]);
     });
   });
+
+  describe("getSessionModel", () => {
+    it("extracts model from first assistant message in JSONL", async () => {
+      const jsonlContent = [
+        JSON.stringify({ type: "user", message: { role: "user", content: "hello" } }),
+        JSON.stringify({ type: "assistant", message: { model: "claude-opus-4-6", role: "assistant", content: [] } }),
+        JSON.stringify({ type: "user", message: { role: "user", content: "more" } }),
+      ].join("\n");
+
+      mockFs.readFileSync.mockReturnValue(jsonlContent);
+
+      const { getSessionModel } = await import("../cli-sessions");
+      const result = getSessionModel("/home/testuser/.claude/projects/-test/abc123.jsonl");
+      expect(result).toBe("claude-opus-4-6");
+    });
+
+    it("returns null when JSONL has no assistant messages", async () => {
+      const jsonlContent = [
+        JSON.stringify({ type: "user", message: { role: "user", content: "hello" } }),
+        JSON.stringify({ type: "progress", data: { type: "hook_progress" } }),
+      ].join("\n");
+
+      mockFs.readFileSync.mockReturnValue(jsonlContent);
+
+      const { getSessionModel } = await import("../cli-sessions");
+      const result = getSessionModel("/home/testuser/.claude/projects/-test/abc123.jsonl");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when file does not exist", async () => {
+      mockFs.readFileSync.mockImplementation(() => { throw new Error("ENOENT"); });
+
+      const { getSessionModel } = await import("../cli-sessions");
+      const result = getSessionModel("/nonexistent/path.jsonl");
+      expect(result).toBeNull();
+    });
+
+    it("returns null when assistant message has no model field", async () => {
+      const jsonlContent = JSON.stringify({ type: "assistant", message: { role: "assistant", content: [] } });
+
+      mockFs.readFileSync.mockReturnValue(jsonlContent);
+
+      const { getSessionModel } = await import("../cli-sessions");
+      const result = getSessionModel("/some/file.jsonl");
+      expect(result).toBeNull();
+    });
+  });
+
+  describe("getActiveSessionModel", () => {
+    it("resolves model for a Claude session via JSONL", async () => {
+      // Mock the session listing (most recent session)
+      mockFs.readdirSync.mockReturnValue(["abc123.jsonl"] as unknown as fs.Dirent[]);
+      mockFs.statSync.mockReturnValue({ mtime: new Date("2026-03-26"), isFile: () => true, isDirectory: () => false } as fs.Stats);
+
+      const jsonlContent = JSON.stringify({ type: "assistant", message: { model: "claude-sonnet-4-6", role: "assistant", content: [] } });
+      mockFs.readFileSync.mockReturnValue(jsonlContent);
+
+      const { getActiveSessionModel } = await import("../cli-sessions");
+      const result = getActiveSessionModel("claude", "/home/user/project", "abc123");
+      expect(result).toBe("claude-sonnet-4-6");
+    });
+
+    it("returns null for terminal sessions", async () => {
+      const { getActiveSessionModel } = await import("../cli-sessions");
+      const result = getActiveSessionModel("terminal", "/home/user/project");
+      expect(result).toBeNull();
+    });
+
+    it("returns null for CLIs without JSONL support", async () => {
+      const { getActiveSessionModel } = await import("../cli-sessions");
+      const result = getActiveSessionModel("gh-copilot", "/home/user/project");
+      expect(result).toBeNull();
+    });
+  });
 });

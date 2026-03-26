@@ -29,11 +29,11 @@ export function findNode(root: FileNode, targetPath: string): FileNode | null {
   if (root.path === targetPath) return root;
   if (!root.children) return null;
   for (const child of root.children) {
-    if (!child.isDir) continue;
-    if (targetPath !== child.path && !targetPath.startsWith(child.path + "/"))
-      continue;
-    const found = findNode(child, targetPath);
-    if (found) return found;
+    if (child.path === targetPath) return child;
+    if (child.isDir && targetPath.startsWith(child.path + "/")) {
+      const found = findNode(child, targetPath);
+      if (found) return found;
+    }
   }
   return null;
 }
@@ -84,6 +84,13 @@ interface FileTreeState {
   trees: Record<string, DirectoryTree>;
   activeProjectPath: string | null;
   focusedPath: string | null;
+  selectedPaths: Record<string, boolean>;
+  renamingPath: string | null;
+  creatingInDir: string | null;
+  creatingType: "file" | "dir" | null;
+  clipboard: { paths: string[]; operation: "copy" | "cut" } | null;
+  pendingDeletePaths: string[] | null;
+  isOpenByProject: Record<string, boolean>;
 
   toggleSidebar: () => void;
   setFocusedPath: (path: string | null) => void;
@@ -99,6 +106,21 @@ interface FileTreeState {
   isExpanded: (path: string) => boolean;
   collapseAll: () => void;
   selectFile: (path: string) => Promise<void>;
+  pinFile: (path: string) => void;
+  toggleSelect: (path: string) => void;
+  clearSelection: () => void;
+  startRename: (path: string) => void;
+  stopRename: () => void;
+  startCreating: (dirPath: string, type: "file" | "dir") => void;
+  stopCreating: () => void;
+  saveSidebarStateForProject: (projectPath: string) => void;
+  restoreSidebarStateForProject: (projectPath: string) => void;
+  copyToClipboard: () => void;
+  cutToClipboard: () => void;
+  pasteFromClipboard: (targetDir: string) => Promise<void>;
+  confirmDelete: (paths: string[]) => void;
+  cancelDelete: () => void;
+  executePendingDelete: () => Promise<void>;
 }
 
 export const useFileTreeStore = create<FileTreeState>((set, get) => {
@@ -133,6 +155,13 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
     trees: {},
     activeProjectPath: null,
     focusedPath: null,
+    selectedPaths: {},
+    renamingPath: null,
+    creatingInDir: null,
+    creatingType: null,
+    clipboard: null,
+    pendingDeletePaths: null,
+    isOpenByProject: {},
 
     toggleSidebar: () => set((state) => ({ isOpen: !state.isOpen })),
     setFocusedPath: (path) => set({ focusedPath: path }),
@@ -352,7 +381,114 @@ export const useFileTreeStore = create<FileTreeState>((set, get) => {
 
     selectFile: async (path: string) => {
       useGitDiffStore.getState().clearSelection();
-      await useFilePreviewStore.getState().loadFile(path);
+      await useFilePreviewStore.getState().loadFilePreview(path);
+    },
+
+    pinFile: (path: string) => {
+      useFilePreviewStore.getState().loadFile(path, { pin: true });
+    },
+
+    toggleSelect: (path) =>
+      set((s) => {
+        const next = { ...s.selectedPaths };
+        if (next[path]) {
+          delete next[path];
+        } else {
+          next[path] = true;
+        }
+        return { selectedPaths: next };
+      }),
+
+    clearSelection: () => set({ selectedPaths: {} }),
+
+    startRename: (path) => set({ renamingPath: path }),
+
+    stopRename: () => set({ renamingPath: null }),
+
+    startCreating: (dirPath, type) => {
+      // Auto-expand the target dir
+      const { expandedPaths } = get();
+      if (!expandedPaths[dirPath]) {
+        set({ expandedPaths: { ...expandedPaths, [dirPath]: true } });
+      }
+      set({ creatingInDir: dirPath, creatingType: type });
+    },
+
+    stopCreating: () => set({ creatingInDir: null, creatingType: null }),
+
+    saveSidebarStateForProject: (projectPath: string) => {
+      const { isOpen, isOpenByProject } = get();
+      set({
+        isOpenByProject: { ...isOpenByProject, [projectPath]: isOpen },
+      });
+    },
+
+    restoreSidebarStateForProject: (projectPath: string) => {
+      const { isOpenByProject } = get();
+      const saved = isOpenByProject[projectPath];
+      if (saved !== undefined) {
+        set({ isOpen: saved });
+      }
+    },
+
+    copyToClipboard: () => {
+      const { selectedPaths, focusedPath } = get();
+      const paths = Object.keys(selectedPaths).filter((p) => selectedPaths[p]);
+      if (paths.length === 0 && focusedPath) paths.push(focusedPath);
+      if (paths.length > 0) {
+        set({ clipboard: { paths, operation: "copy" } });
+      }
+    },
+
+    cutToClipboard: () => {
+      const { selectedPaths, focusedPath } = get();
+      const paths = Object.keys(selectedPaths).filter((p) => selectedPaths[p]);
+      if (paths.length === 0 && focusedPath) paths.push(focusedPath);
+      if (paths.length > 0) {
+        set({ clipboard: { paths, operation: "cut" } });
+      }
+    },
+
+    pasteFromClipboard: async (targetDir: string) => {
+      const { clipboard, currentPath } = get();
+      if (!clipboard || !currentPath) return;
+
+      for (const sourcePath of clipboard.paths) {
+        if (clipboard.operation === "copy") {
+          await invoke("copy_file_or_dir", {
+            projectPath: currentPath,
+            sourcePath,
+            targetDir,
+          });
+        } else {
+          await invoke("move_file_or_dir", {
+            projectPath: currentPath,
+            sourcePath,
+            targetDir,
+          });
+        }
+      }
+
+      if (clipboard.operation === "cut") {
+        set({ clipboard: null, selectedPaths: {} });
+      }
+      get().refreshTree();
+    },
+
+    confirmDelete: (paths: string[]) => set({ pendingDeletePaths: paths }),
+
+    cancelDelete: () => set({ pendingDeletePaths: null }),
+
+    executePendingDelete: async () => {
+      const { pendingDeletePaths, currentPath } = get();
+      if (!pendingDeletePaths || !currentPath) return;
+
+      for (const targetPath of pendingDeletePaths) {
+        await invoke("delete_file_or_dir", { projectPath: currentPath, targetPath });
+      }
+
+      set({ pendingDeletePaths: null, selectedPaths: {} });
+      get().refreshTree();
     },
   };
 });

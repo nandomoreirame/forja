@@ -51,5 +51,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     reload: () => ipcRenderer.invoke("browser:reload"),
     screenshot: (webContentsId: number) =>
       ipcRenderer.invoke("browser:screenshot", { webContentsId }),
+    openDevTools: (webContentsId: number) =>
+      ipcRenderer.invoke("browser:open-devtools", { webContentsId }),
   },
 });

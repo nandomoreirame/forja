@@ -272,3 +272,8 @@
   height: 12px !important;
   display: block;
 }
+
+/* Preview mode tab — italic name indicates unpinned */
+.flexlayout__tab_button--preview .flexlayout__tab_button_content {
+  font-style: italic;
+}

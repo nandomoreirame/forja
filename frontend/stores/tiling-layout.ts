@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Model, Actions, DockLocation, type IJsonModel } from "flexlayout-react";
+import { Model, Actions, DockLocation, TabNode, type IJsonModel } from "flexlayout-react";
 import { DEFAULT_LAYOUT, TABSET_IDS } from "@/lib/default-layout";
 import type { BlockConfig } from "@/lib/block-registry";
 import { useTerminalTabsStore } from "./terminal-tabs";
@@ -543,6 +543,17 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
       ),
     );
 
+    // File-tree tabset: disable maximize
+    if (config.type === "file-tree") {
+      const treeNode = model.getNodeById(id);
+      const parentTabsetId = treeNode?.getParent()?.getId();
+      if (parentTabsetId) {
+        model.doAction(
+          Actions.updateNodeAttributes(parentTabsetId, { enableMaximize: false }),
+        );
+      }
+    }
+
     // Apply minWidth to the tabset that holds the file-preview block so that
     // the pane never becomes too narrow to be useful.
     if (config.type === "file-preview") {
@@ -716,6 +727,16 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     removeEmptyTabsets(model);
     set({ model, tabCount: countTabs(model) });
     syncTerminalTabRemoval(nodeId);
+
+    // If no active tabset remains (or only file-tree), focus the file-tree
+    const newActiveTabset = model.getActiveTabset();
+    if (!newActiveTabset || !newActiveTabset.getSelectedNode()) {
+      const fileTreeNode = model.getNodeById("tab-file-tree");
+      if (fileTreeNode) {
+        model.doAction(Actions.selectTab("tab-file-tree"));
+        set({ model });
+      }
+    }
   },
 
   selectTab: (nodeId) => {
@@ -729,13 +750,15 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
 
   updateFilePreviewTabName: (filePath: string) => {
     const { model } = get();
-    if (!model.getNodeById(FILE_PREVIEW_NODE_ID)) return;
+    const node = model.getNodeById(FILE_PREVIEW_NODE_ID);
+    if (!node) return;
 
     const basename = filePath.split("/").pop() ?? "Preview";
-    const newName = basename;
+    // Skip if name hasn't changed to avoid unnecessary re-render
+    if ((node as TabNode).getName() === basename) return;
 
     model.doAction(
-      Actions.updateNodeAttributes(FILE_PREVIEW_NODE_ID, { name: newName }),
+      Actions.updateNodeAttributes(FILE_PREVIEW_NODE_ID, { name: basename }),
     );
 
     set({ model });

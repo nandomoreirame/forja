@@ -10,6 +10,7 @@ import {
   clipboard,
   dialog,
   ipcMain,
+  Menu,
   session,
   shell,
   webContents,
@@ -33,7 +34,7 @@ const __dirname = path.dirname(__filename);
 import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers } from "./pty.js";
 import { isUiSaveSuspended, suspendUiSaves, resumeUiSaves } from "./ui-save-gate.js";
 import { attachWebviewKeyboardBridge } from "./webview-keyboard-bridge.js";
-import { getCliSessions } from "./cli-sessions.js";
+import { getCliSessions, getActiveSessionModel } from "./cli-sessions.js";
 
 // Type-only imports for signatures
 import type { UiPreferences, ProjectUiState, WorkspaceProject } from "./config.js";
@@ -247,6 +248,64 @@ app.on("web-contents-created", (_event, contents) => {
         if (!win.isDestroyed()) {
           win.webContents.send("webview:shortcut-forwarded", payload);
         }
+      }
+    });
+
+    // Native context menu for browser pane webviews
+    contents.on("context-menu", (_e, params) => {
+      const menuItems: Electron.MenuItemConstructorOptions[] = [];
+
+      if (params.selectionText) {
+        menuItems.push(
+          { label: "Copy", role: "copy" },
+          { type: "separator" },
+        );
+      }
+
+      if (params.isEditable) {
+        menuItems.push(
+          { label: "Cut", role: "cut" },
+          { label: "Copy", role: "copy" },
+          { label: "Paste", role: "paste" },
+          { type: "separator" },
+          { label: "Select All", role: "selectAll" },
+          { type: "separator" },
+        );
+      }
+
+      if (params.linkURL) {
+        menuItems.push(
+          {
+            label: "Open Link in New Tab",
+            click: () => { shell.openExternal(params.linkURL); },
+          },
+          {
+            label: "Copy Link Address",
+            click: () => { clipboard.writeText(params.linkURL); },
+          },
+          { type: "separator" },
+        );
+      }
+
+      if (params.srcURL && (params.mediaType === "image" || params.mediaType === "video")) {
+        menuItems.push(
+          {
+            label: "Copy Image Address",
+            click: () => { clipboard.writeText(params.srcURL); },
+          },
+          { type: "separator" },
+        );
+      }
+
+      menuItems.push(
+        { label: "Back", enabled: contents.canGoBack(), click: () => { contents.goBack(); } },
+        { label: "Forward", enabled: contents.canGoForward(), click: () => { contents.goForward(); } },
+        { label: "Reload", click: () => { contents.reload(); } },
+      );
+
+      if (menuItems.length > 0) {
+        const menu = Menu.buildFromTemplate(menuItems);
+        menu.popup({ window: BrowserWindow.getFocusedWindow() ?? undefined });
       }
     });
   }
@@ -509,6 +568,10 @@ ipcMain.handle("get_cli_sessions", (_event, args: { cliId: string; projectPath: 
   return getCliSessions(args.cliId, args.projectPath, args.limit);
 });
 
+ipcMain.handle("get_session_model", (_event, args: { cliId: string; projectPath: string; sessionId?: string }) => {
+  return getActiveSessionModel(args.cliId, args.projectPath, args.sessionId);
+});
+
 // Last active project path (workspace-scoped)
 ipcMain.handle("set_last_active_project_path", async (_event, args: { workspaceId: string; projectPath: string }) => {
   const config = await getConfig();
@@ -708,6 +771,14 @@ ipcMain.handle("pty:clean-stale-buffers", async (_event, args: { projectPath: st
   bp.cleanStaleBuffers(args.projectPath, args.activeTabIds);
 });
 
+// Host info (for session status bar)
+ipcMain.handle("get_session_host_info", () => {
+  return {
+    hostname: os.hostname(),
+    username: os.userInfo().username,
+  };
+});
+
 // Git info
 ipcMain.handle("get_git_info_command", async (_event, args: { path: string }) => {
   const gitInfo = await getGitInfo();
@@ -842,6 +913,66 @@ ipcMain.handle(
   }
 );
 
+ipcMain.handle(
+  "copy_file_or_dir",
+  async (
+    _event,
+    args: { projectPath: string; sourcePath: string; targetDir: string }
+  ) => {
+    const fileOps = await getFileOperations();
+    const destPath = await fileOps.copyFileOrDir(args.projectPath, args.sourcePath, args.targetDir);
+    return { success: true, destPath };
+  }
+);
+
+ipcMain.handle(
+  "move_file_or_dir",
+  async (
+    _event,
+    args: { projectPath: string; sourcePath: string; targetDir: string }
+  ) => {
+    const fileOps = await getFileOperations();
+    const destPath = await fileOps.moveFileOrDir(args.projectPath, args.sourcePath, args.targetDir);
+    return { success: true, destPath };
+  }
+);
+
+ipcMain.handle(
+  "create_file",
+  async (
+    _event,
+    args: { projectPath: string; filePath: string }
+  ) => {
+    const fileOps = await getFileOperations();
+    await fileOps.createFile(args.projectPath, args.filePath);
+    return { success: true };
+  }
+);
+
+ipcMain.handle(
+  "create_directory",
+  async (
+    _event,
+    args: { projectPath: string; dirPath: string }
+  ) => {
+    const fileOps = await getFileOperations();
+    await fileOps.createDirectory(args.projectPath, args.dirPath);
+    return { success: true };
+  }
+);
+
+ipcMain.handle(
+  "paste_clipboard_image",
+  async (_event, args: { targetDir: string; filename?: string }) => {
+    const { saveClipboardImage } = await import("./clipboard.js");
+    return saveClipboardImage(args.targetDir, args.filename);
+  }
+);
+
+ipcMain.handle("reveal_in_finder", async (_event, args: { path: string }) => {
+  shell.showItemInFolder(args.path);
+});
+
 // Window controls
 ipcMain.handle("window:minimize", (event) => {
   BrowserWindow.fromWebContents(event.sender)?.minimize();
@@ -974,6 +1105,14 @@ ipcMain.handle("browser:screenshot", async (_event, args: { webContentsId: numbe
   if (!wc) throw new Error(`WebContents not found for id: ${args.webContentsId}`);
   const image = await wc.capturePage();
   clipboard.writeImage(image);
+  return { success: true };
+});
+
+// Open DevTools for a specific browser pane webview
+ipcMain.handle("browser:open-devtools", (_event, args: { webContentsId: number }) => {
+  const wc = webContents.fromId(args.webContentsId);
+  if (!wc) throw new Error(`WebContents not found for id: ${args.webContentsId}`);
+  wc.openDevTools();
   return { success: true };
 });
 

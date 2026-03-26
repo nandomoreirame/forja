@@ -1,5 +1,14 @@
-import { Component, Suspense, lazy, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
+import { Component, Suspense, lazy, useCallback, useEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import { AlertCircle, Pencil, Eye } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import { Button } from './ui/button';
 import { invoke } from '@/lib/ipc';
 import { useFilePreviewStore } from '@/stores/file-preview';
 import { useGitDiffStore } from '@/stores/git-diff';
@@ -146,6 +155,41 @@ function FilePreviewPaneContent() {
   const setDiffMode = useGitDiffStore((s) => s.setDiffMode);
   const isLoadingDiff = useGitDiffStore((s) => s.isLoadingDiff);
   const [fileGitStatus, setFileGitStatus] = useState<string | null>(null);
+  const showUnsavedDialog = useFilePreviewStore((s) => s.showUnsavedDialog);
+  const setShowUnsavedDialog = useFilePreviewStore((s) => s.setShowUnsavedDialog);
+  const toggleEditing = useFilePreviewStore((s) => s.toggleEditing);
+
+  const closePreview = useFilePreviewStore((s) => s.closePreview);
+
+  const handleDiscardChanges = useCallback(() => {
+    setShowUnsavedDialog(false);
+    // Reset dirty state first so closePreview won't re-trigger
+    useFilePreviewStore.setState({ editDirty: false });
+    setEditing(false);
+    closePreview();
+  }, [setEditing, setShowUnsavedDialog, closePreview]);
+
+  const handleSaveAndClose = useCallback(async () => {
+    await saveFile();
+    setShowUnsavedDialog(false);
+    setEditing(false);
+    closePreview();
+  }, [saveFile, setEditing, setShowUnsavedDialog, closePreview]);
+
+  // Listen for Cmd+Enter to toggle editing from within the preview pane
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        toggleEditing();
+      }
+    };
+    // Only capture when editing in Monaco (which swallows global shortcuts)
+    if (isEditing) {
+      window.addEventListener("keydown", handler, true);
+      return () => window.removeEventListener("keydown", handler, true);
+    }
+  }, [isEditing, toggleEditing]);
 
   const filename = useMemo(() => currentFile?.split('/').pop() || '', [currentFile]);
   const ext = useMemo(() => filename.split(".").pop()?.toLowerCase() || "", [filename]);
@@ -167,6 +211,13 @@ function FilePreviewPaneContent() {
       .then((info) => setFileGitStatus(info.fileStatus))
       .catch(() => setFileGitStatus(null));
   }, [currentFile]);
+
+  // Auto-pin when the user starts editing (dirty state means they made changes)
+  useEffect(() => {
+    if (editDirty) {
+      useFilePreviewStore.getState().pinFile();
+    }
+  }, [editDirty]);
 
   if (!isOpen) {
     return null;
@@ -236,9 +287,10 @@ function FilePreviewPaneContent() {
                 value={editContent ?? content.content}
                 language={detectLanguage(currentFile ?? filename)}
                 onChange={(value) => setEditContent(value)}
-                onSave={(value) => {
+                onSave={async (value) => {
                   setEditContent(value);
-                  saveFile();
+                  await saveFile();
+                  setEditing(false);
                 }}
                 className="h-full w-full"
               />
@@ -285,7 +337,7 @@ function FilePreviewPaneContent() {
           {!isImage && (
             <div className="ml-auto">
               <button
-                onClick={() => setEditing(!isEditing)}
+                onClick={toggleEditing}
                 aria-label={isEditing ? "Switch to preview" : "Switch to edit"}
                 className="inline-flex h-6 items-center gap-1 rounded px-2 font-sans text-app-xs text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
               >
@@ -305,6 +357,45 @@ function FilePreviewPaneContent() {
           )}
         </div>
       )}
+      {/* Unsaved changes dialog */}
+      <Dialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
+        <DialogContent className="border-ctp-surface1 bg-overlay-mantle sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-ctp-text">Unsaved Changes</DialogTitle>
+            <DialogDescription className="text-ctp-subtext0">
+              You have unsaved changes in{" "}
+              <span className="font-medium text-ctp-text">{filename}</span>.
+              Do you want to save before closing the editor?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowUnsavedDialog(false)}
+              className="border-ctp-surface1 text-ctp-subtext0 hover:bg-ctp-surface0 hover:text-ctp-text"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleDiscardChanges}
+              className="border-ctp-red/30 text-ctp-red hover:bg-ctp-red/10 hover:text-ctp-red"
+            >
+              Discard
+            </Button>
+            <Button
+              autoFocus
+              size="sm"
+              onClick={handleSaveAndClose}
+              className="bg-ctp-mauve text-ctp-base hover:bg-ctp-mauve/90"
+            >
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

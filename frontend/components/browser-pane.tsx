@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, RefreshCw, Globe, XCircle, AlertCircle, Camera, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCw, Globe, XCircle, AlertCircle, Camera, Check, Braces } from "lucide-react";
 import { normalizeUrl, isAllowedUrl } from "@/lib/browser-url";
 import { invoke } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
@@ -197,6 +197,17 @@ export function BrowserPane({ initialUrl = "http://localhost:3000", nodeId }: Br
     }
   }, []);
 
+  const handleOpenDevTools = useCallback(async () => {
+    const wv = webviewRef.current;
+    if (!wv) return;
+    try {
+      const webContentsId = wv.getWebContentsId();
+      await invoke("browser:open-devtools", { webContentsId });
+    } catch (err) {
+      console.error("[BrowserPane] Open DevTools failed:", err);
+    }
+  }, []);
+
   return (
     <div className="flex h-full flex-col overflow-hidden bg-ctp-base">
       {/* Browser toolbar */}
@@ -282,6 +293,16 @@ export function BrowserPane({ initialUrl = "http://localhost:3000", nodeId }: Br
           ) : (
             <Camera className="h-3.5 w-3.5" strokeWidth={1.5} />
           )}
+        </button>
+
+        {/* DevTools button */}
+        <button
+          onClick={handleOpenDevTools}
+          aria-label="Open DevTools"
+          title="Open DevTools (inspect webview)"
+          className="inline-flex h-7 w-7 items-center justify-center rounded text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+        >
+          <Braces className="h-3.5 w-3.5" strokeWidth={1.5} />
         </button>
       </div>
 
