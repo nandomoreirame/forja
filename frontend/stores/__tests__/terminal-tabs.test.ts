@@ -685,4 +685,41 @@ describe("useTerminalTabsStore", () => {
       expect(state.tabs[0].isRunning).toBe(false);
     });
   });
+
+  describe("tmuxSessionName", () => {
+    it("setTmuxSessionName stores tmux session name on the tab", () => {
+      const id1 = createTab("/project", "terminal");
+
+      useTerminalTabsStore.getState().setTmuxSessionName(id1, "forja-tab-1");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].tmuxSessionName).toBe("forja-tab-1");
+    });
+
+    it("serializeTabsForSave includes tmuxSessionName when set", () => {
+      const id1 = createTab("/project", "terminal");
+      useTerminalTabsStore.getState().setTmuxSessionName(id1, "forja-tab-1");
+
+      const serialized = useTerminalTabsStore.getState().serializeTabsForSave("/project");
+      expect(serialized.tabs[0].tmuxSessionName).toBe("forja-tab-1");
+    });
+
+    it("serializeTabsForSave omits tmuxSessionName when not set", () => {
+      createTab("/project", "claude");
+
+      const serialized = useTerminalTabsStore.getState().serializeTabsForSave("/project");
+      expect(serialized.tabs[0].tmuxSessionName).toBeUndefined();
+    });
+
+    it("tmuxSessionName is preserved through other state changes", () => {
+      const id1 = createTab("/project", "terminal");
+
+      useTerminalTabsStore.getState().setTmuxSessionName(id1, "forja-persist");
+      useTerminalTabsStore.getState().markTabExited(id1);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].tmuxSessionName).toBe("forja-persist");
+      expect(state.tabs[0].isRunning).toBe(false);
+    });
+  });
 });

@@ -17,6 +17,8 @@ export interface TerminalTab {
   customName?: string;
   /** Detected CLI session ID for resume. Set when the CLI reports its session ID via output parsing. */
   cliSessionId?: string;
+  /** Tmux session name for persistent terminal sessions. */
+  tmuxSessionName?: string;
   /** Epoch ms when this tab was created. Used by session detection to ignore
    *  filesystem sessions that existed before the tab was spawned. */
   createdAt?: number;
@@ -50,11 +52,13 @@ interface TerminalTabsState {
   hasTab: (tabId: string) => boolean;
   /** Serializes tabs for a specific project path into a disk-persistable format. */
   serializeTabsForSave: (projectPath: string) => {
-    tabs: Array<{ id: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string }>;
+    tabs: Array<{ id: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string; tmuxSessionName?: string }>;
     activeTabIndex: number;
   };
   /** Stores the detected CLI session ID on the specified tab for future resume capability. */
   setCliSessionId: (tabId: string, sessionId: string) => void;
+  /** Stores the tmux session name on the specified tab for session persistence. */
+  setTmuxSessionName: (tabId: string, sessionName: string) => void;
   /** Removes all tabs for a given project path. */
   cleanupProjectState: (projectPath: string) => void;
 }
@@ -218,6 +222,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
         ...(tab.cliSessionId ? { cliSessionId: tab.cliSessionId } : {}),
         ...(!tab.isRunning ? { exited: true } : {}),
         ...(tab.customName ? { customName: tab.customName } : {}),
+        ...(tab.tmuxSessionName ? { tmuxSessionName: tab.tmuxSessionName } : {}),
       })),
       activeTabIndex: activeIdx >= 0 ? activeIdx : 0,
     };
@@ -227,6 +232,13 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     set((state) => ({
       tabs: state.tabs.map((t) =>
         t.id === tabId ? { ...t, cliSessionId: sessionId } : t
+      ),
+    })),
+
+  setTmuxSessionName: (tabId: string, sessionName: string) =>
+    set((state) => ({
+      tabs: state.tabs.map((t) =>
+        t.id === tabId ? { ...t, tmuxSessionName: sessionName } : t
       ),
     })),
 
