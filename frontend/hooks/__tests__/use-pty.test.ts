@@ -475,6 +475,26 @@ describe("usePty", () => {
       );
       expect(cliSessionCalls).toHaveLength(0);
     });
+
+    it("skips filesystem polling for tabs that already have a cliSessionId from spawn", async () => {
+      useTerminalTabsStore.setState({
+        tabs: [{
+          id: "tab-1", name: "Claude", path: "/project",
+          isRunning: true, sessionType: "claude",
+          cliSessionId: "pre-assigned-uuid",
+        }],
+      });
+
+      renderHook(() => usePty({ tabId: "tab-1" }));
+
+      await vi.advanceTimersByTimeAsync(10_000 + 100);
+
+      // get_cli_sessions should NOT have been called — tab already has cliSessionId
+      expect(mockInvoke).not.toHaveBeenCalledWith(
+        "get_cli_sessions",
+        expect.anything(),
+      );
+    });
   });
 
   describe("resolveMissingSessionIds", () => {

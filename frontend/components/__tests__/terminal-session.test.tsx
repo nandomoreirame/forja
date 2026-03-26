@@ -97,12 +97,16 @@ vi.mock("@/lib/terminal-instance-cache", () => ({
 // Mock terminal-tabs store for hasTab guard
 const mockHasTab = vi.fn().mockReturnValue(true);
 const mockRemoveTab = vi.fn();
+const mockSetCliSessionId = vi.fn();
+const mockMarkTabRunning = vi.fn();
 const mockStoreTabs: Array<{ id: string; sessionType: string; cliSessionId?: string; isRunning?: boolean }> = [];
 vi.mock("@/stores/terminal-tabs", () => ({
   useTerminalTabsStore: Object.assign(vi.fn(), {
     getState: () => ({
       hasTab: mockHasTab,
       removeTab: mockRemoveTab,
+      setCliSessionId: mockSetCliSessionId,
+      markTabRunning: mockMarkTabRunning,
       tabs: mockStoreTabs,
     }),
   }),
@@ -161,6 +165,8 @@ describe("TerminalSession", () => {
     mockRouteLinkClick.mockClear();
     mockHasTab.mockReset().mockReturnValue(true);
     mockRemoveTab.mockClear();
+    mockSetCliSessionId.mockClear();
+    mockMarkTabRunning.mockClear();
     mockStoreTabs.length = 0;
     capturedWebLinksHandler = undefined;
     capturedKeyHandler = undefined;
@@ -1157,6 +1163,100 @@ describe("TerminalSession", () => {
       await Promise.resolve();
 
       expect(mockInvoke).toHaveBeenCalledWith("pty:has-session", { tabId: "tab-check" });
+    });
+  });
+
+  describe("deterministic session ID generation", () => {
+    beforeEach(() => {
+      mockCacheGet.mockReturnValue(undefined);
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "pty:has-session") return Promise.resolve(false);
+        if (channel === "pty:load-persisted-buffer") return Promise.resolve(null);
+        return Promise.resolve(undefined);
+      });
+    });
+
+    it("generates UUID and passes --session-id for new Claude sessions", async () => {
+      // Tab with NO cliSessionId (brand new session), isRunning: true so it spawns
+      mockStoreTabs.push({ id: "tab-new-claude", sessionType: "claude", isRunning: true });
+
+      render(<TerminalSession tabId="tab-new-claude" path="/test" isVisible={true} sessionType="claude" />);
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockPtySpawn).toHaveBeenCalled();
+
+      const spawnCall = mockPtySpawn.mock.calls[0];
+      // spawn(path, sessionType, resumeArgs)
+      const resumeArgs = spawnCall[2] as string[] | undefined;
+
+      expect(resumeArgs).toBeDefined();
+      expect(resumeArgs![0]).toBe("--session-id");
+      expect(resumeArgs![1]).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
+
+      // cliSessionId must be stored on the tab immediately
+      expect(mockSetCliSessionId).toHaveBeenCalledWith("tab-new-claude", resumeArgs![1]);
+    });
+
+    it("does NOT generate session ID for restored tabs with existing cliSessionId", async () => {
+      mockStoreTabs.push({ id: "tab-restored", sessionType: "claude", cliSessionId: "existing-uuid-1234", isRunning: true });
+
+      render(<TerminalSession tabId="tab-restored" path="/test" isVisible={true} sessionType="claude" />);
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockPtySpawn).toHaveBeenCalled();
+
+      const spawnCall = mockPtySpawn.mock.calls[0];
+      const resumeArgs = spawnCall[2] as string[] | undefined;
+
+      // Should use --resume, not --session-id
+      expect(resumeArgs).toEqual(["--resume", "existing-uuid-1234"]);
+      // Should NOT generate a new session ID
+      expect(mockSetCliSessionId).not.toHaveBeenCalled();
+    });
+
+    it("does NOT generate session ID for terminal sessions", async () => {
+      mockStoreTabs.push({ id: "tab-plain-term", sessionType: "terminal", isRunning: true });
+
+      render(<TerminalSession tabId="tab-plain-term" path="/test" isVisible={true} sessionType="terminal" />);
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockPtySpawn).toHaveBeenCalled();
+
+      const spawnCall = mockPtySpawn.mock.calls[0];
+      const resumeArgs = spawnCall[2] as string[] | undefined;
+
+      expect(resumeArgs).toBeUndefined();
+      expect(mockSetCliSessionId).not.toHaveBeenCalled();
+    });
+
+    it("does NOT generate session ID for CLIs without sessionIdFlag (e.g. codex)", async () => {
+      mockStoreTabs.push({ id: "tab-codex", sessionType: "codex", isRunning: true });
+
+      render(<TerminalSession tabId="tab-codex" path="/test" isVisible={true} sessionType="codex" />);
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockPtySpawn).toHaveBeenCalled();
+
+      const spawnCall = mockPtySpawn.mock.calls[0];
+      const resumeArgs = spawnCall[2] as string[] | undefined;
+
+      // codex has no sessionIdFlag, so no --session-id should be passed
+      expect(resumeArgs).toBeUndefined();
+      expect(mockSetCliSessionId).not.toHaveBeenCalled();
     });
   });
 });

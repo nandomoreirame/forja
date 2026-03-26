@@ -494,6 +494,29 @@ describe("spawnPty - resumeArgs", () => {
     expect(spawnedArgs).toEqual(["--extra-flag", "--resume", "session42"]);
   });
 
+  it("passes --session-id args through resumeArgs for new Claude sessions", async () => {
+    const { spawnPty } = await import("../pty");
+
+    const mockSender = {
+      send: vi.fn(),
+      isDestroyed: vi.fn(() => false),
+    };
+
+    const newUuid = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+    await spawnPty({
+      tabId: "test-session-id",
+      path: "/test",
+      sessionType: "claude",
+      windowId: 1,
+      sender: mockSender as unknown as Electron.WebContents,
+      resumeArgs: ["--session-id", newUuid],
+    });
+
+    const spawnedArgs = mockPtySpawn.mock.calls[0][1];
+    expect(spawnedArgs).toContain("--session-id");
+    expect(spawnedArgs).toContain(newUuid);
+  });
+
   it("terminal sessions do NOT receive resumeArgs", async () => {
     // Mock tmux as unavailable so terminal falls back to direct pty
     vi.doMock("../tmux.js", () => ({

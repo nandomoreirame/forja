@@ -1202,5 +1202,31 @@ describe("useProjectsStore", () => {
       expect(tabs).toHaveLength(1);
       expect(tabs[0].id).toBe("mem-tab");
     });
+
+    it("restores tmuxSessionName for terminal tabs loaded from disk", async () => {
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") {
+          return {
+            tabs: [
+              {
+                id: "tab-1",
+                sessionType: "terminal",
+                tmuxSessionName: "forja-main-tab-1",
+                customName: "btop",
+              },
+            ],
+          };
+        }
+        return undefined;
+      });
+
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
+
+      await loadProjectFromDisk("/test/project");
+
+      const tab = useTerminalTabsStore.getState().tabs.find((t) => t.id === "tab-1");
+      expect(tab?.tmuxSessionName).toBe("forja-main-tab-1");
+    });
   });
 });
