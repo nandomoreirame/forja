@@ -250,6 +250,30 @@ describe("user-settings module", () => {
     await expect(saveUserSettings("{invalid json")).rejects.toThrow();
   });
 
+  it("defaults terminal.persistSessions to true", async () => {
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({ terminal: { fontSize: 14 } }),
+    );
+
+    const { loadUserSettings } = await import("../user-settings");
+    const result = await loadUserSettings();
+
+    expect(result.terminal.persistSessions).toBe(true);
+  });
+
+  it("preserves terminal.persistSessions when explicitly set to false", async () => {
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({ terminal: { fontSize: 14, persistSessions: false } }),
+    );
+
+    const { loadUserSettings } = await import("../user-settings");
+    const result = await loadUserSettings();
+
+    expect(result.terminal.persistSessions).toBe(false);
+  });
+
   it("saveUserSettings validates and clamps values after saving", async () => {
     const fsp = await import("fs/promises");
     vi.mocked(fsp.mkdir).mockResolvedValue(undefined);

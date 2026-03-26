@@ -61,56 +61,37 @@ vi.mock("@/lib/plugin-types", () => ({
   getPluginIcon: () => null,
 }));
 
-// Quick actions store mock — getState() returns a stable object with mocked fns
-let mockActions: Array<{ actionId: string }> = [];
-
-vi.mock("@/stores/quick-actions", () => ({
-  useQuickActionsStore: (selector?: (s: unknown) => unknown) => {
-    const state = {
-      actions: mockActions,
-      loaded: true,
-      loadActions: mockLoadActions,
-      addAction: vi.fn(),
-      removeAction: mockRemoveAction,
-      moveAction: vi.fn(),
-      isPinned: (id: string) => mockActions.some((a) => a.actionId === id),
-    };
+vi.mock("@/stores/file-tree", () => ({
+  useFileTreeStore: (selector?: (s: unknown) => unknown) => {
+    const state = { currentPath: "/test/project" };
     return selector ? selector(state) : state;
   },
 }));
 
-// Expose getState so context menu click can call removeAction
-vi.mock("@/stores/quick-actions", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@/stores/quick-actions")>();
-  return {
-    ...original,
-    useQuickActionsStore: Object.assign(
-      (selector?: (s: unknown) => unknown) => {
-        const state = {
-          actions: mockActions,
-          loaded: true,
-          loadActions: mockLoadActions,
-          addAction: vi.fn(),
-          removeAction: mockRemoveAction,
-          moveAction: vi.fn(),
-          isPinned: (id: string) => mockActions.some((a) => a.actionId === id),
-        };
-        return selector ? selector(state) : state;
-      },
-      {
-        getState: () => ({
-          actions: mockActions,
-          loaded: true,
-          loadActions: mockLoadActions,
-          addAction: vi.fn(),
-          removeAction: mockRemoveAction,
-          moveAction: vi.fn(),
-          isPinned: (id: string) => mockActions.some((a) => a.actionId === id),
-        }),
-      }
-    ),
-  };
+// Quick actions store mock — getState() returns a stable object with mocked fns
+let mockActions: Array<{ actionId: string; position?: string }> = [];
+
+const makeState = () => ({
+  actions: mockActions,
+  loaded: true,
+  loadActions: mockLoadActions,
+  addAction: vi.fn(),
+  removeAction: mockRemoveAction,
+  moveAction: vi.fn(),
+  moveToPosition: vi.fn(),
+  isPinned: (id: string) => mockActions.some((a) => a.actionId === id),
+  getActionsForPosition: (pos: string) => mockActions.filter((a) => (a.position ?? "left") === pos),
 });
+
+vi.mock("@/stores/quick-actions", () => ({
+  useQuickActionsStore: Object.assign(
+    (selector?: (s: unknown) => unknown) => {
+      const state = makeState();
+      return selector ? selector(state) : state;
+    },
+    { getState: () => makeState() },
+  ),
+}));
 
 vi.mock("@/stores/command-palette", () => ({
   useCommandPaletteStore: (selector?: (s: unknown) => unknown) => {
@@ -135,13 +116,13 @@ function renderWithProvider(ui: ReactNode) {
 describe("QuickActions context menu", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockActions = [{ actionId: "open-settings" }, { actionId: "zoom-in" }];
+    mockActions = [{ actionId: "open-settings", position: "left" }, { actionId: "zoom-in", position: "left" }];
   });
 
   it("shows 'Remove from quick actions' menu item on right-click of a pinned button", async () => {
     const user = userEvent.setup();
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     const settingsButton = screen.getByRole("button", { name: "Open Settings" });
     await user.pointer({ target: settingsButton, keys: "[MouseRight]" });
@@ -154,7 +135,7 @@ describe("QuickActions context menu", () => {
   it("calls removeAction with the correct actionId when menu item is clicked", async () => {
     const user = userEvent.setup();
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     const settingsButton = screen.getByRole("button", { name: "Open Settings" });
     await user.pointer({ target: settingsButton, keys: "[MouseRight]" });
@@ -169,7 +150,7 @@ describe("QuickActions context menu", () => {
   it("calls removeAction with correct actionId for different pinned buttons", async () => {
     const user = userEvent.setup();
     const { QuickActions } = await import("../quick-actions");
-    renderWithProvider(<QuickActions />);
+    renderWithProvider(<QuickActions position="left" />);
 
     const zoomButton = screen.getByRole("button", { name: "Zoom In" });
     await user.pointer({ target: zoomButton, keys: "[MouseRight]" });

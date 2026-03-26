@@ -17,6 +17,7 @@ import {
   Check,
   ChevronsDownUp,
   Eraser,
+  FileJson,
   FolderOpen,
   FolderTree,
   GitCompareArrows,
@@ -327,11 +328,11 @@ export function CommandPalette() {
             <CommandGroup heading="Panels & View">
               {currentPath && (
                 <CommandItem
-                  value="Open Files"
+                  value="Toggle Files"
                   onSelect={handleOpenFiles}
                 >
                   <FolderTree className="h-4 w-4" strokeWidth={1.5} />
-                  Open Files
+                  Toggle Files
                   <CommandShortcut>{mod}+Shift+E</CommandShortcut>
                 </CommandItem>
               )}
@@ -480,6 +481,13 @@ export function CommandPalette() {
                 <Settings className="h-4 w-4" strokeWidth={1.5} />
                 Open Settings
                 <CommandShortcut>{mod}+,</CommandShortcut>
+              </CommandItem>
+              <CommandItem
+                value="Open Settings JSON"
+                onSelect={() => handleCommand("edit-settings-json")}
+              >
+                <FileJson className="h-4 w-4" strokeWidth={1.5} />
+                Open Settings (JSON)
               </CommandItem>
               <CommandItem
                 value="Keyboard Shortcuts"

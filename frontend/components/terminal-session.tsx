@@ -16,6 +16,7 @@ import { useThemeStore } from "@/stores/theme";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { buildTerminalTheme } from "@/themes/apply";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
+import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { usePerformanceStore } from "@/stores/performance";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { TerminalContextMenu } from "./terminal-context-menu";
@@ -292,7 +293,23 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
             // Build resume args if we have a stored session ID
             let resumeArgs: string[] | undefined;
             const cliSessionId = tab?.cliSessionId;
-            if (cliSessionId && sessionType && sessionType !== "terminal") {
+
+            // NEW: For CLIs with sessionIdFlag and NO existing cliSessionId,
+            // generate a deterministic UUID at spawn time to eliminate heuristic
+            // filesystem-based session ID detection.
+            // Only generate for active (non-exited) sessions: tab doesn't exist yet,
+            // or tab.isRunning is not explicitly false.
+            const isActiveSession = !tab || tab.isRunning !== false;
+            if (!cliSessionId && isActiveSession && sessionType && sessionType !== "terminal") {
+              const cliDef = CLI_REGISTRY[sessionType as import("@/lib/cli-registry").CliId];
+              if (cliDef?.sessionIdFlag && cliDef.sessionIdFlag !== "create-chat") {
+                const newSessionId = crypto.randomUUID();
+                useTerminalTabsStore.getState().setCliSessionId(tabId, newSessionId);
+                resumeArgs = [cliDef.sessionIdFlag, newSessionId];
+              }
+            }
+
+            if (!resumeArgs && cliSessionId && sessionType && sessionType !== "terminal") {
               const def = CLI_REGISTRY[sessionType];
               if (def?.resumeFlag) {
                 const resumeValue =
@@ -321,7 +338,10 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
               }
             }
 
-            await spawn(path, sessionType, resumeArgs);
+            const spawnResult = await spawn(path, sessionType, resumeArgs);
+            if (spawnResult?.tmuxSessionName) {
+              useTerminalTabsStore.getState().setTmuxSessionName(tabId, spawnResult.tmuxSessionName);
+            }
             if (!aborted) {
               resize(rows, cols);
               // Hide xterm.js hardware cursor for AI CLI sessions.
@@ -400,8 +420,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       const hostElement = hostElementLocal;
 
       if (!useTerminalTabsStore.getState().hasTab(tabId)) {
-        // Tab truly removed — kill PTY and dispose terminal
-        close();
+        // Tab truly removed — kill PTY and tmux session (force=true)
+        close(true);
         terminal.dispose();
         terminalCache.dispose(tabId);
       } else if (spawned) {
@@ -508,6 +528,33 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       }
     }
   }, [isVisible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Poll tmux pane foreground command and auto-rename tab (updates FlexLayout model)
+  const tmuxSessionName = useTerminalTabsStore((s) => s.tabs.find((t) => t.id === tabId)?.tmuxSessionName);
+  const renameBlock = useTilingLayoutStore((s) => s.renameBlock);
+  useEffect(() => {
+    if (sessionType !== "terminal" || !tmuxSessionName) return;
+
+    let cancelled = false;
+    let lastCmd: string | null = null;
+
+    const poll = () => {
+      invoke<string | null>("pty:get-pane-command", { tmuxSessionName }).then((cmd) => {
+        if (cancelled || cmd === lastCmd) return;
+        lastCmd = cmd;
+        // Update FlexLayout model (this is what the tab header reads)
+        renameBlock(tabId, cmd ?? "");
+      }).catch(() => {});
+    };
+
+    poll();
+    const interval = setInterval(poll, 2000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      renameBlock(tabId, "");
+    };
+  }, [tabId, sessionType, tmuxSessionName, renameBlock]);
 
   return (
     <div

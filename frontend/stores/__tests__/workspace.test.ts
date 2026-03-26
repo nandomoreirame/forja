@@ -865,6 +865,54 @@ describe("useWorkspaceStore", () => {
       expect(tabsState.tabs[0].cliSessionId).toBe("abc-session-9f3e21");
     });
 
+    it("restores tmuxSessionName on tabs after workspace activation", async () => {
+      const ws = makeWorkspace({
+        id: "ws-tmux",
+        projects: [makeProject("/project/tmux")],
+        lastActiveProjectPath: "/project/tmux",
+      });
+      useWorkspaceStore.setState({ workspaces: [ws] });
+
+      const mockLoadProjectTree = vi.fn().mockResolvedValue(undefined);
+      const mockOpenProjectPath = vi.fn();
+      useFileTreeStore.setState({
+        loadProjectTree: mockLoadProjectTree,
+        openProjectPath: mockOpenProjectPath,
+        currentPath: "/project/tmux",
+      });
+
+      const savedUiState = {
+        tabs: [
+          {
+            id: "tab-tmux",
+            path: "/project/tmux",
+            sessionType: "claude",
+            tmuxSessionName: "forja-tab-tmux",
+          },
+        ],
+        activeTabIndex: 0,
+      };
+
+      mockInvoke.mockImplementation((cmd: string, args?: any) => {
+        if (cmd === "set_active_workspace") return Promise.resolve(undefined);
+        if (cmd === "get_workspace_projects") return Promise.resolve([]);
+        if (cmd === "get_project_ui_state") {
+          expect(args).toEqual({ workspaceId: "ws-tmux", path: "/project/tmux" });
+          return Promise.resolve(savedUiState);
+        }
+        return Promise.resolve(undefined);
+      });
+
+      await useWorkspaceStore.getState().activateWorkspace("ws-tmux");
+
+      // activateWorkspace must restore tmuxSessionName so the PTY hook
+      // can reattach to the existing tmux session
+      const tabsState = useTerminalTabsStore.getState();
+      expect(tabsState.tabs).toHaveLength(1);
+      expect(tabsState.tabs[0].id).toBe("tab-tmux");
+      expect(tabsState.tabs[0].tmuxSessionName).toBe("forja-tab-tmux");
+    });
+
     it("sets isSwitchingProject during workspace activation to guard reactive saves", async () => {
       const ws1 = makeWorkspace({
         id: "ws-guard-1",

@@ -7,6 +7,7 @@ const tilingActions = {
   closeActiveTab: vi.fn(),
   hasBlock: vi.fn(() => false),
   addBlock: vi.fn(),
+  removeBlock: vi.fn(),
   selectTab: vi.fn(),
   cycleActiveTabset: vi.fn(() => null),
   cycleGlobalTab: vi.fn(() => null),
@@ -489,7 +490,11 @@ describe("useKeyboardShortcuts open files and browser", () => {
   beforeEach(() => {
     tilingActions.hasBlock.mockReset().mockReturnValue(false);
     tilingActions.addBlock.mockReset();
+    tilingActions.removeBlock.mockReset();
     tilingActions.selectTab.mockReset();
+    tilingActions.model.getActiveTabset.mockReturnValue({
+      getSelectedNode: vi.fn(() => ({ getId: vi.fn(() => "some-tab") })),
+    });
     fileTreeActions.currentPath = "/project";
     fileTreeActions.tree = { root: { name: "my-project" } } as any;
   });
@@ -512,8 +517,11 @@ describe("useKeyboardShortcuts open files and browser", () => {
     );
   });
 
-  it("Ctrl+Shift+E selects existing file-tree block when already open", () => {
+  it("Ctrl+Shift+E selects existing file-tree block when not currently selected", () => {
     tilingActions.hasBlock.mockReturnValue(true);
+    tilingActions.model.getActiveTabset.mockReturnValue({
+      getSelectedNode: vi.fn(() => ({ getId: vi.fn(() => "some-other-tab") })),
+    });
     setupHook();
 
     window.dispatchEvent(
@@ -525,6 +533,27 @@ describe("useKeyboardShortcuts open files and browser", () => {
     );
 
     expect(tilingActions.selectTab).toHaveBeenCalledWith("tab-file-tree");
+    expect(tilingActions.addBlock).not.toHaveBeenCalled();
+    expect(tilingActions.removeBlock).not.toHaveBeenCalled();
+  });
+
+  it("Ctrl+Shift+E closes file-tree block when it is the active selected tab", () => {
+    tilingActions.hasBlock.mockReturnValue(true);
+    tilingActions.model.getActiveTabset.mockReturnValue({
+      getSelectedNode: vi.fn(() => ({ getId: vi.fn(() => "tab-file-tree") })),
+    });
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "E",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    expect(tilingActions.removeBlock).toHaveBeenCalledWith("tab-file-tree");
+    expect(tilingActions.selectTab).not.toHaveBeenCalled();
     expect(tilingActions.addBlock).not.toHaveBeenCalled();
   });
 

@@ -202,10 +202,10 @@ export function usePty(options: UsePtyOptions) {
     };
   }, []);
 
-  const spawn = useCallback(async (path: string, sessionType?: string, resumeArgs?: string[]): Promise<string> => {
+  const spawn = useCallback(async (path: string, sessionType?: string, resumeArgs?: string[]): Promise<{ tabId: string; tmuxSessionName: string | null }> => {
     const tabId = tabIdRef.current;
 
-    const resultTabId = await invoke<string>("spawn_pty", {
+    const result = await invoke<{ tabId: string; tmuxSessionName: string | null }>("spawn_pty", {
       tabId,
       path,
       sessionType,
@@ -214,8 +214,7 @@ export function usePty(options: UsePtyOptions) {
     });
     setIsRunning(true);
 
-    // If resuming, the session ID is already stored on the tab
-    return resultTabId;
+    return result;
   }, []);
 
   const write = useCallback(
@@ -236,8 +235,8 @@ export function usePty(options: UsePtyOptions) {
     [],
   );
 
-  const close = useCallback(async () => {
-    await invoke("close_pty", { tabId: tabIdRef.current });
+  const close = useCallback(async (force = false) => {
+    await invoke("close_pty", { tabId: tabIdRef.current, force });
     setIsRunning(false);
   }, []);
 

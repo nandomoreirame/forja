@@ -107,11 +107,13 @@ const mockCommandPaletteState = {
 const mockTilingLayoutState = {
   hasBlock: vi.fn().mockReturnValue(false),
   addBlock: vi.fn(),
+  removeBlock: vi.fn(),
 };
 
 const mockAppDialogsState = {
   setShortcutsOpen: vi.fn(),
   setAboutOpen: vi.fn(),
+  setSettingsOpen: vi.fn(),
 };
 
 const mockTerminalZoomState = {
@@ -174,8 +176,10 @@ beforeEach(() => {
   mockCommandPaletteState.open.mockClear();
   mockTilingLayoutState.hasBlock.mockClear();
   mockTilingLayoutState.addBlock.mockClear();
+  mockTilingLayoutState.removeBlock.mockClear();
   mockAppDialogsState.setShortcutsOpen.mockClear();
   mockAppDialogsState.setAboutOpen.mockClear();
+  mockAppDialogsState.setSettingsOpen.mockClear();
   mockTerminalZoomState.zoomIn.mockClear();
   mockTerminalZoomState.zoomOut.mockClear();
   mockTerminalZoomState.resetZoom.mockClear();
@@ -226,6 +230,7 @@ describe("executeAction — return value", () => {
       "zoom-reset",
       "change-theme",
       "open-settings",
+      "edit-settings-json",
       "keyboard-shortcuts",
       "about",
       "collapse-all",
@@ -255,8 +260,8 @@ describe("executeAction — zoom actions", () => {
   });
 });
 
-describe("executeAction — open-files", () => {
-  it("executes open-files: calls addBlock when file tree not open", () => {
+describe("executeAction — open-files (toggle)", () => {
+  it("opens file tree when not already present", () => {
     mockTilingLayoutState.hasBlock.mockReturnValue(false);
     executeAction("open-files");
     expect(mockTilingLayoutState.addBlock).toHaveBeenCalledWith(
@@ -264,15 +269,17 @@ describe("executeAction — open-files", () => {
       undefined,
       "tab-file-tree",
     );
+    expect(mockTilingLayoutState.removeBlock).not.toHaveBeenCalled();
   });
 
-  it("executes open-files: does not call addBlock when already open", () => {
+  it("closes file tree when already present", () => {
     mockTilingLayoutState.hasBlock.mockReturnValue(true);
     executeAction("open-files");
+    expect(mockTilingLayoutState.removeBlock).toHaveBeenCalledWith("tab-file-tree");
     expect(mockTilingLayoutState.addBlock).not.toHaveBeenCalled();
   });
 
-  it("executes open-files: checks hasBlock with correct blockId", () => {
+  it("checks hasBlock with correct blockId", () => {
     executeAction("open-files");
     expect(mockTilingLayoutState.hasBlock).toHaveBeenCalledWith("tab-file-tree");
   });
@@ -399,10 +406,14 @@ describe("executeAction — settings actions", () => {
     expect(mockCommandPaletteState.open).toHaveBeenCalledWith("themes");
   });
 
-  it("open-settings: opens settings editor and preview", () => {
+  it("open-settings: opens settings dialog", () => {
     executeAction("open-settings");
-    expect(mockUserSettingsState.openSettingsEditor).toHaveBeenCalledOnce();
-    expect(mockFilePreviewState.openPreview).toHaveBeenCalledOnce();
+    expect(mockAppDialogsState.setSettingsOpen).toHaveBeenCalledWith(true);
+  });
+
+  it("edit-settings-json: invokes get_settings_path", () => {
+    executeAction("edit-settings-json");
+    expect(invoke).toHaveBeenCalledWith("get_settings_path");
   });
 
   it("keyboard-shortcuts: opens shortcuts dialog", () => {

@@ -282,7 +282,7 @@ function App({
       }
 
       const uiState = await invoke<{
-        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string; customName?: string }>;
+        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string; customName?: string; tmuxSessionName?: string }>;
         activeTabIndex?: number;
         previewFile?: string | null;
         layoutJson?: Record<string, unknown>;
@@ -339,12 +339,18 @@ function App({
           if (tab.cliSessionId) {
             tabsStore.setCliSessionId(id, tab.cliSessionId);
           }
+          if (tab.tmuxSessionName) {
+            tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
+          }
           activeProjectTabIds.push(id);
         } else {
           const id = tab.id || tabsStore.nextTabId();
           tabsStore.registerTab(id, tabPath, tab.sessionType as import("@/lib/cli-registry").SessionType, tab.customName);
           if (tab.cliSessionId) {
             tabsStore.setCliSessionId(id, tab.cliSessionId);
+          }
+          if (tab.tmuxSessionName) {
+            tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
           }
         }
       }

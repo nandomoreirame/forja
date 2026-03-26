@@ -33,7 +33,9 @@ vi.mock("@/stores/performance", () => {
 vi.mock("@/lib/platform", () => ({ IS_MAC: false, MOD_KEY: "Ctrl" }));
 
 // Mock child components with data-testid
-vi.mock("../quick-actions", () => ({ QuickActions: () => <div data-testid="quick-actions" /> }));
+vi.mock("../quick-actions", () => ({
+  QuickActions: ({ position }: { position: string }) => <div data-testid={`quick-actions-${position}`} />,
+}));
 vi.mock("../workspace-switcher", () => ({ WorkspaceSwitcher: () => <div data-testid="workspace-switcher" /> }));
 vi.mock("../about-dialog", () => ({ AboutDialog: () => null }));
 vi.mock("../keyboard-shortcuts-dialog", () => ({ KeyboardShortcutsDialog: () => null }));
@@ -43,15 +45,16 @@ vi.mock("../resource-usage-popover", () => ({ ResourceUsagePopover: () => null }
 import { Titlebar } from "../titlebar";
 
 describe("Titlebar with QuickActions", () => {
-  it("renders the QuickActions component", () => {
+  it("renders left and right QuickActions components", () => {
     render(<Titlebar />);
-    expect(screen.getByTestId("quick-actions")).toBeDefined();
+    expect(screen.getByTestId("quick-actions-left")).toBeDefined();
+    expect(screen.getByTestId("quick-actions-right")).toBeDefined();
   });
 
-  it("places QuickActions after the workspace switcher", () => {
+  it("places left QuickActions after the workspace switcher", () => {
     render(<Titlebar />);
     const ws = screen.getByTestId("workspace-switcher");
-    const qa = screen.getByTestId("quick-actions");
+    const qa = screen.getByTestId("quick-actions-left");
     expect(ws.compareDocumentPosition(qa) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

@@ -23,6 +23,7 @@ describe("DEFAULT_SETTINGS", () => {
         fontFamily:
           "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
         fontSize: 14,
+        persistSessions: true,
       },
       window: { zoomLevel: 0, opacity: 1.0 },
       sessions: {

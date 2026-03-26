@@ -31,7 +31,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // PTY must be eager (resolveShellPath used at module scope)
-import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers } from "./pty.js";
+import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closePtyAndTmux, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers, reattachPty } from "./pty.js";
 import { isUiSaveSuspended, suspendUiSaves, resumeUiSaves } from "./ui-save-gate.js";
 import { attachWebviewKeyboardBridge } from "./webview-keyboard-bridge.js";
 import { getCliSessions, getActiveSessionModel } from "./cli-sessions.js";
@@ -208,6 +208,16 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
   if (workspaceId) {
     windowWorkspaceMap.set(win.id, workspaceId);
   }
+
+  // When a workspace window gains focus, persist it as the active workspace
+  // so the app reopens to the last used workspace on next launch.
+  win.on("focus", async () => {
+    const wsId = windowWorkspaceMap.get(win.id);
+    if (wsId) {
+      const config = await getConfig();
+      config.setActiveWorkspace(wsId);
+    }
+  });
 
   win.on("closed", async () => {
     windowWorkspaceMap.delete(win.id);
@@ -724,8 +734,12 @@ ipcMain.handle("resize_pty", (_event, args: { tabId: string; rows: number; cols:
   resizePty(args.tabId, args.rows, args.cols);
 });
 
-ipcMain.handle("close_pty", (_event, args: { tabId: string }) => {
-  closePty(args.tabId);
+ipcMain.handle("close_pty", async (_event, args: { tabId: string; force?: boolean }) => {
+  if (args.force) {
+    await closePtyAndTmux(args.tabId);
+  } else {
+    closePty(args.tabId);
+  }
 });
 
 ipcMain.handle("pty:get-buffer", (_event, args: { tabId: string }) => {
@@ -734,6 +748,45 @@ ipcMain.handle("pty:get-buffer", (_event, args: { tabId: string }) => {
 
 ipcMain.handle("pty:has-session", (_event, args: { tabId: string }) => {
   return hasPty(args.tabId);
+});
+
+ipcMain.handle("pty:get-orphaned-sessions", async () => {
+  const tmux = await import("./tmux.js");
+  const available = await tmux.isTmuxAvailable();
+  if (!available) return [];
+
+  const restore = await import("./tmux-restore.js");
+  return restore.getOrphanedSessions();
+});
+
+ipcMain.handle("pty:get-pane-command", async (_event, args: {
+  tmuxSessionName: string;
+}) => {
+  const { getTmuxPaneCommand, formatPaneCommandForDisplay } = await import("./tmux.js");
+  const raw = await getTmuxPaneCommand(args.tmuxSessionName);
+  if (!raw) return null;
+  return formatPaneCommandForDisplay(raw);
+});
+
+ipcMain.handle("pty:reattach-tmux", async (event, args: {
+  tabId: string;
+  tmuxSessionName: string;
+  projectPath: string;
+  cols: number;
+  rows: number;
+}) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) throw new Error("No window found for sender");
+
+  return reattachPty({
+    tabId: args.tabId,
+    tmuxSessionName: args.tmuxSessionName,
+    windowId: win.id,
+    projectPath: args.projectPath,
+    sender: event.sender,
+    cols: args.cols,
+    rows: args.rows,
+  });
 });
 
 ipcMain.handle(

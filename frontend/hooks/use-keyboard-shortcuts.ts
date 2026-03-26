@@ -170,7 +170,14 @@ export function useKeyboardShortcuts({
         event.preventDefault();
         if (!useFileTreeStore.getState().currentPath) return;
         if (tilingStore.hasBlock("tab-file-tree")) {
-          tilingStore.selectTab("tab-file-tree");
+          // Toggle: close if it's the currently selected tab, otherwise focus it
+          const activeTabset = tilingStore.model.getActiveTabset();
+          const selectedId = activeTabset?.getSelectedNode()?.getId();
+          if (selectedId === "tab-file-tree") {
+            tilingStore.removeBlock("tab-file-tree");
+          } else {
+            tilingStore.selectTab("tab-file-tree");
+          }
         } else {
           const tree = useFileTreeStore.getState().tree;
           const projectName = tree?.root?.name;

@@ -63,7 +63,7 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
     previewFile?: string | null;
     activePluginName?: string | null;
     layoutJson?: Record<string, unknown>;
-    tabs?: Array<{ id?: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string }>;
+    tabs?: Array<{ id?: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string; tmuxSessionName?: string }>;
     activeTabIndex?: number;
   } | null>("get_project_ui_state", {
     workspaceId: wsId,
@@ -136,6 +136,7 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
         );
         if (tab.cliSessionId) tabsStore.setCliSessionId(id, tab.cliSessionId);
         if (tab.exited) tabsStore.markTabExited(id);
+        if (tab.tmuxSessionName) tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
       }
     }
   }

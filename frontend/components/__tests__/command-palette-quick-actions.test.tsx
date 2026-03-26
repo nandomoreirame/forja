@@ -196,7 +196,7 @@ describe("CommandPalette quick-actions mode", () => {
     render(<CommandPalette />);
 
     // Panels & View group actions
-    expect(screen.getByText("Open Files")).toBeInTheDocument();
+    expect(screen.getByText("Toggle Files")).toBeInTheDocument();
     expect(screen.getByText("Open Browser")).toBeInTheDocument();
     expect(screen.getByText("Toggle Focus Mode")).toBeInTheDocument();
 

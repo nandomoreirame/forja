@@ -739,3 +739,21 @@ describe("resumeIdType field", () => {
     expect(CLI_REGISTRY["cursor-agent"].resumeIdType).toBeUndefined();
   });
 });
+
+describe("sessionIdFlag field", () => {
+  it("claude has sessionIdFlag set to '--session-id'", () => {
+    expect(CLI_REGISTRY.claude.sessionIdFlag).toBe("--session-id");
+  });
+
+  it("gemini does not have sessionIdFlag (uses resumeIdType latest)", () => {
+    expect(CLI_REGISTRY.gemini.sessionIdFlag).toBeUndefined();
+  });
+
+  it("codex does not have sessionIdFlag", () => {
+    expect(CLI_REGISTRY.codex.sessionIdFlag).toBeUndefined();
+  });
+
+  it("cursor-agent has sessionIdFlag set to 'create-chat'", () => {
+    expect(CLI_REGISTRY["cursor-agent"].sessionIdFlag).toBe("create-chat");
+  });
+});

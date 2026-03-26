@@ -7,7 +7,7 @@ describe("KeyboardShortcutsDialog", () => {
     render(<KeyboardShortcutsDialog open={true} onOpenChange={() => {}} />);
 
     expect(screen.getByText("Add Project")).toBeInTheDocument();
-    expect(screen.getByText("Open Files")).toBeInTheDocument();
+    expect(screen.getByText("Toggle Files")).toBeInTheDocument();
     expect(screen.getByText("Open Browser")).toBeInTheDocument();
     expect(screen.getAllByText("Shift").length).toBeGreaterThan(0);
   });

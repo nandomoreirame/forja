@@ -100,6 +100,7 @@ describe("usePty", () => {
 
     expect(mockInvoke).toHaveBeenCalledWith("close_pty", {
       tabId: "tab-1",
+      force: false,
     });
     expect(result.current.isRunning).toBe(false);
   });
@@ -148,7 +149,7 @@ describe("usePty", () => {
     const { result } = renderHook(() => usePty({ tabId: "tab-1", onExit }));
 
     // Simulate spawn to set isRunning
-    mockInvoke.mockResolvedValueOnce("tab-1");
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
     await act(async () => {
       await result.current.spawn("/test/path");
     });
@@ -164,12 +165,12 @@ describe("usePty", () => {
   });
 
   it("calls spawn_pty and returns tab_id from spawn", async () => {
-    mockInvoke.mockResolvedValueOnce("tab-1");
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
-    let tabId: string | undefined;
+    let spawnResult: { tabId: string; tmuxSessionName: string | null } | undefined;
     await act(async () => {
-      tabId = await result.current.spawn("/test/path");
+      spawnResult = await result.current.spawn("/test/path");
     });
 
     expect(mockInvoke).toHaveBeenCalledWith("spawn_pty", {
@@ -177,12 +178,13 @@ describe("usePty", () => {
       path: "/test/path",
       windowLabel: "main",
     });
-    expect(tabId).toBe("tab-1");
+    expect(spawnResult?.tabId).toBe("tab-1");
+    expect(spawnResult?.tmuxSessionName).toBeNull();
     expect(result.current.isRunning).toBe(true);
   });
 
   it("passes sessionType to spawn_pty", async () => {
-    mockInvoke.mockResolvedValueOnce("tab-1");
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
     await act(async () => {
@@ -198,7 +200,7 @@ describe("usePty", () => {
   });
 
   it("spawn passes resumeArgs to spawn_pty IPC when provided", async () => {
-    mockInvoke.mockResolvedValueOnce("tab-1");
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
     await act(async () => {
@@ -215,7 +217,7 @@ describe("usePty", () => {
   });
 
   it("spawn works without resumeArgs — invoke does not include resumeArgs field", async () => {
-    mockInvoke.mockResolvedValueOnce("tab-1");
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
     await act(async () => {
@@ -224,6 +226,38 @@ describe("usePty", () => {
 
     const callArgs = mockInvoke.mock.calls[0];
     expect(callArgs[1]).not.toHaveProperty("resumeArgs");
+  });
+
+  it("close passes force=true to close_pty when called with force", async () => {
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
+
+    await act(async () => {
+      await result.current.spawn("/test/path");
+    });
+
+    mockInvoke.mockResolvedValueOnce(undefined);
+    await act(async () => {
+      await result.current.close(true);
+    });
+
+    expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-1", force: true });
+  });
+
+  it("close passes force=false by default to close_pty", async () => {
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
+
+    await act(async () => {
+      await result.current.spawn("/test/path");
+    });
+
+    mockInvoke.mockResolvedValueOnce(undefined);
+    await act(async () => {
+      await result.current.close();
+    });
+
+    expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-1", force: false });
   });
 
   describe("session ID detection via PTY regex (CLIs without filesystem detection)", () => {
@@ -440,6 +474,26 @@ describe("usePty", () => {
         (c) => c[0] === "get_cli_sessions"
       );
       expect(cliSessionCalls).toHaveLength(0);
+    });
+
+    it("skips filesystem polling for tabs that already have a cliSessionId from spawn", async () => {
+      useTerminalTabsStore.setState({
+        tabs: [{
+          id: "tab-1", name: "Claude", path: "/project",
+          isRunning: true, sessionType: "claude",
+          cliSessionId: "pre-assigned-uuid",
+        }],
+      });
+
+      renderHook(() => usePty({ tabId: "tab-1" }));
+
+      await vi.advanceTimersByTimeAsync(10_000 + 100);
+
+      // get_cli_sessions should NOT have been called — tab already has cliSessionId
+      expect(mockInvoke).not.toHaveBeenCalledWith(
+        "get_cli_sessions",
+        expect.anything(),
+      );
     });
   });
 

@@ -189,7 +189,7 @@ describe("CommandPalette", () => {
     expect(screen.getByText("Add Project")).toBeInTheDocument();
 
     // Panels & View group
-    expect(screen.getByText("Open Files")).toBeInTheDocument();
+    expect(screen.getByText("Toggle Files")).toBeInTheDocument();
     expect(screen.getByText("Open Browser")).toBeInTheDocument();
     expect(screen.getByText("Collapse All Folders")).toBeInTheDocument();
 
@@ -363,7 +363,7 @@ describe("CommandPalette", () => {
       mockFileTreeState.currentPath = "/project";
       useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
       render(<CommandPalette />);
-      expect(screen.getByText("Open Files")).toBeInTheDocument();
+      expect(screen.getByText("Toggle Files")).toBeInTheDocument();
     });
 
     it("shows Open Browser in Panels & View commands group", () => {
@@ -406,7 +406,7 @@ describe("CommandPalette", () => {
       useCommandPaletteStore.setState({ isOpen: true, mode: "commands" });
       render(<CommandPalette />);
 
-      await user.click(screen.getByText("Open Files"));
+      await user.click(screen.getByText("Toggle Files"));
       expect(mockTilingAddBlock).toHaveBeenCalledWith(
         { type: "file-tree", projectName: "my-project" },
         undefined,

@@ -21,6 +21,14 @@ export interface CliDefinition {
    * - "latest": always pass "latest" regardless of stored session ID (Gemini)
    */
   resumeIdType?: "id" | "latest";
+  /**
+   * CLI flag to set session ID at spawn time (deterministic ID).
+   * - "--session-id": pass as `--session-id <uuid>` (Claude)
+   * - "create-chat": run `cursor-agent create-chat` first to get ID (Cursor)
+   * When set, Forja generates a UUID and passes it at spawn, eliminating
+   * heuristic filesystem detection for this CLI.
+   */
+  sessionIdFlag?: string;
 }
 
 export const TERMINAL_ICON = "./images/terminal.svg";
@@ -37,6 +45,7 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     resumeFlag: "--resume",
     sessionIdPattern: /session:\s+([a-f0-9-]+)/i,
     sessionDirType: "claude-dir",
+    sessionIdFlag: "--session-id",
   },
   gemini: {
     id: "gemini",
@@ -74,6 +83,7 @@ export const CLI_REGISTRY: Record<CliId, CliDefinition> = {
     resumeFlag: "--resume=",
     sessionIdPattern: /chat[:\s]+([a-zA-Z0-9_-]+)/i,
     sessionDirType: "cursor-dir",
+    sessionIdFlag: "create-chat",
   },
   "gh-copilot": {
     id: "gh-copilot",

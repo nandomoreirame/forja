@@ -34,10 +34,14 @@ interface UISettings {
   hoverToFocus: boolean;
 }
 
+interface TerminalSettings extends FontSettings {
+  persistSessions: boolean;
+}
+
 interface UserSettings {
   app: FontSettings;
   editor: FontSettings;
-  terminal: FontSettings;
+  terminal: TerminalSettings;
   window: { zoomLevel: number; opacity: number };
   sessions: Record<string, { args?: string[]; env?: Record<string, string> }>;
   theme: ThemeSettings;
@@ -60,6 +64,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     fontFamily:
       "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
     fontSize: 14,
+    persistSessions: true,
   },
   window: { zoomLevel: 0, opacity: 1.0 },
   sessions: {
