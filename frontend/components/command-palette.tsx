@@ -17,6 +17,7 @@ import {
   Check,
   ChevronsDownUp,
   Eraser,
+  FileJson,
   FolderOpen,
   FolderTree,
   GitCompareArrows,
@@ -480,6 +481,13 @@ export function CommandPalette() {
                 <Settings className="h-4 w-4" strokeWidth={1.5} />
                 Open Settings
                 <CommandShortcut>{mod}+,</CommandShortcut>
+              </CommandItem>
+              <CommandItem
+                value="Open Settings JSON"
+                onSelect={() => handleCommand("edit-settings-json")}
+              >
+                <FileJson className="h-4 w-4" strokeWidth={1.5} />
+                Open Settings (JSON)
               </CommandItem>
               <CommandItem
                 value="Keyboard Shortcuts"

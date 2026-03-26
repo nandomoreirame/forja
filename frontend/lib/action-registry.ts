@@ -94,6 +94,12 @@ const STATIC_ACTIONS: ActionRegistryEntry[] = [
     shortcut: "Ctrl+,",
   },
   {
+    id: "edit-settings-json",
+    label: "Open Settings (JSON)",
+    icon: "file-json",
+    group: "Settings",
+  },
+  {
     id: "keyboard-shortcuts",
     label: "Keyboard Shortcuts",
     icon: "keyboard",

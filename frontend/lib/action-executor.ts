@@ -140,9 +140,20 @@ export function executeAction(actionId: string): boolean {
       return true;
 
     case "open-settings":
-      useUserSettingsStore.getState().openSettingsEditor();
-      useFilePreviewStore.getState().openPreview();
+      useAppDialogsStore.getState().setSettingsOpen(true);
       return true;
+
+    case "edit-settings-json": {
+      invoke<string>("get_settings_path").then((settingsPath) => {
+        if (settingsPath) {
+          const filePreview = useFilePreviewStore.getState();
+          filePreview.loadFile(settingsPath).then(() => {
+            filePreview.setEditing(true);
+          });
+        }
+      }).catch(() => {});
+      return true;
+    }
 
     case "keyboard-shortcuts":
       useAppDialogsStore.getState().setShortcutsOpen(true);
