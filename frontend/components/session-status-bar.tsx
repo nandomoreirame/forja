@@ -73,7 +73,6 @@ export const SessionStatusBar = memo(function SessionStatusBar({
   const [hostInfo, setHostInfo] = useState<HostInfo | null>(null);
   const [elapsed, setElapsed] = useState<string | null>(null);
   const [modelName, setModelName] = useState<string | null>(null);
-
   const sessionState = useSessionStateStore((s) => s.getState(tabId));
   const tab = useTerminalTabsStore((s) => s.tabs.find((t: { id: string }) => t.id === tabId));
 
@@ -129,6 +128,9 @@ export const SessionStatusBar = memo(function SessionStatusBar({
     return () => { cancelled = true; };
   }, [isAiCli, sessionType, path, tab?.cliSessionId, sessionState, modelName]);
 
+  // Derive pane command from tab's customName (set by terminal-session polling)
+  const derivedPaneCommand = tab?.tmuxSessionName ? (tab?.customName || null) : null;
+
   const projectName = path.split("/").pop() ?? path;
   const branchDisplay = gitInfo
     ? `${gitInfo.branch}${gitInfo.modified_count > 0 ? "*" : ""}`
@@ -169,6 +171,14 @@ export const SessionStatusBar = memo(function SessionStatusBar({
 
       {isTerminal && (
         <>
+          {tab?.tmuxSessionName && (
+            <>
+              <span className="text-ctp-green text-[10px] font-medium">
+                {derivedPaneCommand ?? "Terminal"}
+              </span>
+              <Separator />
+            </>
+          )}
           {hostInfo && (
             <span>{hostInfo.username}@{hostInfo.hostname}</span>
           )}

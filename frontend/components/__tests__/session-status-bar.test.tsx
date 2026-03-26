@@ -26,13 +26,16 @@ const mockTabs: Array<{
   cliSessionId?: string;
   isRunning?: boolean;
   createdAt?: number;
+  tmuxSessionName?: string;
+  customName?: string;
 }> = [];
-vi.mock("@/stores/terminal-tabs", () => ({
-  useTerminalTabsStore: (selector: (state: Record<string, unknown>) => unknown) =>
-    selector({
-      tabs: mockTabs,
-    }),
-}));
+const mockRenameTab = vi.fn();
+vi.mock("@/stores/terminal-tabs", () => {
+  const storeFn = (selector: (state: Record<string, unknown>) => unknown) =>
+    selector({ tabs: mockTabs, renameTab: mockRenameTab });
+  storeFn.getState = () => ({ tabs: mockTabs, renameTab: mockRenameTab });
+  return { useTerminalTabsStore: storeFn };
+});
 
 // Mock cli-registry
 vi.mock("@/lib/cli-registry", () => ({
@@ -58,6 +61,7 @@ describe("SessionStatusBar", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockInvoke.mockReset();
+    mockRenameTab.mockReset();
     mockTabs.length = 0;
     for (const key of Object.keys(mockSessionStates)) {
       delete mockSessionStates[key];
@@ -599,6 +603,133 @@ describe("SessionStatusBar", () => {
       await flushPromises();
 
       expect(screen.getByText("Sonnet 4.6")).toBeInTheDocument();
+    });
+  });
+
+  describe("tmux indicator", () => {
+    it("shows 'Terminal' badge (not 'tmux') for tmux-backed terminal sessions", async () => {
+      mockTabs.length = 0;
+      mockTabs.push({
+        id: "tab-tmux",
+        sessionType: "terminal",
+        isRunning: true,
+        tmuxSessionName: "forja-tab-tmux",
+      });
+
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "get_git_info_command") return Promise.resolve({ branch: "main", modified_count: 0 });
+        if (channel === "get_session_host_info") return Promise.resolve({ hostname: "host", username: "user" });
+        return Promise.resolve(undefined);
+      });
+
+      render(
+        <SessionStatusBar tabId="tab-tmux" path="/home/user/project" sessionType="terminal" />
+      );
+
+      await flushPromises();
+
+      expect(screen.getByText("Terminal")).toBeInTheDocument();
+      expect(screen.queryByText("tmux")).not.toBeInTheDocument();
+    });
+
+    it("does not show Terminal badge for non-tmux terminal sessions", async () => {
+      mockTabs.length = 0;
+      mockTabs.push({
+        id: "tab-no-tmux",
+        sessionType: "terminal",
+        isRunning: true,
+      });
+
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "get_git_info_command") return Promise.resolve({ branch: "main", modified_count: 0 });
+        if (channel === "get_session_host_info") return Promise.resolve({ hostname: "host", username: "user" });
+        return Promise.resolve(undefined);
+      });
+
+      render(
+        <SessionStatusBar tabId="tab-no-tmux" path="/home/user/project" sessionType="terminal" />
+      );
+
+      await flushPromises();
+
+      expect(screen.queryByText("Terminal")).not.toBeInTheDocument();
+      expect(screen.queryByText("tmux")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("tmux tab auto-rename (reads customName from store)", () => {
+    it("shows process name from customName when a command is running in tmux session", async () => {
+      mockTabs.length = 0;
+      mockTabs.push({
+        id: "tab-tmux-cmd",
+        sessionType: "terminal",
+        isRunning: true,
+        tmuxSessionName: "forja-tab-tmux-cmd",
+        customName: "btop",
+      });
+
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "get_git_info_command") return Promise.resolve({ branch: "main", modified_count: 0 });
+        if (channel === "get_session_host_info") return Promise.resolve({ hostname: "host", username: "user" });
+        return Promise.resolve(undefined);
+      });
+
+      render(
+        <SessionStatusBar tabId="tab-tmux-cmd" path="/home/user/project" sessionType="terminal" />
+      );
+
+      await flushPromises();
+
+      expect(screen.getByText("btop")).toBeInTheDocument();
+    });
+
+    it("shows 'Terminal' badge when shell is idle (no customName)", async () => {
+      mockTabs.length = 0;
+      mockTabs.push({
+        id: "tab-tmux-idle",
+        sessionType: "terminal",
+        isRunning: true,
+        tmuxSessionName: "forja-tab-tmux-idle",
+        // No customName — shell is idle
+      });
+
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "get_git_info_command") return Promise.resolve({ branch: "main", modified_count: 0 });
+        if (channel === "get_session_host_info") return Promise.resolve({ hostname: "host", username: "user" });
+        return Promise.resolve(undefined);
+      });
+
+      render(
+        <SessionStatusBar tabId="tab-tmux-idle" path="/home/user/project" sessionType="terminal" />
+      );
+
+      await flushPromises();
+
+      expect(screen.getByText("Terminal")).toBeInTheDocument();
+    });
+
+    it("does not show process badge for non-tmux terminal sessions", async () => {
+      mockTabs.length = 0;
+      mockTabs.push({
+        id: "tab-plain-terminal",
+        sessionType: "terminal",
+        isRunning: true,
+        // No tmuxSessionName
+      });
+
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "get_git_info_command") return Promise.resolve({ branch: "main", modified_count: 0 });
+        if (channel === "get_session_host_info") return Promise.resolve({ hostname: "host", username: "user" });
+        return Promise.resolve(undefined);
+      });
+
+      render(
+        <SessionStatusBar tabId="tab-plain-terminal" path="/home/user/project" sessionType="terminal" />
+      );
+
+      await flushPromises();
+
+      expect(screen.queryByText("Terminal")).not.toBeInTheDocument();
     });
   });
 });

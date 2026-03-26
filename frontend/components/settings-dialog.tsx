@@ -359,6 +359,22 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       </SettingItem>
 
       <SettingItem
+        category="Terminal"
+        label="Persist terminal sessions"
+        description="Keep terminal processes alive when closing Forja (requires tmux)."
+      >
+        <label className="flex items-center gap-2 cursor-pointer" aria-label="Persist terminal sessions">
+          <input
+            type="checkbox"
+            checked={localSettings.terminal.persistSessions}
+            onChange={(e) => update({ terminal: { ...localSettings.terminal, persistSessions: e.target.checked } })}
+            className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-surface0 accent-ctp-mauve"
+          />
+          <span className="text-app-xs text-ctp-subtext0">{localSettings.terminal.persistSessions ? "Enabled" : "Disabled"}</span>
+        </label>
+      </SettingItem>
+
+      <SettingItem
         category="Window"
         label="Opacity"
         description="Background opacity. Value between 0.3 and 1.0."

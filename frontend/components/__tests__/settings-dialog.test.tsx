@@ -203,4 +203,11 @@ describe("SettingsDialog", () => {
     expect(screen.getByText(/Lite mode is active/)).toBeInTheDocument();
     mockPerformanceStore.resolved = "full";
   });
+
+  it("renders terminal session persistence toggle", async () => {
+    const { SettingsDialog } = await import("../settings-dialog");
+    render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+    expect(screen.getByLabelText("Persist terminal sessions")).toBeInTheDocument();
+  });
 });
