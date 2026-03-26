@@ -65,11 +65,12 @@ describe("getAllActions", () => {
     const ids = actions.map((a) => a.id);
     expect(ids).toContain("change-theme");
     expect(ids).toContain("open-settings");
+    expect(ids).toContain("edit-settings-json");
     expect(ids).toContain("keyboard-shortcuts");
   });
 
-  it("has 12 static actions total", () => {
-    expect(getAllActions()).toHaveLength(12);
+  it("has 13 static actions total", () => {
+    expect(getAllActions()).toHaveLength(13);
   });
 });
 
@@ -148,9 +149,9 @@ describe("getActionsByGroup", () => {
     expect(grouped["Git"]).toHaveLength(3);
   });
 
-  it("Settings group has 3 actions", () => {
+  it("Settings group has 4 actions", () => {
     const grouped = getActionsByGroup();
-    expect(grouped["Settings"]).toHaveLength(3);
+    expect(grouped["Settings"]).toHaveLength(4);
   });
 
   it("all actions in a group share the same group field", () => {
@@ -274,6 +275,15 @@ describe("ActionRegistryEntry static data correctness", () => {
 
   it("toggle-diff-mode has no shortcut", () => {
     const action = getAction("toggle-diff-mode");
+    expect(action?.shortcut).toBeUndefined();
+  });
+
+  it("edit-settings-json has correct icon and group", () => {
+    const action = getAction("edit-settings-json");
+    expect(action).toBeDefined();
+    expect(action?.label).toBe("Open Settings (JSON)");
+    expect(action?.icon).toBe("file-json");
+    expect(action?.group).toBe("Settings");
     expect(action?.shortcut).toBeUndefined();
   });
 

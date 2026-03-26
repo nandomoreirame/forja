@@ -112,6 +112,7 @@ const mockTilingLayoutState = {
 const mockAppDialogsState = {
   setShortcutsOpen: vi.fn(),
   setAboutOpen: vi.fn(),
+  setSettingsOpen: vi.fn(),
 };
 
 const mockTerminalZoomState = {
@@ -176,6 +177,7 @@ beforeEach(() => {
   mockTilingLayoutState.addBlock.mockClear();
   mockAppDialogsState.setShortcutsOpen.mockClear();
   mockAppDialogsState.setAboutOpen.mockClear();
+  mockAppDialogsState.setSettingsOpen.mockClear();
   mockTerminalZoomState.zoomIn.mockClear();
   mockTerminalZoomState.zoomOut.mockClear();
   mockTerminalZoomState.resetZoom.mockClear();
@@ -226,6 +228,7 @@ describe("executeAction — return value", () => {
       "zoom-reset",
       "change-theme",
       "open-settings",
+      "edit-settings-json",
       "keyboard-shortcuts",
       "about",
       "collapse-all",
@@ -399,10 +402,14 @@ describe("executeAction — settings actions", () => {
     expect(mockCommandPaletteState.open).toHaveBeenCalledWith("themes");
   });
 
-  it("open-settings: opens settings editor and preview", () => {
+  it("open-settings: opens settings dialog", () => {
     executeAction("open-settings");
-    expect(mockUserSettingsState.openSettingsEditor).toHaveBeenCalledOnce();
-    expect(mockFilePreviewState.openPreview).toHaveBeenCalledOnce();
+    expect(mockAppDialogsState.setSettingsOpen).toHaveBeenCalledWith(true);
+  });
+
+  it("edit-settings-json: invokes get_settings_path", () => {
+    executeAction("edit-settings-json");
+    expect(invoke).toHaveBeenCalledWith("get_settings_path");
   });
 
   it("keyboard-shortcuts: opens shortcuts dialog", () => {
