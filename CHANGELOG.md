@@ -23,6 +23,28 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Persist active workspace on window focus.
 
 ### Fixed
+- Update file-tree tests to match current implementation.
+- Add tmuxSessionName to ProjectUiState type.
+- Restore tmuxSessionName in all session restore paths.
+- Preserve pane proportions when adding/removing side panes.
+- Retry model fetch on session state changes.
+---
+
+## [1.8.3] - 2026-03-26
+
+### Added
+- Add deterministic session ID generation for AI CLIs.
+- Make Ctrl+Shift+E toggle the file tree pane.
+- Add empty state placeholder for empty tabsets.
+- Add tmux status badge, settings toggle, and tab auto-rename.
+- Add tmux session state to terminal tabs and PTY hook.
+- Add terminal.persistSessions user setting.
+- Integrate tmux into PTY spawn flow.
+- Add tmux detection, session lifecycle, and PTY adapter.
+- Add "Open Settings (JSON)" command palette action.
+- Persist active workspace on window focus.
+
+### Fixed
 - Add tmuxSessionName to ProjectUiState type.
 - Restore tmuxSessionName in all session restore paths.
 - Preserve pane proportions when adding/removing side panes.
