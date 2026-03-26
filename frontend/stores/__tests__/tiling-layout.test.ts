@@ -429,7 +429,7 @@ describe("tiling-layout store", () => {
       expect(attrMinWidth).toBe(240);
     });
 
-    it("file-tree tabset gets weight=1 for compact sizing", () => {
+    it("file-tree tabset opens with compact fraction (~15%) on first open", () => {
       // Add a terminal to main first
       useTilingLayoutStore.getState().addBlock(
         { type: "terminal", sessionType: "terminal" },
@@ -447,8 +447,112 @@ describe("tiling-layout store", () => {
       const { model } = useTilingLayoutStore.getState();
       const fileTreeNode = model.getNodeById("tab-file-tree");
       const fileTreeTabset = fileTreeNode?.getParent();
-      const weight = (fileTreeTabset as any).getWeight?.() ?? -1;
-      expect(weight).toBe(1);
+      const row = fileTreeTabset?.getParent();
+      const children: any[] = (row as any)?.getChildren?.() ?? [];
+
+      const totalWeight = children.reduce(
+        (sum: number, c: any) => sum + ((c as any).getWeight?.() ?? 0),
+        0,
+      );
+      const ftWeight = (fileTreeTabset as any).getWeight?.() ?? 0;
+      const fraction = ftWeight / totalWeight;
+      expect(fraction).toBeCloseTo(0.15, 1);
+    });
+
+    it("restores saved weight fraction when re-adding a previously closed pane", () => {
+      const store = useTilingLayoutStore.getState();
+      store.addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-terminal",
+      );
+      store.addBlock(
+        { type: "file-tree", projectName: "forja" },
+        TABSET_IDS.main,
+        "tab-file-tree",
+      );
+
+      // Simulate user resizing the pane to ~30% of the row
+      const { model } = useTilingLayoutStore.getState();
+      const ftNode = model.getNodeById("tab-file-tree");
+      const row = ftNode?.getParent()?.getParent();
+      const children: any[] = (row as any)?.getChildren?.() ?? [];
+      const ftIdx = children.indexOf(ftNode?.getParent());
+      const weights = children.map((_: any, i: number) =>
+        i === ftIdx ? 30 : 70,
+      );
+      model.doAction(Actions.adjustWeights(row!.getId(), weights));
+
+      // Remove file-tree
+      useTilingLayoutStore.getState().removeBlock("tab-file-tree");
+
+      // Re-add file-tree
+      useTilingLayoutStore.getState().addBlock(
+        { type: "file-tree", projectName: "forja" },
+        undefined,
+        "tab-file-tree",
+      );
+
+      // Fraction should be restored to ~30%
+      const { model: m2 } = useTilingLayoutStore.getState();
+      const ftNode2 = m2.getNodeById("tab-file-tree");
+      const ftTabset2 = ftNode2?.getParent();
+      const row2 = ftTabset2?.getParent();
+      const children2: any[] = (row2 as any)?.getChildren?.() ?? [];
+      const totalWeight = children2.reduce(
+        (sum: number, c: any) => sum + ((c as any).getWeight?.() ?? 0),
+        0,
+      );
+      const ftWeight = (ftTabset2 as any).getWeight?.() ?? 0;
+      const fraction = ftWeight / totalWeight;
+      expect(fraction).toBeCloseTo(0.3, 1);
+    });
+
+    it("opening and closing plugin does not change file-tree weight", () => {
+      const store = useTilingLayoutStore.getState();
+      store.addBlock(
+        { type: "terminal", sessionType: "terminal" },
+        TABSET_IDS.main,
+        "tab-terminal",
+      );
+      store.addBlock(
+        { type: "file-tree", projectName: "forja" },
+        TABSET_IDS.main,
+        "tab-file-tree",
+      );
+
+      // Capture file-tree fraction before plugin open
+      const getFtFraction = () => {
+        const m = useTilingLayoutStore.getState().model;
+        const ft = m.getNodeById("tab-file-tree");
+        const ts = ft?.getParent();
+        const row = ts?.getParent();
+        const children: any[] = (row as any)?.getChildren?.() ?? [];
+        const total = children.reduce(
+          (s: number, c: any) => s + ((c as any).getWeight?.() ?? 0),
+          0,
+        );
+        return ((ts as any)?.getWeight?.() ?? 0) / total;
+      };
+
+      const fractionBefore = getFtFraction();
+
+      // Open a plugin (docks RIGHT)
+      store.addBlock(
+        { type: "plugin", pluginName: "clock" },
+        undefined,
+        "block-clock",
+        DockLocation.RIGHT,
+      );
+
+      // FT fraction should NOT have changed after opening plugin
+      expect(getFtFraction()).toBeCloseTo(fractionBefore, 2);
+
+      // Close the plugin
+      useTilingLayoutStore.getState().removeBlock("block-clock");
+
+      // FT fraction should STILL be the same after closing plugin
+      expect(getFtFraction()).toBeCloseTo(fractionBefore, 2);
     });
 
     it("tab name shows project name when projectName is provided", () => {
@@ -1021,11 +1125,15 @@ describe("tiling-layout store", () => {
       const tabset = pluginNode?.getParent() as any;
       expect(tabset).toBeDefined();
 
-      // The tabset should have a small weight so it opens at minWidth (400px)
-      // rather than taking up 50% of the space
-      const weight = tabset.getWeight?.();
-      expect(weight).toBeDefined();
-      expect(weight).toBeLessThanOrEqual(5);
+      // The tabset should take ~15% of the row, not 50%
+      const row = tabset?.getParent();
+      const allChildren: any[] = (row as any)?.getChildren?.() ?? [];
+      const totalWeight = allChildren.reduce(
+        (sum: number, c: any) => sum + ((c as any).getWeight?.() ?? 0),
+        0,
+      );
+      const fraction = (tabset.getWeight?.() ?? 0) / totalWeight;
+      expect(fraction).toBeCloseTo(0.15, 1);
     });
 
     it("subsequent plugins do not reset the tabset weight", () => {
