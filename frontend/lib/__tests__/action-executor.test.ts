@@ -107,6 +107,7 @@ const mockCommandPaletteState = {
 const mockTilingLayoutState = {
   hasBlock: vi.fn().mockReturnValue(false),
   addBlock: vi.fn(),
+  removeBlock: vi.fn(),
 };
 
 const mockAppDialogsState = {
@@ -175,6 +176,7 @@ beforeEach(() => {
   mockCommandPaletteState.open.mockClear();
   mockTilingLayoutState.hasBlock.mockClear();
   mockTilingLayoutState.addBlock.mockClear();
+  mockTilingLayoutState.removeBlock.mockClear();
   mockAppDialogsState.setShortcutsOpen.mockClear();
   mockAppDialogsState.setAboutOpen.mockClear();
   mockAppDialogsState.setSettingsOpen.mockClear();
@@ -258,8 +260,8 @@ describe("executeAction — zoom actions", () => {
   });
 });
 
-describe("executeAction — open-files", () => {
-  it("executes open-files: calls addBlock when file tree not open", () => {
+describe("executeAction — open-files (toggle)", () => {
+  it("opens file tree when not already present", () => {
     mockTilingLayoutState.hasBlock.mockReturnValue(false);
     executeAction("open-files");
     expect(mockTilingLayoutState.addBlock).toHaveBeenCalledWith(
@@ -267,15 +269,17 @@ describe("executeAction — open-files", () => {
       undefined,
       "tab-file-tree",
     );
+    expect(mockTilingLayoutState.removeBlock).not.toHaveBeenCalled();
   });
 
-  it("executes open-files: does not call addBlock when already open", () => {
+  it("closes file tree when already present", () => {
     mockTilingLayoutState.hasBlock.mockReturnValue(true);
     executeAction("open-files");
+    expect(mockTilingLayoutState.removeBlock).toHaveBeenCalledWith("tab-file-tree");
     expect(mockTilingLayoutState.addBlock).not.toHaveBeenCalled();
   });
 
-  it("executes open-files: checks hasBlock with correct blockId", () => {
+  it("checks hasBlock with correct blockId", () => {
     executeAction("open-files");
     expect(mockTilingLayoutState.hasBlock).toHaveBeenCalledWith("tab-file-tree");
   });

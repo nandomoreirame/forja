@@ -79,7 +79,7 @@ describe("getAction", () => {
     const action = getAction("open-files");
     expect(action).toBeDefined();
     expect(action?.id).toBe("open-files");
-    expect(action?.label).toBe("Open Files");
+    expect(action?.label).toBe("Toggle Files");
     expect(action?.icon).toBe("folder-tree");
     expect(action?.group).toBe("Panels & View");
   });
