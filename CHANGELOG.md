@@ -8,6 +8,14 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-03-26
+
+### Added
+- Open workspaces in separate windows.
+- Enhance quick actions with drag-and-drop, dynamic icons, and disabled state.
+- Add customizable quick actions to titlebar.
+---
+
 ## [1.7.0] - 2026-03-19
 
 ### Added
