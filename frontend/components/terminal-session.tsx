@@ -293,7 +293,23 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
             // Build resume args if we have a stored session ID
             let resumeArgs: string[] | undefined;
             const cliSessionId = tab?.cliSessionId;
-            if (cliSessionId && sessionType && sessionType !== "terminal") {
+
+            // NEW: For CLIs with sessionIdFlag and NO existing cliSessionId,
+            // generate a deterministic UUID at spawn time to eliminate heuristic
+            // filesystem-based session ID detection.
+            // Only generate for active (non-exited) sessions: tab doesn't exist yet,
+            // or tab.isRunning is not explicitly false.
+            const isActiveSession = !tab || tab.isRunning !== false;
+            if (!cliSessionId && isActiveSession && sessionType && sessionType !== "terminal") {
+              const cliDef = CLI_REGISTRY[sessionType as import("@/lib/cli-registry").CliId];
+              if (cliDef?.sessionIdFlag && cliDef.sessionIdFlag !== "create-chat") {
+                const newSessionId = crypto.randomUUID();
+                useTerminalTabsStore.getState().setCliSessionId(tabId, newSessionId);
+                resumeArgs = [cliDef.sessionIdFlag, newSessionId];
+              }
+            }
+
+            if (!resumeArgs && cliSessionId && sessionType && sessionType !== "terminal") {
               const def = CLI_REGISTRY[sessionType];
               if (def?.resumeFlag) {
                 const resumeValue =
