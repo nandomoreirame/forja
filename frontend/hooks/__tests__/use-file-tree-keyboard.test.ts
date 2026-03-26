@@ -140,10 +140,11 @@ describe("useFileTreeKeyboard", () => {
   describe("Enter", () => {
     it("should toggle directory expand when focused on a directory", () => {
       setupStore({ focusedPath: "/project/src" });
+      const startRenameSpy = vi.spyOn(useFileTreeStore.getState(), "startRename");
       const handler = handleFileTreeKeyDown;
       fireKey(handler, "Enter");
-      // src was collapsed, now should be expanded
-      expect(useFileTreeStore.getState().expandedPaths["/project/src"]).toBe(true);
+      // Enter triggers startRename (VS Code behavior)
+      expect(startRenameSpy).toHaveBeenCalledWith("/project/src");
     });
 
     it("should pin file when focused on a file", () => {
@@ -151,10 +152,11 @@ describe("useFileTreeKeyboard", () => {
         focusedPath: "/project/README.md",
         expandedPaths: {},
       });
-      const pinFileSpy = vi.spyOn(useFileTreeStore.getState(), "pinFile");
+      const startRenameSpy = vi.spyOn(useFileTreeStore.getState(), "startRename");
       const handler = handleFileTreeKeyDown;
       fireKey(handler, "Enter");
-      expect(pinFileSpy).toHaveBeenCalledWith("/project/README.md");
+      // Enter triggers startRename for files too (VS Code behavior)
+      expect(startRenameSpy).toHaveBeenCalledWith("/project/README.md");
     });
 
     it("should do nothing when focusedPath is null", () => {
@@ -183,11 +185,14 @@ describe("useFileTreeKeyboard", () => {
       expect(useFileTreeStore.getState().focusedPath).toBe("/project/src/index.ts");
     });
 
-    it("should do nothing on a file", () => {
+    it("should open file preview on a file", () => {
       setupStore({ focusedPath: "/project/README.md" });
+      const selectFileSpy = vi.spyOn(useFileTreeStore.getState(), "selectFile");
       const handler = handleFileTreeKeyDown;
       const { prevented } = fireKey(handler, "ArrowRight");
-      expect(prevented).toBe(false);
+      // ArrowRight on a file opens the file preview (preventDefault is called)
+      expect(prevented).toBe(true);
+      expect(selectFileSpy).toHaveBeenCalledWith("/project/README.md");
     });
   });
 
@@ -240,19 +245,23 @@ describe("useFileTreeKeyboard", () => {
   });
 
   describe("Space", () => {
-    it("should toggle selection on the focused item", () => {
+    it("should open file preview when focused on a file", () => {
       setupStore({ focusedPath: "/project/README.md" });
       const handler = handleFileTreeKeyDown;
-      fireKey(handler, " ");
-      expect(useFileTreeStore.getState().selectedPaths["/project/README.md"]).toBe(true);
+      const { prevented } = fireKey(handler, " ");
+      // Space on a file calls preventDefault (the handler processes it)
+      expect(prevented).toBe(true);
+      // selectedPaths is NOT toggled (Space no longer toggles selection)
+      expect(useFileTreeStore.getState().selectedPaths["/project/README.md"]).toBeUndefined();
     });
 
-    it("should deselect an already-selected item", () => {
-      setupStore({ focusedPath: "/project/README.md" });
-      useFileTreeStore.setState({ selectedPaths: { "/project/README.md": true } });
+    it("should toggle directory expand when focused on a directory", () => {
+      setupStore({ focusedPath: "/project/src" });
+      const toggleExpandedSpy = vi.spyOn(useFileTreeStore.getState(), "toggleExpanded");
       const handler = handleFileTreeKeyDown;
       fireKey(handler, " ");
-      expect(useFileTreeStore.getState().selectedPaths["/project/README.md"]).toBeUndefined();
+      // Space on a directory toggles expanded state
+      expect(toggleExpandedSpy).toHaveBeenCalledWith("/project/src");
     });
 
     it("should call preventDefault when space is pressed", () => {
@@ -264,9 +273,10 @@ describe("useFileTreeKeyboard", () => {
 
     it("should do nothing when focusedPath is null", () => {
       setupStore();
+      const selectFileSpy = vi.spyOn(useFileTreeStore.getState(), "selectFile");
       const handler = handleFileTreeKeyDown;
       fireKey(handler, " ");
-      expect(useFileTreeStore.getState().selectedPaths).toEqual({});
+      expect(selectFileSpy).not.toHaveBeenCalled();
     });
   });
 

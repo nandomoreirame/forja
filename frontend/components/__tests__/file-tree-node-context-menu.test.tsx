@@ -102,7 +102,7 @@ describe("FileTreeNode - Context Menu", () => {
     const button = screen.getByRole("button");
     await user.pointer({ target: button, keys: "[MouseRight]" });
 
-    expect(await screen.findByText("Rename")).toBeInTheDocument();
+    expect(await screen.findByText("Rename...")).toBeInTheDocument();
   });
 
   it("shows Delete option in context menu for a file", async () => {
@@ -162,7 +162,7 @@ describe("FileTreeNode - Context Menu", () => {
     await user.pointer({ target: button, keys: "[MouseRight]" });
 
     // Rename option should be present in the context menu
-    const renameOption = await screen.findByText("Rename");
+    const renameOption = await screen.findByText("Rename...");
     expect(renameOption).toBeInTheDocument();
 
     // Clicking Rename should be possible (menu item is not disabled)
