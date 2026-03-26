@@ -18,13 +18,11 @@ import {
   FolderTree,
   Globe,
   MessageCircle,
-  Plus,
   Puzzle,
   RefreshCw,
   Store,
 } from "lucide-react";
 import { useTilingLayoutStore } from "@/stores/tiling-layout";
-import { useCommandPaletteStore } from "@/stores/command-palette";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useAgentChatStore } from "@/stores/agent-chat";
@@ -32,7 +30,7 @@ import { useFileTreeStore, findNode } from "@/stores/file-tree";
 import { useProjectsStore } from "@/stores/projects";
 import { useSessionStateStore } from "@/stores/session-state";
 import { blockFactory } from "@/components/block-factory";
-import { ForjaEmptyState } from "@/components/forja-empty-state";
+import { TabsetEmptyState } from "@/components/tabset-empty-state";
 import { CliIcon } from "@/components/cli-icon";
 import { TabNameOverlay } from "@/components/tab-name-overlay";
 import { TabContextMenu } from "@/components/tab-context-menu";
@@ -64,41 +62,7 @@ const STATE_CLASSES: Record<string, string> = {
 const RENAMABLE_BLOCK_TYPES = new Set(["terminal", "browser"]);
 
 function TilingEmptyState() {
-  const btnClass = "flex items-center gap-2 rounded-md border border-ctp-surface0 px-4 py-2 text-app text-ctp-subtext0 transition-colors hover:bg-ctp-mantle hover:text-ctp-text";
-  return (
-    <ForjaEmptyState>
-      <div className="flex items-center gap-3">
-        <button onClick={() => useCommandPaletteStore.getState().open("sessions")} className={btnClass}>
-          <Plus className="h-4 w-4" strokeWidth={1.5} />
-          New Session
-        </button>
-        <button
-          onClick={() => {
-            const tilingStore = useTilingLayoutStore.getState();
-            if (!tilingStore.hasBlock("tab-file-tree")) {
-              const tree = useFileTreeStore.getState().tree;
-              tilingStore.addBlock({ type: "file-tree", projectName: tree?.root.name }, undefined, "tab-file-tree");
-            }
-          }}
-          className={btnClass}
-        >
-          <FolderTree className="h-4 w-4" strokeWidth={1.5} />
-          Open Files
-        </button>
-        <button
-          onClick={() => {
-            const tilingStore = useTilingLayoutStore.getState();
-            const blockId = `browser-${Date.now().toString(36)}`;
-            tilingStore.addBlock({ type: "browser", url: "https://github.com/nandomoreirame/forja" }, undefined, blockId);
-          }}
-          className={btnClass}
-        >
-          <Globe className="h-4 w-4" strokeWidth={1.5} />
-          Browser
-        </button>
-      </div>
-    </ForjaEmptyState>
-  );
+  return <TabsetEmptyState />;
 }
 
 export function TilingLayout() {
@@ -408,6 +372,11 @@ export function TilingLayout() {
     [sessionStates, isPinned, previewTabId],
   );
 
+  const onTabSetPlaceHolder = useCallback(
+    () => <TabsetEmptyState />,
+    [],
+  );
+
   const onContextMenu = useCallback(
     (node: TabNode | TabSetNode | BorderNode, event: React.MouseEvent) => {
       event.preventDefault();
@@ -442,6 +411,7 @@ export function TilingLayout() {
         onModelChange={handleModelChange}
         onRenderTabSet={onRenderTabSet}
         onRenderTab={onRenderTab}
+        onTabSetPlaceHolder={onTabSetPlaceHolder}
         onContextMenu={onContextMenu}
       />
       <TabNameOverlay />
