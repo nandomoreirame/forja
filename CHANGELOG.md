@@ -8,6 +8,26 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.8.2] - 2026-03-26
+
+### Added
+- Display model name in session status bar.
+- Add session model extraction from JSONL.
+- Add session status bar to terminal pane.
+- Add native context menu and DevTools button.
+- VS Code-like file explorer improvements.
+- Delete key with multi-file confirmation.
+- Paste images from clipboard into file tree.
+- Enhanced context menu with copy path, reveal, new file/folder.
+- Cut/copy/paste file operations with Cmd+X/C/V.
+- Add copy, move, create file/dir IPC handlers.
+- Multi-select visual feedback.
+- Space select, Enter open/rename, F2 rename.
+- Italic tab name for preview mode, auto-pin on edit.
+- Single-click preview, double-click pin.
+- Add preview mode state (pinned vs preview).
+---
+
 ## [1.8.1] - 2026-03-26
 
 ---
