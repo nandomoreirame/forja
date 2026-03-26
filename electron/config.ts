@@ -53,6 +53,7 @@ export interface ProjectUiState {
     cliSessionId?: string;  // For CLI session resume
     exited?: boolean;       // True when session had ended before persistence
     customName?: string;    // User-defined tab name (persisted across restarts)
+    tmuxSessionName?: string;  // Tmux session name for persistent terminal sessions
   }>;
   activeTabIndex?: number;
   layoutJson?: Record<string, unknown>;
