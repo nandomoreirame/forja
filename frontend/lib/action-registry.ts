@@ -11,7 +11,7 @@ const STATIC_ACTIONS: ActionRegistryEntry[] = [
   // Panels & View group
   {
     id: "open-files",
-    label: "Open Files",
+    label: "Toggle Files",
     icon: "folder-tree",
     group: "Panels & View",
     shortcut: "Ctrl+Shift+E",

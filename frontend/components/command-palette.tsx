@@ -328,11 +328,11 @@ export function CommandPalette() {
             <CommandGroup heading="Panels & View">
               {currentPath && (
                 <CommandItem
-                  value="Open Files"
+                  value="Toggle Files"
                   onSelect={handleOpenFiles}
                 >
                   <FolderTree className="h-4 w-4" strokeWidth={1.5} />
-                  Open Files
+                  Toggle Files
                   <CommandShortcut>{mod}+Shift+E</CommandShortcut>
                 </CommandItem>
               )}

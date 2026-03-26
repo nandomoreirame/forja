@@ -29,7 +29,7 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
       { label: "Go to Project", keys: [mod, "Shift", "L"] },
       { label: "Switch Project 1-9", keys: [mod, "Shift", "1-9"] },
       { label: "Add Project", keys: [mod, "Shift", "O"] },
-      { label: "Open Files", keys: [mod, "Shift", "E"] },
+      { label: "Toggle Files", keys: [mod, "Shift", "E"] },
       { label: "Open Browser", keys: [mod, "Shift", "B"] },
       { label: "Close File Preview", keys: [mod, "W"] },
       { label: "Toggle Focus Mode", keys: [mod, "Alt", "F"] },
