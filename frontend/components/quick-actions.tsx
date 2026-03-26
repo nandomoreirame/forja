@@ -206,10 +206,10 @@ export function QuickActions() {
                       </Tooltip>
                     </span>
                   </ContextMenuTrigger>
-                  <ContextMenuContent>
+                  <ContextMenuContent className="min-w-48 border-ctp-surface1 bg-overlay-mantle">
                     <ContextMenuItem
-                      onClick={() => useQuickActionsStore.getState().removeAction(actionId)}
-                      className="text-ctp-red"
+                      onSelect={() => useQuickActionsStore.getState().removeAction(actionId)}
+                      className="gap-2 text-app-sm text-ctp-red focus:bg-ctp-surface0 focus:text-ctp-red"
                     >
                       <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                       Remove from quick actions
