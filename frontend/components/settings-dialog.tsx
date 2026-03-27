@@ -415,6 +415,22 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
           className={numberInputClass}
         />
       </SettingItem>
+
+      <SettingItem
+        category="UI"
+        label="Shortcut Hints"
+        description="Show keyboard shortcut badges when holding modifier keys."
+      >
+        <label className="flex items-center gap-2 cursor-pointer" aria-label="Shortcut hints">
+          <input
+            type="checkbox"
+            checked={localSettings.ui.shortcutHints}
+            onChange={(e) => update({ ui: { ...localSettings.ui, shortcutHints: e.target.checked } })}
+            className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-surface0 accent-ctp-mauve"
+          />
+          <span className="text-app-xs text-ctp-subtext0">{localSettings.ui.shortcutHints ? "Enabled" : "Disabled"}</span>
+        </label>
+      </SettingItem>
     </div>
   );
 }

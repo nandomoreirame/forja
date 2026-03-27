@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useModifierHeldStore, type ModifierCombo } from "@/stores/modifier-held";
+import { useUserSettingsStore } from "@/stores/user-settings";
 
 export function detectModifierCombo(e: KeyboardEvent): ModifierCombo | null {
   const mod = e.metaKey || e.ctrlKey;
@@ -38,7 +39,11 @@ function isModifierKey(key: string): boolean {
 }
 
 export function useModifierHeld(): void {
+  const shortcutHints = useUserSettingsStore((s) => s.settings.ui.shortcutHints);
+
   useEffect(() => {
+    if (!shortcutHints) return;
+
     const store = useModifierHeldStore.getState;
 
     function handleKeyDown(e: KeyboardEvent) {
@@ -101,5 +106,5 @@ export function useModifierHeld(): void {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       store().cancelBadges();
     };
-  }, []);
+  }, [shortcutHints]);
 }
