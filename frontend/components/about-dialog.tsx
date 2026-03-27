@@ -183,6 +183,76 @@ function DetailsView({
   );
 }
 
+interface Contributor {
+  name: string;
+  username: string;
+  url: string;
+}
+
+interface Technology {
+  name: string;
+  url: string;
+}
+
+const CREATOR: Contributor = {
+  name: "Fernando Moreira",
+  username: "nandomoreirame",
+  url: "https://github.com/nandomoreirame",
+};
+
+const CONTRIBUTORS: Contributor[] = [
+  {
+    name: "Giulliano Soares",
+    username: "giullianosoares",
+    url: "https://github.com/giullianosoares",
+  },
+  {
+    name: "Walter Frey",
+    username: "walterfrey",
+    url: "https://github.com/walterfrey",
+  },
+];
+
+const TECHNOLOGIES: Technology[] = [
+  { name: "Electron", url: "https://www.electronjs.org" },
+  { name: "React", url: "https://react.dev" },
+  { name: "TypeScript", url: "https://www.typescriptlang.org" },
+  { name: "xterm.js", url: "https://xtermjs.org" },
+  { name: "tmux", url: "https://github.com/tmux/tmux" },
+];
+
+interface ContributorRowProps {
+  contributor: Contributor;
+}
+
+function ContributorRow({ contributor }: ContributorRowProps) {
+  return (
+    <button
+      onClick={() => openExternal(contributor.url)}
+      className="flex w-full items-center gap-3 px-3 py-2.5 text-app text-ctp-text transition-colors hover:bg-ctp-surface1"
+    >
+      <img
+        src={`https://github.com/${contributor.username}.png`}
+        alt={contributor.name}
+        className="h-8 w-8 rounded-full bg-ctp-surface1 object-cover"
+        loading="lazy"
+      />
+      <div className="flex flex-1 flex-col items-start text-left">
+        <span className="text-app font-medium text-ctp-text">
+          {contributor.name}
+        </span>
+        <span className="text-app-sm text-ctp-overlay1">
+          @{contributor.username}
+        </span>
+      </div>
+      <ExternalLink
+        className="h-3.5 w-3.5 shrink-0 text-ctp-overlay1"
+        strokeWidth={1.5}
+      />
+    </button>
+  );
+}
+
 function CreditsView({ onBack }: { onBack: () => void }) {
   return (
     <>
@@ -193,18 +263,18 @@ function CreditsView({ onBack }: { onBack: () => void }) {
             Created by
           </h3>
           <div className="overflow-hidden rounded-lg bg-ctp-surface0">
-            <button
-              onClick={() =>
-                openExternal("https://github.com/nandomoreirame")
-              }
-              className="flex w-full items-center justify-between px-4 py-3 text-app text-ctp-text transition-colors hover:bg-ctp-surface1"
-            >
-              <span>Fernando Moreira</span>
-              <ExternalLink
-                className="h-3.5 w-3.5 text-ctp-overlay1"
-                strokeWidth={1.5}
-              />
-            </button>
+            <ContributorRow contributor={CREATOR} />
+          </div>
+        </div>
+
+        <div>
+          <h3 className="mb-2 text-app-sm font-medium uppercase tracking-wider text-ctp-overlay0">
+            Contributors
+          </h3>
+          <div className="divide-y divide-ctp-base/30 overflow-hidden rounded-lg bg-ctp-surface0">
+            {CONTRIBUTORS.map((contributor) => (
+              <ContributorRow key={contributor.username} contributor={contributor} />
+            ))}
           </div>
         </div>
 
@@ -213,13 +283,18 @@ function CreditsView({ onBack }: { onBack: () => void }) {
             Built with
           </h3>
           <div className="divide-y divide-ctp-base/30 overflow-hidden rounded-lg bg-ctp-surface0">
-            {["Electron", "React", "TypeScript", "xterm.js"].map((tech) => (
-              <div
-                key={tech}
-                className="px-4 py-2.5 text-app text-ctp-subtext0"
+            {TECHNOLOGIES.map((tech) => (
+              <button
+                key={tech.name}
+                onClick={() => openExternal(tech.url)}
+                className="flex w-full items-center justify-between px-4 py-2.5 text-app text-ctp-subtext0 transition-colors hover:bg-ctp-surface1 hover:text-ctp-text"
               >
-                {tech}
-              </div>
+                <span>{tech.name}</span>
+                <ExternalLink
+                  className="h-3.5 w-3.5 text-ctp-overlay1"
+                  strokeWidth={1.5}
+                />
+              </button>
             ))}
           </div>
         </div>
