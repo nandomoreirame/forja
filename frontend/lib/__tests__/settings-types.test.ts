@@ -36,7 +36,7 @@ describe("DEFAULT_SETTINGS", () => {
         custom: [],
       },
       performance: { mode: "auto" },
-      ui: { activePaneHighlight: true, hoverToFocus: true },
+      ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true },
     });
   });
 });
@@ -135,10 +135,11 @@ describe("ui settings", () => {
 
   it("preserves explicit ui settings", () => {
     const result = mergeWithDefaults({
-      ui: { activePaneHighlight: false, hoverToFocus: false },
+      ui: { activePaneHighlight: false, hoverToFocus: false, shortcutHints: false },
     } as Partial<UserSettings>);
     expect(result.ui.activePaneHighlight).toBe(false);
     expect(result.ui.hoverToFocus).toBe(false);
+    expect(result.ui.shortcutHints).toBe(false);
   });
 
   it("merges partial ui settings with defaults", () => {
@@ -149,9 +150,14 @@ describe("ui settings", () => {
     expect(result.ui.hoverToFocus).toBe(true);
   });
 
+  it("defaults ui.shortcutHints to true", () => {
+    const result = mergeWithDefaults({});
+    expect(result.ui.shortcutHints).toBe(true);
+  });
+
   it("defaults ui when given undefined input", () => {
     const result = mergeWithDefaults(undefined as unknown as Partial<UserSettings>);
-    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true });
+    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true, shortcutHints: true });
   });
 });
 
