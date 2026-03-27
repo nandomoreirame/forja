@@ -30,7 +30,7 @@ function TooltipTrigger({
 
 function TooltipContent({
   className,
-  sideOffset = 0,
+  sideOffset = 4,
   children,
   ...props
 }: React.ComponentProps<typeof TooltipPrimitive.Content>) {
@@ -46,7 +46,12 @@ function TooltipContent({
         {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="z-50 size-2.5 translate-y-[calc(-50%_-_2px)] rotate-45 rounded-[2px] bg-overlay-mantle fill-overlay-mantle" />
+        <TooltipPrimitive.Arrow asChild>
+          <svg width="12" height="7" viewBox="0 0 30 11" preserveAspectRatio="none" className="-my-px">
+            <polygon points="0,-1 30,-1 15,10" className="fill-overlay-mantle" />
+            <polyline points="0,0 15,10 30,0" className="stroke-ctp-surface1" fill="none" strokeWidth="2" strokeLinejoin="round" />
+          </svg>
+        </TooltipPrimitive.Arrow>
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )
