@@ -8,6 +8,31 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.8.6] - 2026-03-27
+
+### Added
+
+- Add titlebar dropdown menu with View section (Reload, DevTools, Zoom In/Out/Reset, Fullscreen) and Alt key toggle.
+- Add command palette search bar in titlebar center replacing static title.
+- Add HoverCard component for project sidebar with larger name, smaller path, and proper arrow border.
+- Add temporary mauve glow ring on project icon when switching via Ctrl+Shift+N.
+- Add avatars, @usernames, and contributor section to Credits dialog.
+- Add clickable technology links (including tmux) to Credits dialog.
+- Add rounded border to empty state containers matching pane styling.
+- Add kill-before-install to build script, stopping running Forja processes before upgrading.
+
+### Changed
+
+- Replace project sidebar tooltip with HoverCard for richer hover info.
+- Remove bare Alt from modifier tracking; Alt now toggles the titlebar menu.
+- Remove lite mode toggle button from titlebar.
+
+### Fixed
+
+- Fix tooltip arrow rendering with SVG polyline for correct diagonal border edges.
+
+---
+
 ## [1.8.5] - 2026-03-27
 
 ### Added
