@@ -66,14 +66,29 @@ export async function createTmuxSession(opts: TmuxSessionOptions): Promise<void>
       if (err) {
         // "duplicate session" means the session survived from a previous run — reuse it
         if (err.message?.includes("duplicate session")) {
-          return resolve();
+          // Re-apply session options (mouse off, status off) for reattach
+          execFile("tmux", ["set-option", "-t", sessionName, "mouse", "off"], { timeout: 3000 }, () => {
+            execFile("tmux", ["set-option", "-t", sessionName, "status", "off"], { timeout: 3000 }, () => {
+              resolve();
+            });
+          });
+          return;
         }
         return reject(err);
       }
-      // Hide tmux status bar — Forja provides its own UI chrome
-      execFile("tmux", ["set-option", "-t", sessionName, "status", "off"], { timeout: 3000 }, () => {
-        resolve(); // Ignore errors — status bar is cosmetic
-      });
+      // Configure tmux session for Forja:
+      // - status off: hide tmux status bar (Forja provides its own UI)
+      // - mouse off: prevent tmux from capturing mouse (xterm.js handles selection)
+      const sessionOpts = [
+        ["set-option", "-t", sessionName, "status", "off"],
+        ["set-option", "-t", sessionName, "mouse", "off"],
+      ];
+      let remaining = sessionOpts.length;
+      for (const optArgs of sessionOpts) {
+        execFile("tmux", optArgs, { timeout: 3000 }, () => {
+          if (--remaining === 0) resolve();
+        });
+      }
     });
   });
 }

@@ -225,7 +225,7 @@ describe("useSessionStateStore", () => {
   });
 
   describe("notification on session exit", () => {
-    it("calls pty:notify-session-finished on exit after AI output", async () => {
+    it("does not call pty:notify-session-finished on exit", async () => {
       const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockClear();
 
@@ -234,20 +234,10 @@ describe("useSessionStateStore", () => {
       onData("tab-1", meta);
       onExit("tab-1");
 
-      expect(invoke).toHaveBeenCalledWith("pty:notify-session-finished", {
-        projectPath: "/home/user/my-app",
-        sessionType: "claude",
-        activeProjectPath: null,
-        tabId: "tab-1",
-      });
-    });
-
-    it("marks project as notified on exit after AI output", () => {
-      const { onData, onExit } = useSessionStateStore.getState();
-      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
-      onExit("tab-1");
-
-      expect(mockMarkProjectNotified).toHaveBeenCalledWith("/home/user/my-app");
+      expect(invoke).not.toHaveBeenCalledWith(
+        "pty:notify-session-finished",
+        expect.anything(),
+      );
     });
 
     it("calls pty:notify-session-finished on thinking → ready transition", async () => {

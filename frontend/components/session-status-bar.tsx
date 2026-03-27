@@ -3,6 +3,12 @@ import { CLI_REGISTRY, type SessionType } from "@/lib/cli-registry";
 import { useSessionStateStore } from "@/stores/session-state";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { memo, useEffect, useState } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 interface SessionStatusBarProps {
   tabId: string;
@@ -28,6 +34,11 @@ function formatElapsed(createdAt: number | undefined): string | null {
   const minutes = Math.floor((diff % 3600) / 60);
   if (hours > 0) return `${hours}h${minutes > 0 ? `${minutes}m` : ""}`;
   return `${minutes}m`;
+}
+
+function formatStartTime(createdAt: number | undefined): string | null {
+  if (!createdAt) return null;
+  return new Date(createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function shortenPath(fullPath: string, username: string | null): string {
@@ -64,6 +75,32 @@ const SESSION_STATE_STYLES: Record<string, string> = {
   exited: "text-ctp-overlay0",
 };
 
+const SESSION_STATE_DESCRIPTIONS: Record<string, string> = {
+  idle: "Waiting for input",
+  thinking: "Processing response",
+  ready: "Ready for input",
+  exited: "Session ended",
+};
+
+interface StatusItemProps {
+  tooltip: string;
+  children: React.ReactNode;
+  className?: string;
+}
+
+function StatusItem({ tooltip, children, className }: StatusItemProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={className}>{children}</span>
+      </TooltipTrigger>
+      <TooltipContent side="top" sideOffset={6}>
+        {tooltip}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export const SessionStatusBar = memo(function SessionStatusBar({
   tabId,
   path,
@@ -73,6 +110,7 @@ export const SessionStatusBar = memo(function SessionStatusBar({
   const [hostInfo, setHostInfo] = useState<HostInfo | null>(null);
   const [elapsed, setElapsed] = useState<string | null>(null);
   const [modelName, setModelName] = useState<string | null>(null);
+  const [rawModelId, setRawModelId] = useState<string | null>(null);
   const sessionState = useSessionStateStore((s) => s.getState(tabId));
   const tab = useTerminalTabsStore((s) => s.tabs.find((t: { id: string }) => t.id === tabId));
 
@@ -122,7 +160,10 @@ export const SessionStatusBar = memo(function SessionStatusBar({
       projectPath: path,
       sessionId: tab.cliSessionId,
     }).then((model) => {
-      if (!cancelled && model) setModelName(formatModelName(model));
+      if (!cancelled && model) {
+        setRawModelId(model);
+        setModelName(formatModelName(model));
+      }
     }).catch(() => {});
 
     return () => { cancelled = true; };
@@ -136,65 +177,94 @@ export const SessionStatusBar = memo(function SessionStatusBar({
     ? `${gitInfo.branch}${gitInfo.modified_count > 0 ? "*" : ""}`
     : null;
 
+  const cliDef = isAiCli ? CLI_REGISTRY[sessionType as keyof typeof CLI_REGISTRY] : null;
+  const startTime = formatStartTime(tab?.createdAt);
+
   return (
-    <div className="flex h-9 shrink-0 items-center gap-3 border-t border-ctp-surface0 bg-ctp-mantle px-3 font-sans text-app-xs text-ctp-overlay1">
-      {/* Left side: session/PTY context */}
-      {isAiCli && (
-        <>
-          <span className={CLI_REGISTRY[sessionType as keyof typeof CLI_REGISTRY]?.iconColor ?? "text-ctp-overlay1"}>
-            {CLI_REGISTRY[sessionType as keyof typeof CLI_REGISTRY]?.displayName ?? sessionType}
-          </span>
-          {modelName && (
-            <>
-              <Separator />
-              <span className="text-ctp-subtext0">{modelName}</span>
-            </>
-          )}
-          <Separator />
-          <span className={SESSION_STATE_STYLES[sessionState] ?? "text-ctp-overlay1"}>
-            {sessionState}
-          </span>
-          {tab?.cliSessionId && (
-            <>
-              <Separator />
-              <span>{tab.cliSessionId.slice(0, 8)}</span>
-            </>
-          )}
-          {elapsed && (
-            <>
-              <Separator />
-              <span>{elapsed}</span>
-            </>
-          )}
-        </>
-      )}
+    <TooltipProvider delayDuration={400}>
+      <div className="flex h-9 shrink-0 items-center gap-3 border-t border-ctp-surface0 bg-ctp-mantle px-3 font-sans text-app-xs text-ctp-overlay1">
+        {/* Left side: session/PTY context */}
+        {isAiCli && (
+          <>
+            <StatusItem
+              tooltip={`AI CLI: ${cliDef?.displayName ?? sessionType}`}
+              className={cliDef?.iconColor ?? "text-ctp-overlay1"}
+            >
+              {cliDef?.displayName ?? sessionType}
+            </StatusItem>
+            {modelName && (
+              <>
+                <Separator />
+                <StatusItem
+                  tooltip={`Model: ${rawModelId ?? modelName}`}
+                  className="text-ctp-subtext0"
+                >
+                  {modelName}
+                </StatusItem>
+              </>
+            )}
+            <Separator />
+            <StatusItem
+              tooltip={`State: ${SESSION_STATE_DESCRIPTIONS[sessionState] ?? sessionState}`}
+              className={SESSION_STATE_STYLES[sessionState] ?? "text-ctp-overlay1"}
+            >
+              {sessionState}
+            </StatusItem>
+            {tab?.cliSessionId && (
+              <>
+                <Separator />
+                <StatusItem tooltip={`Session: ${tab.cliSessionId}`}>
+                  {tab.cliSessionId.slice(0, 8)}
+                </StatusItem>
+              </>
+            )}
+            {elapsed && (
+              <>
+                <Separator />
+                <StatusItem tooltip={`Started at ${startTime}`}>
+                  {elapsed}
+                </StatusItem>
+              </>
+            )}
+          </>
+        )}
 
-      {isTerminal && (
-        <>
-          {tab?.tmuxSessionName && (
-            <>
-              <span className="text-ctp-green text-[10px] font-medium">
-                {derivedPaneCommand ?? "Terminal"}
-              </span>
-              <Separator />
-            </>
-          )}
-          {hostInfo && (
-            <span>{hostInfo.username}@{hostInfo.hostname}</span>
-          )}
-          {hostInfo ? <Separator /> : null}
-          <span>{shortenPath(path, hostInfo?.username ?? null)}</span>
-        </>
-      )}
+        {isTerminal && (
+          <>
+            {tab?.tmuxSessionName && (
+              <>
+                <StatusItem
+                  tooltip="Persistent terminal (tmux)"
+                  className="text-ctp-green text-[10px] font-medium"
+                >
+                  {derivedPaneCommand ?? "Terminal"}
+                </StatusItem>
+                <Separator />
+              </>
+            )}
+            {hostInfo && (
+              <StatusItem tooltip={`Host: ${hostInfo.hostname}`}>
+                {hostInfo.username}@{hostInfo.hostname}
+              </StatusItem>
+            )}
+            {hostInfo ? <Separator /> : null}
+            <StatusItem tooltip={path}>
+              {shortenPath(path, hostInfo?.username ?? null)}
+            </StatusItem>
+          </>
+        )}
 
-      {/* Right side: git info */}
-      {branchDisplay && (
-        <div className="ml-auto flex items-center gap-3">
-          <span>
-            {projectName} git:({branchDisplay})
-          </span>
-        </div>
-      )}
-    </div>
+        {/* Right side: git info */}
+        {branchDisplay && (
+          <div className="ml-auto flex items-center gap-3">
+            <StatusItem
+              tooltip={`Branch: ${gitInfo!.branch}${gitInfo!.modified_count > 0 ? ` (${gitInfo!.modified_count} modified)` : ""}`}
+            >
+              {projectName} git:({branchDisplay})
+            </StatusItem>
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 });

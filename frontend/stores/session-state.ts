@@ -115,16 +115,6 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       // Bridge to projects store: clear thinking if no other tab thinking
       const meta = tabMetas.get(tabId);
       if (meta && meta.sessionType !== "terminal") {
-        if (tabsWithOutput.has(tabId)) {
-          const payload: FinishedNotificationPayload = {
-            projectPath: meta.projectPath,
-            sessionType: meta.sessionType,
-            activeProjectPath: useProjectsStore.getState().activeProjectPath,
-            tabId,
-          };
-          void invoke("pty:notify-session-finished", payload);
-          useProjectsStore.getState().markProjectNotified(meta.projectPath);
-        }
         if (!isAnyTabThinkingForProject(meta.projectPath, tabId)) {
           useProjectsStore.getState().setProjectThinking(meta.projectPath, false);
         }
