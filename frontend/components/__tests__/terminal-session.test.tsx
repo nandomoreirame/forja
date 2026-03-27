@@ -734,6 +734,7 @@ describe("TerminalSession", () => {
         focus: vi.fn(),
         refresh: vi.fn(),
         getSelection: vi.fn().mockReturnValue(""),
+        onSelectionChange: vi.fn().mockReturnValue({ dispose: vi.fn() }),
         attachCustomKeyEventHandler: vi.fn(),
         options: {},
         rows: 24,

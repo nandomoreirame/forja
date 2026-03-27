@@ -28,6 +28,7 @@ vi.mock("@xterm/xterm", () => ({
     focus = mockFocus;
     attachCustomKeyEventHandler = vi.fn();
     getSelection = vi.fn(() => "");
+    onSelectionChange = vi.fn().mockReturnValue({ dispose: vi.fn() });
     options = {};
   },
 }));
