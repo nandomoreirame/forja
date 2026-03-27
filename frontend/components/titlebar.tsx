@@ -124,7 +124,7 @@ export function Titlebar() {
     <div
       style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
       className={cn(
-        "relative flex h-10 shrink-0 select-none items-center justify-between pr-3",
+        "relative flex h-12 shrink-0 select-none items-center justify-between pr-3",
         isMac && "pl-[78px]"
       )}
     >
