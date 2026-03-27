@@ -228,13 +228,13 @@ describe("user-settings module", () => {
     const { loadUserSettings } = await import("../user-settings");
     const result = await loadUserSettings();
 
-    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true });
+    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true, shortcutHints: true });
   });
 
   it("loadUserSettings preserves explicit ui settings", async () => {
     const fsp = await import("fs/promises");
     vi.mocked(fsp.readFile).mockResolvedValue(
-      JSON.stringify({ ui: { activePaneHighlight: false, hoverToFocus: false } }),
+      JSON.stringify({ ui: { activePaneHighlight: false, hoverToFocus: false, shortcutHints: false } }),
     );
 
     const { loadUserSettings } = await import("../user-settings");
@@ -242,6 +242,7 @@ describe("user-settings module", () => {
 
     expect(result.ui.activePaneHighlight).toBe(false);
     expect(result.ui.hoverToFocus).toBe(false);
+    expect(result.ui.shortcutHints).toBe(false);
   });
 
   it("saveUserSettings throws on invalid JSON", async () => {
