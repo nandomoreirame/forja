@@ -315,11 +315,11 @@ export function WorkspaceSwitcher() {
                   key={ws.id}
                   className="flex items-center gap-2 rounded-md bg-ctp-surface0/50 px-2 py-1.5"
                 >
-                  {wsIndex < 9 && (
+                  {showWorkspaceBadges && wsIndex < 9 && (
                     <ShortcutBadge
                       label={String(wsIndex + 1)}
                       variant="active"
-                      visible={showWorkspaceBadges}
+                      visible
                       className="shrink-0"
                     />
                   )}
@@ -356,11 +356,11 @@ export function WorkspaceSwitcher() {
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-app text-ctp-text transition-colors hover:bg-ctp-surface0"
                 aria-label={ws.name}
               >
-                {wsIndex < 9 && (
+                {showWorkspaceBadges && wsIndex < 9 && (
                   <ShortcutBadge
                     label={String(wsIndex + 1)}
                     variant="inactive"
-                    visible={showWorkspaceBadges}
+                    visible
                     className="shrink-0"
                   />
                 )}
