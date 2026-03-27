@@ -23,12 +23,14 @@ let capturedKeyHandler: ((event: KeyboardEvent) => boolean) | undefined;
 const terminalInstances: Array<{ options: Record<string, unknown> }> = [];
 
 const mockRefresh = vi.fn();
+const mockOnSelectionChange = vi.fn().mockReturnValue({ dispose: vi.fn() });
 vi.mock("@xterm/xterm", () => ({
   Terminal: class MockTerminal {
     open = mockOpen;
     write = mockWrite;
     dispose = mockDispose;
     onData = mockOnData;
+    onSelectionChange = mockOnSelectionChange;
     loadAddon = mockLoadAddon;
     focus = mockFocus;
     getSelection = mockGetSelection;
@@ -158,6 +160,7 @@ describe("TerminalSession", () => {
     mockLoadAddon.mockClear();
     mockFocus.mockClear();
     mockRefresh.mockClear();
+    mockOnSelectionChange.mockClear().mockReturnValue({ dispose: vi.fn() });
     mockPtyWrite.mockClear();
     mockPtySpawn.mockClear().mockImplementation(() => Promise.resolve("mock-tab"));
     mockResize.mockClear();
