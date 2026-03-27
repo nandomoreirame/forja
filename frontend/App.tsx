@@ -130,7 +130,7 @@ function EmptyState() {
   const openProject = useFileTreeStore((s) => s.openProject);
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-8">
+    <div className="flex flex-1 flex-col items-center justify-center gap-8 rounded-lg border border-ctp-surface0">
       <div className="flex flex-col items-center gap-4">
         <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
         <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
@@ -802,7 +802,7 @@ function App({
                 onOpenProject={() => useFileTreeStore.getState().openProject()}
               />
             </div>
-            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden px-1 pb-1">
             {hasProject ? (
               sessionRestoreDone ? <TilingLayout /> : null
             ) : tilingTabCount > 0 ? (
