@@ -120,7 +120,7 @@ export function MarketplacePane() {
   const totalInstalled = installedFiltered.length + localOnlyPlugins.length;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-ctp-base">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Pane header */}
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">
         <span className="text-app-sm font-semibold text-ctp-text">Marketplace</span>

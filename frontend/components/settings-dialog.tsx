@@ -377,18 +377,18 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Window"
         label="Opacity"
-        description="Background opacity. Value between 0.3 and 1.0."
+        description="Background opacity. 1.0 = opaque, 0.95-0.05 = transparent."
       >
         <input
           type="number"
           value={opacityText}
-          min={0.3}
+          min={0.05}
           max={1}
-          step={0.01}
+          step={0.05}
           onChange={(e) => {
             setOpacityText(e.target.value);
             const v = Number(e.target.value);
-            if (!Number.isNaN(v) && v >= 0.3 && v <= 1.0) {
+            if (!Number.isNaN(v) && v >= 0.05 && v <= 1.0) {
               update({ window: { ...localSettings.window, opacity: v } });
             }
           }}

@@ -16,7 +16,7 @@ export const CodeViewer = memo(function CodeViewer({ code, filename }: CodeViewe
   const language = detectLanguage(filename);
 
   return (
-    <Suspense fallback={<div className="h-full w-full bg-ctp-base" />}>
+    <Suspense fallback={<div className="h-full w-full" />}>
       <MonacoEditor
         value={code}
         language={language}

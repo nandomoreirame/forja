@@ -145,7 +145,7 @@ export function ChatPanel({ projectPath, nodeId }: ChatPanelProps) {
   return (
     <div
       data-testid="chat-panel"
-      className="flex h-full w-full flex-col bg-ctp-mantle"
+      className="flex h-full w-full flex-col"
     >
       {/* WIP Alert */}
       <div className="mx-3 mt-3 flex items-start gap-2 rounded-md border border-ctp-yellow/30 bg-ctp-yellow/10 px-3 py-2">
