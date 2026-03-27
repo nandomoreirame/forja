@@ -45,7 +45,7 @@ describe("TERMINAL_OPTIONS", () => {
     expect(TERMINAL_OPTIONS.theme).toBe(TERMINAL_THEME);
   });
 
-  it("does not enable transparency (WebGL incompatible)", () => {
-    expect(TERMINAL_OPTIONS.allowTransparency).toBeUndefined();
+  it("enables transparency for transparent pane backgrounds", () => {
+    expect(TERMINAL_OPTIONS.allowTransparency).toBe(true);
   });
 });

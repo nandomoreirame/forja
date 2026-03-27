@@ -15,7 +15,7 @@ describe("monaco-theme", () => {
   });
 
   it("should use Catppuccin Mocha background color", () => {
-    expect(catppuccinMochaTheme.colors["editor.background"]).toBe("#1e1e2e");
+    expect(catppuccinMochaTheme.colors["editor.background"]).toBe("#00000000");
   });
 
   it("should use Catppuccin Mocha text color", () => {

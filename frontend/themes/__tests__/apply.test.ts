@@ -53,17 +53,17 @@ describe("applyTheme", () => {
 });
 
 describe("buildTerminalTheme", () => {
-  it("maps theme to xterm ITheme", () => {
+  it("maps theme to xterm ITheme with transparent background", () => {
     const result = buildTerminalTheme(mocha);
-    expect(result.background).toBe("#1e1e2e");
+    expect(result.background).toBe("rgba(0, 0, 0, 0)");
     expect(result.foreground).toBe("#cdd6f4");
     expect(result.red).toBe("#f38ba8");
     expect(result.cursor).toBe("#cdd6f4");
   });
 
-  it("maps dracula correctly", () => {
+  it("maps dracula with transparent background", () => {
     const result = buildTerminalTheme(draculaTheme);
-    expect(result.background).toBe("#282a36");
+    expect(result.background).toBe("rgba(0, 0, 0, 0)");
     expect(result.red).toBe("#ff5555");
   });
 
@@ -74,23 +74,22 @@ describe("buildTerminalTheme", () => {
     expect(result.selectionForeground).toBe(mocha.colors.text);
   });
 
-  it("ignores opacity and always returns opaque background", () => {
+  it("always returns transparent background regardless of opacity", () => {
     const result = buildTerminalTheme(mocha, 0.85);
-    // WebGL renderer does not support rgba — always opaque
-    expect(result.background).toBe("#1e1e2e");
+    expect(result.background).toBe("rgba(0, 0, 0, 0)");
     expect(result.foreground).toBe("#cdd6f4");
     expect(result.cursor).toBe("#cdd6f4");
     expect(result.red).toBe("#f38ba8");
   });
 
-  it("keeps hex background when opacity is 1.0", () => {
+  it("returns transparent background when opacity is 1.0", () => {
     const result = buildTerminalTheme(mocha, 1.0);
-    expect(result.background).toBe("#1e1e2e");
+    expect(result.background).toBe("rgba(0, 0, 0, 0)");
   });
 
-  it("keeps hex background when opacity is undefined", () => {
+  it("returns transparent background when opacity is undefined", () => {
     const result = buildTerminalTheme(mocha);
-    expect(result.background).toBe("#1e1e2e");
+    expect(result.background).toBe("rgba(0, 0, 0, 0)");
   });
 });
 
@@ -114,12 +113,12 @@ describe("applyBackgroundOpacity", () => {
     document.documentElement.style.cssText = "";
   });
 
-  it("applies alpha to background CSS variables after applyTheme", () => {
+  it("applies alpha directly to background CSS variables after applyTheme", () => {
     applyTheme(mocha);
     applyBackgroundOpacity(0.85);
 
     const style = document.documentElement.style;
-    // --bg-base should be rgba with 0.85 alpha (mocha base is #1e1e2e)
+    // alpha is passed through directly (mocha base is #1e1e2e)
     expect(style.getPropertyValue("--bg-base")).toBe("rgba(30, 30, 46, 0.85)");
     // --bg-elevated (mocha mantle is #181825)
     expect(style.getPropertyValue("--bg-elevated")).toBe(
@@ -263,7 +262,7 @@ describe("buildMonacoTheme", () => {
   it("returns theme with correct base for dark", () => {
     const result = buildMonacoTheme(mocha);
     expect(result.base).toBe("vs-dark");
-    expect(result.colors["editor.background"]).toBe("#1e1e2e");
+    expect(result.colors["editor.background"]).toBe("#00000000");
     expect(result.colors["editor.foreground"]).toBe("#cdd6f4");
   });
 

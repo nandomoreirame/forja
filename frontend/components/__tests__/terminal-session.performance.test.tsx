@@ -44,12 +44,6 @@ vi.mock("@xterm/addon-web-links", () => ({
   WebLinksAddon: class MockWebLinksAddon {},
 }));
 
-vi.mock("@xterm/addon-webgl", () => ({
-  WebglAddon: class MockWebglAddon {
-    dispose = vi.fn();
-  },
-}));
-
 vi.mock("@xterm/xterm/css/xterm.css", () => ({}));
 
 vi.mock("@/hooks/use-pty", () => ({

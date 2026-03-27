@@ -67,17 +67,6 @@ vi.mock("@xterm/addon-web-links", () => ({
   },
 }));
 
-// Track WebglAddon instances for virtualization tests
-const webglInstances: Array<{ dispose: ReturnType<typeof vi.fn> }> = [];
-vi.mock("@xterm/addon-webgl", () => ({
-  WebglAddon: class MockWebglAddon {
-    dispose = vi.fn();
-    constructor() {
-      webglInstances.push(this);
-    }
-  },
-}));
-
 vi.mock("@xterm/xterm/css/xterm.css", () => ({}));
 
 // Mock terminal instance cache
@@ -175,7 +164,6 @@ describe("TerminalSession", () => {
     capturedKeyHandler = undefined;
     capturedOnDataCallback = undefined;
     mockGetSelection.mockReset().mockReturnValue("");
-    webglInstances.length = 0;
     terminalInstances.length = 0;
     mockCacheHas.mockReset().mockReturnValue(false);
     mockCacheGet.mockReset().mockReturnValue(undefined);
@@ -304,59 +292,6 @@ describe("TerminalSession", () => {
     });
   });
 
-  describe("WebGL virtualization", () => {
-    it("loads WebglAddon on mount", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
-      // Flush async init (pty:has-session IPC)
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(webglInstances).toHaveLength(1);
-    });
-
-    it("disposes WebglAddon immediately when hidden", async () => {
-      const { rerender } = render(
-        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(webglInstances).toHaveLength(1);
-      const webgl = webglInstances[0];
-
-      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-      expect(webgl.dispose).toHaveBeenCalledOnce();
-    });
-
-    it("recreates WebglAddon when terminal becomes visible after disposal", async () => {
-      const { rerender } = render(
-        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(webglInstances).toHaveLength(1);
-
-      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-      expect(webglInstances[0].dispose).toHaveBeenCalledOnce();
-
-      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
-      expect(webglInstances).toHaveLength(2);
-    });
-
-    it("does not dispose WebGL twice when unmounting after hide", async () => {
-      const { unmount, rerender } = render(
-        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
-      );
-      await Promise.resolve();
-      await Promise.resolve();
-      const webgl = webglInstances[0];
-
-      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-      expect(webgl.dispose).toHaveBeenCalledTimes(1);
-
-      unmount();
-      expect(webgl.dispose).toHaveBeenCalledTimes(1);
-    });
-  });
-
   describe("copy/paste keyboard shortcuts", () => {
     const mockClipboardWriteText = vi.fn().mockResolvedValue(undefined);
     const mockClipboardReadText = vi.fn().mockResolvedValue("");
@@ -465,7 +400,7 @@ describe("TerminalSession", () => {
   });
 
   describe("background opacity", () => {
-    it("keeps terminal background opaque even when opacity changes", async () => {
+    it("uses transparent background regardless of opacity setting", async () => {
       const { useUserSettingsStore } = await import("@/stores/user-settings");
       render(<TerminalSession tabId="tab-opacity" path="/test" isVisible={true} />);
       await Promise.resolve();
@@ -481,36 +416,10 @@ describe("TerminalSession", () => {
         window: { ...current.window, opacity: 0.7 },
       });
 
-      // WebGL renderer does not support rgba — background stays opaque
+      // Terminal background is always transparent — pane shows app bg layer
       const theme = terminal.options.theme as { background?: string };
       expect(theme).toBeDefined();
-      expect(theme.background).not.toContain("rgba(");
-      expect(theme.background).toBe("#1e1e2e");
-    });
-
-    it("keeps hex background regardless of opacity value", async () => {
-      const { useUserSettingsStore } = await import("@/stores/user-settings");
-      render(<TerminalSession tabId="tab-opacity2" path="/test" isVisible={true} />);
-      await Promise.resolve();
-      await Promise.resolve();
-
-      const terminal = terminalInstances[terminalInstances.length - 1];
-      const current = useUserSettingsStore.getState().settings;
-
-      // Set opacity < 1
-      useUserSettingsStore.getState().setSettings({
-        ...current,
-        window: { ...current.window, opacity: 0.5 },
-      });
-
-      // Set opacity back to 1
-      useUserSettingsStore.getState().setSettings({
-        ...current,
-        window: { ...current.window, opacity: 1.0 },
-      });
-
-      const theme = terminal.options.theme as { background?: string };
-      expect(theme.background).not.toContain("rgba(");
+      expect(theme.background).toBe("rgba(0, 0, 0, 0)");
     });
   });
 
