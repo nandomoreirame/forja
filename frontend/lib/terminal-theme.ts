@@ -27,13 +27,14 @@ export const TERMINAL_THEME: ITheme = {
 
 export const TERMINAL_OPTIONS: ITerminalOptions = {
   theme: TERMINAL_THEME,
-  fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace",
+  fontFamily: "'JetBrainsMono Nerd Font', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', 'Menlo', monospace",
   fontSize: 14,
-  lineHeight: 1.2,
+  lineHeight: 1.0,
   letterSpacing: 0,
   cursorBlink: true,
   cursorStyle: "block",
   cursorInactiveStyle: "none",
   scrollback: 10000,
   allowProposedApi: true,
+  allowTransparency: true,
 };

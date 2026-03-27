@@ -52,7 +52,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   },
   terminal: {
     fontFamily:
-      "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+      "'JetBrainsMono Nerd Font', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
     fontSize: 14,
     persistSessions: true,
   },
@@ -147,7 +147,7 @@ export function validateSettings(settings: UserSettings): UserSettings {
     window: {
       ...settings.window,
       zoomLevel: clamp(settings.window.zoomLevel, -5, 5),
-      opacity: clamp(settings.window.opacity, 0.3, 1.0),
+      opacity: settings.window.opacity >= 1 ? 1 : clamp(settings.window.opacity, 0.05, 0.95),
     },
   };
 }

@@ -21,7 +21,7 @@ describe("DEFAULT_SETTINGS", () => {
       },
       terminal: {
         fontFamily:
-          "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+          "'JetBrainsMono Nerd Font', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
         fontSize: 14,
         persistSessions: true,
       },
@@ -209,14 +209,20 @@ describe("validateSettings", () => {
     expect(result.terminal.fontSize).toBe(32);
   });
 
-  it("clamps opacity below minimum to 0.3", () => {
-    const settings = mergeWithDefaults({ window: { opacity: 0.1 } } as Partial<UserSettings>);
+  it("clamps opacity below minimum to 0.05", () => {
+    const settings = mergeWithDefaults({ window: { opacity: 0.01 } } as Partial<UserSettings>);
     const result = validateSettings(settings);
-    expect(result.window.opacity).toBe(0.3);
+    expect(result.window.opacity).toBe(0.05);
   });
 
-  it("clamps opacity above maximum to 1.0", () => {
-    const settings = mergeWithDefaults({ window: { opacity: 2.0 } } as Partial<UserSettings>);
+  it("clamps opacity above 0.95 to 0.95 (below 1.0)", () => {
+    const settings = mergeWithDefaults({ window: { opacity: 0.99 } } as Partial<UserSettings>);
+    const result = validateSettings(settings);
+    expect(result.window.opacity).toBe(0.95);
+  });
+
+  it("preserves 1.0 as special fully-opaque value", () => {
+    const settings = mergeWithDefaults({ window: { opacity: 1.0 } } as Partial<UserSettings>);
     const result = validateSettings(settings);
     expect(result.window.opacity).toBe(1.0);
   });
