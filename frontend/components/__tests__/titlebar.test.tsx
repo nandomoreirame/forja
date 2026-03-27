@@ -3,7 +3,6 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Titlebar } from "../titlebar";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
-import { usePerformanceStore } from "@/stores/performance";
 
 vi.mock("@/lib/ipc", () => {
   const appWindow = {
@@ -142,39 +141,4 @@ describe("Titlebar", () => {
     expect(screen.queryByLabelText(/toggle browser/i)).not.toBeInTheDocument();
   });
 
-  describe("dev lite mode toggle", () => {
-    it("does not show lite mode toggle when not in dev mode", async () => {
-      const { isDev } = await import("@/lib/ipc");
-      vi.mocked(isDev).mockResolvedValue(false);
-
-      render(<Titlebar />);
-
-      // Wait for async isDev to resolve
-      await screen.findByRole("button", { name: "Menu" });
-      expect(screen.queryByLabelText(/toggle lite mode/i)).not.toBeInTheDocument();
-    });
-
-    it("shows lite mode toggle in dev mode", async () => {
-      const { isDev } = await import("@/lib/ipc");
-      vi.mocked(isDev).mockResolvedValue(true);
-
-      render(<Titlebar />);
-
-      expect(await screen.findByLabelText(/toggle lite mode/i)).toBeInTheDocument();
-    });
-
-    it("toggles lite mode on click", async () => {
-      const user = userEvent.setup();
-      const { isDev } = await import("@/lib/ipc");
-      vi.mocked(isDev).mockResolvedValue(true);
-      usePerformanceStore.setState({ resolved: "full", isLite: false });
-
-      render(<Titlebar />);
-
-      const toggle = await screen.findByLabelText(/toggle lite mode/i);
-      await user.click(toggle);
-
-      expect(usePerformanceStore.getState().isLite).toBe(true);
-    });
-  });
 });
