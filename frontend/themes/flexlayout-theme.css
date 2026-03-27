@@ -43,9 +43,9 @@
   --color-tabset-header-background: var(--color-ctp-mantle);
   --color-tabset-header: var(--color-ctp-text);
 
-  /* Tab content area */
-  --color-tab-content: var(--color-ctp-base);
-  --color-border-tab-content: var(--color-ctp-base);
+  /* Tab content area — transparent so the app background shows through */
+  --color-tab-content: transparent;
+  --color-border-tab-content: transparent;
 
   /* Tab buttons */
   --color-tab-selected: var(--color-ctp-text);
