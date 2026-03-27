@@ -89,6 +89,40 @@ setup_platform_vars() {
   esac
 }
 
+# ─── Kill running Forja processes ─────────────────────────────────────────
+kill_running_forja() {
+  local pids
+  pids=$(pgrep -f "${APP_NAME}.*AppImage" 2>/dev/null || true)
+
+  if [[ -z "$pids" ]]; then
+    return
+  fi
+
+  warn "Running Forja process(es) detected: $pids"
+  info "Stopping them before install..."
+
+  for pid in $pids; do
+    kill "$pid" 2>/dev/null || true
+  done
+
+  # Wait up to 5s for graceful shutdown
+  local waited=0
+  while kill -0 $pids 2>/dev/null && [[ $waited -lt 5 ]]; do
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  # Force kill if still alive
+  for pid in $pids; do
+    if kill -0 "$pid" 2>/dev/null; then
+      kill -9 "$pid" 2>/dev/null || true
+      warn "Force-killed PID $pid"
+    fi
+  done
+
+  ok "Forja processes stopped"
+}
+
 # ─── Find artifact ───────────────────────────────────────────────────────────
 find_artifact() {
   local found
@@ -372,6 +406,9 @@ fi
 
 # ─── Find and verify artifact ────────────────────────────────────────────────
 find_artifact
+
+# ─── Stop running instances before install ────────────────────────────────
+kill_running_forja
 
 # ─── Install ─────────────────────────────────────────────────────────────────
 case "$PLATFORM" in
