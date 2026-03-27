@@ -17,9 +17,11 @@ import {
 } from "@dnd-kit/sortable";
 import { useSessionStateStore } from "@/stores/session-state";
 import { useTerminalTabsStore, type TerminalTab } from "@/stores/terminal-tabs";
+import { useModifierHeldStore } from "@/stores/modifier-held";
 import { computeTabDisplayNames, type SessionType } from "@/lib/cli-registry";
 import { CliIcon } from "./cli-icon";
 import { InlineEdit } from "./inline-edit";
+import { ShortcutBadge } from "./shortcut-badge";
 import { NewSessionDropdown } from "./new-session-dropdown";
 import {
   ContextMenu,
@@ -95,6 +97,9 @@ export function TabBar({
 }: TabBarProps) {
   const sessionStates = useSessionStateStore((s) => s.states);
   const isFullscreen = useTerminalTabsStore((s) => s.isTerminalFullscreen);
+  const modifierVisible = useModifierHeldStore((s) => s.visible);
+  const activeModifier = useModifierHeldStore((s) => s.activeModifier);
+  const showCtrlBadges = modifierVisible && activeModifier === "ctrl";
   const displayNames = computeTabDisplayNames(tabs);
 
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
@@ -198,6 +203,12 @@ export function TabBar({
                             }`}
                           />
                           <CliIcon sessionType={tab.sessionType} className="h-3.5 w-3.5 shrink-0" />
+                          <ShortcutBadge
+                            label={String(index + 1)}
+                            variant={isActive ? "active" : "inactive"}
+                            visible={showCtrlBadges}
+                            className="shrink-0"
+                          />
                           <InlineEdit
                             value={displayName}
                             onSave={(newName) => handleRenameTab(tab.id, newName)}

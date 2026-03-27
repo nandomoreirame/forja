@@ -52,6 +52,7 @@ import { useFocusModeStore } from "./stores/focus-mode";
 import { PluginPermissionDialog } from "./components/plugin-permission-dialog";
 import { FocusModeIndicator } from "./components/focus-mode-indicator";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
+import { useModifierHeld } from "./hooks/use-modifier-held";
 import { useWebviewShortcutBridge } from "./hooks/use-webview-shortcut-bridge";
 import {
   usePanelPreferences,
@@ -781,6 +782,7 @@ function App({
 
   // Keyboard shortcuts extracted to dedicated hook
   useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab });
+  useModifierHeld();
 
   // Bridge keyboard shortcuts from webview webContents (main process IPC)
   useWebviewShortcutBridge();

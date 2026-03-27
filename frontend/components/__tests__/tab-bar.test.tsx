@@ -4,6 +4,12 @@ import userEvent from "@testing-library/user-event";
 import { TabBar } from "../tab-bar";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
+vi.mock("@/stores/modifier-held", () => ({
+  useModifierHeldStore: vi.fn((selector) =>
+    selector({ activeModifier: null, visible: false, setModifier: vi.fn(), clearModifier: vi.fn(), cancelBadges: vi.fn() })
+  ),
+}));
+
 vi.mock("@/hooks/use-installed-clis", () => ({
   useInstalledClis: () => ({
     installedClis: [

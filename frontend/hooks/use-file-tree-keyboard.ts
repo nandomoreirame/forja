@@ -168,6 +168,11 @@ export function handleFileTreeKeyDown(e: React.KeyboardEvent): void {
     return;
   }
 
+  // Let Cmd/Ctrl+Shift+Arrow pass through for pane navigation
+  if (mod && shift && (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+    return;
+  }
+
   switch (e.key) {
     case "ArrowDown": {
       e.preventDefault();

@@ -4,6 +4,7 @@ import { getMonacoThemeName, getMonacoThemeData } from "@/lib/monaco-theme";
 import { useThemeStore } from "@/stores/theme";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
+import { cn } from "@/lib/utils";
 
 function ensureTheme(): string {
   const themeName = getMonacoThemeName();
@@ -57,6 +58,12 @@ export function MonacoEditor({
       fontFamily: editorSettings.fontFamily,
       lineNumbers: readOnly ? "off" : "on",
       renderLineHighlight: readOnly ? "none" : "line",
+      cursorWidth: readOnly ? 0 : undefined,
+      cursorBlinking: readOnly ? "solid" : "blink",
+      matchBrackets: readOnly ? "never" : "always",
+      occurrencesHighlight: readOnly ? "off" : "singleFile",
+      selectionHighlight: !readOnly,
+      domReadOnly: readOnly,
       folding: !readOnly,
       wordWrap: "on",
       padding: { top: 8, bottom: 8 },
@@ -156,7 +163,7 @@ export function MonacoEditor({
     <div
       ref={containerRef}
       data-testid="monaco-editor-container"
-      className={className}
+      className={cn(className, readOnly && "monaco-preview-readonly")}
       style={{ width: "100%", height: "100%" }}
     />
   );

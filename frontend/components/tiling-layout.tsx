@@ -35,8 +35,10 @@ import { CliIcon } from "@/components/cli-icon";
 import { TabNameOverlay } from "@/components/tab-name-overlay";
 import { TabContextMenu } from "@/components/tab-context-menu";
 import { TabsetContextMenu } from "@/components/tabset-context-menu";
+import { useModifierHeldStore } from "@/stores/modifier-held";
 import { invoke } from "@/lib/ipc";
 import { getPluginIcon } from "@/lib/plugin-types";
+import { ShortcutBadge } from "./shortcut-badge";
 import type { BlockConfig } from "@/lib/block-registry";
 import type { SessionType } from "@/lib/cli-registry";
 
@@ -84,6 +86,11 @@ export function TilingLayout() {
   // Subscribe to notification state for tabset notification dots
   const notifiedProjects = useProjectsStore((s) => s.notifiedProjects);
   const allTerminalTabs = useTerminalTabsStore((s) => s.tabs);
+
+  // Subscribe to modifier state — forces re-renders when Cmd+Shift is held/released,
+  // which causes FlexLayout to re-call onRenderTabSet and show/hide direction badges.
+  const modifierVisible = useModifierHeldStore((s) => s.visible);
+  const activeModifier = useModifierHeldStore((s) => s.activeModifier);
 
   const handleAction = useCallback((action: Action) => {
     // Clear notification when user selects a tab belonging to a notified project
@@ -309,8 +316,41 @@ export function TilingLayout() {
         );
       }
 
+      // Directional arrow badges for the active tabset when Cmd+Shift is held
+      const { visible: modVisible, activeModifier: modActive } = useModifierHeldStore.getState();
+      const showDirBadges = modVisible && modActive === "cmd-shift";
+
+      if (showDirBadges) {
+        const tilingModel = useTilingLayoutStore.getState().model;
+        const isActiveTabset = tilingModel.getActiveTabset()?.getId() === node.getId();
+
+        if (isActiveTabset) {
+          const dirs = useTilingLayoutStore.getState().getAdjacentDirections();
+          const arrowMap = { left: "←", right: "→", up: "↑", down: "↓" } as const;
+
+          const arrowBadges = (["left", "right", "up", "down"] as const)
+            .filter((dir) => dirs[dir])
+            .map((dir) => (
+              <ShortcutBadge
+                key={dir}
+                label={arrowMap[dir]}
+                variant="direction-active"
+                visible
+                className="mx-0.5"
+              />
+            ));
+
+          if (arrowBadges.length > 0) {
+            renderValues.buttons.push(
+              <div key="dir-badges" className="flex items-center gap-0.5 px-1">
+                {arrowBadges}
+              </div>
+            );
+          }
+        }
+      }
     },
-    [notifiedProjects, allTerminalTabs],
+    [notifiedProjects, allTerminalTabs, modifierVisible, activeModifier],
   );
 
   const onRenderTab = useCallback(
@@ -345,6 +385,30 @@ export function TilingLayout() {
         }
       }
 
+      // --- Tab number badge: show when Cmd or Ctrl is held (Cmd+N or Ctrl+Tab) ---
+      const { visible: ctrlVisible, activeModifier: ctrlMod } = useModifierHeldStore.getState();
+      if (ctrlVisible && (ctrlMod === "cmd" || ctrlMod === "ctrl")) {
+        const allTabIds: string[] = [];
+        useTilingLayoutStore.getState().model.visitNodes((n) => {
+          if (n.getType() === "tab") allTabIds.push(n.getId());
+        });
+        const tabIndex = allTabIds.indexOf(nodeId);
+        if (tabIndex >= 0) {
+          const isSelected = node.getParent()?.getSelectedNode()?.getId() === nodeId;
+          renderValues.leading = (
+            <div className="flex shrink-0 items-center gap-1.5">
+              {renderValues.leading}
+              <ShortcutBadge
+                label={String(tabIndex + 1)}
+                variant={isSelected ? "active" : "inactive"}
+                visible
+                className="shrink-0"
+              />
+            </div>
+          );
+        }
+      }
+
       // --- Content: name label with double-click handling ---
       const isRenamable = RENAMABLE_BLOCK_TYPES.has(component);
 
@@ -369,7 +433,7 @@ export function TilingLayout() {
         </span>
       );
     },
-    [sessionStates, isPinned, previewTabId],
+    [sessionStates, isPinned, previewTabId, modifierVisible, activeModifier],
   );
 
   const onTabSetPlaceHolder = useCallback(

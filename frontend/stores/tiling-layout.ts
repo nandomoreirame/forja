@@ -42,6 +42,8 @@ interface TilingLayoutState {
    * Returns the selected tab ID in the target tabset, or null if no adjacent tabset exists.
    */
   navigateToAdjacentTabset: (direction: "left" | "right" | "up" | "down") => string | null;
+  /** Returns which directions have adjacent tabsets relative to the active tabset. */
+  getAdjacentDirections: () => Record<"left" | "right" | "up" | "down", boolean>;
   /** Updates the config of a tab node (e.g., browser URL). */
   updateBlockConfig: (nodeId: string, config: Record<string, unknown>) => void;
   /** Closes all tabs in the given tabset and removes it from the layout. */
@@ -1151,6 +1153,39 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     const targetNode = model.getNodeById(target.id);
     const selectedNode = (targetNode as any)?.getSelectedNode?.();
     return selectedNode?.getId() ?? null;
+  },
+
+  getAdjacentDirections: () => {
+    const result = { left: false, right: false, up: false, down: false };
+    const { model } = get();
+
+    const tabsets: { id: string; cx: number; cy: number }[] = [];
+    model.visitNodes((node) => {
+      if (node.getType() === "tabset") {
+        const rect = node.getRect();
+        tabsets.push({
+          id: node.getId(),
+          cx: rect.x + rect.width / 2,
+          cy: rect.y + rect.height / 2,
+        });
+      }
+    });
+
+    if (tabsets.length <= 1) return result;
+
+    const activeTabset = model.getActiveTabset();
+    if (!activeTabset) return result;
+
+    const activeId = activeTabset.getId();
+    const active = tabsets.find((t) => t.id === activeId);
+    if (!active) return result;
+
+    result.right = tabsets.some((t) => t.cx > active.cx);
+    result.left = tabsets.some((t) => t.cx < active.cx);
+    result.down = tabsets.some((t) => t.cy > active.cy);
+    result.up = tabsets.some((t) => t.cy < active.cy);
+
+    return result;
   },
 
   syncTabCount: () => {
