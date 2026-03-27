@@ -35,6 +35,8 @@ export const TERMINAL_OPTIONS: ITerminalOptions = {
   cursorStyle: "block",
   cursorInactiveStyle: "none",
   scrollback: 10000,
+  scrollOnUserInput: true,
+  fastScrollModifier: "shift",
   allowProposedApi: true,
   allowTransparency: true,
 };
