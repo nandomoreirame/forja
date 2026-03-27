@@ -20,7 +20,7 @@ export function CliIcon({ sessionType, className = "h-5 w-5" }: CliIconProps) {
     <img
       src={src}
       alt={alt}
-      className={className}
+      className={`block ${className}`}
       draggable={false}
     />
   );
