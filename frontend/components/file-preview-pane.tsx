@@ -122,7 +122,7 @@ class PreviewErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div
           data-testid="file-preview-pane"
-          className="flex h-full w-full items-center justify-center bg-ctp-base p-4"
+          className="flex h-full w-full items-center justify-center p-4"
         >
           <div className="flex flex-col items-center gap-3 text-center">
             <AlertCircle className="h-8 w-8 text-ctp-red" strokeWidth={1.5} />
@@ -233,7 +233,7 @@ function FilePreviewPaneContent() {
   return (
     <div
       data-testid="file-preview-pane"
-      className="flex h-full w-full flex-col overflow-hidden bg-ctp-base"
+      className="flex h-full w-full flex-col overflow-hidden"
     >
       {/* Content area */}
       <div className="min-h-0 flex-1 select-text overflow-hidden">
@@ -282,7 +282,7 @@ function FilePreviewPaneContent() {
               />
             </div>
           ) : isEditing ? (
-            <Suspense fallback={<div className="h-full w-full bg-ctp-base" />}>
+            <Suspense fallback={<div className="h-full w-full" />}>
               <MonacoEditor
                 value={editContent ?? content.content}
                 language={detectLanguage(currentFile ?? filename)}

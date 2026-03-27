@@ -180,6 +180,21 @@ html {
   color: var(--selection-fg, var(--fg-primary));
 }
 
+/* Force transparent backgrounds for terminal and editor pane content.
+   xterm.js and Monaco both set background-color inline — !important overrides them. */
+.xterm,
+.xterm-viewport {
+  background-color: transparent !important;
+}
+
+.monaco-editor,
+.monaco-editor .overflow-guard,
+.monaco-editor .monaco-scrollable-element,
+.monaco-editor .lines-content,
+.monaco-editor .margin {
+  background-color: transparent !important;
+}
+
 body {
   background-color: var(--bg-base);
   color: var(--fg-primary);
@@ -553,4 +568,20 @@ select:active,
   color: var(--color-ctp-overlay0);
   user-select: none;
   pointer-events: none;
+}
+
+/* Monaco preview (read-only) mode: disable all interaction except scroll */
+.monaco-preview-readonly .monaco-editor .view-lines {
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
+}
+.monaco-preview-readonly .monaco-editor .cursor {
+  display: none !important;
+}
+.monaco-preview-readonly .monaco-editor .selected-text {
+  display: none !important;
+}
+.monaco-preview-readonly .monaco-editor .view-overlays .current-line {
+  display: none !important;
 }

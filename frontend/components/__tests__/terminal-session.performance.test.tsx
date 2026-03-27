@@ -28,6 +28,7 @@ vi.mock("@xterm/xterm", () => ({
     focus = mockFocus;
     attachCustomKeyEventHandler = vi.fn();
     getSelection = vi.fn(() => "");
+    onSelectionChange = vi.fn().mockReturnValue({ dispose: vi.fn() });
     options = {};
   },
 }));
@@ -41,12 +42,6 @@ vi.mock("@xterm/addon-fit", () => ({
 
 vi.mock("@xterm/addon-web-links", () => ({
   WebLinksAddon: class MockWebLinksAddon {},
-}));
-
-vi.mock("@xterm/addon-webgl", () => ({
-  WebglAddon: class MockWebglAddon {
-    dispose = vi.fn();
-  },
 }));
 
 vi.mock("@xterm/xterm/css/xterm.css", () => ({}));

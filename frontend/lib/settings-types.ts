@@ -22,6 +22,7 @@ export interface PerformanceSettings {
 export interface UISettings {
   activePaneHighlight: boolean;
   hoverToFocus: boolean;
+  shortcutHints: boolean;
 }
 
 export interface TerminalSettings extends FontSettings {
@@ -52,7 +53,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   },
   terminal: {
     fontFamily:
-      "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+      "'JetBrainsMono Nerd Font', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
     fontSize: 14,
     persistSessions: true,
   },
@@ -67,7 +68,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     custom: [],
   },
   performance: { mode: "auto" },
-  ui: { activePaneHighlight: true, hoverToFocus: true },
+  ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true },
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -147,7 +148,7 @@ export function validateSettings(settings: UserSettings): UserSettings {
     window: {
       ...settings.window,
       zoomLevel: clamp(settings.window.zoomLevel, -5, 5),
-      opacity: clamp(settings.window.opacity, 0.3, 1.0),
+      opacity: settings.window.opacity >= 1 ? 1 : clamp(settings.window.opacity, 0.05, 0.95),
     },
   };
 }

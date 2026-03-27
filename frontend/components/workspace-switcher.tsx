@@ -17,6 +17,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "./ui/popover";
+import { useModifierHeldStore } from "@/stores/modifier-held";
+import { ShortcutBadge } from "./shortcut-badge";
 
 export function WorkspaceSwitcher() {
   const [isOpen, setIsOpen] = useState(false);
@@ -35,12 +37,16 @@ export function WorkspaceSwitcher() {
   );
   const deleteWorkspace = useWorkspaceStore((s) => s.deleteWorkspace);
 
-  useEffect(() => {
-    loadWorkspaces();
-  }, [loadWorkspaces]);
+  const modifierVisible = useModifierHeldStore((s) => s.visible);
+  const activeModifier = useModifierHeldStore((s) => s.activeModifier);
+  const showWorkspaceBadges = modifierVisible && activeModifier === "cmd-alt";
 
   const activeWorkspace = workspaces.find((ws) => ws.id === activeWorkspaceId);
   const hasWorkspaces = workspaces.length > 0;
+
+  useEffect(() => {
+    loadWorkspaces();
+  }, [loadWorkspaces]);
 
   const activeIcon = activeWorkspace?.icon ?? "layers";
   const ActiveIcon = getWorkspaceIcon(activeIcon);
@@ -205,7 +211,7 @@ export function WorkspaceSwitcher() {
         </p>
 
         <div className="space-y-0.5">
-          {workspaces.map((ws) => {
+          {workspaces.map((ws, wsIndex) => {
             const wsIcon = ws.icon ?? "layers";
             const WsIcon = getWorkspaceIcon(wsIcon);
             const isActive = ws.id === activeWorkspaceId;
@@ -309,6 +315,14 @@ export function WorkspaceSwitcher() {
                   key={ws.id}
                   className="flex items-center gap-2 rounded-md bg-ctp-surface0/50 px-2 py-1.5"
                 >
+                  {wsIndex < 9 && (
+                    <ShortcutBadge
+                      label={String(wsIndex + 1)}
+                      variant="active"
+                      visible={showWorkspaceBadges}
+                      className="shrink-0"
+                    />
+                  )}
                   <WsIcon
                     className="h-3.5 w-3.5 shrink-0 text-ctp-text"
                     strokeWidth={1.5}
@@ -342,6 +356,14 @@ export function WorkspaceSwitcher() {
                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-app text-ctp-text transition-colors hover:bg-ctp-surface0"
                 aria-label={ws.name}
               >
+                {wsIndex < 9 && (
+                  <ShortcutBadge
+                    label={String(wsIndex + 1)}
+                    variant="inactive"
+                    visible={showWorkspaceBadges}
+                    className="shrink-0"
+                  />
+                )}
                 <WsIcon
                   className="h-3.5 w-3.5 shrink-0 text-ctp-overlay1"
                   strokeWidth={1.5}

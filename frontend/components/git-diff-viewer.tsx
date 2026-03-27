@@ -82,7 +82,7 @@ export function GitDiffViewer({
       </div>
       <div className="min-h-0 flex-1">
         {hasContent ? (
-          <Suspense fallback={<div className="h-full w-full bg-ctp-base" />}>
+          <Suspense fallback={<div className="h-full w-full" />}>
             <MonacoDiffEditor
               original={diff.originalContent ?? ""}
               modified={diff.modifiedContent ?? ""}

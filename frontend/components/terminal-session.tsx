@@ -8,7 +8,6 @@ import { CLI_REGISTRY, type SessionType } from "@/lib/cli-registry";
 import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
@@ -17,7 +16,6 @@ import { useUserSettingsStore } from "@/stores/user-settings";
 import { buildTerminalTheme } from "@/themes/apply";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTilingLayoutStore } from "@/stores/tiling-layout";
-import { usePerformanceStore } from "@/stores/performance";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { TerminalContextMenu } from "./terminal-context-menu";
 import { SessionStatusBar } from "./session-status-bar";
@@ -33,7 +31,6 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
-  const webglAddonRef = useRef<WebglAddon | null>(null);
   const composingRef = useRef(false);
   const isVisibleRef = useRef(isVisible);
   isVisibleRef.current = isVisible;
@@ -242,18 +239,6 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       fitAddonLocal = fitAddon;
       hostElementLocal = hostElement;
 
-      // WebGL addon (re-create for both cached and new)
-      // Skip in lite mode to reduce GPU memory usage
-      if (!usePerformanceStore.getState().isLite) {
-        try {
-          const webgl = new WebglAddon();
-          terminal.loadAddon(webgl);
-          webglAddonRef.current = webgl;
-        } catch (err) {
-          console.info("[terminal] WebGL unavailable, using canvas renderer:", err);
-        }
-      }
-
       terminalRef.current = terminal;
       fitAddonRef.current = fitAddon;
 
@@ -414,11 +399,6 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       }
       writeBufferRef.current = "";
 
-      // Dispose WebGL before parking (can't survive DOM detachment)
-      if (webglAddonRef.current) {
-        try { webglAddonRef.current.dispose(); } finally { webglAddonRef.current = null; }
-      }
-
       // terminalLocal/fitAddonLocal/hostElementLocal may still be null if the
       // component unmounted before the async init() could assign them
       if (!terminalLocal || !fitAddonLocal || !hostElementLocal) return;
@@ -493,47 +473,22 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // WebGL virtualization: dispose addon after 30s hidden, recreate when visible
+  // Re-fit and focus when terminal becomes visible again
   useEffect(() => {
     const terminal = terminalRef.current;
 
-    if (isVisible) {
-      // Recreate WebGL if it was disposed (skip in lite mode to reduce GPU memory)
-      if (!webglAddonRef.current && terminal && !usePerformanceStore.getState().isLite) {
-        try {
-          const webgl = new WebglAddon();
-          terminal.loadAddon(webgl);
-          webglAddonRef.current = webgl;
-        } catch {
-          // Canvas2D fallback is fine
-        }
-      }
-
-      // Re-fit and focus after becoming visible.  Use double-RAF so the
-      // browser has finished layout after removing the hidden class/attribute.
-      // The ResizeObserver should also fire, but this acts as a safety
-      // net for edge-cases where the container size hasn't changed.
-      if (fitAddonRef.current) {
-        const id = requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            fitAddonRef.current?.fit();
-            terminal?.focus();
-            const dims = fitAddonRef.current?.proposeDimensions();
-            if (dims) {
-              resize(dims.rows, dims.cols);
-            }
-          });
+    if (isVisible && fitAddonRef.current) {
+      const id = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          fitAddonRef.current?.fit();
+          terminal?.focus();
+          const dims = fitAddonRef.current?.proposeDimensions();
+          if (dims) {
+            resize(dims.rows, dims.cols);
+          }
         });
-        return () => cancelAnimationFrame(id);
-      }
-    } else {
-      if (webglAddonRef.current) {
-        try {
-          webglAddonRef.current.dispose();
-        } finally {
-          webglAddonRef.current = null;
-        }
-      }
+      });
+      return () => cancelAnimationFrame(id);
     }
   }, [isVisible]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -568,7 +523,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     <div
       role="region"
       aria-label="Claude Code Terminal"
-      className={`flex h-full w-full flex-col bg-overlay-base ${!isVisible ? "hidden" : ""}`}
+      className={`flex h-full w-full flex-col ${!isVisible ? "hidden" : ""}`}
     >
       <TerminalContextMenu tabId={tabId} onCopy={handleCopy} onPaste={handlePaste}>
         <div className="h-full pt-3 pl-4 pb-1">

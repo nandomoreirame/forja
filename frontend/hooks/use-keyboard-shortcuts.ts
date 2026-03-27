@@ -10,6 +10,7 @@ import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFocusModeStore } from "@/stores/focus-mode";
+import { useWorkspaceStore } from "@/stores/workspace";
 import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
@@ -41,28 +42,33 @@ export function useKeyboardShortcuts({
         const settingsState = useUserSettingsStore.getState();
         if (settingsState.editorOpen && settingsState.editorDirty) {
           event.preventDefault();
+  
           settingsState.saveEditorContent();
           return;
         }
       }
       if (mod && event.key === ",") {
         event.preventDefault();
+
         useAppDialogsStore.getState().setSettingsOpen(true);
         return;
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "o") {
         event.preventDefault();
+
         useFileTreeStore.getState().openProject();
         return;
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "t") {
         event.preventDefault();
+
         if (!useFileTreeStore.getState().currentPath) return;
         useCommandPaletteStore.getState().open("sessions");
         return;
       }
       if (mod && event.key.toLowerCase() === "w") {
         event.preventDefault();
+
         // Check if closing file-preview with unsaved changes
         const previewStore = useFilePreviewStore.getState();
         const model = tilingStore.model;
@@ -89,28 +95,33 @@ export function useKeyboardShortcuts({
       }
       if (mod && event.altKey && event.key.toLowerCase() === "v") {
         event.preventDefault();
+
         createSplit("vertical");
         return;
       }
       if (mod && event.altKey && event.key.toLowerCase() === "h") {
         event.preventDefault();
+
         createSplit("horizontal");
         return;
       }
       // Ctrl+Alt+[/] focus switching removed — flexlayout handles focus natively
       if (mod && event.shiftKey && event.key.toLowerCase() === "p") {
         event.preventDefault();
+
         useCommandPaletteStore.getState().open("commands");
         return;
       }
       // Ctrl/Cmd+Shift+L — go to project (project switcher)
       if (mod && event.shiftKey && event.key.toLowerCase() === "l") {
         event.preventDefault();
+
         useCommandPaletteStore.getState().open("projects");
         return;
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "g") {
         event.preventDefault();
+
         const projectPath = useFileTreeStore.getState().currentPath;
         if (!projectPath) return;
         const diffState = useGitDiffStore.getState();
@@ -126,6 +137,7 @@ export function useKeyboardShortcuts({
       }
       if (mod && event.altKey && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
         event.preventDefault();
+
         const projectPath = useFileTreeStore.getState().currentPath;
         if (!projectPath) return;
         const diffState = useGitDiffStore.getState();
@@ -144,6 +156,7 @@ export function useKeyboardShortcuts({
       }
       if (mod && !event.shiftKey && event.key === "p") {
         event.preventDefault();
+
         const { tree: t, currentPath: cp } = useFileTreeStore.getState();
         if (t && cp) {
           useCommandPaletteStore.getState().open("files");
@@ -153,6 +166,7 @@ export function useKeyboardShortcuts({
       // Ctrl/Cmd+Shift+F — toggle terminal fullscreen
       if (mod && event.shiftKey && event.key.toLowerCase() === "f") {
         event.preventDefault();
+
         useTerminalTabsStore.getState().toggleTerminalFullscreen();
         return;
       }
@@ -161,6 +175,7 @@ export function useKeyboardShortcuts({
         const previewStore = useFilePreviewStore.getState();
         if (previewStore.currentFile) {
           event.preventDefault();
+  
           previewStore.toggleEditing();
           return;
         }
@@ -168,6 +183,7 @@ export function useKeyboardShortcuts({
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "e") {
         event.preventDefault();
+
         if (!useFileTreeStore.getState().currentPath) return;
         if (tilingStore.hasBlock("tab-file-tree")) {
           // Toggle: close if it's the currently selected tab, otherwise focus it
@@ -191,6 +207,7 @@ export function useKeyboardShortcuts({
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
+
         const blockId = `browser-${Date.now().toString(36)}`;
         tilingStore.addBlock(
           { type: "browser", url: "https://github.com/nandomoreirame/forja" },
@@ -202,21 +219,25 @@ export function useKeyboardShortcuts({
       // Ctrl/Cmd+Alt+F — toggle focus mode
       if (mod && event.altKey && event.key.toLowerCase() === "f") {
         event.preventDefault();
+
         useFocusModeStore.getState().toggleFocusMode();
         return;
       }
       if (mod && event.altKey && (event.key === "=" || event.key === "+")) {
         event.preventDefault();
+
         useTerminalZoomStore.getState().zoomIn();
         return;
       }
       if (mod && event.altKey && event.key === "-") {
         event.preventDefault();
+
         useTerminalZoomStore.getState().zoomOut();
         return;
       }
       if (mod && event.altKey && event.key === "0") {
         event.preventDefault();
+
         useTerminalZoomStore.getState().resetZoom();
         return;
       }
@@ -230,11 +251,47 @@ export function useKeyboardShortcuts({
         if (index < projects.length) {
           swp(projects[index].path);
         }
+
+        return;
+      }
+      // ⌘+Alt+1-9 — switch workspace (use event.code for reliable digit detection)
+      if (mod && event.altKey && !event.shiftKey && digitMatch) {
+        const digit = parseInt(digitMatch[1], 10);
+        if (digit === 0) return; // 0 is bound to resetZoom
+        event.preventDefault();
+        const { workspaces, openWorkspaceInNewWindow } = useWorkspaceStore.getState();
+        const activeWorkspaceId = useWorkspaceStore.getState().activeWorkspaceId;
+        const wsIndex = digit - 1;
+        if (wsIndex < workspaces.length) {
+          const ws = workspaces[wsIndex];
+          if (ws.id !== activeWorkspaceId) {
+            openWorkspaceInNewWindow(ws.id);
+          }
+        }
+
+        return;
+      }
+      // ⌘+1-9 — switch to tab by position (global tab order)
+      if (mod && !event.shiftKey && !event.altKey && digitMatch) {
+        event.preventDefault();
+        const tabIndex = parseInt(digitMatch[1], 10) - 1;
+        const allTabIds: string[] = [];
+        tilingStore.model.visitNodes((node) => {
+          if (node.getType() === "tab") allTabIds.push(node.getId());
+        });
+        if (tabIndex < allTabIds.length) {
+          const targetTabId = allTabIds[tabIndex];
+          tilingStore.selectTab(targetTabId);
+          requestAnimationFrame(() => {
+            paneFocusRegistry.focus(targetTabId);
+          });
+        }
         return;
       }
       // Alt+N — jump to next project with pending notification
       if (event.altKey && !event.ctrlKey && !event.metaKey && event.key.toLowerCase() === "n") {
         event.preventDefault();
+
         const { projects, activeProjectPath, notifiedProjects, switchToProject } =
           useProjectsStore.getState();
         const unread = projects.filter((p) => notifiedProjects.has(p.path));
@@ -253,6 +310,7 @@ export function useKeyboardShortcuts({
       // Ctrl+Tab / Ctrl+Shift+Tab: cycle ALL tabs across ALL panes (like Chrome)
       if (event.ctrlKey && event.key === "Tab") {
         event.preventDefault();
+        // Don't cancelBadges — Ctrl is still held, user may keep cycling
         const direction = event.shiftKey ? "backward" : "forward";
         const nextTabId = tilingStore.cycleGlobalTab(direction);
         if (nextTabId) {
@@ -273,6 +331,7 @@ export function useKeyboardShortcuts({
           event.key === "ArrowUp")
       ) {
         event.preventDefault();
+        // Don't cancelBadges — Cmd+Shift is still held, user may keep navigating
         const dirMap: Record<string, "right" | "left" | "down" | "up"> = {
           ArrowRight: "right",
           ArrowLeft: "left",

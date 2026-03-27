@@ -50,7 +50,8 @@ export function Titlebar() {
   const toggleLiteMode = usePerformanceStore((s) => s.toggleLiteMode);
   const { aboutOpen, setAboutOpen, shortcutsOpen, setShortcutsOpen, settingsOpen, setSettingsOpen } = useAppDialogsStore();
   const { tree, openProject } = useFileTreeStore();
-  const title = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
+  const baseTitle = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
+  const title = devMode ? `${baseTitle} (DEVELOPMENT MODE)` : baseTitle;
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {

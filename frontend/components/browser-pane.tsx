@@ -209,7 +209,7 @@ export function BrowserPane({ initialUrl = "http://localhost:3000", nodeId }: Br
   }, []);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-ctp-base">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Browser toolbar */}
       <div className="flex h-9 shrink-0 items-center gap-1 border-b border-ctp-surface0 bg-ctp-mantle px-2">
         {/* Navigation buttons */}
@@ -328,7 +328,7 @@ export function BrowserPane({ initialUrl = "http://localhost:3000", nodeId }: Br
 
         {/* Error overlay */}
         {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-ctp-base">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-overlay-base">
             <AlertCircle className="h-12 w-12 text-ctp-overlay1" strokeWidth={1.5} />
             <div className="flex flex-col items-center gap-1 text-center">
               <h2 className="text-base font-medium text-ctp-text">

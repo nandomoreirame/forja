@@ -32,6 +32,7 @@ interface PerformanceSettings {
 interface UISettings {
   activePaneHighlight: boolean;
   hoverToFocus: boolean;
+  shortcutHints: boolean;
 }
 
 interface TerminalSettings extends FontSettings {
@@ -78,7 +79,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     custom: [],
   },
   performance: { mode: "auto" },
-  ui: { activePaneHighlight: true, hoverToFocus: true },
+  ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true },
 };
 
 function clamp(value: number, min: number, max: number): number {

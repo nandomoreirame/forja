@@ -36,10 +36,10 @@ export function hexToRgba(hex: string, alpha: number): string {
 export function applyBackgroundOpacity(opacity: number): void {
   const root = document.documentElement;
   for (const [varName, hex] of originalBgColors) {
-    if (opacity < 1) {
-      root.style.setProperty(varName, hexToRgba(hex, opacity));
-    } else {
+    if (opacity >= 1) {
       root.style.setProperty(varName, hex);
+    } else {
+      root.style.setProperty(varName, hexToRgba(hex, opacity));
     }
   }
 }
@@ -148,11 +148,11 @@ export function applyTheme(theme: ThemeDefinition): void {
 }
 
 export function buildTerminalTheme(theme: ThemeDefinition, _opacity?: number): ITheme {
-  // Always use opaque background — xterm.js WebGL renderer does not
-  // support rgba backgrounds reliably.  The terminal container is
-  // also opaque (bg-overlay-base) so the padding matches.
+  // Fully transparent background so pane content shows the app background layer.
+  // Requires allowTransparency: true in terminal options and canvas renderer
+  // (WebGL addon is skipped because it does not support rgba backgrounds).
   return {
-    background: theme.colors.base,
+    background: "rgba(0, 0, 0, 0)",
     foreground: theme.colors.text,
     cursor: theme.colors.text,
     cursorAccent: theme.colors.base,
@@ -195,9 +195,9 @@ export function buildMonacoTheme(theme: ThemeDefinition): MonacoThemeData {
       { token: "meta", foreground: stripHash(t.magenta) },
     ],
     colors: {
-      "editor.background": c.base,
+      "editor.background": "#00000000",
       "editor.foreground": c.text,
-      "editor.lineHighlightBackground": c.surface,
+      "editor.lineHighlightBackground": c.surface + "40",
       "editor.selectionBackground": c.highlight + "66",
       "editor.inactiveSelectionBackground": c.highlight + "33",
       "editorCursor.foreground": c.text,
@@ -208,7 +208,7 @@ export function buildMonacoTheme(theme: ThemeDefinition): MonacoThemeData {
       "editorLineNumber.activeForeground": c.text,
       "editorBracketMatch.background": c.highlight + "33",
       "editorBracketMatch.border": c.highlight,
-      "editorGutter.background": c.base,
+      "editorGutter.background": "#00000000",
       "editorOverviewRuler.border": c.surface,
       "editorWidget.background": c.mantle,
       "editorWidget.border": c.surface,
@@ -224,7 +224,7 @@ export function buildMonacoTheme(theme: ThemeDefinition): MonacoThemeData {
       "scrollbarSlider.background": c.highlight + "66",
       "scrollbarSlider.hoverBackground": c.highlight,
       "scrollbarSlider.activeBackground": c.muted,
-      "minimap.background": c.base,
+      "minimap.background": "#00000000",
       "minimapSlider.background": c.highlight + "33",
       "minimapSlider.hoverBackground": c.highlight + "66",
       "diffEditor.insertedTextBackground": c.success + "20",

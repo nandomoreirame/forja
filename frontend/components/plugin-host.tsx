@@ -392,7 +392,7 @@ export function PluginHost({ pluginName, nodeId }: PluginHostProps) {
 
   if (!plugin) {
     return (
-      <div className="flex h-full items-center justify-center border-l border-ctp-surface0 bg-ctp-base">
+      <div className="flex h-full items-center justify-center border-l border-ctp-surface0">
         <p className="text-app text-ctp-overlay0">Plugin not found</p>
       </div>
     );
@@ -400,7 +400,7 @@ export function PluginHost({ pluginName, nodeId }: PluginHostProps) {
 
   if (!preloadPath) {
     return (
-      <div className="flex h-full items-center justify-center border-l border-ctp-surface0 bg-ctp-base">
+      <div className="flex h-full items-center justify-center border-l border-ctp-surface0">
         <Loader2 className="h-5 w-5 animate-spin text-ctp-overlay0" />
       </div>
     );
@@ -408,19 +408,19 @@ export function PluginHost({ pluginName, nodeId }: PluginHostProps) {
 
   return (
     <div
-      className="relative flex h-full flex-col border-l border-ctp-surface0 bg-ctp-base"
+      className="relative flex h-full flex-col border-l border-ctp-surface0"
       data-testid="plugin-host"
     >
       {/* Loading overlay */}
       {status === "loading" && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-ctp-base">
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-overlay-base">
           <Loader2 className="h-5 w-5 animate-spin text-ctp-overlay0" />
         </div>
       )}
 
       {/* Error / Crash overlay */}
       {(status === "error" || status === "crashed") && (
-        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-ctp-base">
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-overlay-base">
           <AlertTriangle className="h-8 w-8 text-ctp-red" strokeWidth={1.5} />
           <p className="text-app text-ctp-overlay1">
             {errorMessage ?? "An error occurred"}

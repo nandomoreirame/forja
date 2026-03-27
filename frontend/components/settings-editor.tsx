@@ -29,7 +29,7 @@ export function SettingsEditor() {
   return (
     <div
       data-testid="settings-editor"
-      className="flex h-full w-full flex-col overflow-hidden border-r border-ctp-surface0 bg-ctp-base"
+      className="flex h-full w-full flex-col overflow-hidden border-r border-ctp-surface0"
     >
       {/* Header */}
       <div className="flex h-9 shrink-0 items-center justify-between border-b border-ctp-surface0 px-3">

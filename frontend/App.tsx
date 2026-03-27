@@ -52,6 +52,7 @@ import { useFocusModeStore } from "./stores/focus-mode";
 import { PluginPermissionDialog } from "./components/plugin-permission-dialog";
 import { FocusModeIndicator } from "./components/focus-mode-indicator";
 import { useKeyboardShortcuts } from "./hooks/use-keyboard-shortcuts";
+import { useModifierHeld } from "./hooks/use-modifier-held";
 import { useWebviewShortcutBridge } from "./hooks/use-webview-shortcut-bridge";
 import {
   usePanelPreferences,
@@ -781,6 +782,7 @@ function App({
 
   // Keyboard shortcuts extracted to dedicated hook
   useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab });
+  useModifierHeld();
 
   // Bridge keyboard shortcuts from webview webContents (main process IPC)
   useWebviewShortcutBridge();
@@ -800,7 +802,7 @@ function App({
                 onOpenProject={() => useFileTreeStore.getState().openProject()}
               />
             </div>
-            <div className="flex min-w-0 flex-1 flex-col overflow-hidden bg-ctp-mantle">
+            <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
             {hasProject ? (
               sessionRestoreDone ? <TilingLayout /> : null
             ) : tilingTabCount > 0 ? (

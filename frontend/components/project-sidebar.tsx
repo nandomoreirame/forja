@@ -51,6 +51,8 @@ import {
   DialogTitle,
 } from "./ui/dialog";
 import { Button } from "./ui/button";
+import { useModifierHeldStore } from "@/stores/modifier-held";
+import { ShortcutBadge } from "./shortcut-badge";
 
 interface ProjectIconProps {
   project: Project;
@@ -63,6 +65,7 @@ interface ProjectIconProps {
   isThinking?: boolean;
   isNotified?: boolean;
   notificationMessage?: string;
+  shortcutIndex?: number;
 }
 
 function ProjectIcon({
@@ -76,9 +79,14 @@ function ProjectIcon({
   isThinking,
   isNotified,
   notificationMessage,
+  shortcutIndex,
 }: ProjectIconProps) {
-  const showSpinner = !isActive && !!isThinking;
-  const showBadge = !isActive && !!isNotified;
+  const modifierVisible = useModifierHeldStore((s) => s.visible);
+  const activeModifier = useModifierHeldStore((s) => s.activeModifier);
+  const showShortcutBadge = modifierVisible && activeModifier === "cmd-shift" && shortcutIndex !== undefined;
+  const showNotifBadge = modifierVisible && activeModifier === "alt" && !!isNotified;
+  const showSpinner = !isActive && !!isThinking && !showShortcutBadge && !showNotifBadge;
+  const showBadge = !isActive && !!isNotified && !showShortcutBadge && !showNotifBadge;
   const [imgError, setImgError] = useState(false);
 
   const hasIcon = !!project.iconPath && !imgError;
@@ -126,6 +134,22 @@ function ProjectIcon({
           data-testid={`session-badge-${project.path}`}
           className="absolute -bottom-0.5 -right-0.5 h-3 w-3 animate-pulse rounded-full bg-ctp-green ring-1 ring-ctp-mantle"
           aria-label={`${project.name} session finished`}
+        />
+      )}
+      {shortcutIndex !== undefined && (
+        <ShortcutBadge
+          label={String(shortcutIndex)}
+          variant={isActive ? "active" : "inactive"}
+          visible={showShortcutBadge}
+          className="absolute -bottom-1 -right-1 z-10"
+        />
+      )}
+      {isNotified && (
+        <ShortcutBadge
+          label="N"
+          variant="notification"
+          visible={showNotifBadge}
+          className="absolute -bottom-1 -right-1 z-10"
         />
       )}
     </button>
@@ -365,6 +389,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 isThinking={thinkingProjects?.has(project.path)}
                 isNotified={notifiedProjects?.has(project.path)}
                 notificationMessage={notificationMessages?.[project.path]}
+                shortcutIndex={index < 9 ? index + 1 : undefined}
               />
             ))}
           </SortableContext>
