@@ -171,6 +171,18 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
           });
         }
 
+        // Intercept mouse wheel to always scroll the buffer instead of
+        // sending arrow-key escape sequences to the PTY process.
+        // xterm.js only does native scroll when mouse reporting is off AND
+        // the viewport has scrollback. On Linux/Ozone, wheel events can
+        // leak as ^[[A/^[[B sequences when the buffer is at the bottom.
+        hostElement.addEventListener("wheel", (e) => {
+          const lines = e.deltaY > 0 ? 3 : -3;
+          terminal.scrollLines(lines);
+          e.preventDefault();
+          e.stopPropagation();
+        }, { passive: false });
+
         terminal.attachCustomKeyEventHandler((event) => {
           // Let the browser handle dead-key / IME composition events so that
           // composed characters (e.g. ' + c = ç) are not processed twice.
