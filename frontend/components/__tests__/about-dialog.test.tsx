@@ -139,6 +139,114 @@ describe("AboutDialog", () => {
       expect(screen.getByText("Fernando Moreira")).toBeInTheDocument();
       expect(screen.getByText("Built with")).toBeInTheDocument();
     });
+
+    it("shows creator username and avatar", async () => {
+      const user = userEvent.setup();
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      const creditsItem = await screen.findByText("Credits");
+      await user.click(creditsItem);
+
+      expect(screen.getByText("@nandomoreirame")).toBeInTheDocument();
+
+      const avatar = screen.getByAltText("Fernando Moreira");
+      expect(avatar).toBeInTheDocument();
+      expect(avatar).toHaveAttribute(
+        "src",
+        "https://github.com/nandomoreirame.png"
+      );
+    });
+
+    it("shows Contributors section with both contributors", async () => {
+      const user = userEvent.setup();
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      const creditsItem = await screen.findByText("Credits");
+      await user.click(creditsItem);
+
+      expect(screen.getByText("Contributors")).toBeInTheDocument();
+      expect(screen.getByText("Giulliano Soares")).toBeInTheDocument();
+      expect(screen.getByText("@giullianosoares")).toBeInTheDocument();
+      expect(screen.getByText("Walter Frey")).toBeInTheDocument();
+      expect(screen.getByText("@walterfrey")).toBeInTheDocument();
+    });
+
+    it("shows contributor avatars with correct GitHub URLs", async () => {
+      const user = userEvent.setup();
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      const creditsItem = await screen.findByText("Credits");
+      await user.click(creditsItem);
+
+      const giullianoAvatar = screen.getByAltText("Giulliano Soares");
+      expect(giullianoAvatar).toHaveAttribute(
+        "src",
+        "https://github.com/giullianosoares.png"
+      );
+
+      const walterAvatar = screen.getByAltText("Walter Frey");
+      expect(walterAvatar).toHaveAttribute(
+        "src",
+        "https://github.com/walterfrey.png"
+      );
+    });
+
+    it("shows all technologies with links in Built with section", async () => {
+      const user = userEvent.setup();
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      const creditsItem = await screen.findByText("Credits");
+      await user.click(creditsItem);
+
+      expect(screen.getByText("Electron")).toBeInTheDocument();
+      expect(screen.getByText("React")).toBeInTheDocument();
+      expect(screen.getByText("TypeScript")).toBeInTheDocument();
+      expect(screen.getByText("xterm.js")).toBeInTheDocument();
+      expect(screen.getByText("tmux")).toBeInTheDocument();
+    });
+
+    it("opens creator GitHub when creator row is clicked", async () => {
+      const user = userEvent.setup();
+      const { openUrl } = await import("@/lib/ipc");
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      const creditsItem = await screen.findByText("Credits");
+      await user.click(creditsItem);
+
+      const creatorButton = screen.getByText("Fernando Moreira").closest("button");
+      await user.click(creatorButton!);
+
+      expect(openUrl).toHaveBeenCalledWith("https://github.com/nandomoreirame");
+    });
+
+    it("opens technology URL when technology row is clicked", async () => {
+      const user = userEvent.setup();
+      const { openUrl } = await import("@/lib/ipc");
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      const creditsItem = await screen.findByText("Credits");
+      await user.click(creditsItem);
+
+      const electronButton = screen.getByText("Electron").closest("button");
+      await user.click(electronButton!);
+
+      expect(openUrl).toHaveBeenCalledWith("https://www.electronjs.org");
+    });
+
+    it("returns to home when back button is clicked from credits", async () => {
+      const user = userEvent.setup();
+      render(<AboutDialog open={true} onOpenChange={onOpenChange} />);
+
+      const creditsItem = await screen.findByText("Credits");
+      await user.click(creditsItem);
+
+      const backButton = screen.getByRole("button", { name: /back/i });
+      await user.click(backButton);
+
+      expect(
+        screen.getByText("A dedicated desktop client for vibe coders")
+      ).toBeInTheDocument();
+    });
   });
 
   describe("legal view", () => {
