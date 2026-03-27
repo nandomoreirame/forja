@@ -8,6 +8,19 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.8.7] - 2026-03-27
+
+### Changed
+
+- Increase titlebar height and enlarge menu button to match project icon size.
+- Only render workspace shortcut badges when modifier is held, removing phantom left padding.
+
+### Fixed
+
+- Add capture-phase wheel handler to terminal to prevent arrow key escape sequences on scroll (partial fix, see #23).
+
+---
+
 ## [1.8.6] - 2026-03-27
 
 ### Added
