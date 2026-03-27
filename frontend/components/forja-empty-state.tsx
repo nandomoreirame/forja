@@ -12,7 +12,7 @@ export function ForjaEmptyState({ children }: ForjaEmptyStateProps) {
   const sepClass = "text-app-xs text-ctp-surface1";
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-4">
+    <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-lg border border-ctp-surface0">
       <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
       <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
       <p className="text-app text-ctp-overlay1">

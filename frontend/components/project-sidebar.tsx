@@ -36,6 +36,11 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import {
+  HoverCard,
+  HoverCardTrigger,
+  HoverCardContent,
+} from "./ui/hover-card";
+import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -66,6 +71,7 @@ interface ProjectIconProps {
   isNotified?: boolean;
   notificationMessage?: string;
   shortcutIndex?: number;
+  isKeyboardFocused?: boolean;
 }
 
 function ProjectIcon({
@@ -80,13 +86,13 @@ function ProjectIcon({
   isNotified,
   notificationMessage,
   shortcutIndex,
+  isKeyboardFocused,
 }: ProjectIconProps) {
   const modifierVisible = useModifierHeldStore((s) => s.visible);
   const activeModifier = useModifierHeldStore((s) => s.activeModifier);
   const showShortcutBadge = modifierVisible && activeModifier === "cmd-shift" && shortcutIndex !== undefined;
-  const showNotifBadge = modifierVisible && activeModifier === "alt" && !!isNotified;
-  const showSpinner = !isActive && !!isThinking && !showShortcutBadge && !showNotifBadge;
-  const showBadge = !isActive && !!isNotified && !showShortcutBadge && !showNotifBadge;
+  const showSpinner = !isActive && !!isThinking && !showShortcutBadge;
+  const showBadge = !isActive && !!isNotified && !showShortcutBadge;
   const [imgError, setImgError] = useState(false);
 
   const hasIcon = !!project.iconPath && !imgError;
@@ -101,7 +107,8 @@ function ProjectIcon({
         "group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-app font-bold transition-all duration-150",
         isActive
           ? "ring-2 ring-ctp-mauve ring-offset-1 ring-offset-ctp-mantle"
-          : "opacity-70 hover:opacity-100"
+          : "opacity-70 hover:opacity-100",
+        isKeyboardFocused && !isActive && "ring-2 ring-ctp-mauve/60 ring-offset-1 ring-offset-ctp-mantle opacity-100 shadow-[0_0_8px_2px_rgba(203,166,247,0.25)]"
       )}
       style={{ backgroundColor: `${color}22`, color }}
     >
@@ -144,24 +151,16 @@ function ProjectIcon({
           className="absolute -bottom-1 -right-1 z-10"
         />
       )}
-      {isNotified && (
-        <ShortcutBadge
-          label="N"
-          variant="notification"
-          visible={showNotifBadge}
-          className="absolute -bottom-1 -right-1 z-10"
-        />
-      )}
     </button>
   );
 
   return (
-    <Tooltip>
+    <HoverCard open={isKeyboardFocused ? true : undefined}>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <TooltipTrigger asChild>
+          <HoverCardTrigger asChild>
             {iconButton}
-          </TooltipTrigger>
+          </HoverCardTrigger>
         </ContextMenuTrigger>
         <ContextMenuContent className="min-w-44 border-ctp-surface1 bg-overlay-mantle">
           <ContextMenuItem
@@ -195,14 +194,14 @@ function ProjectIcon({
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
-      <TooltipContent side="right" className="max-w-xs">
+      <HoverCardContent side="right" align="center">
         <p className="font-semibold">{project.name}</p>
-        <p className="text-app-sm text-ctp-overlay1">{project.path}</p>
+        <p className="text-app-xs text-ctp-overlay1 break-all">{project.path}</p>
         {isNotified && notificationMessage && (
           <p className="text-app-sm text-ctp-green">{notificationMessage}</p>
         )}
-      </TooltipContent>
-    </Tooltip>
+      </HoverCardContent>
+    </HoverCard>
   );
 }
 
@@ -263,6 +262,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
     removeProject,
     updateProject,
     reorderProjects,
+    keyboardFocusedProjectPath,
   } = store;
 
   const toggleChat = useAgentChatStore((s) => s.togglePanel);
@@ -390,6 +390,7 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
                 isNotified={notifiedProjects?.has(project.path)}
                 notificationMessage={notificationMessages?.[project.path]}
                 shortcutIndex={index < 9 ? index + 1 : undefined}
+                isKeyboardFocused={project.path === keyboardFocusedProjectPath}
               />
             ))}
           </SortableContext>

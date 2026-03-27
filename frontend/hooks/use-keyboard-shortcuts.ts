@@ -247,9 +247,11 @@ export function useKeyboardShortcuts({
       if (mod && event.shiftKey && !event.altKey && digitMatch) {
         event.preventDefault();
         const index = parseInt(digitMatch[1], 10) - 1;
-        const { projects, switchToProject: swp } = useProjectsStore.getState();
+        const { projects, switchToProject: swp, flashKeyboardFocus } = useProjectsStore.getState();
         if (index < projects.length) {
-          swp(projects[index].path);
+          const targetPath = projects[index].path;
+          swp(targetPath);
+          flashKeyboardFocus(targetPath);
         }
 
         return;

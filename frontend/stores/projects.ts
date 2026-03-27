@@ -187,6 +187,9 @@ interface ProjectsState {
   thinkingProjects: Set<string>;
   notifiedProjects: Set<string>;
   notificationMessages: Record<string, string>;
+  /** Path of the project that was just switched to via keyboard shortcut.
+   *  Used to temporarily show the sidebar tooltip + focus glow. Auto-clears after timeout. */
+  keyboardFocusedProjectPath: string | null;
 
   loadProjects: () => Promise<void>;
   addProject: (projectPath: string) => Promise<void>;
@@ -205,7 +208,10 @@ interface ProjectsState {
   clearProjectNotified: (projectPath: string) => void;
   setProjectNotificationMessage: (projectPath: string, message: string) => void;
   clearProjectNotificationMessage: (projectPath: string) => void;
+  flashKeyboardFocus: (projectPath: string, durationMs?: number) => void;
 }
+
+let _keyboardFocusTimer: ReturnType<typeof setTimeout> | null = null;
 
 export const useProjectsStore = create<ProjectsState>((set, get) => ({
   projects: [],
@@ -217,6 +223,19 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
   thinkingProjects: new Set<string>(),
   notifiedProjects: new Set<string>(),
   notificationMessages: {},
+  keyboardFocusedProjectPath: null,
+
+  flashKeyboardFocus: (projectPath: string, durationMs = 2000) => {
+    if (_keyboardFocusTimer !== null) {
+      clearTimeout(_keyboardFocusTimer);
+      _keyboardFocusTimer = null;
+    }
+    set({ keyboardFocusedProjectPath: projectPath });
+    _keyboardFocusTimer = setTimeout(() => {
+      set({ keyboardFocusedProjectPath: null });
+      _keyboardFocusTimer = null;
+    }, durationMs);
+  },
 
   loadProjects: async () => {
     set({ loading: true });
