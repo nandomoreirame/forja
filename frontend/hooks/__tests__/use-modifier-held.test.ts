@@ -46,10 +46,10 @@ describe("modifier detection logic", () => {
     expect(combo).toBe("ctrl");
   });
 
-  it("bare Alt sets alt", () => {
+  it("bare Alt returns null (not tracked)", () => {
     const e = makeKeyEvent("keydown", { altKey: true, key: "Alt" });
     const combo = detectModifierCombo(e);
-    expect(combo).toBe("alt");
+    expect(combo).toBeNull();
   });
 
   it("Cmd+Alt sets cmd-alt", () => {

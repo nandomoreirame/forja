@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type ModifierCombo = "cmd" | "cmd-shift" | "ctrl" | "alt" | "cmd-alt";
+export type ModifierCombo = "cmd" | "cmd-shift" | "ctrl" | "cmd-alt";
 
 interface ModifierHeldState {
   activeModifier: ModifierCombo | null;

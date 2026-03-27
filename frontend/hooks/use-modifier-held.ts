@@ -11,7 +11,7 @@ export function detectModifierCombo(e: KeyboardEvent): ModifierCombo | null {
   if (e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey) return "cmd";
   // Bare Ctrl (for Ctrl+Tab cycling on macOS)
   if (e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey) return "ctrl";
-  if (e.altKey && !e.metaKey && !e.shiftKey && !e.ctrlKey) return "alt";
+  // Bare Alt not tracked — let Electron handle it (native menu activation)
   return null;
 }
 

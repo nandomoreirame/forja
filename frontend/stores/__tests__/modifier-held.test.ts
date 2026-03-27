@@ -26,7 +26,7 @@ describe("modifier-held store", () => {
   });
 
   it("cancelBadges clears everything immediately", () => {
-    useModifierHeldStore.getState().setModifier("alt");
+    useModifierHeldStore.getState().setModifier("cmd-alt");
     useModifierHeldStore.getState().cancelBadges();
     expect(useModifierHeldStore.getState().visible).toBe(false);
     expect(useModifierHeldStore.getState().activeModifier).toBeNull();

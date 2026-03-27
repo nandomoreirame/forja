@@ -91,9 +91,8 @@ function ProjectIcon({
   const modifierVisible = useModifierHeldStore((s) => s.visible);
   const activeModifier = useModifierHeldStore((s) => s.activeModifier);
   const showShortcutBadge = modifierVisible && activeModifier === "cmd-shift" && shortcutIndex !== undefined;
-  const showNotifBadge = modifierVisible && activeModifier === "alt" && !!isNotified;
-  const showSpinner = !isActive && !!isThinking && !showShortcutBadge && !showNotifBadge;
-  const showBadge = !isActive && !!isNotified && !showShortcutBadge && !showNotifBadge;
+  const showSpinner = !isActive && !!isThinking && !showShortcutBadge;
+  const showBadge = !isActive && !!isNotified && !showShortcutBadge;
   const [imgError, setImgError] = useState(false);
 
   const hasIcon = !!project.iconPath && !imgError;
@@ -149,14 +148,6 @@ function ProjectIcon({
           label={String(shortcutIndex)}
           variant={isActive ? "active" : "inactive"}
           visible={showShortcutBadge}
-          className="absolute -bottom-1 -right-1 z-10"
-        />
-      )}
-      {isNotified && (
-        <ShortcutBadge
-          label="N"
-          variant="notification"
-          visible={showNotifBadge}
           className="absolute -bottom-1 -right-1 z-10"
         />
       )}
