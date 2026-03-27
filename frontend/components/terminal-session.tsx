@@ -261,6 +261,14 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         write(remapCedilla(data));
       });
 
+      // Copy-on-select: auto-copy text to clipboard when selection changes
+      terminal.onSelectionChange(() => {
+        const selection = terminal.getSelection();
+        if (selection) {
+          navigator.clipboard.writeText(selection).catch(() => {});
+        }
+      });
+
       // Wait for layout to stabilize before fitting and spawning
       // so the PTY gets the correct initial dimensions.
       rafId = requestAnimationFrame(() => {
