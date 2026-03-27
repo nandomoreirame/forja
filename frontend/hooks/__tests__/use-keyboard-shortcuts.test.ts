@@ -102,6 +102,7 @@ const projectStoreActions = {
   activeProjectPath: null as string | null,
   notifiedProjects: new Set<string>(),
   switchToProject: vi.fn(),
+  flashKeyboardFocus: vi.fn(),
 };
 
 vi.mock("@/stores/projects", () => ({
