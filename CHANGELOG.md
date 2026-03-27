@@ -8,6 +8,16 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.8.4] - 2026-03-27
+
+### Added
+- Add copy-on-select to terminal sessions.
+- Add tooltips to session status bar items.
+
+### Fixed
+- Re-apply tmux session options on reattach and disable mouse.
+---
+
 ## [1.8.3] - 2026-03-26
 
 ### Added
