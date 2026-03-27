@@ -172,6 +172,9 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
     });
   }
 
+  // Alt key menu toggle is handled in the renderer (titlebar.tsx)
+  // via document keydown/keyup listeners.
+
   // Block reload shortcuts (Ctrl+R, Cmd+R, F5, Ctrl+Shift+R) in production builds
   if (!isDev) {
     win.webContents.on("before-input-event", (_event, input) => {
@@ -701,6 +704,16 @@ ipcMain.handle("set_zoom_level", (event, args: { level: number }) => {
   event.sender.setZoomLevel(clamped);
 });
 
+ipcMain.handle("zoom:in", (event) => {
+  const current = event.sender.getZoomLevel();
+  event.sender.setZoomLevel(Math.min(current + 1, 5));
+});
+
+ipcMain.handle("zoom:out", (event) => {
+  const current = event.sender.getZoomLevel();
+  event.sender.setZoomLevel(Math.max(current - 1, -5));
+});
+
 // PTY operations
 ipcMain.handle("spawn_pty", async (event, args: { tabId: string; path: string; sessionType?: string; windowLabel?: string; resumeArgs?: string[] }) => {
   const win = BrowserWindow.fromWebContents(event.sender);
@@ -1050,6 +1063,19 @@ ipcMain.handle("window:isMaximized", (event) => {
 ipcMain.handle("window:getLabel", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   return win ? String(win.id) : "main";
+});
+
+ipcMain.handle("window:toggleFullScreen", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.setFullScreen(!win.isFullScreen());
+});
+
+ipcMain.handle("window:reload", (event) => {
+  event.sender.reload();
+});
+
+ipcMain.handle("window:toggleDevTools", (event) => {
+  event.sender.toggleDevTools();
 });
 
 // Dialog
