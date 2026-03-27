@@ -48,12 +48,6 @@ export function WorkspaceSwitcher() {
     loadWorkspaces();
   }, [loadWorkspaces]);
 
-  useEffect(() => {
-    if (showWorkspaceBadges && hasWorkspaces) {
-      setIsOpen(true);
-    }
-  }, [showWorkspaceBadges, hasWorkspaces]);
-
   const activeIcon = activeWorkspace?.icon ?? "layers";
   const ActiveIcon = getWorkspaceIcon(activeIcon);
 
