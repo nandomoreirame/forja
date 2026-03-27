@@ -8,6 +8,37 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.8.5] - 2026-03-27
+
+### Added
+
+- Add shortcut discovery badges system with modifier key detection (Cmd+Shift for projects, Ctrl for tabs, Cmd+Alt for workspaces, Alt for notifications).
+- Add ShortcutBadge reusable component with active/inactive/directional variants.
+- Add Cmd+1-9 shortcut to switch tabs directly by position.
+- Add Cmd+Alt+1-9 shortcut to switch workspaces by position.
+- Add directional arrow badges to tiling panes showing adjacent pane directions.
+- Add ui.shortcutHints user setting to disable all modifier key badges.
+- Add shortcut hints toggle to Settings Appearance section.
+
+### Changed
+
+- Make pane backgrounds transparent with opacity support for window transparency.
+- Remove WebGL addon from terminal; use canvas renderer with allowTransparency.
+- Update opacity slider range to 0.05-0.95 with 1.0 as fully opaque special value.
+- Add DEVELOPMENT MODE label to titlebar when running in dev mode.
+
+### Fixed
+
+- Fix workspace dropdown opening unexpectedly when pressing Ctrl+Alt.
+- Fix Monaco preview mode interaction: block clicks, cursor, and selection while preserving native scroll.
+- Fix shortcut badges persisting while modifier keys are still held during navigation.
+- Fix badge detection in focused xterm.js terminals and read-only Monaco editors.
+- Fix modifier combo transitions on partial key release (e.g., Cmd+Shift to Cmd alone).
+- Fix terminal line-height and default font for ASCII art rendering.
+- Fix CLI icon inline baseline alignment in flex containers.
+
+---
+
 ## [1.8.4] - 2026-03-27
 
 ### Added
