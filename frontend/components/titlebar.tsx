@@ -3,11 +3,9 @@ import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
 import { getCurrentWindow, invoke, isDev, isTilingDesktop } from "@/lib/ipc";
-import { usePerformanceStore } from "@/stores/performance";
 import { cn } from "@/lib/utils";
 import {
   Copy,
-  Gauge,
   Info,
   Keyboard,
   Maximize,
@@ -54,8 +52,6 @@ export function Titlebar() {
   const [maximized, setMaximized] = useState(false);
   const [tilingDesktop, setTilingDesktop] = useState(false);
   const [devMode, setDevMode] = useState(false);
-  const isLite = usePerformanceStore((s) => s.isLite);
-  const toggleLiteMode = usePerformanceStore((s) => s.toggleLiteMode);
   const { aboutOpen, setAboutOpen, shortcutsOpen, setShortcutsOpen, settingsOpen, setSettingsOpen } = useAppDialogsStore();
   const { tree, openProject } = useFileTreeStore();
   const baseTitle = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
@@ -138,7 +134,7 @@ export function Titlebar() {
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
               <button
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md text-ctp-overlay1 transition-colors hover:bg-ctp-surface0 hover:text-ctp-text"
                 aria-label="Menu"
               >
                 <Menu className="h-4 w-4" strokeWidth={1.5} />
@@ -239,35 +235,33 @@ export function Titlebar() {
           </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        <div className="ml-2.5" />
         <WorkspaceSwitcher />
-        <div className="mx-2 h-4 w-px bg-ctp-surface1" />
+        <div className="mx-1 h-4 w-px bg-ctp-surface1" />
         <QuickActions position="left" />
       </div>
 
-      <span
-        className="pointer-events-none absolute inset-x-0 text-center text-app font-semibold text-ctp-overlay1"
+      {/* Center: search bar (opens command palette on click) */}
+      <div
+        className="relative z-10 mx-auto flex-1 px-4"
+        style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
       >
-        {title}
-      </span>
+        <button
+          type="button"
+          onClick={() => useCommandPaletteStore.getState().open("commands")}
+          className="mx-auto flex h-7 w-full max-w-md items-center gap-2 rounded-md border border-ctp-surface1 bg-ctp-surface0/50 px-3 text-app-sm text-ctp-overlay0 transition-colors hover:border-ctp-surface2 hover:bg-ctp-surface0 hover:text-ctp-overlay1"
+        >
+          <Search className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
+          <span className="flex-1 truncate text-left">Command Palette</span>
+          <kbd className="ml-auto shrink-0 rounded bg-ctp-surface1/50 px-1.5 py-0.5 font-mono text-app-xs text-ctp-overlay0">
+            {mod}+Shift+P
+          </kbd>
+        </button>
+      </div>
 
       {/* Right: quick actions + resource usage + window controls */}
       <div className="relative z-10 flex items-center" style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}>
         <QuickActions position="right" />
-        {devMode && (
-          <button
-            onClick={toggleLiteMode}
-            aria-label="Toggle lite mode"
-            className={cn(
-              "mr-1 inline-flex h-6 items-center gap-1 rounded border px-1.5 font-mono text-app-xs font-semibold uppercase transition-colors",
-              isLite
-                ? "border-ctp-yellow/40 bg-ctp-yellow/10 text-ctp-yellow"
-                : "border-ctp-surface1 bg-ctp-surface0/50 text-ctp-overlay0 hover:text-ctp-text"
-            )}
-          >
-            <Gauge className="h-3 w-3" strokeWidth={1.5} />
-            Lite
-          </button>
-        )}
         <ResourceUsagePopover />
         {!isMac && !tilingDesktop && (
           <>
