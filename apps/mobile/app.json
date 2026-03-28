@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "Forja Remote Control",
+    "slug": "forja-remote-control",
+    "version": "1.9.0",
+    "scheme": "forja-remote",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#1e1e2e"
+    },
+    "ios": {
+      "bundleIdentifier": "dev.forja.remote"
+    },
+    "android": {
+      "package": "dev.forja.remote",
+      "adaptiveIcon": {
+        "backgroundColor": "#1e1e2e"
+      }
+    }
+  }
+}
