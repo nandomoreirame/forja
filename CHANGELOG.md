@@ -8,6 +8,22 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-03-28
+
+### Added
+
+- Add External API server with Unix socket (named pipe on Windows) for programmatic control of Forja from shell scripts, hooks, and external tools.
+- Add WebSocket bridge for remote control over the local network with token-based authentication, rate limiting (10 msg/s), and connection limit (5 clients).
+- Add real-time PTY output streaming via WebSocket subscribe/unsubscribe protocol.
+- Add CLI client (`forja`) for controlling a running Forja instance from the terminal (ping, notify, open, sessions, send, output, screenshot, new-session).
+- Add CLI mode handler so the packaged `forja` binary doubles as both GUI launcher and CLI client.
+- Add Discord bot (`forja-bot`) with slash commands and `!forja` message prefix for remote session management.
+- Add PTY subscriber system for broadcasting terminal output events to external consumers.
+- Add WebSocket bridge UI controls: titlebar menu toggle, Ctrl+Shift+R keyboard shortcut, and status bar indicator with port and client count.
+- Add comprehensive External API documentation with examples in bash, Python, Node.js, and PowerShell.
+
+---
+
 ## [1.7.0] - 2026-03-19
 
 ### Added
