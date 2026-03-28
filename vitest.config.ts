@@ -42,6 +42,17 @@ export default defineConfig({
           globals: true,
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "scripts",
+          include: ["scripts/__tests__/**/*.test.ts"],
+          environment: "node",
+          pool: "forks",
+          maxWorkers: 2,
+          globals: true,
+        },
+      },
     ],
     coverage: {
       provider: "v8",
