@@ -2,6 +2,7 @@ import { IS_MAC } from "@/lib/platform";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
 import { useCommandPaletteStore } from "@/stores/command-palette";
 import { APP_NAME, useFileTreeStore } from "@/stores/file-tree";
+import { useWsBridgeStore } from "@/stores/ws-bridge";
 import { getCurrentWindow, invoke, isDev, isTilingDesktop } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import {
@@ -12,6 +13,7 @@ import {
   Menu,
   Minus,
   Plus,
+  Radio,
   RotateCcw,
   Search,
   Settings,
@@ -57,6 +59,7 @@ export function Titlebar() {
   const baseTitle = tree ? `${tree.root.name} - ${APP_NAME}` : APP_NAME;
   const title = devMode ? `${baseTitle} (DEVELOPMENT MODE)` : baseTitle;
   const [menuOpen, setMenuOpen] = useState(false);
+  const wsBridgeRunning = useWsBridgeStore((s) => s.running);
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -205,6 +208,14 @@ export function Titlebar() {
                 Toggle Full Screen
                 <span className="ml-auto font-mono text-app-xs text-ctp-overlay0">
                   F11
+                </span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => useWsBridgeStore.getState().toggle()}>
+                <Radio className="h-3.5 w-3.5" />
+                {wsBridgeRunning ? "Stop Remote Server" : "Start Remote Server"}
+                <span className="ml-auto font-mono text-app-xs text-ctp-overlay0">
+                  Ctrl+Shift+R
                 </span>
               </DropdownMenuItem>
             </DropdownMenuGroup>

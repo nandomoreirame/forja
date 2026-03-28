@@ -11,6 +11,7 @@ import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFocusModeStore } from "@/stores/focus-mode";
 import { useWorkspaceStore } from "@/stores/workspace";
+import { useWsBridgeStore } from "@/stores/ws-bridge";
 import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import type { TerminalTab } from "@/stores/terminal-tabs";
 
@@ -64,6 +65,12 @@ export function useKeyboardShortcuts({
 
         if (!useFileTreeStore.getState().currentPath) return;
         useCommandPaletteStore.getState().open("sessions");
+        return;
+      }
+      if (mod && event.shiftKey && event.key.toLowerCase() === "r") {
+        event.preventDefault();
+
+        useWsBridgeStore.getState().toggle();
         return;
       }
       if (mod && event.key.toLowerCase() === "w") {

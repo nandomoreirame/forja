@@ -117,6 +117,16 @@ const ClaudeNotFoundDialog = lazy(() =>
   }))
 );
 
+// Mirror of ExternalCommand from electron/external-api.ts
+// Keep in sync when adding new command types
+type ExternalCommand =
+  | { type: "notify"; message: string; projectPath?: string }
+  | { type: "open-project"; projectPath: string }
+  | { type: "screenshot" }
+  | { type: "list-projects" }
+  | { type: "ping" }
+  | { type: "new-session"; sessionType: string; projectPath?: string };
+
 interface GitChangedPayload {
   path: string;
 }
@@ -779,6 +789,48 @@ function App({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [initialWorkspaceId]);
+
+  // Handle external API commands sent from the main process via IPC
+  useEffect(() => {
+    const cleanup = listen<ExternalCommand>("external:command", (event) => {
+      const cmd = event.payload;
+      switch (cmd.type) {
+        case "open-project": {
+          const store = useProjectsStore.getState();
+          const existing = store.projects.find((p) => p.path === cmd.projectPath);
+          if (existing) {
+            store.switchToProject(cmd.projectPath);
+          } else {
+            store.addProject(cmd.projectPath);
+          }
+          break;
+        }
+        case "notify": {
+          console.log("[External API] Notification:", cmd.message);
+          break;
+        }
+        case "new-session": {
+          const tabsStore = useTerminalTabsStore.getState();
+          const projectsStore = useProjectsStore.getState();
+          const projectPath = cmd.projectPath ?? projectsStore.activeProjectPath;
+          if (!projectPath) break;
+          const tabId = tabsStore.nextTabId();
+          tabsStore.addTab(tabId, projectPath, cmd.sessionType as any);
+          break;
+        }
+      }
+    });
+    return () => { cleanup.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup external:command unlisten failed:", err)); };
+  }, []);
+
+  // Expose project list getter for the external API `list-projects` command
+  useEffect(() => {
+    (window as any).__forjaExternalGetProjects = () => {
+      const store = useProjectsStore.getState();
+      return store.projects.map((p) => ({ path: p.path, name: p.name }));
+    };
+    return () => { delete (window as any).__forjaExternalGetProjects; };
+  }, []);
 
   // Keyboard shortcuts extracted to dedicated hook
   useKeyboardShortcuts({ tabsRef, activeTabIdRef, closeTab });

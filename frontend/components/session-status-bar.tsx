@@ -2,7 +2,9 @@ import { invoke } from "@/lib/ipc";
 import { CLI_REGISTRY, type SessionType } from "@/lib/cli-registry";
 import { useSessionStateStore } from "@/stores/session-state";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
+import { useWsBridgeStore } from "@/stores/ws-bridge";
 import { memo, useEffect, useState } from "react";
+import { Radio } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -113,6 +115,9 @@ export const SessionStatusBar = memo(function SessionStatusBar({
   const [rawModelId, setRawModelId] = useState<string | null>(null);
   const sessionState = useSessionStateStore((s) => s.getState(tabId));
   const tab = useTerminalTabsStore((s) => s.tabs.find((t: { id: string }) => t.id === tabId));
+  const wsBridgeRunning = useWsBridgeStore((s) => s.running);
+  const wsBridgePort = useWsBridgeStore((s) => s.port);
+  const wsBridgeClients = useWsBridgeStore((s) => s.clients);
 
   const isTerminal = sessionType === "terminal";
   const isAiCli = !isTerminal;
@@ -254,7 +259,22 @@ export const SessionStatusBar = memo(function SessionStatusBar({
           </>
         )}
 
-        {/* Right side: git info */}
+        {/* Right side: WS bridge indicator + git info */}
+        <div className={`flex items-center gap-3 ${branchDisplay ? "" : "ml-auto"}`}>
+          {wsBridgeRunning && (
+            <>
+              {branchDisplay && <Separator />}
+              <StatusItem
+                tooltip={`Remote Server running on port ${wsBridgePort}${wsBridgeClients > 0 ? ` · ${wsBridgeClients} client${wsBridgeClients !== 1 ? "s" : ""}` : ""}`}
+                className="flex items-center gap-1 text-ctp-green"
+              >
+                <Radio className="h-3 w-3" strokeWidth={1.5} />
+                <span>{wsBridgePort}</span>
+                {wsBridgeClients > 0 && <span className="text-ctp-overlay1">·{wsBridgeClients}</span>}
+              </StatusItem>
+            </>
+          )}
+        </div>
         {branchDisplay && (
           <div className="ml-auto flex items-center gap-3">
             <StatusItem
