@@ -127,6 +127,14 @@ vi.mock("@/stores/browser-pane", () => ({
   useBrowserPaneStore: { getState: () => ({}) },
 }));
 
+const wsBridgeActions = {
+  toggle: vi.fn(),
+};
+
+vi.mock("@/stores/ws-bridge", () => ({
+  useWsBridgeStore: { getState: () => wsBridgeActions },
+}));
+
 const mockFocusActiveTabInTabset = vi.fn();
 vi.mock("@/lib/pane-focus", () => ({
   focusActiveTabInTabset: (...args: unknown[]) => mockFocusActiveTabInTabset(...args),
@@ -316,18 +324,20 @@ describe("useKeyboardShortcuts tab management", () => {
     expect(tabStoreActions.addTab).not.toHaveBeenCalled();
   });
 
-  it("Ctrl+Shift+W closes active tab in tiling layout", () => {
+  it("Ctrl+Shift+R toggles the WS bridge server", () => {
+    wsBridgeActions.toggle.mockReset();
     setupHook();
 
     window.dispatchEvent(
       new KeyboardEvent("keydown", {
-        key: "W",
+        key: "R",
         ctrlKey: true,
         shiftKey: true,
       }),
     );
 
-    expect(tilingActions.closeActiveTab).toHaveBeenCalledTimes(1);
+    expect(wsBridgeActions.toggle).toHaveBeenCalledTimes(1);
+    expect(tilingActions.closeActiveTab).not.toHaveBeenCalled();
   });
 
   it("Ctrl+W closes active tab in tiling layout", () => {
