@@ -1,0 +1,19 @@
+{
+  "name": "@forja/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@forja/tsconfig": "workspace:*",
+    "typescript": "^5.7.0"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "extends": "@forja/tsconfig/base.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}
