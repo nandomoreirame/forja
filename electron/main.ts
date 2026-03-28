@@ -1,3 +1,12 @@
+// CLI mode: if the binary is invoked with a known CLI command (e.g. `forja ping`),
+// handle it via the Unix socket and exit before Electron/Chromium initializes.
+import { tryCliMode } from "./cli-mode.js";
+if (await tryCliMode()) {
+  // CLI command was handled — process.exit() already called inside tryCliMode.
+  // This line is unreachable but satisfies TypeScript control flow.
+  process.exit(0);
+}
+
 // Ozone platform hint must be set before Electron/Chromium initializes.
 // Covers all packaging formats (dev, .deb, AppImage).
 if (process.platform === "linux" && !process.env.ELECTRON_OZONE_PLATFORM_HINT) {
@@ -26,12 +35,14 @@ import { readSettingsModeSync, resolveModeSyncFromHardware, getLiteModeConfig } 
 import { detectEditor } from "./editor-detector.js";
 import { applyWindowOpacity, getWindowTransparencyOptions } from "./window-opacity.js";
 import { getForjaConfigDir } from "./paths.js";
+import { startExternalApiServer } from "./external-api.js";
+import type { ExternalCommand } from "./external-api.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // PTY must be eager (resolveShellPath used at module scope)
-import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closePtyAndTmux, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers, reattachPty } from "./pty.js";
+import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closePtyAndTmux, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers, reattachPty, getActiveSessions } from "./pty.js";
 import { isUiSaveSuspended, suspendUiSaves, resumeUiSaves } from "./ui-save-gate.js";
 import { attachWebviewKeyboardBridge } from "./webview-keyboard-bridge.js";
 import { getCliSessions, getActiveSessionModel } from "./cli-sessions.js";
@@ -42,6 +53,12 @@ import { getQuickActions, saveQuickActions } from "./config.js";
 
 // Track which BrowserWindow belongs to which workspace
 const windowWorkspaceMap = new Map<number, string>();
+
+// External API server instance (started in app.whenReady, cleaned up in window-all-closed)
+let externalServer: import("net").Server | null = null;
+
+// WebSocket bridge instance (started on-demand via IPC, cleaned up in window-all-closed)
+let wsBridge: Awaited<ReturnType<typeof import("./ws-bridge.js")["createWsBridge"]>> | null = null;
 
 // Lazy module loaders (cached after first import)
 const lazyImport = <T>(factory: () => Promise<T>) => {
@@ -66,6 +83,8 @@ const getContextIpc = lazyImport(() => import("./context/context-ipc.js"));
 const getAgentChatIpc = lazyImport(() => import("./agent-chat-ipc.js"));
 const getPluginIpc = lazyImport(() => import("./plugins/plugin-ipc.js"));
 const getBufferPersistence = lazyImport(() => import("./buffer-persistence.js"));
+const getWsBridge = lazyImport(() => import("./ws-bridge.js"));
+const getAuthToken = lazyImport(() => import("./auth-token.js"));
 
 const isDev = !app.isPackaged;
 const VITE_DEV_URL = "http://localhost:1420";
@@ -360,7 +379,139 @@ app.whenReady().then(async () => {
   const userSettings = await getUserSettings();
   await userSettings.loadUserSettings();
 
-  await createWindow();
+  // Check if a project path was passed via CLI (e.g. `forja /path/to/project`)
+  let cliProjectPath = process.argv.slice(1)
+    .filter((a) => !a.startsWith("--") && !a.endsWith(".js") && !a.endsWith(".ts"))
+    .find((a) => a.startsWith("/") || a.startsWith("~") || a.startsWith("./") || a.startsWith("../"));
+  if (cliProjectPath) {
+    if (cliProjectPath.startsWith("~")) {
+      cliProjectPath = path.join(os.homedir(), cliProjectPath.slice(1));
+    } else if (!path.isAbsolute(cliProjectPath)) {
+      cliProjectPath = path.resolve(cliProjectPath);
+    }
+  }
+
+  await createWindow(cliProjectPath || undefined);
+
+  // Resolve tabId: accepts full ID ("main-xxx-tab-2") or just the number ("2")
+  function resolveTabId(input: string): string | null {
+    const sessions = getActiveSessions();
+    if (!sessions.length) return null;
+    // If it's a pure number, treat as 1-based index
+    if (/^\d+$/.test(input)) {
+      const idx = parseInt(input, 10) - 1;
+      return sessions[idx]?.tabId ?? null;
+    }
+    // If it ends with a number, try matching by tab suffix
+    const match = sessions.find((s) => s.tabId === input || s.tabId.endsWith(`-${input}`));
+    if (match) return match.tabId;
+    // Direct match
+    return sessions.find((s) => s.tabId === input)?.tabId ?? null;
+  }
+
+  externalServer = startExternalApiServer(
+    () => BrowserWindow.getFocusedWindow()?.webContents ?? null,
+    async (cmd: ExternalCommand) => {
+      const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+      if (!win) return { ok: false, error: "No Forja window open" };
+
+      switch (cmd.type) {
+        case "ping":
+          return { ok: true, data: { version: app.getVersion() } };
+
+        case "list-projects": {
+          const projects = await win.webContents.executeJavaScript(
+            `window.__forjaExternalGetProjects?.()`
+          );
+          return { ok: true, data: projects ?? [] };
+        }
+
+        case "open-project":
+          win.webContents.send("external:command", cmd);
+          win.focus();
+          return { ok: true };
+
+        case "notify":
+          win.webContents.send("external:command", cmd);
+          return { ok: true };
+
+        case "screenshot":
+          win.webContents.send("external:command", cmd);
+          return { ok: true, data: { message: "Screenshot triggered" } };
+
+        case "list-sessions": {
+          const activeSessions = getActiveSessions();
+          return { ok: true, data: activeSessions };
+        }
+
+        case "session-output": {
+          const tabId = resolveTabId(cmd.tabId);
+          if (!tabId) return { ok: false, error: `No session found for: ${cmd.tabId}` };
+          const content = getSessionBuffer(tabId);
+          if (content === null) {
+            return { ok: false, error: `No active session for tabId: ${tabId}` };
+          }
+          return { ok: true, data: { tabId, content } };
+        }
+
+        case "session-input": {
+          const tabId = resolveTabId(cmd.tabId);
+          if (!tabId || !hasPty(tabId)) {
+            return { ok: false, error: `No active session for: ${cmd.tabId}` };
+          }
+          // Split text and CR so CLIs that distinguish typed vs pasted input
+          // (e.g. Codex bracketed-paste) handle the submit correctly.
+          const submitChar = cmd.text.endsWith("\r") ? "\r" : "";
+          const body = submitChar ? cmd.text.slice(0, -1) : cmd.text;
+          if (body) writePty(tabId, body);
+          if (submitChar) {
+            await new Promise((r) => setTimeout(r, 50));
+            writePty(tabId, submitChar);
+          }
+          return { ok: true };
+        }
+
+        case "subscribe":
+          return { ok: false, error: "subscribe is only available via WebSocket" };
+
+        case "new-session": {
+          const validTypes = ["claude", "gemini", "codex", "gh-copilot", "cursor-agent", "terminal"];
+          if (!validTypes.includes(cmd.sessionType)) {
+            return { ok: false, error: `Invalid session type. Valid: ${validTypes.join(", ")}` };
+          }
+          // Delegate to frontend which handles tab creation + PTY spawn
+          win.webContents.send("external:command", cmd);
+          win.focus();
+          return { ok: true, data: { sessionType: cmd.sessionType } };
+        }
+
+        case "switch-project": {
+          // Get project list from frontend, switch by 1-based index
+          const projects = await win.webContents.executeJavaScript(
+            `window.__forjaExternalGetProjects?.()`
+          ) as Array<{ path: string; name: string }> | null;
+          if (!projects?.length) {
+            return { ok: false, error: "No projects open" };
+          }
+          const idx = cmd.index - 1;
+          if (idx < 0 || idx >= projects.length) {
+            return { ok: false, error: `Invalid index ${cmd.index}. Range: 1-${projects.length}` };
+          }
+          const target = projects[idx];
+          // Switch via the same mechanism as open-project
+          win.webContents.send("external:command", { type: "open-project", projectPath: target.path });
+          win.focus();
+          // Wait a bit for switch to complete, then return sessions
+          await new Promise((r) => setTimeout(r, 300));
+          const sessions = getActiveSessions();
+          return { ok: true, data: { project: target, sessions } };
+        }
+
+        default:
+          return { ok: false, error: "Unknown command" };
+      }
+    }
+  );
 
   userSettings.startSettingsWatcher(() => {
     return BrowserWindow.getAllWindows().map((w) => w.webContents);
@@ -383,12 +534,56 @@ app.whenReady().then(async () => {
     appMetricsMod.unregisterMetricsSubscriber();
   });
 
+  // WebSocket Bridge remote server controls
+  ipcMain.handle("ws-bridge:start", async () => {
+    const authMod = await getAuthToken();
+    const wsMod = await getWsBridge();
+
+    // Generate a fresh token for this server session
+    const token = authMod.generateToken();
+
+    // Create and start the bridge (lazy, only created when needed)
+    if (!wsBridge) {
+      wsBridge = wsMod.createWsBridge();
+    }
+    await wsBridge.start();
+
+    const status = wsBridge.getStatus();
+    console.log(`[WS Bridge] Started on ws://${status.host}:${status.port} (token: ${token.slice(0, 8)}...)`);
+
+    return { ok: true, data: { port: status.port, host: status.host, token } };
+  });
+
+  ipcMain.handle("ws-bridge:stop", async () => {
+    if (wsBridge) {
+      await wsBridge.stop();
+      const authMod = await getAuthToken();
+      authMod.clearToken();
+      console.log("[WS Bridge] Stopped");
+    }
+    return { ok: true };
+  });
+
+  ipcMain.handle("ws-bridge:status", async () => {
+    if (!wsBridge) {
+      return { running: false, port: 9400, host: "0.0.0.0", clients: 0, token: "" };
+    }
+    return wsBridge.getStatus();
+  });
+
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
 app.on("window-all-closed", async () => {
+  externalServer?.close();
+
+  if (wsBridge) {
+    wsBridge.stop().catch(() => {});
+    wsBridge = null;
+  }
+
   // Save all PTY buffers to disk before quitting
   try {
     const bp = await getBufferPersistence();

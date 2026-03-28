@@ -15,6 +15,50 @@ interface PtySession {
   projectPath: string;
   buffer: RingBuffer;
   tmuxSessionName: string | null;
+  sessionType: string;
+}
+
+export interface PtySubscriberEvent {
+  event: "data" | "session-start" | "session-exit";
+  tabId: string;
+  data?: string;
+  projectPath?: string;
+  sessionType?: string;
+  exitCode?: number | null;
+}
+
+type PtySubscriberFn = (event: PtySubscriberEvent) => void;
+const ptySubscribers = new Set<PtySubscriberFn>();
+
+export function subscribePtyOutput(fn: PtySubscriberFn): () => void {
+  ptySubscribers.add(fn);
+  return () => ptySubscribers.delete(fn);
+}
+
+export function notifyPtySubscribers(event: PtySubscriberEvent): void {
+  for (const fn of ptySubscribers) {
+    try {
+      fn(event);
+    } catch {
+      // subscriber errors must not crash PTY
+    }
+  }
+}
+
+export function getActiveSessions(): Array<{
+  tabId: string;
+  projectPath: string;
+  sessionType: string;
+}> {
+  const result: Array<{ tabId: string; projectPath: string; sessionType: string }> = [];
+  for (const [tabId, session] of sessions) {
+    result.push({
+      tabId,
+      projectPath: session.projectPath,
+      sessionType: session.sessionType,
+    });
+  }
+  return result;
 }
 
 const sessions = new Map<string, PtySession>();
@@ -154,6 +198,7 @@ export async function spawnPty(opts: SpawnOptions): Promise<SpawnResult> {
     projectPath: cwd,
     buffer: new RingBuffer(PTY_BUFFER_MAX_BYTES),
     tmuxSessionName,
+    sessionType: sessionType ?? "terminal",
   };
 
   ptyProcess.onData((data: string) => {
@@ -161,6 +206,7 @@ export async function spawnPty(opts: SpawnOptions): Promise<SpawnResult> {
     if (!sender.isDestroyed()) {
       sender.send("pty:data", { tab_id: tabId, data });
     }
+    notifyPtySubscribers({ event: "data", tabId, data });
   });
 
   ptyProcess.onExit(({ exitCode }) => {
@@ -176,9 +222,11 @@ export async function spawnPty(opts: SpawnOptions): Promise<SpawnResult> {
         exitCode,
       });
     }
+    notifyPtySubscribers({ event: "session-exit", tabId, projectPath: cwd, exitCode });
   });
 
   sessions.set(tabId, session);
+  notifyPtySubscribers({ event: "session-start", tabId, projectPath: cwd, sessionType: sessionType ?? "terminal" });
 
   // After spawning, emit running state (only for AI CLI sessions, not plain terminals)
   if (sessionType !== "terminal" && !sender.isDestroyed()) {
@@ -225,6 +273,7 @@ export async function reattachPty(opts: {
     projectPath,
     buffer: new RingBuffer(PTY_BUFFER_MAX_BYTES),
     tmuxSessionName,
+    sessionType: "terminal",
   };
 
   ptyProcess.onData((data: string) => {
@@ -232,6 +281,7 @@ export async function reattachPty(opts: {
     if (!sender.isDestroyed()) {
       sender.send("pty:data", { tab_id: tabId, data });
     }
+    notifyPtySubscribers({ event: "data", tabId, data });
   });
 
   ptyProcess.onExit(({ exitCode }) => {
@@ -245,9 +295,11 @@ export async function reattachPty(opts: {
         exitCode,
       });
     }
+    notifyPtySubscribers({ event: "session-exit", tabId, projectPath, exitCode });
   });
 
   sessions.set(tabId, session);
+  notifyPtySubscribers({ event: "session-start", tabId, projectPath, sessionType: "terminal" });
   return tabId;
 }
 
