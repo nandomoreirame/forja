@@ -110,6 +110,9 @@ function buildSafeEnv(extraEnv?: Record<string, string>): Record<string, string>
     ...safe,
     TERM: "xterm-256color",
     COLORTERM: "truecolor",
+    // Signal to hooks that this PTY runs inside Forja.
+    // Hook scripts can check this to emit OSC 9 notifications.
+    FORJA_TERMINAL: "1",
     ...(extraEnv ?? {}),
   };
 }
