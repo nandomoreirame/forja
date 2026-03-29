@@ -34,6 +34,7 @@ jobs:
 
       - name: Rebuild native addons for Electron
         run: npx electron-rebuild
+        working-directory: apps/desktop
 
       - name: Run tests
         run: pnpm test -- --run
@@ -59,6 +60,7 @@ jobs:
 
       - name: Rebuild native addons for Electron
         run: npx electron-rebuild
+        working-directory: apps/desktop
 
       - name: Build
         run: pnpm build
