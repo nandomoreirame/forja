@@ -1203,6 +1203,155 @@ describe("useProjectsStore", () => {
       expect(tabs[0].id).toBe("mem-tab");
     });
 
+    it("preserves terminal block positions in layout when saved tabs exist", async () => {
+      vi.restoreAllMocks();
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      const { useTilingLayoutStore } = await import("@/stores/tiling-layout");
+      useTilingLayoutStore.getState().resetToDefault();
+
+      // Layout with 2 tabsets: tab-left in the left tabset, tab-right in the right tabset
+      const splitLayout = {
+        global: {
+          tabEnableClose: true,
+          tabSetEnableDeleteWhenEmpty: true,
+        },
+        layout: {
+          type: "row",
+          weight: 100,
+          children: [
+            {
+              type: "tabset",
+              weight: 50,
+              id: "tabset-left",
+              enableDeleteWhenEmpty: false,
+              children: [
+                {
+                  type: "tab",
+                  id: "tab-left",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "tab-left", sessionType: "claude" },
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              id: "tabset-right",
+              children: [
+                {
+                  type: "tab",
+                  id: "tab-right",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "tab-right", sessionType: "claude" },
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") {
+          return {
+            layoutJson: splitLayout,
+            tabs: [
+              { id: "tab-left", sessionType: "claude", cliSessionId: "sess-1" },
+              { id: "tab-right", sessionType: "claude", cliSessionId: "sess-2" },
+            ],
+            activeTabIndex: 0,
+          };
+        }
+        return undefined;
+      });
+
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null, counter: 0 });
+
+      await loadProjectFromDisk("/split-project");
+
+      // Both tabs should be registered
+      const tabs = useTerminalTabsStore.getState().getTabsForProject("/split-project");
+      expect(tabs).toHaveLength(2);
+      expect(tabs.map((t) => t.id).sort()).toEqual(["tab-left", "tab-right"]);
+
+      // Layout model should have both blocks in their respective tabsets
+      const tilingStore = useTilingLayoutStore.getState();
+
+      // Debug: check the full model structure
+      const modelJson = tilingStore.model.toJson() as any;
+      const allBlockIds: string[] = [];
+      const blockTabsetMap: Record<string, string> = {};
+      tilingStore.model.visitNodes((node) => {
+        if (node.getType() === "tab") {
+          allBlockIds.push(node.getId());
+          blockTabsetMap[node.getId()] = node.getParent()?.getId() ?? "unknown";
+        }
+      });
+
+      expect(tilingStore.hasBlock("tab-left")).toBe(true);
+      expect(tilingStore.hasBlock("tab-right")).toBe(true);
+
+      // Verify the blocks are in DIFFERENT tabsets (not coalesced into one)
+      expect(blockTabsetMap["tab-left"]).toBe("tabset-left");
+      expect(blockTabsetMap["tab-right"]).toBe("tabset-right");
+      expect(blockTabsetMap["tab-left"]).not.toBe(blockTabsetMap["tab-right"]);
+    });
+
+    it("strips terminal blocks from layout when no saved tabs exist", async () => {
+      vi.restoreAllMocks();
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      const { useTilingLayoutStore: tilingLayoutStore } = await import("@/stores/tiling-layout");
+      tilingLayoutStore.getState().resetToDefault();
+
+      // Layout with terminal blocks but NO saved tabs
+      const layoutWithBlocks = {
+        global: {
+          tabEnableClose: true,
+          tabSetEnableDeleteWhenEmpty: true,
+        },
+        layout: {
+          type: "row",
+          weight: 100,
+          children: [
+            {
+              type: "tabset",
+              weight: 100,
+              id: "tabset-main",
+              enableDeleteWhenEmpty: false,
+              children: [
+                {
+                  type: "tab",
+                  id: "orphan-block",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "orphan-block", sessionType: "claude" },
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") {
+          return {
+            layoutJson: layoutWithBlocks,
+            // No tabs saved — blocks should be stripped
+            tabs: [],
+          };
+        }
+        return undefined;
+      });
+
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
+
+      await loadProjectFromDisk("/empty-project");
+
+      // Terminal blocks should be stripped since there are no saved tabs
+      expect(tilingLayoutStore.getState().hasBlock("orphan-block")).toBe(false);
+    });
+
     it("restores tmuxSessionName for terminal tabs loaded from disk", async () => {
       useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
       vi.mocked(invoke).mockImplementation(async (ch: string) => {

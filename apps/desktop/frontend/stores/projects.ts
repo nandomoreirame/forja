@@ -113,7 +113,12 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
     let layout = parseLayoutJson(savedState.layoutJson);
 
     const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
-    if (projectTabs.length === 0) {
+    const hasSavedTabs = savedState.tabs && savedState.tabs.length > 0;
+    if (projectTabs.length === 0 && !hasSavedTabs) {
+      // Only strip terminal blocks when there are truly no tabs to restore.
+      // When saved tabs exist, keep blocks in the layout so they preserve
+      // their tabset positions (left/right split). ensureBlocksForProjectTabs()
+      // will skip creation for blocks that already exist in the model.
       const { stripProjectBlocksFromJson } = await import("./tiling-layout");
       layout = stripProjectBlocksFromJson(layout);
     }
