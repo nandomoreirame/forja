@@ -51,17 +51,17 @@ describe("applyTheme", () => {
 });
 
 describe("buildTerminalTheme", () => {
-  it("maps theme to xterm ITheme with transparent background", () => {
+  it("maps theme to xterm ITheme with theme base background", () => {
     const result = buildTerminalTheme(mocha);
-    expect(result.background).toBe("rgba(0, 0, 0, 0)");
+    expect(result.background).toBe(mocha.colors.base);
     expect(result.foreground).toBe("#cdd6f4");
     expect(result.red).toBe("#f38ba8");
     expect(result.cursor).toBe("#cdd6f4");
   });
 
-  it("maps dracula with transparent background", () => {
+  it("maps dracula with theme base background", () => {
     const result = buildTerminalTheme(draculaTheme);
-    expect(result.background).toBe("rgba(0, 0, 0, 0)");
+    expect(result.background).toBe(draculaTheme.colors.base);
     expect(result.red).toBe("#ff5555");
   });
 
@@ -135,7 +135,7 @@ describe("buildMonacoTheme", () => {
   it("returns theme with correct base for dark", () => {
     const result = buildMonacoTheme(mocha);
     expect(result.base).toBe("vs-dark");
-    expect(result.colors["editor.background"]).toBe("#00000000");
+    expect(result.colors["editor.background"]).toBe(mocha.colors.base);
     expect(result.colors["editor.foreground"]).toBe("#cdd6f4");
   });
 

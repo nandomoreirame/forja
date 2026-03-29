@@ -180,21 +180,6 @@ html {
   color: var(--selection-fg, var(--fg-primary));
 }
 
-/* Force transparent backgrounds for terminal and editor pane content.
-   xterm.js and Monaco both set background-color inline — !important overrides them. */
-.xterm,
-.xterm-viewport {
-  background-color: transparent !important;
-}
-
-.monaco-editor,
-.monaco-editor .overflow-guard,
-.monaco-editor .monaco-scrollable-element,
-.monaco-editor .lines-content,
-.monaco-editor .margin {
-  background-color: transparent !important;
-}
-
 body {
   background-color: var(--bg-base);
   color: var(--fg-primary);

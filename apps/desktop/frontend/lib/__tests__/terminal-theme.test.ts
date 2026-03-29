@@ -45,7 +45,7 @@ describe("TERMINAL_OPTIONS", () => {
     expect(TERMINAL_OPTIONS.theme).toBe(TERMINAL_THEME);
   });
 
-  it("enables transparency for transparent pane backgrounds", () => {
-    expect(TERMINAL_OPTIONS.allowTransparency).toBe(true);
+  it("disables transparency for opaque pane backgrounds", () => {
+    expect(TERMINAL_OPTIONS.allowTransparency).toBe(false);
   });
 });

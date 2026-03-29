@@ -110,11 +110,8 @@ export function applyTheme(theme: ThemeDefinition): void {
 }
 
 export function buildTerminalTheme(theme: ThemeDefinition): ITheme {
-  // Fully transparent background so pane content shows the app background layer.
-  // Requires allowTransparency: true in terminal options and canvas renderer
-  // (WebGL addon is skipped because it does not support rgba backgrounds).
   return {
-    background: "rgba(0, 0, 0, 0)",
+    background: theme.colors.base,
     foreground: theme.colors.text,
     cursor: theme.colors.text,
     cursorAccent: theme.colors.base,
@@ -157,7 +154,7 @@ export function buildMonacoTheme(theme: ThemeDefinition): MonacoThemeData {
       { token: "meta", foreground: stripHash(t.magenta) },
     ],
     colors: {
-      "editor.background": "#00000000",
+      "editor.background": c.base,
       "editor.foreground": c.text,
       "editor.lineHighlightBackground": c.surface + "40",
       "editor.selectionBackground": c.highlight + "66",
@@ -170,7 +167,7 @@ export function buildMonacoTheme(theme: ThemeDefinition): MonacoThemeData {
       "editorLineNumber.activeForeground": c.text,
       "editorBracketMatch.background": c.highlight + "33",
       "editorBracketMatch.border": c.highlight,
-      "editorGutter.background": "#00000000",
+      "editorGutter.background": c.base,
       "editorOverviewRuler.border": c.surface,
       "editorWidget.background": c.mantle,
       "editorWidget.border": c.surface,
@@ -186,7 +183,7 @@ export function buildMonacoTheme(theme: ThemeDefinition): MonacoThemeData {
       "scrollbarSlider.background": c.highlight + "66",
       "scrollbarSlider.hoverBackground": c.highlight,
       "scrollbarSlider.activeBackground": c.muted,
-      "minimap.background": "#00000000",
+      "minimap.background": c.base,
       "minimapSlider.background": c.highlight + "33",
       "minimapSlider.hoverBackground": c.highlight + "66",
       "diffEditor.insertedTextBackground": c.success + "20",
