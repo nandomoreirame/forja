@@ -109,19 +109,26 @@ const resolvedPerfMode = resolveModeSyncFromHardware(perfSettingsMode);
 
 // GPU Acceleration (skip in lite mode)
 if (resolvedPerfMode !== "lite") {
+  const isWayland = process.platform === "linux" && !!process.env.WAYLAND_DISPLAY;
+
   app.commandLine.appendSwitch("ignore-gpu-blocklist");
   app.commandLine.appendSwitch("enable-gpu-rasterization");
   app.commandLine.appendSwitch("enable-oop-rasterization");
-  app.commandLine.appendSwitch("enable-zero-copy");
-  app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
+
+  // Zero-copy DMA buffer sharing causes pointer freeze on Wayland tiling WMs
+  // (deadlock between wl_buffer.release and frame callback when transparent: true).
+  // Only enable on X11/macOS/Windows where the compositor handles it correctly.
+  if (!isWayland) {
+    app.commandLine.appendSwitch("enable-zero-copy");
+    app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
+  }
 
   // Linux GPU acceleration features (VAAPI)
   if (process.platform === "linux") {
-    const isWayland = !!process.env.WAYLAND_DISPLAY;
     if (isWayland) {
       app.commandLine.appendSwitch(
         "enable-features",
-        "VaapiVideoDecoder,VaapiVideoEncoder,CanvasOopRasterization",
+        "VaapiVideoDecoder,VaapiVideoEncoder",
       );
     } else {
       app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");

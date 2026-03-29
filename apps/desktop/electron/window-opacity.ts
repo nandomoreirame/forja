@@ -29,5 +29,22 @@ export function getWindowTransparencyOptions(): {
   transparent?: boolean;
   backgroundColor?: string;
 } {
+  // transparent: true + DMA zero-copy buffer sharing causes a pointer freeze
+  // on Wayland tiling compositors (Hyprland, Sway, Niri, River).
+  // The compositor deadlocks waiting for wl_buffer.release while Chromium waits
+  // for the frame callback, blocking wl_pointer event dispatch.
+  // Disable transparency on these WMs to avoid the issue.
+  if (process.platform === "linux") {
+    const desktop = (
+      process.env.XDG_CURRENT_DESKTOP ||
+      process.env.DESKTOP_SESSION ||
+      process.env.XDG_SESSION_DESKTOP ||
+      ""
+    ).toLowerCase();
+    const isTilingWm = ["hyprland", "sway", "niri", "i3", "river"].some(
+      (wm) => desktop.includes(wm),
+    );
+    if (isTilingWm) return {};
+  }
   return { transparent: true, backgroundColor: "#00000000" };
 }
