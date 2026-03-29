@@ -1,7 +1,7 @@
 {
   "name": "@forja/site",
   "private": true,
-  "version": "1.9.0",
+  "version": "1.9.1",
   "scripts": {
     "dev": "next dev --port 3030",
     "build": "next build",
