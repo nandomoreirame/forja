@@ -33,7 +33,6 @@ import { assertPathWithinScope } from "./path-validation.js";
 import { resolveImeConfig, remapDeadKeyResult } from "./ime-config.js";
 import { readSettingsModeSync, resolveModeSyncFromHardware, getLiteModeConfig } from "./lite-mode.js";
 import { detectEditor } from "./editor-detector.js";
-import { applyWindowOpacity, getWindowTransparencyOptions } from "./window-opacity.js";
 import { getForjaConfigDir } from "./paths.js";
 import { startExternalApiServer } from "./external-api.js";
 import type { ExternalCommand } from "./external-api.js";
@@ -109,26 +108,19 @@ const resolvedPerfMode = resolveModeSyncFromHardware(perfSettingsMode);
 
 // GPU Acceleration (skip in lite mode)
 if (resolvedPerfMode !== "lite") {
-  const isWayland = process.platform === "linux" && !!process.env.WAYLAND_DISPLAY;
-
   app.commandLine.appendSwitch("ignore-gpu-blocklist");
   app.commandLine.appendSwitch("enable-gpu-rasterization");
   app.commandLine.appendSwitch("enable-oop-rasterization");
-
-  // Zero-copy DMA buffer sharing causes pointer freeze on Wayland tiling WMs
-  // (deadlock between wl_buffer.release and frame callback when transparent: true).
-  // Only enable on X11/macOS/Windows where the compositor handles it correctly.
-  if (!isWayland) {
-    app.commandLine.appendSwitch("enable-zero-copy");
-    app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
-  }
+  app.commandLine.appendSwitch("enable-zero-copy");
+  app.commandLine.appendSwitch("enable-native-gpu-memory-buffers");
 
   // Linux GPU acceleration features (VAAPI)
   if (process.platform === "linux") {
+    const isWayland = !!process.env.WAYLAND_DISPLAY;
     if (isWayland) {
       app.commandLine.appendSwitch(
         "enable-features",
-        "VaapiVideoDecoder,VaapiVideoEncoder",
+        "VaapiVideoDecoder,VaapiVideoEncoder,CanvasOopRasterization",
       );
     } else {
       app.commandLine.appendSwitch("enable-features", "VaapiVideoDecoder");
@@ -181,22 +173,11 @@ async function createWindow(projectPath?: string, workspaceId?: string): Promise
     },
     icon: path.join(__dirname, "..", "assets", "icons", "icon.png"),
     show: false,
-    ...getWindowTransparencyOptions(),
   });
-
-  // Apply initial background opacity after page loads (CSS variable alpha)
-  const initialSettings = (await getUserSettings()).getCachedSettings();
-  const initialOpacity = initialSettings.window.opacity;
 
   win.once("ready-to-show", () => {
     win.show();
   });
-
-  if (initialOpacity < 1.0) {
-    win.webContents.once("did-finish-load", () => {
-      applyWindowOpacity(win, initialOpacity);
-    });
-  }
 
   // Alt key menu toggle is handled in the renderer (titlebar.tsx)
   // via document keydown/keyup listeners.
@@ -893,12 +874,6 @@ ipcMain.handle("open_settings_file", async () => {
 ipcMain.handle("save_user_settings", async (_event, args: { content: string }) => {
   const userSettings = await getUserSettings();
   return userSettings.saveUserSettings(args.content);
-});
-
-ipcMain.handle("set_window_opacity", (event, args: { opacity: number }) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win) return;
-  applyWindowOpacity(win, args.opacity);
 });
 
 ipcMain.handle("set_zoom_level", (event, args: { level: number }) => {
