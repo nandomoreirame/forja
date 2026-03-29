@@ -46,10 +46,11 @@ import { isUiSaveSuspended, suspendUiSaves, resumeUiSaves } from "./ui-save-gate
 import { attachWebviewKeyboardBridge } from "./webview-keyboard-bridge.js";
 import { getCliSessions, getActiveSessionModel } from "./cli-sessions.js";
 import { getSessionTelemetry } from "./session-telemetry.js";
+import { getNotificationHooksStatus, setupNotificationHook, ensureForjaOscScript } from "./notification-hooks-setup.js";
 
 // Type-only imports for signatures
 import type { UiPreferences, ProjectUiState, WorkspaceProject } from "./config.js";
-import { getQuickActions, saveQuickActions } from "./config.js";
+import { getQuickActions, saveQuickActions, getBetaDisclaimerVersion, setBetaDisclaimerVersion } from "./config.js";
 
 // Track which BrowserWindow belongs to which workspace
 const windowWorkspaceMap = new Map<number, string>();
@@ -368,6 +369,13 @@ app.whenReady().then(async () => {
   const userSettings = await getUserSettings();
   await userSettings.loadUserSettings();
 
+  // Ensure the Forja OSC notification script exists and is executable.
+  // This script is used by CLI hooks (Claude, Codex, Gemini, Cursor, gh-copilot) to
+  // emit OSC 9 sequences when FORJA_TERMINAL=1 is set in the PTY environment.
+  ensureForjaOscScript().catch((err) =>
+    console.error("[main] Failed to ensure forja-osc-notify.sh:", err)
+  );
+
   // Check if a project path was passed via CLI (e.g. `forja /path/to/project`)
   let cliProjectPath = process.argv.slice(1)
     .filter((a) => !a.startsWith("--") && !a.endsWith(".js") && !a.endsWith(".ts"))
@@ -452,7 +460,7 @@ app.whenReady().then(async () => {
           // (e.g. Codex bracketed-paste) handle the submit correctly.
           const submitChar = cmd.text.endsWith("\r") ? "\r" : "";
           const body = submitChar ? cmd.text.slice(0, -1) : cmd.text;
-          if (body) writePty(tabId, body);
+          if (body) { tabsWithUserInput.add(tabId); writePty(tabId, body); }
           if (submitChar) {
             await new Promise((r) => setTimeout(r, 50));
             writePty(tabId, submitChar);
@@ -788,6 +796,14 @@ ipcMain.handle("save_quick_actions", (_event, { actions }: { actions: Array<{ ac
   saveQuickActions(actions);
 });
 
+ipcMain.handle("get_beta_disclaimer_version", () => {
+  return getBetaDisclaimerVersion();
+});
+
+ipcMain.handle("set_beta_disclaimer_version", (_event, { version }: { version: string }) => {
+  setBetaDisclaimerVersion(version);
+});
+
 // Focus existing workspace window or open a new one
 ipcMain.handle("focus_workspace_window", (_event, args: { workspaceId: string }) => {
   for (const [winId, wsId] of windowWorkspaceMap) {
@@ -921,7 +937,11 @@ ipcMain.handle("spawn_pty", async (event, args: { tabId: string; path: string; s
   });
 });
 
+// Tracks tabs that have received user input (prevents notifications for CLI startup output)
+const tabsWithUserInput = new Set<string>();
+
 ipcMain.handle("write_pty", (_event, args: { tabId: string; data: string }) => {
+  tabsWithUserInput.add(args.tabId);
   writePty(args.tabId, args.data);
 });
 
@@ -930,6 +950,7 @@ ipcMain.handle("resize_pty", (_event, args: { tabId: string; rows: number; cols:
 });
 
 ipcMain.handle("close_pty", async (_event, args: { tabId: string; force?: boolean }) => {
+  tabsWithUserInput.delete(args.tabId);
   if (args.force) {
     await closePtyAndTmux(args.tabId);
   } else {
@@ -984,6 +1005,48 @@ ipcMain.handle("pty:reattach-tmux", async (event, args: {
   });
 });
 
+// ── OSC notification handler (issue #17) ──────────────────────────────────
+// Primary notification mechanism: CLIs emit OSC 9/99/777 with clean message text.
+// This avoids all the problems of parsing raw PTY buffers.
+ipcMain.handle(
+  "pty:osc-notification",
+  async (
+    _event,
+    args: {
+      tabId: string;
+      projectPath: string;
+      sessionType: string;
+      message: string;
+    },
+  ) => {
+    const { showSessionFinishedNotification, maybeNotifyDiscord } =
+      await import("./pty-notifications.js");
+
+    const mainWindow = BrowserWindow.getAllWindows()[0] ?? null;
+
+    // OS notification (suppressed if focused on same project)
+    showSessionFinishedNotification(
+      {
+        projectPath: args.projectPath,
+        sessionType: args.sessionType,
+        // Pass null so OS notification is NOT suppressed — the CLI explicitly
+        // asked to notify, so we respect that. Suppression only applies to
+        // the heuristic-based fallback (pty:notify-session-finished).
+        activeProjectPath: null,
+        summary: args.message,
+      },
+      mainWindow,
+    );
+
+    // Discord webhook with clean message (no PTY buffer parsing needed)
+    maybeNotifyDiscord({
+      projectPath: args.projectPath,
+      sessionType: args.sessionType,
+      summary: args.message,
+    }).catch((err: unknown) => console.warn("[main] Discord OSC notify failed:", err));
+  },
+);
+
 ipcMain.handle("pty:get-buffer-length", (_event, args: { tabId: string }) => {
   const buffer = getSessionBuffer(args.tabId);
   return buffer?.length ?? 0;
@@ -1017,7 +1080,11 @@ ipcMain.handle(
       }
     }
 
-    // Gate: only notify if the delta has meaningful content.
+    // Gate 1: only notify tabs where the user has sent input.
+    // Prevents notifications for CLI startup/init output.
+    if (args.tabId && !tabsWithUserInput.has(args.tabId)) return;
+
+    // Gate 2: only notify if the delta has meaningful content.
     // Minimum 20 chars prevents noise from /clear, cursor blinks,
     // status bar redraws, and other non-response PTY data.
     if (!summary || summary.trim().length < 20) return;
@@ -1434,3 +1501,13 @@ getPluginIpc().then(({ createPluginHandlers }) => {
     ipcMain.handle(channel, handler);
   }
 }).catch((err) => console.error("[main] Failed to load plugin-ipc:", err));
+
+// Notification Hooks
+ipcMain.handle("notification-hooks:status", async () => {
+  return getNotificationHooksStatus();
+});
+
+ipcMain.handle("notification-hooks:setup", async (_event, args: { cliId: string }) => {
+  await setupNotificationHook(args.cliId);
+  return { ok: true };
+});

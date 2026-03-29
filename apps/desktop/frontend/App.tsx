@@ -115,6 +115,11 @@ const ClaudeNotFoundDialog = lazy(() =>
     default: m.ClaudeNotFoundDialog,
   }))
 );
+const BetaDisclaimerDialog = lazy(() =>
+  import("./components/beta-disclaimer-dialog").then((m) => ({
+    default: m.BetaDisclaimerDialog,
+  }))
+);
 
 // Mirror of ExternalCommand from electron/external-api.ts
 // Keep in sync when adding new command types
@@ -134,6 +139,8 @@ interface FilesChangedPayload {
   path: string;
   changedPaths: string[];
 }
+
+const BETA_DISCLAIMER_VERSION = "1.0";
 
 function EmptyState() {
   const openProject = useFileTreeStore((s) => s.openProject);
@@ -192,6 +199,7 @@ function App({
     })),
   );
   const [claudeNotFound, setClaudeNotFound] = useState(false);
+  const [showBetaDisclaimer, setShowBetaDisclaimer] = useState(false);
   const [sessionRestoreDone, setSessionRestoreDone] = useState(false);
   const [workspacesLoaded, setWorkspacesLoaded] = useState(false);
   const {
@@ -204,6 +212,18 @@ function App({
   useEffect(() => {
     usePluginsStore.getState().loadPlugins().catch(() => {
       // Non-fatal: plugin load failure is handled inside loadPlugins()
+    });
+  }, []);
+
+  // Check beta disclaimer on first launch
+  useEffect(() => {
+    invoke<string | null>("get_beta_disclaimer_version").then((version) => {
+      if (version !== BETA_DISCLAIMER_VERSION) {
+        setShowBetaDisclaimer(true);
+      }
+    }).catch(() => {
+      // If IPC fails, show disclaimer to be safe
+      setShowBetaDisclaimer(true);
     });
   }, []);
 
@@ -864,6 +884,17 @@ function App({
             <ClaudeNotFoundDialog
               open={claudeNotFound}
               onResolved={() => setClaudeNotFound(false)}
+            />
+          )}
+        </Suspense>
+        <Suspense fallback={null}>
+          {showBetaDisclaimer && (
+            <BetaDisclaimerDialog
+              open={showBetaDisclaimer}
+              onAcknowledge={() => {
+                invoke("set_beta_disclaimer_version", { version: BETA_DISCLAIMER_VERSION }).catch(() => {});
+                setShowBetaDisclaimer(false);
+              }}
             />
           )}
         </Suspense>

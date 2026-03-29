@@ -99,6 +99,7 @@ interface ConfigSchema {
   pluginOrder: string[];
   pinnedPlugin: string | null;
   quickActions: Array<{ actionId: string }>;
+  betaDisclaimerVersion: string | null;
 }
 
 const DEFAULT_UI_PREFERENCES: UiPreferences = {
@@ -132,6 +133,7 @@ const store = new Store<ConfigSchema>({
     pluginOrder: [],
     pinnedPlugin: null,
     quickActions: [],
+    betaDisclaimerVersion: null,
   },
 }) as TypedConfigStore;
 
@@ -693,6 +695,16 @@ export function getQuickActions(): Array<{ actionId: string }> {
 
 export function saveQuickActions(actions: Array<{ actionId: string }>): void {
   (store as unknown as { set(key: string, value: unknown): void }).set("quickActions", actions);
+}
+
+// ─── Beta Disclaimer ─────────────────────────────────────────────────────────
+
+export function getBetaDisclaimerVersion(): string | null {
+  return store.get("betaDisclaimerVersion");
+}
+
+export function setBetaDisclaimerVersion(version: string): void {
+  store.set("betaDisclaimerVersion", version);
 }
 
 // ─── Test Helpers (only for use in tests) ────────────────────────────────────
