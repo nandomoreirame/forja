@@ -28,6 +28,29 @@ export function getSocketPath(): string {
   return path.join(os.tmpdir(), "forja.sock");
 }
 
+/** Max bytes buffered on a single client socket before we drop writes */
+const MAX_SOCKET_BUFFER = 256 * 1024; // 256KB
+
+/**
+ * Safely write to a socket with backpressure awareness.
+ * Returns false if the write was skipped due to backpressure or destroyed socket.
+ */
+function safeWrite(socket: net.Socket, data: string): boolean {
+  if (socket.destroyed) return false;
+  if (socket.writableLength > MAX_SOCKET_BUFFER) return false;
+
+  const ok = socket.write(data);
+  if (!ok) {
+    // Kernel buffer full — pause reading from this client until drained.
+    // This prevents the server from accumulating unbounded work for a slow client.
+    socket.pause();
+    socket.once("drain", () => {
+      if (!socket.destroyed) socket.resume();
+    });
+  }
+  return true;
+}
+
 export function startExternalApiServer(
   getWebContents: () => WebContents | null,
   onCommand: (cmd: ExternalCommand) => Promise<ExternalResponse>,
@@ -62,24 +85,20 @@ export function startExternalApiServer(
             ok: false,
             error: "Invalid JSON command",
           };
-          socket.write(JSON.stringify(errorResponse) + "\n");
+          safeWrite(socket, JSON.stringify(errorResponse) + "\n");
           continue;
         }
 
         onCommand(cmd)
           .then((response) => {
-            if (!socket.destroyed) {
-              socket.write(JSON.stringify(response) + "\n");
-            }
+            safeWrite(socket, JSON.stringify(response) + "\n");
           })
           .catch(() => {
-            if (!socket.destroyed) {
-              const errorResponse: ExternalResponse = {
-                ok: false,
-                error: "Internal error",
-              };
-              socket.write(JSON.stringify(errorResponse) + "\n");
-            }
+            const errorResponse: ExternalResponse = {
+              ok: false,
+              error: "Internal error",
+            };
+            safeWrite(socket, JSON.stringify(errorResponse) + "\n");
           });
       }
     });

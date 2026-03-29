@@ -151,8 +151,16 @@ async function readIgnoredPaths(basePath: string, relativePaths: string[]): Prom
     });
 
     try {
-      child.stdin.write(relativePaths.join("\n"));
-      child.stdin.end();
+      const data = relativePaths.join("\n");
+      const ok = child.stdin.write(data);
+      if (!ok) {
+        // Backpressure: wait for drain before ending
+        child.stdin.once("drain", () => {
+          if (!child.killed) child.stdin.end();
+        });
+      } else {
+        child.stdin.end();
+      }
     } catch {
       resolve(new Set());
     }

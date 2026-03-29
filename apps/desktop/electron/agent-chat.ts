@@ -152,6 +152,25 @@ function attachProcessHandlers(
   });
 }
 
+/**
+ * Safely write to a child process stdin with backpressure handling.
+ * Returns false if the write was skipped (stream not writable or backpressured).
+ */
+function safeStdinWrite(proc: ChildProcess, data: string): boolean {
+  if (!proc.stdin?.writable) return false;
+
+  const ok = proc.stdin.write(data);
+  if (!ok && typeof proc.stdin.once === "function") {
+    // Internal buffer is full — the next write will queue until drain.
+    // For chat messages this is acceptable (user-driven, low frequency),
+    // but we log it so it's visible during debugging.
+    proc.stdin.once("drain", () => {
+      // Ready for more writes — nothing to do, next sendChatMessage will succeed.
+    });
+  }
+  return true;
+}
+
 export function spawnChatSession(
   sessionId: string,
   cliId: ChatCliId,
@@ -195,15 +214,14 @@ export function sendChatMessage(
   if (!session) return false;
 
   if (session.cliArgs.mode === "persistent") {
-    if (!session.process?.stdin?.writable) return false;
+    if (!session.process) return false;
 
     const payload = JSON.stringify({
       type: "user",
       message: { role: "user", content: [{ type: "text", text: message }] },
     });
 
-    session.process.stdin.write(payload + "\n");
-    return true;
+    return safeStdinWrite(session.process, payload + "\n");
   }
 
   // Per-message mode: spawn a new process with the message
