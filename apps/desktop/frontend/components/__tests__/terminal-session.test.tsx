@@ -40,6 +40,9 @@ vi.mock("@xterm/xterm", () => ({
         capturedKeyHandler = handler;
       },
     );
+    parser = {
+      registerOscHandler: vi.fn(() => ({ dispose: vi.fn() })),
+    };
     options: Record<string, unknown> = {};
     rows = 24;
     cols = 80;

@@ -110,6 +110,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     let resizeTimeout: ReturnType<typeof setTimeout>;
     let resizeObserver: ResizeObserver | null = null;
     let dataDisposable: { dispose: () => void } | null = null;
+    let oscDisposables: Array<{ dispose: () => void }> = [];
     let terminalLocal: Terminal | null = null;
     let fitAddonLocal: FitAddon | null = null;
     let hostElementLocal: HTMLDivElement | null = null;
@@ -153,6 +154,65 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         terminal.loadAddon(fitAddon);
         terminal.loadAddon(webLinksAddon);
         terminal.open(hostElement);
+
+        // ── OSC notification handlers (issue #17) ──────────────────────
+        // CLIs and scripts can emit OSC 9/99/777 to trigger Forja notifications.
+        // e.g.: printf '\e]9;Task completed!\007'
+        const oscDebounceMs = 1000;
+        let lastOscTime = 0;
+
+        const handleOscNotification = (message: string) => {
+          const now = Date.now();
+          if (now - lastOscTime < oscDebounceMs) return;
+          lastOscTime = now;
+          const trimmed = message.trim();
+          // Ignore empty or very short messages (likely control data)
+          if (trimmed.length < 10) return;
+          void invoke("pty:osc-notification", {
+            tabId,
+            projectPath: path,
+            sessionType,
+            message: message.trim(),
+          });
+        };
+
+        // OSC 9 (ConEmu/Windows Terminal): \e]9;message\007
+        // ConEmu uses numeric subcommands: \e]9;N;...\007
+        //   1;message = notification
+        //   2;title = set tab title
+        //   4;st;pr = set progress bar
+        // Only type 1 or plain text (no leading digit+semicolon) are notifications.
+        const osc9 = terminal.parser.registerOscHandler(9, (data) => {
+          if (/^\d+;/.test(data)) {
+            if (data.startsWith("1;")) {
+              handleOscNotification(data.slice(2));
+            }
+            // Other subcommands (4;progress, 2;title, etc.) — ignore
+            return true;
+          }
+          handleOscNotification(data);
+          return true;
+        });
+
+        // OSC 99 (custom key=value): \e]99;body=message;title=...\007
+        const osc99 = terminal.parser.registerOscHandler(99, (data) => {
+          const params: Record<string, string> = {};
+          for (const part of data.split(";")) {
+            const eq = part.indexOf("=");
+            if (eq > 0) params[part.slice(0, eq)] = part.slice(eq + 1);
+          }
+          handleOscNotification(params["body"] ?? params["title"] ?? data);
+          return true;
+        });
+
+        // OSC 777 (Urxvt): \e]777;notify;title;message\007
+        const osc777 = terminal.parser.registerOscHandler(777, (data) => {
+          const parts = data.split(";");
+          handleOscNotification(parts[2] ?? parts[1] ?? data);
+          return true;
+        });
+
+        oscDisposables = [osc9, osc99, osc777];
 
         // Track composition state via xterm's internal textarea so we can
         // suppress the post-composition keydown that Linux IMEs fire with
@@ -397,6 +457,8 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       clearTimeout(resizeTimeout);
       resizeObserver?.disconnect();
       dataDisposable?.dispose();
+      for (const d of oscDisposables) d.dispose();
+      oscDisposables = [];
 
       // Cancel pending write-coalescing RAF and flush buffered data to terminal
       // so no escape sequences are lost during the unmount transition.
@@ -471,13 +533,18 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     return () => { paneFocusRegistry.unregister(tabId); };
   }, [tabId]);
 
-  // Re-fit and focus when terminal becomes visible again
+  // Re-fit, refresh, and focus when terminal becomes visible again
   useEffect(() => {
     const terminal = terminalRef.current;
 
     if (isVisible && fitAddonRef.current) {
       const id = requestAnimationFrame(() => {
         requestAnimationFrame(() => {
+          // Force full viewport re-render to clear stale canvas state
+          // that accumulates while the terminal was hidden (display:none).
+          if (terminal) {
+            terminal.refresh(0, terminal.rows - 1);
+          }
           fitAddonRef.current?.fit();
           terminal?.focus();
           const dims = fitAddonRef.current?.proposeDimensions();

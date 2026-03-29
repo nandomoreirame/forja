@@ -29,6 +29,7 @@ vi.mock("@xterm/xterm", () => ({
     attachCustomKeyEventHandler = vi.fn();
     getSelection = vi.fn(() => "");
     onSelectionChange = vi.fn().mockReturnValue({ dispose: vi.fn() });
+    parser = { registerOscHandler: vi.fn(() => ({ dispose: vi.fn() })) };
     options = {};
   },
 }));
