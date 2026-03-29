@@ -704,7 +704,7 @@ function App({
       state: "running" | "exited" | "idle";
       exitCode: number | null;
     }>("pty:session-state-changed", (event) => {
-      const { projectPath, state } = event.payload;
+      const { sessionId, projectPath, state } = event.payload;
       if (state === "exited") {
         const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
         const anyRunning = projectTabs.some((t) => t.isRunning);
@@ -712,8 +712,16 @@ function App({
           projectPath,
           anyRunning ? "running" : "exited",
         );
-        if (!anyRunning) {
-          useProjectsStore.getState().markProjectNotified(projectPath, "Session finished");
+        // Only show notification badge when:
+        // 1. The project has known tabs (prevents false positives when tabs are not yet restored)
+        // 2. No other tabs are still running
+        // 3. The session that exited was an AI CLI (not a plain terminal)
+        if (projectTabs.length > 0 && !anyRunning) {
+          const exitedTab = projectTabs.find((t) => t.id === sessionId);
+          const isAiCli = exitedTab ? exitedTab.sessionType !== "terminal" : false;
+          if (isAiCli) {
+            useProjectsStore.getState().markProjectNotified(projectPath, "Session finished");
+          }
         }
       } else {
         useProjectsStore.getState().setProjectSessionState(projectPath, state);
