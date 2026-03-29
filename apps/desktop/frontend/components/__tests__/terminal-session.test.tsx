@@ -399,30 +399,6 @@ describe("TerminalSession", () => {
     });
   });
 
-  describe("background opacity", () => {
-    it("uses transparent background regardless of opacity setting", async () => {
-      const { useUserSettingsStore } = await import("@/stores/user-settings");
-      render(<TerminalSession tabId="tab-opacity" path="/test" isVisible={true} />);
-      await Promise.resolve();
-      await Promise.resolve();
-
-      const terminal = terminalInstances[terminalInstances.length - 1];
-      expect(terminal).toBeDefined();
-
-      // Trigger opacity change via the real store
-      const current = useUserSettingsStore.getState().settings;
-      useUserSettingsStore.getState().setSettings({
-        ...current,
-        window: { ...current.window, opacity: 0.7 },
-      });
-
-      // Terminal background is always transparent — pane shows app bg layer
-      const theme = terminal.options.theme as { background?: string };
-      expect(theme).toBeDefined();
-      expect(theme.background).toBe("rgba(0, 0, 0, 0)");
-    });
-  });
-
   describe("dead key / IME composition", () => {
     it("returns false for events during composition (isComposing)", async () => {
       render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);

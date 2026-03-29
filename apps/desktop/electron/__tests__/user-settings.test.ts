@@ -53,7 +53,6 @@ describe("user-settings module", () => {
     expect(result.terminal.fontSize).toBe(14);
     expect(result.terminal.fontFamily).toContain("JetBrains Mono");
     expect(result.window.zoomLevel).toBe(0);
-    expect(result.window.opacity).toBe(1.0);
     expect(result.sessions).toEqual({
       claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
       gemini: { args: ["--yolo"] },
@@ -113,7 +112,6 @@ describe("user-settings module", () => {
         app: { fontSize: 100 },
         editor: { fontSize: 100 },
         terminal: { fontSize: 100 },
-        window: { opacity: 0.1 },
       }),
     );
 
@@ -123,7 +121,6 @@ describe("user-settings module", () => {
     expect(result.app.fontSize).toBe(32);
     expect(result.editor.fontSize).toBe(32);
     expect(result.terminal.fontSize).toBe(32);
-    expect(result.window.opacity).toBe(0.3);
   });
 
   it("loadUserSettings returns defaults when JSON is malformed", async () => {

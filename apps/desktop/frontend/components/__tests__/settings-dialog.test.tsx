@@ -92,30 +92,7 @@ describe("SettingsDialog", () => {
   it("Appearance section shows window settings", async () => {
     const { SettingsDialog } = await import("../settings-dialog");
     render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-    expect(screen.getByLabelText("Window opacity")).toBeInTheDocument();
     expect(screen.getByLabelText("Zoom level")).toBeInTheDocument();
-  });
-
-  it("opacity input shows decimal value (0.05-0.95/1.0) and accepts step changes", async () => {
-    const { useUserSettingsStore } = await import("@/stores/user-settings");
-    useUserSettingsStore.setState({
-      settings: { ...DEFAULT_SETTINGS, window: { zoomLevel: 0, opacity: 0.85 } },
-      loaded: true,
-      editorOpen: false,
-      editorContent: "",
-      editorDirty: false,
-      editorError: null,
-    });
-
-    const { SettingsDialog } = await import("../settings-dialog");
-    render(<SettingsDialog open={true} onOpenChange={() => {}} />);
-
-    const opacityInput = screen.getByLabelText("Window opacity") as HTMLInputElement;
-    // Should display actual decimal value, not percentage
-    expect(opacityInput.value).toBe("0.85");
-    expect(opacityInput.min).toBe("0.05");
-    expect(opacityInput.max).toBe("1");
-    expect(opacityInput.step).toBe("0.05");
   });
 
   it("renders 'Open settings.json' button", async () => {

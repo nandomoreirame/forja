@@ -4,8 +4,6 @@ import {
   applyTheme,
   buildTerminalTheme,
   buildMonacoTheme,
-  hexToRgba,
-  applyBackgroundOpacity,
 } from "../apply";
 import type { ThemeDefinition } from "../schema";
 import catppuccinMocha from "../catppuccin-mocha/theme.json";
@@ -74,117 +72,6 @@ describe("buildTerminalTheme", () => {
     expect(result.selectionForeground).toBe(mocha.colors.text);
   });
 
-  it("always returns transparent background regardless of opacity", () => {
-    const result = buildTerminalTheme(mocha, 0.85);
-    expect(result.background).toBe("rgba(0, 0, 0, 0)");
-    expect(result.foreground).toBe("#cdd6f4");
-    expect(result.cursor).toBe("#cdd6f4");
-    expect(result.red).toBe("#f38ba8");
-  });
-
-  it("returns transparent background when opacity is 1.0", () => {
-    const result = buildTerminalTheme(mocha, 1.0);
-    expect(result.background).toBe("rgba(0, 0, 0, 0)");
-  });
-
-  it("returns transparent background when opacity is undefined", () => {
-    const result = buildTerminalTheme(mocha);
-    expect(result.background).toBe("rgba(0, 0, 0, 0)");
-  });
-});
-
-describe("hexToRgba", () => {
-  it("converts hex color to rgba with given alpha", () => {
-    expect(hexToRgba("#1e1e2e", 0.85)).toBe("rgba(30, 30, 46, 0.85)");
-  });
-
-  it("converts white hex to rgba", () => {
-    expect(hexToRgba("#ffffff", 0.5)).toBe("rgba(255, 255, 255, 0.5)");
-  });
-
-  it("converts black hex to rgba", () => {
-    expect(hexToRgba("#000000", 1.0)).toBe("rgba(0, 0, 0, 1)");
-  });
-});
-
-describe("applyBackgroundOpacity", () => {
-  beforeEach(() => {
-    document.documentElement.className = "";
-    document.documentElement.style.cssText = "";
-  });
-
-  it("applies alpha directly to background CSS variables after applyTheme", () => {
-    applyTheme(mocha);
-    applyBackgroundOpacity(0.85);
-
-    const style = document.documentElement.style;
-    // alpha is passed through directly (mocha base is #1e1e2e)
-    expect(style.getPropertyValue("--bg-base")).toBe("rgba(30, 30, 46, 0.85)");
-    // --bg-elevated (mocha mantle is #181825)
-    expect(style.getPropertyValue("--bg-elevated")).toBe(
-      "rgba(24, 24, 37, 0.85)",
-    );
-  });
-
-  it("does not modify foreground/text CSS variables", () => {
-    applyTheme(mocha);
-    applyBackgroundOpacity(0.85);
-
-    const style = document.documentElement.style;
-    // Text colors must remain unchanged (fully opaque hex)
-    expect(style.getPropertyValue("--fg-primary")).toBe("#cdd6f4");
-    expect(style.getPropertyValue("--color-brand")).toBe("#cba6f7");
-  });
-
-  it("restores original hex values when opacity is 1.0", () => {
-    applyTheme(mocha);
-    applyBackgroundOpacity(0.5);
-    applyBackgroundOpacity(1.0);
-
-    const style = document.documentElement.style;
-    expect(style.getPropertyValue("--bg-base")).toBe("#1e1e2e");
-    expect(style.getPropertyValue("--bg-elevated")).toBe("#181825");
-  });
-
-  it("does not apply opacity to surface/border CSS variables", () => {
-    applyTheme(mocha);
-    applyBackgroundOpacity(0.5);
-
-    const style = document.documentElement.style;
-    // Surface variables are used for borders (border-ctp-surface0, etc.)
-    // They must remain fully opaque to keep divider contrast
-    expect(style.getPropertyValue("--color-ctp-surface0")).toBe("#313244");
-    expect(style.getPropertyValue("--color-ctp-surface1")).toBe("#45475a");
-    expect(style.getPropertyValue("--color-ctp-surface2")).toBe("#585b70");
-    // shadcn vars that map to surface (used for borders/inputs)
-    expect(style.getPropertyValue("--color-card")).toBe("#313244");
-    expect(style.getPropertyValue("--color-input")).toBe("#313244");
-    expect(style.getPropertyValue("--color-secondary")).toBe("#313244");
-    expect(style.getPropertyValue("--color-muted")).toBe("#313244");
-    expect(style.getPropertyValue("--color-accent")).toBe("#313244");
-  });
-
-  it("does not apply opacity to popover/dropdown CSS variables", () => {
-    applyTheme(mocha);
-    applyBackgroundOpacity(0.5);
-
-    const style = document.documentElement.style;
-    // Popover background is used by shadcn dropdowns, tooltips, context menus
-    // Must remain opaque for readability
-    expect(style.getPropertyValue("--color-popover")).toBe("#181825");
-  });
-
-  it("updates correctly when theme changes", () => {
-    applyTheme(mocha);
-    applyBackgroundOpacity(0.8);
-
-    applyTheme(draculaTheme);
-    applyBackgroundOpacity(0.8);
-
-    const style = document.documentElement.style;
-    // Dracula base is #282a36
-    expect(style.getPropertyValue("--bg-base")).toBe("rgba(40, 42, 54, 0.8)");
-  });
 });
 
 describe("overlay CSS variables (always opaque)", () => {
@@ -201,20 +88,6 @@ describe("overlay CSS variables (always opaque)", () => {
 
   it("sets --color-overlay-mantle to theme mantle color", () => {
     applyTheme(mocha);
-    const style = document.documentElement.style;
-    expect(style.getPropertyValue("--color-overlay-mantle")).toBe("#181825");
-  });
-
-  it("keeps overlay-base opaque when background opacity is applied", () => {
-    applyTheme(mocha);
-    applyBackgroundOpacity(0.5);
-    const style = document.documentElement.style;
-    expect(style.getPropertyValue("--color-overlay-base")).toBe("#1e1e2e");
-  });
-
-  it("keeps overlay-mantle opaque when background opacity is applied", () => {
-    applyTheme(mocha);
-    applyBackgroundOpacity(0.5);
     const style = document.documentElement.style;
     expect(style.getPropertyValue("--color-overlay-mantle")).toBe("#181825");
   });

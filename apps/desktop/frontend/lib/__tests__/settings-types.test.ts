@@ -25,7 +25,7 @@ describe("DEFAULT_SETTINGS", () => {
         fontSize: 14,
         persistSessions: true,
       },
-      window: { zoomLevel: 0, opacity: 1.0 },
+      window: { zoomLevel: 0 },
       sessions: {
         claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
         gemini: { args: ["--yolo"] },
@@ -72,10 +72,9 @@ describe("mergeWithDefaults", () => {
 
   it("deep merges window preserving other fields", () => {
     const result = mergeWithDefaults({
-      window: { opacity: 0.8 },
+      window: { zoomLevel: 2 },
     } as Partial<UserSettings>);
-    expect(result.window.opacity).toBe(0.8);
-    expect(result.window.zoomLevel).toBe(0);
+    expect(result.window.zoomLevel).toBe(2);
   });
 
   it("preserves sessions from input", () => {
@@ -215,24 +214,6 @@ describe("validateSettings", () => {
     expect(result.terminal.fontSize).toBe(32);
   });
 
-  it("clamps opacity below minimum to 0.05", () => {
-    const settings = mergeWithDefaults({ window: { opacity: 0.01 } } as Partial<UserSettings>);
-    const result = validateSettings(settings);
-    expect(result.window.opacity).toBe(0.05);
-  });
-
-  it("clamps opacity above 0.95 to 0.95 (below 1.0)", () => {
-    const settings = mergeWithDefaults({ window: { opacity: 0.99 } } as Partial<UserSettings>);
-    const result = validateSettings(settings);
-    expect(result.window.opacity).toBe(0.95);
-  });
-
-  it("preserves 1.0 as special fully-opaque value", () => {
-    const settings = mergeWithDefaults({ window: { opacity: 1.0 } } as Partial<UserSettings>);
-    const result = validateSettings(settings);
-    expect(result.window.opacity).toBe(1.0);
-  });
-
   it("clamps zoomLevel below minimum to -5", () => {
     const settings = mergeWithDefaults({ window: { zoomLevel: -10 } } as Partial<UserSettings>);
     const result = validateSettings(settings);
@@ -250,13 +231,12 @@ describe("validateSettings", () => {
       app: { fontSize: 14 },
       editor: { fontSize: 13 },
       terminal: { fontSize: 16 },
-      window: { opacity: 0.9, zoomLevel: 2 },
+      window: { zoomLevel: 2 },
     } as Partial<UserSettings>);
     const result = validateSettings(settings);
     expect(result.app.fontSize).toBe(14);
     expect(result.editor.fontSize).toBe(13);
     expect(result.terminal.fontSize).toBe(16);
-    expect(result.window.opacity).toBe(0.9);
     expect(result.window.zoomLevel).toBe(2);
   });
 
