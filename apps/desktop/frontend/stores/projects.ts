@@ -330,6 +330,11 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     const previousPath = get().activeProjectPath;
     if (previousPath === projectPath) return;
 
+    // Guard against concurrent switches — a second call while the first is
+    // still in-flight would read partially-updated state and corrupt saved
+    // project layouts (sessions bleed across projects).
+    if (get().isSwitchingProject) return;
+
     set({ isSwitchingProject: true });
     try {
       // Pre-resolve dynamic imports
@@ -384,6 +389,14 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
       useGitDiffStore.getState().clearSelection();
       useTerminalTabsStore.setState({ isTerminalFullscreen: false });
       useRightPanelStore.setState({ isOpen: false, activeView: "empty" });
+
+      // Reset tiling layout to a clean default BEFORE loading the new
+      // project's state.  Without this, when loadProjectFromDisk finds no
+      // saved layoutJson (first open, disk failure, partial state), the
+      // outgoing project's layout bleeds through and gets persisted under
+      // the new project's config — permanently contaminating it with
+      // terminal blocks from the wrong project.
+      useTilingLayoutStore.getState().resetToDefault();
 
       // 4. Load file tree for new project
       await useFileTreeStore.getState().openProjectPath(projectPath);
