@@ -31,6 +31,30 @@ vi.mock("electron", () => ({
   Notification: MockNotification,
 }));
 
+const { mockSendDiscordWebhook, mockGetCachedSettings } = vi.hoisted(() => {
+  return {
+    mockSendDiscordWebhook: vi.fn().mockResolvedValue(true),
+    mockGetCachedSettings: vi.fn(() => ({
+      notifications: {
+        discordWebhookUrl: "https://discord.com/api/webhooks/123/abc",
+        discordEnabled: true,
+      },
+    })),
+  };
+});
+
+vi.mock("../discord-notifications.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../discord-notifications.js")>();
+  return {
+    ...actual,
+    sendDiscordWebhook: mockSendDiscordWebhook,
+  };
+});
+
+vi.mock("../user-settings.js", () => ({
+  getCachedSettings: mockGetCachedSettings,
+}));
+
 describe("extractNotificationSummary", () => {
   it("strips ANSI codes and returns clean text", () => {
     const raw = "\x1b[32mHello\x1b[0m world";
@@ -204,9 +228,16 @@ describe("showSessionFinishedNotification", () => {
     expect(mockNotificationInstance.show).toHaveBeenCalled();
   });
 
-  it("on Linux calls notify-send via execFile", async () => {
+  it("on Linux tries notify-send FIRST via execFile", async () => {
     setPlatform("linux");
     const { execFile } = await import("child_process");
+
+    // Simulate notify-send success (callback called with no error)
+    vi.mocked(execFile).mockImplementation((_cmd, _args, callback) => {
+      (callback as (err: Error | null) => void)(null);
+      return {} as ReturnType<typeof execFile>;
+    });
+
     const { showSessionFinishedNotification } = await import(
       "../pty-notifications"
     );
@@ -214,26 +245,14 @@ describe("showSessionFinishedNotification", () => {
     const win = makeMockWindow(false);
     showSessionFinishedNotification(readyInfo, win);
 
-    expect(mockNotificationInstance.show).toHaveBeenCalled();
-    expect(execFile).not.toHaveBeenCalled();
-  });
-
-  it("on Linux falls back to notify-send when Electron notifications are unsupported", async () => {
-    setPlatform("linux");
-    MockNotification.isSupported.mockReturnValueOnce(false);
-    const { execFile } = await import("child_process");
-    const { showSessionFinishedNotification } = await import(
-      "../pty-notifications"
-    );
-
-    const win = makeMockWindow(false);
-    showSessionFinishedNotification(readyInfo, win);
-
+    // notify-send should be called as primary on Linux
     expect(execFile).toHaveBeenCalledWith(
       "notify-send",
       expect.arrayContaining(["--app-name=Forja"]),
       expect.any(Function),
     );
+    // Electron notification should NOT be called because notify-send succeeded
+    expect(mockNotificationInstance.show).not.toHaveBeenCalled();
   });
 
   it("on macOS uses Electron.Notification", async () => {
@@ -291,5 +310,61 @@ describe("showSessionFinishedNotification", () => {
     expect(() => {
       showSessionFinishedNotification(readyInfo, null);
     }).not.toThrow();
+  });
+});
+
+describe("maybeNotifyDiscord", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    mockSendDiscordWebhook.mockClear();
+  });
+
+  it("sends Discord even when window would be focused on same project", async () => {
+    const { maybeNotifyDiscord } = await import("../pty-notifications");
+    await maybeNotifyDiscord({
+      projectPath: "/home/user/my-app",
+      sessionType: "claude",
+      summary: "Test output.",
+    });
+    expect(mockSendDiscordWebhook).toHaveBeenCalled();
+  });
+
+  it("does not send Discord when summary is empty", async () => {
+    const { maybeNotifyDiscord } = await import("../pty-notifications");
+    await maybeNotifyDiscord({
+      projectPath: "/home/user/my-app",
+      sessionType: "claude",
+      summary: "",
+    });
+    expect(mockSendDiscordWebhook).not.toHaveBeenCalled();
+  });
+
+  it("does not send Discord when no summary provided", async () => {
+    const { maybeNotifyDiscord } = await import("../pty-notifications");
+    await maybeNotifyDiscord({
+      projectPath: "/home/user/my-app",
+      sessionType: "claude",
+    });
+    expect(mockSendDiscordWebhook).not.toHaveBeenCalled();
+  });
+
+  it("formats title with project name and session type", async () => {
+    const { maybeNotifyDiscord } = await import("../pty-notifications");
+    await maybeNotifyDiscord({
+      projectPath: "/home/user/my-app",
+      sessionType: "claude",
+      summary: "Changes done.",
+    });
+    expect(mockSendDiscordWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: expect.stringContaining("my-app"),
+      }),
+    );
+    expect(mockSendDiscordWebhook).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: expect.stringContaining("Claude"),
+      }),
+    );
   });
 });

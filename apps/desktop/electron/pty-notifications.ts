@@ -1,6 +1,8 @@
 import * as path from "path";
 import { execFile } from "child_process";
 import { Notification } from "electron";
+import { stripAnsi, isNoiseLine, sendDiscordWebhook } from "./discord-notifications.js";
+import { getCachedSettings } from "./user-settings.js";
 
 interface SessionReadyInfo {
   projectPath: string;
@@ -15,23 +17,19 @@ interface NotificationData {
 }
 
 /**
- * Strips ANSI escape codes, OSC sequences, collapses whitespace,
+ * Strips ANSI escape codes, filters terminal noise,
  * and extracts the last meaningful lines from raw PTY output.
  */
 export function extractNotificationSummary(raw: string, maxLength = 200): string {
   if (!raw) return "";
 
-  // Strip OSC sequences (hyperlinks, window titles, etc.)
-  let cleaned = raw.replace(/\x1b\][\s\S]*?(?:\x07|\x1b\\)/g, "");
-  // Strip CSI sequences (colors, cursor movement, etc.)
-  cleaned = cleaned.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
-  // Strip any remaining escape sequences
-  cleaned = cleaned.replace(/\x1b[^[\]].?/g, "");
-  // Collapse multiple spaces
-  cleaned = cleaned.replace(/ {2,}/g, " ");
+  const cleaned = stripAnsi(raw);
 
-  // Split into lines, filter empty/whitespace-only
-  const lines = cleaned.split("\n").map((l) => l.trim()).filter(Boolean);
+  // Split into lines, filter empty/noise
+  const lines = cleaned
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l && !isNoiseLine(l));
   if (lines.length === 0) return "";
 
   // Take last few meaningful lines, join with space
@@ -62,17 +60,6 @@ export function buildSessionFinishedNotification(info: SessionReadyInfo): Notifi
   };
 }
 
-function showNotificationLinux(data: NotificationData): void {
-  execFile(
-    "notify-send",
-    ["--app-name=Forja", "--expire-time=5000", data.title, data.body],
-    (err) => {
-      if (err) {
-        console.warn("[pty-notifications] notify-send failed:", err);
-      }
-    },
-  );
-}
 
 function showNotificationElectron(
   data: NotificationData,
@@ -107,22 +94,79 @@ function showNotificationElectron(
 }
 
 /**
- * Shows a native notification when an AI session finishes with new output.
- * Suppresses notifications only when the app is focused on the same project.
+ * Shows a native OS notification.
+ * On Linux: try notify-send first (reliable on Wayland), Electron as backup.
+ * On macOS: use Electron.Notification (works well with native notification center).
+ */
+function showOsNotification(
+  data: NotificationData,
+  info: SessionReadyInfo,
+  mainWindow: Electron.BrowserWindow | null,
+): void {
+  if (process.platform === "linux") {
+    // notify-send is more reliable on Wayland (Hyprland, Sway, etc.)
+    // Fall back to Electron.Notification only if notify-send fails.
+    execFile(
+      "notify-send",
+      ["--app-name=Forja", "--expire-time=5000", data.title, data.body],
+      (err) => {
+        if (err) {
+          console.warn("[pty-notifications] notify-send failed, falling back to Electron:", err.message);
+          showNotificationElectron(data, info, mainWindow);
+        }
+      },
+    );
+  } else {
+    showNotificationElectron(data, info, mainWindow);
+  }
+}
+
+/**
+ * Shows a native notification when an AI session produces new output.
+ * OS notification: suppressed when focused on the same project.
+ * Discord: ALWAYS sent (never suppressed by focus state).
  */
 export function showSessionFinishedNotification(
   info: SessionReadyInfo,
   mainWindow: Electron.BrowserWindow | null,
 ): void {
-  if (mainWindow?.isFocused() && info.activeProjectPath === info.projectPath) return;
-
   const data = buildSessionFinishedNotification(info);
 
-  if (process.platform === "linux") {
-    if (!showNotificationElectron(data, info, mainWindow)) {
-      showNotificationLinux(data);
-    }
-  } else {
-    showNotificationElectron(data, info, mainWindow);
+  // OS notification: suppress only when focused on the same project
+  const isFocusedOnSameProject =
+    mainWindow?.isFocused() && info.activeProjectPath === info.projectPath;
+
+  if (!isFocusedOnSameProject) {
+    showOsNotification(data, info, mainWindow);
   }
+}
+
+// --- Discord integration ---
+
+interface DiscordNotifyInfo {
+  projectPath: string;
+  sessionType: string;
+  summary?: string;
+}
+
+/**
+ * Sends a Discord webhook notification if configured.
+ * NEVER suppressed by focus state — Discord always sends.
+ */
+export async function maybeNotifyDiscord(info: DiscordNotifyInfo): Promise<void> {
+  const settings = getCachedSettings();
+  const { discordWebhookUrl, discordEnabled } = settings.notifications;
+
+  if (!discordEnabled || !discordWebhookUrl) return;
+  if (!info.summary?.trim()) return;
+
+  const projectName = path.basename(info.projectPath);
+  const sessionName = info.sessionType.charAt(0).toUpperCase() + info.sessionType.slice(1);
+  const title = `Forja — ${projectName} (${sessionName})`;
+
+  await sendDiscordWebhook({
+    title,
+    content: info.summary,
+    webhookUrl: discordWebhookUrl,
+  });
 }
