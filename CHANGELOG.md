@@ -8,6 +8,39 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.9.1] - 2026-03-29
+
+### Added
+
+- Add session telemetry display in status bar with real-time token usage, cost, context bar with semantic colors, and auto-detection of 200k vs 1M context windows.
+- Add Discord webhook notifications with PTY output summarization, ANSI stripping, noise filtering, and head+tail truncation for Discord's 2000 char limit.
+- Add Discord webhook configuration to settings UI with URL validation and enable/disable toggle.
+- Add notification hooks setup for CLI integration (Claude, Codex, Gemini, Cursor, gh-copilot) with graceful jq degradation.
+- Add OSC 9/99/777 notification handlers to terminal for ConEmu, key=value, and Urxvt notification sequences with 1s debounce.
+- Add beta disclaimer dialog on first launch.
+- Strip ephemeral file-preview blocks from persisted layouts to prevent self-reinforcing restore-auto-load-save cycle.
+- Create Fumadocs documentation site (`@forja/docs`) with Next.js 15 and MDX support.
+- Create Next.js marketing site (`@forja/site`) with static export and Catppuccin Mocha theme.
+- Create Expo remote control app (`@forja/mobile`) with WebSocket client and session management.
+
+### Changed
+
+- Restructure project as pnpm monorepo with `@forja/desktop`, `@forja/site`, `@forja/docs`, `@forja/mobile`, `@forja/shared`, and `@forja/tsconfig` workspaces.
+- Remove window opacity feature from frontend and backend, restoring GPU zero-copy flags for all platforms.
+- Add backpressure handling to IPC streams with batched PTY event broadcasting and circuit breaker for slow WebSocket clients.
+- Replace transparent backgrounds with theme base colors in terminal, Monaco editor, and CSS overrides to eliminate alpha compositing overhead.
+- Move build and CLI scripts to monorepo root `scripts/` directory.
+
+### Fixed
+
+- Fix terminal wrapper background color mismatch with xterm theme in padding area.
+- Fix notifications firing only once per tab by replacing one-shot guard with buffer delta snapshots.
+- Preserve terminal block tabset positions on project switch instead of recreating all blocks in first tabset.
+- Disable transparency on Wayland tiling WMs (Hyprland, Sway, Niri, i3, River) to prevent pointer freeze.
+- Fix monorepo restructure issues: move public assets, update gitignore patterns, remove old site directory.
+
+---
+
 ## [1.9.0] - 2026-03-28
 
 ### Added
