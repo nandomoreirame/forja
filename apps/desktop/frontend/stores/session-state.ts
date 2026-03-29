@@ -14,6 +14,7 @@ interface TabMeta {
 interface FinishedNotificationPayload extends TabMeta {
   activeProjectPath: string | null;
   tabId: string;
+  bufferSnapshotLength: number;
 }
 
 interface SessionStateStoreState {
@@ -33,8 +34,9 @@ const timers = new Map<string, ReturnType<typeof setTimeout>>();
 // Metadata per tab for notification context
 const tabMetas = new Map<string, TabMeta>();
 const tabsWithOutput = new Set<string>();
-// Tracks tabs that have already sent a notification (prevents re-notifying on repeated thinking→ready cycles)
-const notifiedTabs = new Set<string>();
+// Buffer length snapshot taken when "thinking" starts.
+// Used to compute delta for notification content.
+const bufferSnapshots = new Map<string, number>();
 
 function isAnyTabThinkingForProject(projectPath: string, excludeTabId?: string): boolean {
   const { states } = useSessionStateStore.getState();
@@ -56,6 +58,15 @@ export const useSessionStateStore = create<SessionStateStoreState>(
     onData: (tabId: string, meta?: TabMeta) => {
       if (meta) tabMetas.set(tabId, meta);
       tabsWithOutput.add(tabId);
+
+      const prevState = get().states[tabId] ?? "idle";
+
+      // Snapshot buffer length when entering thinking for the first time in this cycle
+      if (prevState !== "thinking") {
+        void invoke("pty:get-buffer-length", { tabId }).then((len: number) => {
+          bufferSnapshots.set(tabId, len);
+        });
+      }
 
       // Mark as thinking
       set((state) => ({
@@ -82,17 +93,15 @@ export const useSessionStateStore = create<SessionStateStoreState>(
           if (storedMeta && storedMeta.sessionType !== "terminal") {
             if (!isAnyTabThinkingForProject(storedMeta.projectPath, tabId)) {
               useProjectsStore.getState().setProjectThinking(storedMeta.projectPath, false);
-              if (!notifiedTabs.has(tabId)) {
-                notifiedTabs.add(tabId);
-                useProjectsStore.getState().markProjectNotified(storedMeta.projectPath, "Session finished");
-                const payload: FinishedNotificationPayload = {
-                  projectPath: storedMeta.projectPath,
-                  sessionType: storedMeta.sessionType,
-                  activeProjectPath: useProjectsStore.getState().activeProjectPath,
-                  tabId,
-                };
-                void invoke("pty:notify-session-finished", payload);
-              }
+              useProjectsStore.getState().markProjectNotified(storedMeta.projectPath, "Session finished");
+              const payload: FinishedNotificationPayload = {
+                projectPath: storedMeta.projectPath,
+                sessionType: storedMeta.sessionType,
+                activeProjectPath: useProjectsStore.getState().activeProjectPath,
+                tabId,
+                bufferSnapshotLength: bufferSnapshots.get(tabId) ?? 0,
+              };
+              void invoke("pty:notify-session-finished", payload);
             }
           }
         }
@@ -133,7 +142,7 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       const meta = tabMetas.get(tabId);
       tabMetas.delete(tabId);
       tabsWithOutput.delete(tabId);
-      notifiedTabs.delete(tabId);
+      bufferSnapshots.delete(tabId);
       if (meta && meta.sessionType !== "terminal") {
         if (!isAnyTabThinkingForProject(meta.projectPath, tabId)) {
           useProjectsStore.getState().setProjectThinking(meta.projectPath, false);
@@ -146,8 +155,14 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       });
     },
 
-    markTabSeen: (tabId: string) => {
-      notifiedTabs.delete(tabId);
+    markTabSeen: (_tabId: string) => {
+      // notifiedTabs no longer exists — markTabSeen now only
+      // serves as a signal that the user has seen this tab.
+      // The project notification badge is cleared in tiling-layout.tsx.
+    },
+
+    markTabInput: (_tabId: string) => {
+      // No-op: input tracking is now handled solely by the backend (tabsWithUserInput).
     },
 
     _resetInternals: () => {
@@ -155,7 +170,7 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       timers.clear();
       tabMetas.clear();
       tabsWithOutput.clear();
-      notifiedTabs.clear();
+      bufferSnapshots.clear();
     },
   })
 );
