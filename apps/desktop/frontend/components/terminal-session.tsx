@@ -591,7 +591,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       className={`flex h-full w-full flex-col ${!isVisible ? "hidden" : ""}`}
     >
       <TerminalContextMenu tabId={tabId} onCopy={handleCopy} onPaste={handlePaste}>
-        <div className="h-full pt-3 pl-4 pb-1">
+        <div className="h-full bg-[var(--bg-base)] pt-3 pl-4 pb-1">
           <div ref={containerRef} className="h-full w-full" />
           <div role="status" aria-live="polite" className="sr-only" />
         </div>
