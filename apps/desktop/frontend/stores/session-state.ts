@@ -25,6 +25,7 @@ interface SessionStateStoreState {
   onExit: (tabId: string) => void;
   cleanup: (tabId: string) => void;
   markTabSeen: (tabId: string) => void;
+  markTabInput: (tabId: string) => void;
   /** @internal test-only: clears all internal maps/sets */
   _resetInternals: () => void;
 }
@@ -34,6 +35,9 @@ const timers = new Map<string, ReturnType<typeof setTimeout>>();
 // Metadata per tab for notification context
 const tabMetas = new Map<string, TabMeta>();
 const tabsWithOutput = new Set<string>();
+// Tracks tabs where the user has typed input during this app session.
+// Used to distinguish real AI activity from buffer replay during session restoration.
+const tabsWithInput = new Set<string>();
 // Buffer length snapshot taken when "thinking" starts.
 // Used to compute delta for notification content.
 const bufferSnapshots = new Map<string, number>();
@@ -93,6 +97,13 @@ export const useSessionStateStore = create<SessionStateStoreState>(
           if (storedMeta && storedMeta.sessionType !== "terminal") {
             if (!isAnyTabThinkingForProject(storedMeta.projectPath, tabId)) {
               useProjectsStore.getState().setProjectThinking(storedMeta.projectPath, false);
+              // Only notify if the user has actually interacted with this tab.
+              // During session restoration, buffer replay triggers onData but
+              // the user hasn't typed anything — skip the false notification.
+              if (!tabsWithInput.has(tabId)) {
+                timers.delete(tabId);
+                return;
+              }
               useProjectsStore.getState().markProjectNotified(storedMeta.projectPath, "Session finished");
               const payload: FinishedNotificationPayload = {
                 projectPath: storedMeta.projectPath,
@@ -142,6 +153,7 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       const meta = tabMetas.get(tabId);
       tabMetas.delete(tabId);
       tabsWithOutput.delete(tabId);
+      tabsWithInput.delete(tabId);
       bufferSnapshots.delete(tabId);
       if (meta && meta.sessionType !== "terminal") {
         if (!isAnyTabThinkingForProject(meta.projectPath, tabId)) {
@@ -161,8 +173,8 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       // The project notification badge is cleared in tiling-layout.tsx.
     },
 
-    markTabInput: (_tabId: string) => {
-      // No-op: input tracking is now handled solely by the backend (tabsWithUserInput).
+    markTabInput: (tabId: string) => {
+      tabsWithInput.add(tabId);
     },
 
     _resetInternals: () => {
@@ -170,6 +182,7 @@ export const useSessionStateStore = create<SessionStateStoreState>(
       timers.clear();
       tabMetas.clear();
       tabsWithOutput.clear();
+      tabsWithInput.clear();
       bufferSnapshots.clear();
     },
   })

@@ -5,6 +5,7 @@ import { CLI_REGISTRY } from "@/lib/cli-registry";
 import type { CliId } from "@/lib/cli-registry";
 import { stripAnsi } from "@/lib/strip-ansi";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
+import { useSessionStateStore } from "@/stores/session-state";
 
 interface CliSessionEntry {
   sessionId: string;
@@ -219,6 +220,7 @@ export function usePty(options: UsePtyOptions) {
 
   const write = useCallback(
     async (data: string) => {
+      useSessionStateStore.getState().markTabInput(tabIdRef.current);
       await invoke("write_pty", { tabId: tabIdRef.current, data });
     },
     [],
