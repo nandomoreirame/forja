@@ -410,6 +410,22 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
           <span className="text-app-xs text-ctp-subtext0">{localSettings.ui.shortcutHints ? "Enabled" : "Disabled"}</span>
         </label>
       </SettingItem>
+
+      <SettingItem
+        category="UI"
+        label="Tab Set Maximize"
+        description="Show maximize button on tab set headers. When enabled, individual panes can be maximized to fill the entire layout."
+      >
+        <label className="flex items-center gap-2 cursor-pointer" aria-label="Tab set maximize">
+          <input
+            type="checkbox"
+            checked={localSettings.ui.tabSetEnableMaximize}
+            onChange={(e) => update({ ui: { ...localSettings.ui, tabSetEnableMaximize: e.target.checked } })}
+            className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-surface0 accent-ctp-mauve"
+          />
+          <span className="text-app-xs text-ctp-subtext0">{localSettings.ui.tabSetEnableMaximize ? "Enabled" : "Disabled"}</span>
+        </label>
+      </SettingItem>
     </div>
   );
 }

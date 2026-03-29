@@ -33,6 +33,7 @@ interface UISettings {
   activePaneHighlight: boolean;
   hoverToFocus: boolean;
   shortcutHints: boolean;
+  tabSetEnableMaximize: boolean;
 }
 
 interface TerminalSettings extends FontSettings {
@@ -85,7 +86,7 @@ const DEFAULT_SETTINGS: UserSettings = {
     custom: [],
   },
   performance: { mode: "auto" },
-  ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true },
+  ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true, tabSetEnableMaximize: false },
   notifications: {
     discordWebhookUrl: "",
     discordEnabled: true,
