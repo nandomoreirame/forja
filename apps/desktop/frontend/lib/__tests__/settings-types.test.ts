@@ -37,6 +37,10 @@ describe("DEFAULT_SETTINGS", () => {
       },
       performance: { mode: "auto" },
       ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true },
+      notifications: {
+        discordWebhookUrl: "",
+        discordEnabled: true,
+      },
     });
   });
 });

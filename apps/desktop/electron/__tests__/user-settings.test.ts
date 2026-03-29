@@ -272,6 +272,40 @@ describe("user-settings module", () => {
     expect(result.terminal.persistSessions).toBe(false);
   });
 
+  it("should merge notifications defaults when absent", async () => {
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({ terminal: { fontSize: 14 } }),
+    );
+
+    const { loadUserSettings } = await import("../user-settings");
+    const result = await loadUserSettings();
+
+    expect(result.notifications).toEqual({
+      discordWebhookUrl: "",
+      discordEnabled: true,
+    });
+  });
+
+  it("should preserve custom discord webhook URL", async () => {
+    const fsp = await import("fs/promises");
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({
+        notifications: {
+          discordWebhookUrl: "https://discord.com/api/webhooks/123/abc",
+          discordEnabled: true,
+        },
+      }),
+    );
+
+    const { loadUserSettings } = await import("../user-settings");
+    const result = await loadUserSettings();
+
+    expect(result.notifications.discordWebhookUrl).toBe(
+      "https://discord.com/api/webhooks/123/abc",
+    );
+  });
+
   it("saveUserSettings validates and clamps values after saving", async () => {
     const fsp = await import("fs/promises");
     vi.mocked(fsp.mkdir).mockResolvedValue(undefined);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  Bell,
   ExternalLink,
   FolderSync,
   Keyboard,
@@ -24,7 +25,7 @@ import { cn } from "@/lib/utils";
 import { ContextSection } from "./context-settings-section";
 import type { UserSettings } from "@/lib/settings-types";
 
-type SettingsSection = "appearance" | "shortcuts" | "sessions" | "context" | "performance";
+type SettingsSection = "appearance" | "shortcuts" | "sessions" | "context" | "performance" | "notifications";
 
 interface SettingsDialogProps {
   open: boolean;
@@ -64,6 +65,11 @@ const NAV_ITEMS: NavItem[] = [
     id: "performance",
     label: "Performance",
     icon: <Monitor className="h-3.5 w-3.5" strokeWidth={1.5} />,
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    icon: <Bell className="h-3.5 w-3.5" strokeWidth={1.5} />,
   },
 ];
 
@@ -584,6 +590,87 @@ function PerformanceSection({ settings, onSave }: { settings: UserSettings; onSa
   );
 }
 
+// ─── Notifications Section ────────────────────────────────────────────────
+
+function isValidDiscordWebhook(url: string): boolean {
+  if (!url) return true; // empty = disabled
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === "https:" &&
+      parsed.hostname === "discord.com" &&
+      parsed.pathname.startsWith("/api/webhooks/")
+    );
+  } catch {
+    return false;
+  }
+}
+
+function NotificationsSection({ settings, onSave }: { settings: UserSettings; onSave: (s: UserSettings) => void }) {
+  const [localNotif, setLocalNotif] = useState(settings.notifications);
+  const [webhookError, setWebhookError] = useState("");
+
+  useEffect(() => {
+    setLocalNotif(settings.notifications);
+  }, [settings.notifications]);
+
+  function update(partial: Partial<typeof localNotif>) {
+    const updated = { ...localNotif, ...partial };
+    setLocalNotif(updated);
+    onSave({ ...settings, notifications: updated });
+  }
+
+  return (
+    <div data-testid="settings-section-notifications">
+      <SectionHeader
+        title="Notifications"
+        icon={<Bell className="h-3.5 w-3.5 text-ctp-mauve" strokeWidth={1.5} />}
+      />
+
+      <SettingItem
+        category="Discord"
+        label="Enable Notifications"
+        description="Send a Discord message whenever an AI session produces new output."
+      >
+        <label className="flex items-center gap-2 cursor-pointer" aria-label="Enable Discord notifications">
+          <input
+            type="checkbox"
+            checked={localNotif.discordEnabled}
+            onChange={(e) => update({ discordEnabled: e.target.checked })}
+            className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-surface0 accent-ctp-mauve"
+          />
+          <span className="text-app-xs text-ctp-subtext0">{localNotif.discordEnabled ? "Enabled" : "Disabled"}</span>
+        </label>
+      </SettingItem>
+
+      <SettingItem
+        category="Discord"
+        label="Webhook URL"
+        description="Discord webhook URL for notifications. Create one in Server Settings > Integrations > Webhooks."
+      >
+        <div>
+          <input
+            type="url"
+            value={localNotif.discordWebhookUrl}
+            onChange={(e) => {
+              const url = e.target.value;
+              update({ discordWebhookUrl: url });
+              setWebhookError(isValidDiscordWebhook(url) ? "" : "Invalid Discord webhook URL format");
+            }}
+            placeholder="https://discord.com/api/webhooks/..."
+            aria-label="Discord webhook URL"
+            className={cn(inputClass, "w-full")}
+          />
+          {webhookError && (
+            <p className="mt-1 text-app-xs text-ctp-red">{webhookError}</p>
+          )}
+        </div>
+      </SettingItem>
+
+    </div>
+  );
+}
+
 // ─── Main Dialog ──────────────────────────────────────────────────────────────
 
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
@@ -676,6 +763,12 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               {activeSection === "context" && <ContextSection />}
               {activeSection === "performance" && (
                 <PerformanceSection
+                  settings={settings}
+                  onSave={handleSaveSettings}
+                />
+              )}
+              {activeSection === "notifications" && (
+                <NotificationsSection
                   settings={settings}
                   onSave={handleSaveSettings}
                 />

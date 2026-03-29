@@ -39,6 +39,11 @@ interface TerminalSettings extends FontSettings {
   persistSessions: boolean;
 }
 
+interface NotificationSettings {
+  discordWebhookUrl: string;
+  discordEnabled: boolean;
+}
+
 interface UserSettings {
   app: FontSettings;
   editor: FontSettings;
@@ -48,6 +53,7 @@ interface UserSettings {
   theme: ThemeSettings;
   performance: PerformanceSettings;
   ui: UISettings;
+  notifications: NotificationSettings;
 }
 
 const DEFAULT_SETTINGS: UserSettings = {
@@ -80,6 +86,10 @@ const DEFAULT_SETTINGS: UserSettings = {
   },
   performance: { mode: "auto" },
   ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true },
+  notifications: {
+    discordWebhookUrl: "",
+    discordEnabled: true,
+  },
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -134,6 +144,10 @@ function mergeWithDefaults(
     ui: {
       ...DEFAULT_SETTINGS.ui,
       ...(input.ui ?? {}),
+    },
+    notifications: {
+      ...DEFAULT_SETTINGS.notifications,
+      ...(input.notifications ?? {}),
     },
   };
 }
@@ -190,6 +204,13 @@ function validateSettings(settings: UserSettings): UserSettings {
       zoomLevel: clamp(settings.window.zoomLevel, -5, 5),
     },
     sessions: sanitizeSessions(settings.sessions),
+    notifications: {
+      ...settings.notifications,
+      discordWebhookUrl:
+        typeof settings.notifications.discordWebhookUrl === "string"
+          ? settings.notifications.discordWebhookUrl.trim()
+          : "",
+    },
   };
 }
 
