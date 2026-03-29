@@ -386,8 +386,8 @@ describe("ws-bridge", () => {
 
   // ─── Connection limit ─────────────────────────────────────────────────────
 
-  it("connection limit: rejects 6th concurrent connection (max 5)", async () => {
-    // Open 5 connections
+  it("connection limit: rejects connection when max reached (max 5)", async () => {
+    // Open 5 connections (the maximum allowed)
     const connections: WebSocket[] = [];
     for (let i = 0; i < 5; i++) {
       const ws = await connectClient();
@@ -397,7 +397,7 @@ describe("ws-bridge", () => {
     // Wait for all to be established
     await new Promise((r) => setTimeout(r, 50));
 
-    // The 6th connection should be rejected
+    // The next connection should be rejected (>= MAX_CLIENTS)
     const sixthWs = new WebSocket(`ws://localhost:${TEST_PORT}`);
     openClients.push(sixthWs);
 
@@ -412,5 +412,211 @@ describe("ws-bridge", () => {
     });
 
     expect((rejectionResponse as { ok: boolean }).ok).toBe(false);
+  });
+
+  // ─── Backpressure & batching ─────────────────────────────────────────────
+
+  it("batches PTY events and delivers them on interval", async () => {
+    // Capture the PTY subscriber callback registered by the bridge
+    const { subscribePtyOutput } = await import("../pty.js");
+    let ptyCallback: ((event: import("../pty.js").PtySubscriberEvent) => void) | null = null;
+    vi.mocked(subscribePtyOutput).mockImplementation((fn) => {
+      ptyCallback = fn;
+      return () => {};
+    });
+
+    // Restart bridge to pick up our mock
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    bridge = createWsBridge({ port: TEST_PORT });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    // Subscribe to a tab
+    const subReceive = wsReceive(ws);
+    wsSend(ws, { type: "subscribe", token: "test-token-12345", tabId: "tab-1" });
+    await subReceive;
+
+    // Emit multiple PTY data events rapidly (simulating heavy CLI output)
+    expect(ptyCallback).not.toBeNull();
+    ptyCallback!({ event: "data", tabId: "tab-1", data: "chunk-1-" });
+    ptyCallback!({ event: "data", tabId: "tab-1", data: "chunk-2-" });
+    ptyCallback!({ event: "data", tabId: "tab-1", data: "chunk-3-" });
+
+    // Events should NOT arrive immediately (they are batched)
+    const immediateCheck = new Promise<boolean>((resolve) => {
+      const timeout = setTimeout(() => resolve(false), 20);
+      ws.once("message", () => {
+        clearTimeout(timeout);
+        resolve(true);
+      });
+    });
+    const receivedImmediately = await immediateCheck;
+    expect(receivedImmediately).toBe(false);
+
+    // Wait for the broadcast interval to flush (100ms + margin)
+    const batchedMsg = await new Promise<unknown>((resolve) => {
+      ws.once("message", (data) => resolve(JSON.parse(data.toString())));
+    });
+
+    // Should receive merged data in a single message
+    const msg = batchedMsg as { type: string; event: string; tabId: string; data: string };
+    expect(msg.type).toBe("pty-event");
+    expect(msg.tabId).toBe("tab-1");
+    expect(msg.data).toBe("chunk-1-chunk-2-chunk-3-");
+  });
+
+  it("drops events for backpressured clients instead of buffering", async () => {
+    const { subscribePtyOutput } = await import("../pty.js");
+    let ptyCallback: ((event: import("../pty.js").PtySubscriberEvent) => void) | null = null;
+    vi.mocked(subscribePtyOutput).mockImplementation((fn) => {
+      ptyCallback = fn;
+      return () => {};
+    });
+
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    bridge = createWsBridge({ port: TEST_PORT });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    // Authenticate and subscribe
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const subReceive = wsReceive(ws);
+    wsSend(ws, { type: "subscribe", token: "test-token-12345", tabId: "tab-1" });
+    await subReceive;
+
+    // Wait for server to register the connection
+    await new Promise((r) => setTimeout(r, 50));
+
+    // Get the server-side WebSocket and simulate backpressure on it
+    const serverWss = bridge._getWss()!;
+    for (const serverWs of serverWss.clients) {
+      Object.defineProperty(serverWs, "bufferedAmount", { get: () => 512 * 1024, configurable: true });
+    }
+
+    // Emit PTY event
+    ptyCallback!({ event: "data", tabId: "tab-1", data: "should-be-dropped" });
+
+    // Wait for broadcast interval
+    const received = await new Promise<boolean>((resolve) => {
+      const timeout = setTimeout(() => resolve(false), 200);
+      ws.once("message", () => {
+        clearTimeout(timeout);
+        resolve(true);
+      });
+    });
+
+    // Message should be dropped due to backpressure
+    expect(received).toBe(false);
+  });
+
+  it("circuit breaker disconnects clients after too many consecutive drops", { timeout: 15000 }, async () => {
+    const { subscribePtyOutput } = await import("../pty.js");
+    let ptyCallback: ((event: import("../pty.js").PtySubscriberEvent) => void) | null = null;
+    vi.mocked(subscribePtyOutput).mockImplementation((fn) => {
+      ptyCallback = fn;
+      return () => {};
+    });
+
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    bridge = createWsBridge({ port: TEST_PORT });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    // Authenticate and subscribe
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const subReceive = wsReceive(ws);
+    wsSend(ws, { type: "subscribe", token: "test-token-12345", tabId: "tab-1" });
+    await subReceive;
+
+    // Wait for server to register the connection
+    await new Promise((r) => setTimeout(r, 50));
+
+    // Simulate permanently backpressured server-side socket
+    const serverWss = bridge._getWss()!;
+    for (const serverWs of serverWss.clients) {
+      Object.defineProperty(serverWs, "bufferedAmount", { get: () => 512 * 1024, configurable: true });
+    }
+
+    const closePromise = new Promise<number>((resolve) => {
+      ws.on("close", (code) => resolve(code));
+    });
+
+    // Emit events across multiple broadcast intervals to accumulate drops
+    // Each interval flushes pending events, and each flush with backpressure increments drops.
+    // We need 50 consecutive drops (MAX_CONSECUTIVE_DROPS).
+    for (let i = 0; i < 50; i++) {
+      ptyCallback!({ event: "data", tabId: "tab-1", data: `chunk-${i}` });
+      // Wait for broadcast interval to flush and count the drop
+      await new Promise((r) => setTimeout(r, 110));
+    }
+
+    const closeCode = await Promise.race([
+      closePromise,
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 500)),
+    ]);
+
+    // Client should have been disconnected by circuit breaker with code 4003
+    expect(closeCode).toBe(4003);
+  });
+
+  it("non-data events (session-start, session-exit) are not merged with data", async () => {
+    const { subscribePtyOutput } = await import("../pty.js");
+    let ptyCallback: ((event: import("../pty.js").PtySubscriberEvent) => void) | null = null;
+    vi.mocked(subscribePtyOutput).mockImplementation((fn) => {
+      ptyCallback = fn;
+      return () => {};
+    });
+
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    bridge = createWsBridge({ port: TEST_PORT });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    // Authenticate and subscribe
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const subReceive = wsReceive(ws);
+    wsSend(ws, { type: "subscribe", token: "test-token-12345", tabId: "tab-1" });
+    await subReceive;
+
+    // Emit a session-exit event
+    ptyCallback!({ event: "session-exit", tabId: "tab-1", exitCode: 0 });
+
+    // Collect messages from the next broadcast
+    const messages: unknown[] = [];
+    const collectDone = new Promise<void>((resolve) => {
+      ws.on("message", (data) => {
+        messages.push(JSON.parse(data.toString()));
+        resolve();
+      });
+    });
+
+    await collectDone;
+
+    const exitMsg = messages[0] as { type: string; event: string; exitCode: number };
+    expect(exitMsg.type).toBe("pty-event");
+    expect(exitMsg.event).toBe("session-exit");
+    expect(exitMsg.exitCode).toBe(0);
   });
 });

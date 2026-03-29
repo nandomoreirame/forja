@@ -44,13 +44,80 @@ describe("window opacity - background-only approach", () => {
     );
   });
 
-  it("getWindowTransparencyOptions returns transparent for all platforms", async () => {
+  it("getWindowTransparencyOptions returns transparent on non-Linux platforms", async () => {
     const { getWindowTransparencyOptions } = await import(
       "../window-opacity.js"
     );
 
     const opts = getWindowTransparencyOptions();
+    // Test environment is node (not linux with tiling WM), so transparent is enabled
     expect(opts.transparent).toBe(true);
     expect(opts.backgroundColor).toBe("#00000000");
+  });
+
+  it("getWindowTransparencyOptions disables transparency on Hyprland", async () => {
+    const originalPlatform = process.platform;
+    const originalDesktop = process.env.XDG_CURRENT_DESKTOP;
+
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    process.env.XDG_CURRENT_DESKTOP = "Hyprland";
+
+    // Re-import to pick up env changes
+    vi.resetModules();
+    const { getWindowTransparencyOptions } = await import("../window-opacity.js");
+
+    const opts = getWindowTransparencyOptions();
+    expect(opts.transparent).toBeUndefined();
+    expect(opts.backgroundColor).toBeUndefined();
+
+    Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true });
+    if (originalDesktop !== undefined) {
+      process.env.XDG_CURRENT_DESKTOP = originalDesktop;
+    } else {
+      delete process.env.XDG_CURRENT_DESKTOP;
+    }
+  });
+
+  it("getWindowTransparencyOptions disables transparency on Sway", async () => {
+    const originalPlatform = process.platform;
+    const originalDesktop = process.env.XDG_CURRENT_DESKTOP;
+
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    process.env.XDG_CURRENT_DESKTOP = "sway";
+
+    vi.resetModules();
+    const { getWindowTransparencyOptions } = await import("../window-opacity.js");
+
+    const opts = getWindowTransparencyOptions();
+    expect(opts.transparent).toBeUndefined();
+
+    Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true });
+    if (originalDesktop !== undefined) {
+      process.env.XDG_CURRENT_DESKTOP = originalDesktop;
+    } else {
+      delete process.env.XDG_CURRENT_DESKTOP;
+    }
+  });
+
+  it("getWindowTransparencyOptions enables transparency on GNOME Wayland", async () => {
+    const originalPlatform = process.platform;
+    const originalDesktop = process.env.XDG_CURRENT_DESKTOP;
+
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    process.env.XDG_CURRENT_DESKTOP = "GNOME";
+
+    vi.resetModules();
+    const { getWindowTransparencyOptions } = await import("../window-opacity.js");
+
+    const opts = getWindowTransparencyOptions();
+    expect(opts.transparent).toBe(true);
+    expect(opts.backgroundColor).toBe("#00000000");
+
+    Object.defineProperty(process, "platform", { value: originalPlatform, configurable: true });
+    if (originalDesktop !== undefined) {
+      process.env.XDG_CURRENT_DESKTOP = originalDesktop;
+    } else {
+      delete process.env.XDG_CURRENT_DESKTOP;
+    }
   });
 });
