@@ -182,16 +182,12 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
   const [lineHeightText, setLineHeightText] = useState(
     String(settings.editor.lineHeight ?? 1.5),
   );
-  const [opacityText, setOpacityText] = useState(
-    String(settings.window.opacity),
-  );
   const { activeThemeId, setActiveTheme } = useThemeStore();
   const allThemes = useThemeStore.getState().getAllThemes();
 
   useEffect(() => {
     setLocalSettings(settings);
     setLineHeightText(String(settings.editor.lineHeight ?? 1.5));
-    setOpacityText(String(settings.window.opacity));
   }, [settings]);
 
   function update(partial: Partial<UserSettings>) {
@@ -372,29 +368,6 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
           />
           <span className="text-app-xs text-ctp-subtext0">{localSettings.terminal.persistSessions ? "Enabled" : "Disabled"}</span>
         </label>
-      </SettingItem>
-
-      <SettingItem
-        category="Window"
-        label="Opacity"
-        description="Background opacity. 1.0 = opaque, 0.95-0.05 = transparent."
-      >
-        <input
-          type="number"
-          value={opacityText}
-          min={0.05}
-          max={1}
-          step={0.05}
-          onChange={(e) => {
-            setOpacityText(e.target.value);
-            const v = Number(e.target.value);
-            if (!Number.isNaN(v) && v >= 0.05 && v <= 1.0) {
-              update({ window: { ...localSettings.window, opacity: v } });
-            }
-          }}
-          aria-label="Window opacity"
-          className={numberInputClass}
-        />
       </SettingItem>
 
       <SettingItem

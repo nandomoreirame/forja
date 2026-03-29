@@ -41,7 +41,6 @@ import { useUserSettingsStore } from "./stores/user-settings";
 import { useQuickActionsStore } from "./stores/quick-actions";
 import { useThemeStore } from "./stores/theme";
 import type { ThemeDefinition } from "@/themes";
-import { applyBackgroundOpacity } from "@/themes/apply";
 import { usePerformanceStore } from "./stores/performance";
 import { useProjectsStore, saveCurrentProjectToDisk } from "./stores/projects";
 import { useWorkspaceStore } from "./stores/workspace";
@@ -478,26 +477,14 @@ function App({
       },
     );
 
-    // Apply background-only opacity via CSS variables (not whole-window opacity).
-    // BrowserWindow.setOpacity() is not supported on Linux and makes text
-    // transparent on other platforms, so we use CSS background alpha instead.
-    const unlistenOpacity = listen<number>("window:apply-opacity", (event) => {
-      applyBackgroundOpacity(event.payload);
-    });
-
     return () => {
       unlisten.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
-      unlistenOpacity.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup unlisten failed:", err));
     };
   }, []);
 
   // Apply settings effects when they change
   const settings = useUserSettingsStore((s) => s.settings);
   useEffect(() => {
-    // Apply background-only opacity (CSS variables with alpha channel)
-    applyBackgroundOpacity(settings.window.opacity);
-    // Notify main process for transparent window support
-    invoke("set_window_opacity", { opacity: settings.window.opacity }).catch((err) => console.warn("[App] IPC call failed:", err));
     // Apply zoom level
     invoke("set_zoom_level", { level: settings.window.zoomLevel }).catch((err) => console.warn("[App] IPC call failed:", err));
     // Terminal font settings

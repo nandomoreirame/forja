@@ -12,7 +12,6 @@ import { Terminal } from "@xterm/xterm";
 import "@xterm/xterm/css/xterm.css";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
 import { useThemeStore } from "@/stores/theme";
-import { useUserSettingsStore } from "@/stores/user-settings";
 import { buildTerminalTheme } from "@/themes/apply";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTilingLayoutStore } from "@/stores/tiling-layout";
@@ -144,8 +143,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         containerRef.current.appendChild(hostElement);
 
         const currentTheme = useThemeStore.getState().getActiveTheme();
-        const currentOpacity = useUserSettingsStore.getState().settings.window.opacity;
-        const terminalTheme = buildTerminalTheme(currentTheme, currentOpacity);
+        const terminalTheme = buildTerminalTheme(currentTheme);
         terminal = new Terminal({ ...TERMINAL_OPTIONS, theme: terminalTheme });
         fitAddon = new FitAddon();
         const webLinksAddon = new WebLinksAddon((_event, uri) => {
@@ -455,14 +453,13 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Apply theme changes reactively (including opacity)
+  // Apply theme changes reactively
   useEffect(() => {
     return useThemeStore.subscribe((state) => {
       const terminal = terminalRef.current;
       if (!terminal) return;
       const theme = state.getActiveTheme();
-      const opacity = useUserSettingsStore.getState().settings.window.opacity;
-      terminal.options.theme = buildTerminalTheme(theme, opacity);
+      terminal.options.theme = buildTerminalTheme(theme);
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -473,17 +470,6 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     });
     return () => { paneFocusRegistry.unregister(tabId); };
   }, [tabId]);
-
-  // Apply background opacity changes to terminal
-  useEffect(() => {
-    return useUserSettingsStore.subscribe((state) => {
-      const terminal = terminalRef.current;
-      if (!terminal) return;
-      const theme = useThemeStore.getState().getActiveTheme();
-      const opacity = state.settings.window.opacity;
-      terminal.options.theme = buildTerminalTheme(theme, opacity);
-    });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Re-fit and focus when terminal becomes visible again
   useEffect(() => {

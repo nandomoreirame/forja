@@ -33,7 +33,7 @@ export interface UserSettings {
   app: FontSettings;
   editor: FontSettings;
   terminal: TerminalSettings;
-  window: { zoomLevel: number; opacity: number };
+  window: { zoomLevel: number };
   sessions: Record<string, { args?: string[]; env?: Record<string, string> }>;
   theme: ThemeSettings;
   performance: PerformanceSettings;
@@ -57,7 +57,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     fontSize: 14,
     persistSessions: true,
   },
-  window: { zoomLevel: 0, opacity: 1.0 },
+  window: { zoomLevel: 0 },
   sessions: {
     claude: { args: ["--verbose", "--dangerously-skip-permissions"] },
     gemini: { args: ["--yolo"] },
@@ -148,7 +148,6 @@ export function validateSettings(settings: UserSettings): UserSettings {
     window: {
       ...settings.window,
       zoomLevel: clamp(settings.window.zoomLevel, -5, 5),
-      opacity: settings.window.opacity >= 1 ? 1 : clamp(settings.window.opacity, 0.05, 0.95),
     },
   };
 }

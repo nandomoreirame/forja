@@ -4,8 +4,7 @@ import { invoke } from "@/lib/ipc";
 import { usePluginsStore } from "@/stores/plugins";
 import { useThemeStore } from "@/stores/theme";
 import { useProjectsStore } from "@/stores/projects";
-import { buildPluginThemeCSS, buildPluginThemePayload, buildPluginOpacityCSS } from "@/lib/plugin-theme";
-import { useUserSettingsStore } from "@/stores/user-settings";
+import { buildPluginThemeCSS, buildPluginThemePayload } from "@/lib/plugin-theme";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import type { PluginPermission, PluginPermissionGrant } from "@/lib/plugin-types";
@@ -68,20 +67,6 @@ export function PluginHost({ pluginName, nodeId }: PluginHostProps) {
     const theme = useThemeStore.getState().getActiveTheme();
     const css = buildPluginThemeCSS(theme);
     const js = `(function(){let s=document.getElementById('forja-theme');if(!s){s=document.createElement('style');s.id='forja-theme';document.head.appendChild(s);}s.textContent='${css}';})()`;
-    wv.executeJavaScript(js).catch(() => {});
-  }, []);
-
-  // Inject opacity CSS into the webview (background-only transparency)
-  const injectOpacityCSS = useCallback(() => {
-    const wv = webviewRef.current as unknown as {
-      executeJavaScript: (js: string) => Promise<void>;
-    } | null;
-    if (!wv?.executeJavaScript) return;
-
-    const theme = useThemeStore.getState().getActiveTheme();
-    const opacity = useUserSettingsStore.getState().settings.window.opacity;
-    const css = buildPluginOpacityCSS(theme, opacity);
-    const js = `(function(){let s=document.getElementById('forja-opacity');if(!s){s=document.createElement('style');s.id='forja-opacity';document.head.appendChild(s);}s.textContent='${css}';})()`;
     wv.executeJavaScript(js).catch(() => {});
   }, []);
 
@@ -250,7 +235,6 @@ export function PluginHost({ pluginName, nodeId }: PluginHostProps) {
     const onDomReady = () => {
       setStatus("ready");
       injectThemeCSS();
-      injectOpacityCSS();
 
       // Send initial project state to the webview
       const typedWv = wv as unknown as {
@@ -301,29 +285,16 @@ export function PluginHost({ pluginName, nodeId }: PluginHostProps) {
       wv.removeEventListener("crashed", onCrash);
       wv.removeEventListener("ipc-message", handleIpcMessage);
     };
-  }, [handleIpcMessage, injectThemeCSS, injectOpacityCSS, preloadPath]);
+  }, [handleIpcMessage, injectThemeCSS, preloadPath]);
 
   // Subscribe to theme store changes and forward to webview
   useEffect(() => {
     const unsub = useThemeStore.subscribe(() => {
       injectThemeCSS();
-      injectOpacityCSS();
       sendThemeChangedEvent();
     });
     return unsub;
-  }, [injectThemeCSS, injectOpacityCSS, sendThemeChangedEvent]);
-
-  // Subscribe to opacity setting changes and update webview
-  useEffect(() => {
-    let prevOpacity = useUserSettingsStore.getState().settings.window.opacity;
-    const unsub = useUserSettingsStore.subscribe((state) => {
-      const currentOpacity = state.settings.window.opacity;
-      if (currentOpacity === prevOpacity) return;
-      prevOpacity = currentOpacity;
-      injectOpacityCSS();
-    });
-    return unsub;
-  }, [injectOpacityCSS]);
+  }, [injectThemeCSS, sendThemeChangedEvent]);
 
   // Subscribe to project store changes and forward to webview
   useEffect(() => {
