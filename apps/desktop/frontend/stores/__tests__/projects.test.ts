@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { useProjectsStore, saveCurrentProjectToDisk, loadProjectFromDisk } from "../projects";
 import { useWorkspaceStore } from "../workspace";
 
@@ -936,6 +936,69 @@ describe("useProjectsStore", () => {
     });
   });
 
+  describe("switchToProject resets tiling layout to prevent cross-project contamination", () => {
+    afterEach(async () => {
+      // Clean up tiling layout state to avoid leakage to other tests
+      const { useTilingLayoutStore } = await import("@/stores/tiling-layout");
+      useTilingLayoutStore.getState().resetToDefault();
+    });
+
+    it("resets tiling layout before loading new project state", async () => {
+      const { useTilingLayoutStore } = await import("@/stores/tiling-layout");
+      const resetSpy = vi.spyOn(useTilingLayoutStore.getState(), "resetToDefault");
+
+      vi.mocked(invoke).mockResolvedValue(null); // no saved disk state
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      expect(resetSpy).toHaveBeenCalled();
+      resetSpy.mockRestore();
+    });
+
+    it("prevents outgoing project layout from bleeding into new project without saved state", async () => {
+      const { useTilingLayoutStore } = await import("@/stores/tiling-layout");
+
+      // Simulate outgoing project has terminal blocks in the layout
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", tabId: "stale-tab" },
+        undefined,
+        "stale-tab",
+      );
+      expect(useTilingLayoutStore.getState().hasBlock("stale-tab")).toBe(true);
+
+      vi.mocked(invoke).mockResolvedValue(null); // no saved disk state for new project
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      // The stale block from project-a must NOT survive the switch
+      expect(useTilingLayoutStore.getState().hasBlock("stale-tab")).toBe(false);
+    });
+  });
+
   describe("removeProject preserves other projects' state", () => {
     it("sets isSwitchingProject during removal of active project", () => {
       vi.mocked(invoke).mockResolvedValue(undefined);
@@ -1039,6 +1102,45 @@ describe("useProjectsStore", () => {
 
       await useProjectsStore.getState().switchToProject("/project-x").catch(() => {});
 
+      expect(useProjectsStore.getState().isSwitchingProject).toBe(false);
+    });
+
+    it("concurrent switch is rejected when already switching", async () => {
+      let resolveSwitch: () => void;
+      const switchPromise = new Promise<void>((resolve) => {
+        resolveSwitch = resolve;
+      });
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockImplementation(() => switchPromise),
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+          { path: "/project-c", name: "c", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      // Start first switch (will block on openProjectPath)
+      const firstSwitch = useProjectsStore.getState().switchToProject("/project-b");
+      // Allow microtask to progress so that activeProjectPath is set to /project-b
+      await new Promise((r) => setTimeout(r, 0));
+
+      // The flag should be true while the first switch is in flight
+      expect(useProjectsStore.getState().isSwitchingProject).toBe(true);
+
+      // Try concurrent switch to a THIRD project while first is still in progress
+      await useProjectsStore.getState().switchToProject("/project-c");
+
+      // The second switch must have been rejected; active path must NOT be /project-c
+      expect(useProjectsStore.getState().activeProjectPath).not.toBe("/project-c");
+
+      // Unblock and complete the first switch
+      resolveSwitch!();
+      await firstSwitch;
       expect(useProjectsStore.getState().isSwitchingProject).toBe(false);
     });
   });

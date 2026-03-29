@@ -36,7 +36,7 @@ describe("DEFAULT_SETTINGS", () => {
         custom: [],
       },
       performance: { mode: "auto" },
-      ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true },
+      ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true, tabSetEnableMaximize: false },
       notifications: {
         discordWebhookUrl: "",
         discordEnabled: true,
@@ -138,7 +138,7 @@ describe("ui settings", () => {
 
   it("preserves explicit ui settings", () => {
     const result = mergeWithDefaults({
-      ui: { activePaneHighlight: false, hoverToFocus: false, shortcutHints: false },
+      ui: { activePaneHighlight: false, hoverToFocus: false, shortcutHints: false, tabSetEnableMaximize: false },
     } as Partial<UserSettings>);
     expect(result.ui.activePaneHighlight).toBe(false);
     expect(result.ui.hoverToFocus).toBe(false);
@@ -158,9 +158,21 @@ describe("ui settings", () => {
     expect(result.ui.shortcutHints).toBe(true);
   });
 
+  it("defaults ui.tabSetEnableMaximize to false", () => {
+    const result = mergeWithDefaults({});
+    expect(result.ui.tabSetEnableMaximize).toBe(false);
+  });
+
+  it("preserves explicit ui.tabSetEnableMaximize true", () => {
+    const result = mergeWithDefaults({
+      ui: { tabSetEnableMaximize: true },
+    } as Partial<UserSettings>);
+    expect(result.ui.tabSetEnableMaximize).toBe(true);
+  });
+
   it("defaults ui when given undefined input", () => {
     const result = mergeWithDefaults(undefined as unknown as Partial<UserSettings>);
-    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true, shortcutHints: true });
+    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true, shortcutHints: true, tabSetEnableMaximize: false });
   });
 });
 
