@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "desktop-automation": {
+      "command": "npx",
+      "args": ["-y", "mcp-desktop-automation"]
+    }
+  }
+}

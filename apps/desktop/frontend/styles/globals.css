@@ -1,0 +1,572 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Geist Sans", "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "Cascadia Code", "Menlo",
+    monospace;
+  --editor-font-size: 13px;
+
+  /* App font-size scale (defaults; JS overrides from user settings) */
+  --app-fs: 14px;
+  --app-fs-sm: 12px;
+  --app-fs-xs: 10px;
+  --app-fs-2xs: 8px;
+  --app-fs-lg: 16px;
+  --app-fs-xl: 20px;
+
+  /* Catppuccin Mocha palette */
+  --color-ctp-crust: #11111b;
+  --color-ctp-mantle: #181825;
+  --color-ctp-base: #1e1e2e;
+  --color-ctp-surface0: #313244;
+  --color-ctp-surface1: #45475a;
+  --color-ctp-surface2: #585b70;
+  --color-ctp-overlay0: #6c7086;
+  --color-ctp-overlay1: #7f849c;
+  --color-ctp-overlay2: #9399b2;
+  --color-ctp-subtext0: #a6adc8;
+  --color-ctp-subtext1: #bac2de;
+  --color-ctp-text: #cdd6f4;
+  --color-ctp-rosewater: #f5e0dc;
+  --color-ctp-flamingo: #f2cdcd;
+  --color-ctp-pink: #f5c2e7;
+  --color-ctp-mauve: #cba6f7;
+  --color-ctp-red: #f38ba8;
+  --color-ctp-maroon: #eba0ac;
+  --color-ctp-peach: #fab387;
+  --color-ctp-yellow: #f9e2af;
+  --color-ctp-green: #a6e3a1;
+  --color-ctp-teal: #94e2d5;
+  --color-ctp-sky: #89dceb;
+  --color-ctp-sapphire: #74c7ec;
+  --color-ctp-blue: #89b4fa;
+  --color-ctp-lavender: #b4befe;
+
+  /* Brand (mapped to Catppuccin Mauve) */
+  --color-brand: #cba6f7;
+  --color-brand-hover: #b4befe;
+  --color-brand-subtle: #251e3a;
+  --color-brand-border: #585b70;
+
+  /* Semantic colors (Catppuccin Mocha) */
+  --color-success: #a6e3a1;
+  --color-success-bg: #1a2a1e;
+  --color-success-border: #2d4a35;
+
+  --color-warning: #f9e2af;
+  --color-warning-bg: #2a2520;
+  --color-warning-border: #4a3d25;
+
+  --color-error: #f38ba8;
+  --color-error-bg: #2a1520;
+  --color-error-border: #4a2535;
+
+  --color-info: #89b4fa;
+  --color-info-bg: #1a2030;
+  --color-info-border: #254065;
+
+  /* shadcn/ui semantic colors (needed for Tailwind v4 utility classes) */
+  --color-background: #1e1e2e;
+  --color-foreground: #cdd6f4;
+  --color-card: #313244;
+  --color-card-foreground: #cdd6f4;
+  --color-popover: #181825;
+  --color-popover-foreground: #cdd6f4;
+  --color-primary: #cba6f7;
+  --color-primary-foreground: #1e1e2e;
+  --color-secondary: #313244;
+  --color-secondary-foreground: #cdd6f4;
+  --color-muted: #313244;
+  --color-muted-foreground: #7f849c;
+  --color-accent: #313244;
+  --color-accent-foreground: #cdd6f4;
+  --color-destructive: #f38ba8;
+  --color-destructive-foreground: #1e1e2e;
+  --color-border: #313244;
+  --color-input: #313244;
+  --color-ring: #cba6f7;
+  --radius: 0.5rem;
+
+  /* Overlay backgrounds (always opaque, used by dialogs/tooltips/command palette) */
+  --color-overlay-base: #1e1e2e;
+  --color-overlay-mantle: #181825;
+
+  /* Selection colors (updated by JS theme system) */
+  --selection-bg: #585b70;
+  --selection-fg: #cdd6f4;
+}
+
+/* App font-size utilities (scale with user setting) */
+@utility text-app {
+  font-size: var(--app-fs);
+  line-height: 1.4;
+}
+@utility text-app-sm {
+  font-size: var(--app-fs-sm);
+  line-height: 1.4;
+}
+@utility text-app-xs {
+  font-size: var(--app-fs-xs);
+  line-height: 1.3;
+}
+@utility text-app-2xs {
+  font-size: var(--app-fs-2xs);
+  line-height: 1.2;
+}
+@utility text-app-lg {
+  font-size: var(--app-fs-lg);
+  line-height: 1.3;
+}
+@utility text-app-xl {
+  font-size: var(--app-fs-xl);
+  line-height: 1.2;
+}
+
+:root {
+  /* Background Stack (Catppuccin Mocha) */
+  --bg-base: #1e1e2e;
+  --bg-elevated: #181825;
+  --bg-card: #313244;
+  --bg-hover: #45475a;
+  --bg-active: #585b70;
+
+  /* Foreground (Catppuccin Mocha) */
+  --fg-primary: #cdd6f4;
+  --fg-secondary: #a6adc8;
+  --fg-muted: #6c7086;
+
+  /* Borders (Catppuccin Mocha) */
+  --border-default: #313244;
+  --border-subtle: #181825;
+  --border-strong: #45475a;
+
+  /* shadcn/ui CSS variables */
+  --background: var(--bg-base);
+  --foreground: var(--fg-primary);
+  --card: var(--bg-card);
+  --card-foreground: var(--fg-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--fg-primary);
+  --primary: var(--color-brand);
+  --primary-foreground: #1e1e2e;
+  --secondary: var(--bg-card);
+  --secondary-foreground: var(--fg-primary);
+  --muted: var(--bg-card);
+  --muted-foreground: var(--fg-secondary);
+  --accent: var(--bg-card);
+  --accent-foreground: var(--fg-primary);
+  --destructive: var(--color-error);
+  --destructive-foreground: #1e1e2e;
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --ring: var(--color-brand);
+  --radius: 0.5rem;
+}
+
+html {
+  color-scheme: dark;
+}
+
+/* Text selection (theme-aware, updates on theme switch) */
+::selection {
+  background: var(--selection-bg, var(--bg-active));
+  color: var(--selection-fg, var(--fg-primary));
+}
+
+::-moz-selection {
+  background: var(--selection-bg, var(--bg-active));
+  color: var(--selection-fg, var(--fg-primary));
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--fg-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  user-select: none;
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+}
+
+/* Global custom scrollbar (Catppuccin Mocha) */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Markdown prose styles for FilePreviewPane (Catppuccin Mocha) */
+.markdown.prose {
+  font-family: var(--font-sans);
+  color: var(--color-ctp-text);
+}
+
+.markdown.prose h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-ctp-text);
+  border-bottom: 1px solid var(--color-ctp-surface0);
+  padding-bottom: 0.5rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.markdown.prose h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-ctp-text);
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown.prose h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-ctp-text);
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown.prose p {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--color-ctp-subtext1);
+  margin-bottom: 0.75rem;
+}
+
+.markdown.prose ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown.prose ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.markdown.prose li {
+  color: var(--color-ctp-subtext1);
+  margin-bottom: 0.25rem;
+}
+
+.markdown.prose code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: var(--app-fs-sm);
+  background: var(--color-ctp-surface0);
+  color: var(--color-brand);
+  padding: 0.125rem 0.375rem;
+  border-radius: 4px;
+}
+
+.markdown.prose pre {
+  background: var(--color-ctp-crust);
+  border: 1px solid var(--color-ctp-surface0);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.markdown.prose pre code {
+  font-family: var(--font-mono);
+  font-size: var(--app-fs-sm);
+  background: transparent;
+  padding: 0;
+}
+
+.markdown.prose blockquote {
+  border-left: 3px solid var(--color-brand);
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: var(--color-ctp-overlay0);
+  font-style: italic;
+}
+
+.markdown.prose a {
+  color: var(--color-ctp-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.markdown.prose a:hover {
+  color: var(--color-ctp-lavender);
+}
+
+.markdown.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.markdown.prose th {
+  background: var(--color-ctp-surface0);
+  color: var(--color-ctp-text);
+  font-weight: 600;
+  text-align: left;
+}
+
+.markdown.prose td,
+.markdown.prose th {
+  border: 1px solid var(--color-ctp-surface0);
+  padding: 0.5rem 0.75rem;
+}
+
+.markdown.prose tr:nth-child(even) td {
+  background: var(--color-ctp-mantle);
+}
+
+.markdown.prose hr {
+  border: none;
+  border-top: 1px solid var(--color-ctp-surface0);
+  margin: 1.5rem 0;
+}
+
+.markdown.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+/* Chat markdown styles (compact variant for chat messages) */
+.chat-markdown {
+  font-family: var(--font-sans);
+  color: var(--color-ctp-subtext1);
+  font-size: var(--app-fs-sm);
+  line-height: 1.6;
+  user-select: text;
+  cursor: text;
+}
+
+.chat-markdown > *:first-child {
+  margin-top: 0;
+}
+
+.chat-markdown > *:last-child {
+  margin-bottom: 0;
+}
+
+.chat-markdown h1,
+.chat-markdown h2,
+.chat-markdown h3 {
+  color: var(--color-ctp-text);
+  font-weight: 600;
+  margin-top: 0.75rem;
+  margin-bottom: 0.375rem;
+}
+
+.chat-markdown h1 {
+  font-size: 1rem;
+}
+
+.chat-markdown h2 {
+  font-size: 0.9375rem;
+}
+
+.chat-markdown h3 {
+  font-size: 0.875rem;
+}
+
+.chat-markdown p {
+  margin-bottom: 0.5rem;
+}
+
+.chat-markdown ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.chat-markdown ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.chat-markdown li {
+  margin-bottom: 0.125rem;
+}
+
+.chat-markdown code:not(pre code) {
+  font-family: var(--font-mono);
+  font-size: var(--app-fs-xs);
+  background: var(--color-ctp-surface0);
+  color: var(--color-brand);
+  padding: 0.0625rem 0.3125rem;
+  border-radius: 3px;
+}
+
+.chat-markdown pre {
+  background: var(--color-ctp-crust);
+  border: 1px solid var(--color-ctp-surface0);
+  border-radius: 6px;
+  padding: 0.625rem;
+  overflow-x: auto;
+  margin: 0.5rem 0;
+}
+
+.chat-markdown pre code {
+  font-family: var(--font-mono);
+  font-size: var(--app-fs-xs);
+  background: transparent;
+  padding: 0;
+  color: var(--color-ctp-text);
+}
+
+.chat-markdown blockquote {
+  border-left: 2px solid var(--color-brand);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  color: var(--color-ctp-overlay1);
+  font-style: italic;
+}
+
+.chat-markdown a {
+  color: var(--color-ctp-blue);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.chat-markdown a:hover {
+  color: var(--color-ctp-lavender);
+}
+
+.chat-markdown strong {
+  color: var(--color-ctp-text);
+  font-weight: 600;
+}
+
+.chat-markdown hr {
+  border: none;
+  border-top: 1px solid var(--color-ctp-surface0);
+  margin: 0.75rem 0;
+}
+
+.chat-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: var(--app-fs-xs);
+}
+
+.chat-markdown th {
+  background: var(--color-ctp-surface0);
+  color: var(--color-ctp-text);
+  font-weight: 600;
+  text-align: left;
+}
+
+.chat-markdown td,
+.chat-markdown th {
+  border: 1px solid var(--color-ctp-surface0);
+  padding: 0.25rem 0.5rem;
+}
+
+/* Remove focus outlines/shadows on all interactive elements */
+button,
+[role="button"],
+a,
+input,
+textarea,
+select,
+[tabindex] {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+button:focus,
+button:focus-visible,
+button:active,
+[role="button"]:focus,
+[role="button"]:focus-visible,
+[role="button"]:active,
+a:focus,
+a:focus-visible,
+a:active,
+input:focus,
+input:focus-visible,
+input:active,
+textarea:focus,
+textarea:focus-visible,
+textarea:active,
+select:focus,
+select:focus-visible,
+select:active,
+[tabindex]:focus,
+[tabindex]:focus-visible,
+[tabindex]:active {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Shiki code block overrides */
+.code-viewer pre {
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+}
+
+.code-viewer code {
+  font-family: var(--font-mono);
+  font-size: var(--editor-font-size);
+  line-height: 1.5;
+  counter-reset: line;
+}
+
+/* Line numbers */
+.code-viewer code > .line {
+  counter-increment: line;
+}
+
+.code-viewer code > .line::before {
+  content: counter(line);
+  display: inline-block;
+  width: 4ch;
+  margin-right: 1.5ch;
+  text-align: right;
+  color: var(--color-ctp-overlay0);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Monaco preview (read-only) mode: disable all interaction except scroll */
+.monaco-preview-readonly .monaco-editor .view-lines {
+  pointer-events: none;
+  user-select: none;
+  cursor: default;
+}
+.monaco-preview-readonly .monaco-editor .cursor {
+  display: none !important;
+}
+.monaco-preview-readonly .monaco-editor .selected-text {
+  display: none !important;
+}
+.monaco-preview-readonly .monaco-editor .view-overlays .current-line {
+  display: none !important;
+}

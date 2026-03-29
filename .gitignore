@@ -5,6 +5,10 @@ node_modules/
 dist/
 dist-electron/
 *.tsbuildinfo
+.next/
+.source/
+out/
+.expo/
 
 # Environment
 .env
@@ -22,10 +26,10 @@ Thumbs.db
 *.swo
 
 # Release build files
-/release
+release/
 /.superset
 
 # Firebase
-site/.firebase/
+.firebase/
 .forja/
 .understand-anything/

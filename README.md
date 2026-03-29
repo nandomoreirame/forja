@@ -2,6 +2,9 @@
 
 A dedicated GUI client for Vibe Coders (and other AI coding CLIs), built with Electron + React. Not just another terminal: it's the forge where code is shaped with artificial intelligence.
 
+> **Warning**
+> Forja is under active development (beta stage). Expect incomplete features and tools, potential instability, crashes, or unexpected behavior, and breaking changes between updates without prior notice. Your settings and session data are stored locally and may need to be reset after major updates. We recommend keeping backups of important project configurations. Please [report issues](https://github.com/nandomoreirame/forja/issues) to help us improve.
+
 ## Screenshot
 
 ![Forja - Workspaces with Projects](screenshots/0.workspaces-with-projects.png)

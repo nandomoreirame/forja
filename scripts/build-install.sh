@@ -4,11 +4,12 @@ set -euo pipefail
 # ─── Config ──────────────────────────────────────────────────────────────────
 APP_NAME="Forja"
 APP_ID="dev.forja.terminal"
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-ICON_SOURCE="$REPO_ROOT/assets/icons/icon.png"
-RELEASE_DIR="$REPO_ROOT/release"
+MONOREPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+APP_ROOT="$MONOREPO_ROOT/apps/desktop"
+ICON_SOURCE="$APP_ROOT/assets/icons/icon.png"
+RELEASE_DIR="$APP_ROOT/release"
 
-VERSION=$(node -p "require('${REPO_ROOT}/package.json').version")
+VERSION=$(node -p "require('${APP_ROOT}/package.json').version")
 
 # ─── Colors ──────────────────────────────────────────────────────────────────
 RED='\033[0;31m'
@@ -126,7 +127,7 @@ kill_running_forja() {
 # ─── Find artifact ───────────────────────────────────────────────────────────
 find_artifact() {
   local found
-  found=$(find "$RELEASE_DIR" -maxdepth 1 -name "$ARTIFACT_PATTERN" -newer "$REPO_ROOT/package.json" 2>/dev/null | head -1)
+  found=$(find "$RELEASE_DIR" -maxdepth 1 -name "$ARTIFACT_PATTERN" -newer "$APP_ROOT/package.json" 2>/dev/null | head -1)
 
   if [[ -z "$found" ]]; then
     found=$(find "$RELEASE_DIR" -maxdepth 1 -name "$ARTIFACT_PATTERN" 2>/dev/null | head -1)
@@ -391,16 +392,16 @@ if [[ "$SKIP_BUILD" == true ]]; then
   info "Skipping build (--skip-build)"
 else
   info "Installing dependencies..."
-  (cd "$REPO_ROOT" && pnpm install --frozen-lockfile)
+  (cd "$APP_ROOT" && pnpm install --frozen-lockfile)
   ok "Dependencies installed"
 
   info "Building Vite + Electron TypeScript..."
-  (cd "$REPO_ROOT" && pnpm build)
+  (cd "$APP_ROOT" && pnpm build)
   ok "Build completed"
 
   info "Packaging for ${PLATFORM} (${ARTIFACT_EXT})..."
   # shellcheck disable=SC2086
-  (cd "$REPO_ROOT" && pnpm exec electron-builder $BUILD_TARGET)
+  (cd "$APP_ROOT" && pnpm exec electron-builder $BUILD_TARGET)
   ok "Package created"
 fi
 

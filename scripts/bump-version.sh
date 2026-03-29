@@ -14,13 +14,14 @@ if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   exit 1
 fi
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+MONOREPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+APP_ROOT="$MONOREPO_ROOT/apps/desktop"
 
 echo "Bumping version to $VERSION..."
 
 # package.json
-sed -i'' -e "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$REPO_ROOT/package.json"
-echo "  Updated package.json"
+sed -i'' -e "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$APP_ROOT/package.json"
+echo "  Updated apps/desktop/package.json"
 
 echo ""
 echo "Version bumped to $VERSION."
