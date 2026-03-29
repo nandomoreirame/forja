@@ -45,6 +45,7 @@ import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closePtyAndT
 import { isUiSaveSuspended, suspendUiSaves, resumeUiSaves } from "./ui-save-gate.js";
 import { attachWebviewKeyboardBridge } from "./webview-keyboard-bridge.js";
 import { getCliSessions, getActiveSessionModel } from "./cli-sessions.js";
+import { getSessionTelemetry } from "./session-telemetry.js";
 
 // Type-only imports for signatures
 import type { UiPreferences, ProjectUiState, WorkspaceProject } from "./config.js";
@@ -768,6 +769,10 @@ ipcMain.handle("get_session_model", (_event, args: { cliId: string; projectPath:
   return getActiveSessionModel(args.cliId, args.projectPath, args.sessionId);
 });
 
+ipcMain.handle("get_session_telemetry", (_event, args: { cliId: string; projectPath: string; sessionId: string }) => {
+  return getSessionTelemetry(args.cliId, args.projectPath, args.sessionId);
+});
+
 // Last active project path (workspace-scoped)
 ipcMain.handle("set_last_active_project_path", async (_event, args: { workspaceId: string; projectPath: string }) => {
   const config = await getConfig();
@@ -979,22 +984,59 @@ ipcMain.handle("pty:reattach-tmux", async (event, args: {
   });
 });
 
+ipcMain.handle("pty:get-buffer-length", (_event, args: { tabId: string }) => {
+  const buffer = getSessionBuffer(args.tabId);
+  return buffer?.length ?? 0;
+});
+
 ipcMain.handle(
   "pty:notify-session-finished",
   async (
     _event,
-    args: { projectPath: string; sessionType: string; activeProjectPath: string | null; tabId?: string },
+    args: {
+      projectPath: string;
+      sessionType: string;
+      activeProjectPath: string | null;
+      tabId?: string;
+      bufferSnapshotLength?: number;
+    },
   ) => {
-    const { showSessionFinishedNotification, extractNotificationSummary } = await import("./pty-notifications.js");
+    const { showSessionFinishedNotification, extractNotificationSummary, maybeNotifyDiscord } =
+      await import("./pty-notifications.js");
+    const { cleanPtyOutput } = await import("./discord-notifications.js");
+
+    // Extract delta content (only new output from this response)
+    let deltaContent: string | undefined;
     let summary: string | undefined;
     if (args.tabId) {
-      const buffer = getSessionBuffer(args.tabId);
-      if (buffer) {
-        summary = extractNotificationSummary(buffer);
+      const fullBuffer = getSessionBuffer(args.tabId);
+      if (fullBuffer) {
+        const offset = args.bufferSnapshotLength ?? 0;
+        deltaContent = offset > 0 ? fullBuffer.slice(offset) : fullBuffer;
+        summary = extractNotificationSummary(deltaContent);
       }
     }
+
+    // Gate: only notify if the delta has meaningful content.
+    // Minimum 20 chars prevents noise from /clear, cursor blinks,
+    // status bar redraws, and other non-response PTY data.
+    if (!summary || summary.trim().length < 20) return;
+
+    // OS notification (may be suppressed if focused on same project)
     const mainWindow = BrowserWindow.getAllWindows()[0] ?? null;
     showSessionFinishedNotification({ ...args, summary }, mainWindow);
+
+    // Discord webhook (ALWAYS sends, uses cleaned delta for rich summary)
+    if (deltaContent) {
+      const cleanedDelta = cleanPtyOutput(deltaContent);
+      if (cleanedDelta.trim()) {
+        maybeNotifyDiscord({
+          projectPath: args.projectPath,
+          sessionType: args.sessionType,
+          summary: cleanedDelta,
+        }).catch((err: unknown) => console.warn("[main] Discord notify failed:", err));
+      }
+    }
   },
 );
 

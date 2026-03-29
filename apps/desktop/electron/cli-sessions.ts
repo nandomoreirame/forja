@@ -13,11 +13,11 @@ export interface CliSessionEntry {
 
 /**
  * Encodes a project path the same way Claude Code does:
- * replace all "/" with "-".
- * e.g. "/home/user/project" → "-home-user-project"
+ * replace all non-alphanumeric characters (except hyphens) with "-".
+ * e.g. "/home/user/project.app" → "-home-user-project-app"
  */
-function encodeProjectPath(projectPath: string): string {
-  return projectPath.replace(/\//g, "-");
+export function encodeProjectPath(projectPath: string): string {
+  return projectPath.replace(/[^a-zA-Z0-9-]/g, "-");
 }
 
 /**
