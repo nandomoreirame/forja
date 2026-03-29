@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { EventEmitter } from "events";
-import { buildCommand, main } from "../forja-cli.js";
+import { buildCommand, main } from "../../../../scripts/forja-cli.js";
 
 interface MockSocket extends EventEmitter {
   write: ReturnType<typeof vi.fn>;

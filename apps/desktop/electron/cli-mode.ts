@@ -2,7 +2,7 @@
  * CLI mode handler for the Forja binary.
  *
  * When `forja <command>` is invoked from a terminal, this module handles the
- * command via the Unix socket (same as scripts/forja-cli.js) and exits without
+ * command via the Unix socket (same as the root scripts/forja-cli.js) and exits without
  * launching the Electron GUI.
  *
  * Returns `true` if CLI mode was activated (caller should skip GUI startup).

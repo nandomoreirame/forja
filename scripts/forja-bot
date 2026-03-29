@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Load .env from the monorepo root if it exists
+ENV_FILE="$SCRIPT_DIR/../.env"
+if [ -f "$ENV_FILE" ]; then
+  # Export only non-comment, non-empty lines
+  set -o allexport
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +o allexport
+fi
+
+if [ -z "${DISCORD_BOT_TOKEN:-}" ]; then
+  echo "Error: DISCORD_BOT_TOKEN not set"
+  echo ""
+  echo "Options:"
+  echo "  1. Create $SCRIPT_DIR/../.env with:"
+  echo "       DISCORD_BOT_TOKEN=your_token_here"
+  echo "  2. Export the variable before running:"
+  echo "       export DISCORD_BOT_TOKEN=your_token_here"
+  exit 1
+fi
+
+exec node "$SCRIPT_DIR/forja-discord-bot.js" "$@"
