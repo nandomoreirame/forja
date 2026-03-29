@@ -240,7 +240,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       getPrefsArgs,
     );
     if (uiPrefs?.layoutJson) {
-      const layoutJson = parseLayoutJson(uiPrefs.layoutJson);
+      const { stripFilePreviewBlocksFromJson } = await import("./tiling-layout");
+      const layoutJson = stripFilePreviewBlocksFromJson(parseLayoutJson(uiPrefs.layoutJson));
       useTilingLayoutStore.getState().loadFromJson(layoutJson);
     } else {
       useTilingLayoutStore.getState().resetToDefault();

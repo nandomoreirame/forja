@@ -112,6 +112,9 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
     const { parseLayoutJson } = await import("@/lib/layout-migration");
     let layout = parseLayoutJson(savedState.layoutJson);
 
+    const { stripFilePreviewBlocksFromJson } = await import("./tiling-layout");
+    layout = stripFilePreviewBlocksFromJson(layout);
+
     const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
     const hasSavedTabs = savedState.tabs && savedState.tabs.length > 0;
     if (projectTabs.length === 0 && !hasSavedTabs) {

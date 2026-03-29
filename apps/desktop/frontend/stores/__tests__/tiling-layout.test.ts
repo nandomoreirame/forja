@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { Model, Actions, DockLocation, Rect } from "flexlayout-react";
-import { useTilingLayoutStore } from "../tiling-layout";
+import { Model, Actions, DockLocation, Rect, type IJsonModel } from "flexlayout-react";
+import { useTilingLayoutStore, stripFilePreviewBlocksFromJson } from "../tiling-layout";
 import { useTerminalTabsStore } from "../terminal-tabs";
 import { DEFAULT_LAYOUT, TABSET_IDS } from "@/lib/default-layout";
 import type { BlockConfig } from "@/lib/block-registry";
@@ -2544,6 +2544,94 @@ describe("tiling-layout store", () => {
       useTilingLayoutStore.getState().closeTabset(TABSET_IDS.main);
 
       expect(useTerminalTabsStore.getState().tabs).toHaveLength(0);
+    });
+  });
+
+  describe("stripFilePreviewBlocksFromJson", () => {
+    it("removes file-preview tab blocks from a layout JSON", () => {
+      const json: IJsonModel = {
+        global: {},
+        layout: {
+          type: "row",
+          children: [
+            {
+              type: "tabset",
+              id: "tabset-main",
+              children: [
+                { type: "tab", id: "tab-terminal", component: "terminal" },
+                { type: "tab", id: "block-file-preview", component: "file-preview" },
+              ],
+            },
+          ],
+        },
+      };
+
+      const result = stripFilePreviewBlocksFromJson(json);
+
+      type LayoutNodeLike = { id: string; children?: LayoutNodeLike[] };
+      const layout = result.layout as unknown as { children: LayoutNodeLike[] };
+      const tabsetChildren = layout.children[0].children;
+      expect(tabsetChildren).toHaveLength(1);
+      expect(tabsetChildren?.[0].id).toBe("tab-terminal");
+    });
+
+    it("removes the entire tabset when it only contains file-preview blocks", () => {
+      const json: IJsonModel = {
+        global: {},
+        layout: {
+          type: "row",
+          children: [
+            {
+              type: "tabset",
+              id: "tabset-main",
+              children: [
+                { type: "tab", id: "tab-terminal", component: "terminal" },
+              ],
+            },
+            {
+              type: "tabset",
+              id: "tabset-preview",
+              children: [
+                { type: "tab", id: "block-file-preview", component: "file-preview" },
+              ],
+            },
+          ],
+        },
+      };
+
+      const result = stripFilePreviewBlocksFromJson(json);
+
+      type LayoutNodeLike = { id: string; children?: LayoutNodeLike[] };
+      const layout = result.layout as unknown as { children: LayoutNodeLike[] };
+      const rowChildren = layout.children;
+      expect(rowChildren).toHaveLength(1);
+      expect(rowChildren[0].id).toBe("tabset-main");
+    });
+
+    it("returns unchanged JSON when there are no file-preview blocks", () => {
+      const json: IJsonModel = {
+        global: {},
+        layout: {
+          type: "row",
+          children: [
+            {
+              type: "tabset",
+              id: "tabset-main",
+              children: [
+                { type: "tab", id: "tab-terminal", component: "terminal" },
+              ],
+            },
+          ],
+        },
+      };
+
+      const result = stripFilePreviewBlocksFromJson(json);
+
+      type LayoutNodeLike = { id: string; children?: LayoutNodeLike[] };
+      const layout = result.layout as unknown as { children: LayoutNodeLike[] };
+      const tabsetChildren = layout.children[0].children;
+      expect(tabsetChildren).toHaveLength(1);
+      expect(tabsetChildren?.[0].id).toBe("tab-terminal");
     });
   });
 });

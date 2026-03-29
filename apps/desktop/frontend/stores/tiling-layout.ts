@@ -348,6 +348,18 @@ function stripEmptyTabsetsFromJson(json: IJsonModel): IJsonModel {
  */
 const PROJECT_SPECIFIC_BLOCK_TYPES = new Set(["terminal", "browser"]);
 
+/**
+ * Represents a node in the FlexLayout JSON model tree.
+ * Used for recursive traversal of `IJsonModel.layout.children`.
+ */
+interface LayoutNode {
+  type: string;
+  id?: string;
+  component?: string;
+  children?: LayoutNode[];
+  [key: string]: unknown;
+}
+
 export function stripProjectBlocksFromJson(json: IJsonModel): IJsonModel {
   function filterChildren(children: any[]): any[] {
     return children
@@ -371,6 +383,63 @@ export function stripProjectBlocksFromJson(json: IJsonModel): IJsonModel {
     layout: {
       ...json.layout,
       children: filterChildren((json.layout as any).children ?? []),
+    },
+  };
+}
+
+/**
+ * Strips file-preview tab blocks from a layout JSON, and removes any
+ * tabsets that only contained file-preview blocks (plus empty rows left
+ * behind). Used when restoring a persisted layout to prevent the
+ * file-preview self-reinforcing restore cycle: restore → auto-load → save
+ * → restore. File-preview state is ephemeral and should not survive across
+ * app restarts or project/workspace switches.
+ */
+export function stripFilePreviewBlocksFromJson(json: IJsonModel): IJsonModel {
+  function isFilePreviewTab(node: LayoutNode): boolean {
+    return node.type === "tab" && node.component === "file-preview";
+  }
+
+  function hadOnlyFilePreviewChildren(originalChildren: LayoutNode[]): boolean {
+    return (
+      originalChildren.length > 0 && originalChildren.every((c) => isFilePreviewTab(c))
+    );
+  }
+
+  function filterChildren(children: LayoutNode[]): LayoutNode[] {
+    return children
+      .filter((child) => {
+        // Remove file-preview tab blocks
+        if (isFilePreviewTab(child)) {
+          return false;
+        }
+        // Remove tabsets that exclusively held file-preview blocks
+        // (check original children before recursion strips them)
+        if (child.type === "tabset" && hadOnlyFilePreviewChildren(child.children ?? [])) {
+          return false;
+        }
+        return true;
+      })
+      .map((child): LayoutNode | null => {
+        if (child.children) {
+          const filtered = filterChildren(child.children);
+          // Remove rows that became empty after stripping
+          if (child.type === "row" && filtered.length === 0) {
+            return null;
+          }
+          return { ...child, children: filtered };
+        }
+        return child;
+      })
+      .filter((child): child is LayoutNode => child !== null);
+  }
+
+  const layoutNode = json.layout as unknown as LayoutNode;
+  return {
+    ...json,
+    layout: {
+      ...json.layout,
+      children: filterChildren(layoutNode.children ?? []),
     },
   };
 }
