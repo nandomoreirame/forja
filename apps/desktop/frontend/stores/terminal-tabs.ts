@@ -139,6 +139,11 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
 
     // Remove the block from the tiling layout
     useTilingLayoutStore.getState().removeBlock(id);
+
+    // Clean up session telemetry for the removed tab
+    import("./session-telemetry").then(({ useSessionTelemetryStore }) => {
+      useSessionTelemetryStore.getState().cleanup(id);
+    }).catch(() => {});
   },
 
   setActiveTab: (id: string) =>

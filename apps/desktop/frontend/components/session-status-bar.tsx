@@ -1,6 +1,7 @@
 import { invoke } from "@/lib/ipc";
 import { CLI_REGISTRY, type SessionType } from "@/lib/cli-registry";
 import { useSessionStateStore } from "@/stores/session-state";
+import { useSessionTelemetryStore } from "@/stores/session-telemetry";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useWsBridgeStore } from "@/stores/ws-bridge";
 import { memo, useEffect, useState } from "react";
@@ -36,6 +37,44 @@ function formatElapsed(createdAt: number | undefined): string | null {
   const minutes = Math.floor((diff % 3600) / 60);
   if (hours > 0) return `${hours}h${minutes > 0 ? `${minutes}m` : ""}`;
   return `${minutes}m`;
+}
+
+function formatTokens(tokens: number): string {
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
+  if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(1)}k`;
+  return `${tokens}`;
+}
+
+/** Semantic color class for context window usage percentage. */
+function contextColor(pct: number): string {
+  if (pct < 50) return "text-ctp-green";
+  if (pct < 70) return "text-ctp-yellow";
+  if (pct < 85) return "text-ctp-peach";
+  return "text-ctp-red";
+}
+
+/** Bar color class (used for the filled portion). */
+function contextBarColor(pct: number): string {
+  if (pct < 50) return "bg-ctp-green";
+  if (pct < 70) return "bg-ctp-yellow";
+  if (pct < 85) return "bg-ctp-peach";
+  return "bg-ctp-red";
+}
+
+/** Block-character progress bar matching Claude Code's statusline aesthetic. */
+function ContextBar({ pct }: { pct: number }) {
+  const clamped = Math.min(100, Math.max(0, pct));
+  const totalBlocks = 10;
+  const filled = Math.round((clamped / 100) * totalBlocks);
+  const empty = totalBlocks - filled;
+  const color = contextColor(clamped);
+
+  return (
+    <span className={`font-mono text-[10px] leading-none ${color}`}>
+      {"█".repeat(filled)}
+      <span className="text-ctp-overlay2">{"░".repeat(empty)}</span>
+    </span>
+  );
 }
 
 function formatStartTime(createdAt: number | undefined): string | null {
@@ -174,6 +213,26 @@ export const SessionStatusBar = memo(function SessionStatusBar({
     return () => { cancelled = true; };
   }, [isAiCli, sessionType, path, tab?.cliSessionId, sessionState, modelName]);
 
+  const telemetry = useSessionTelemetryStore((s) => s.getTelemetry(tabId));
+
+  // Poll telemetry every 5 seconds for AI CLI sessions
+  useEffect(() => {
+    if (!isAiCli || !tab?.cliSessionId) return;
+    const { fetchTelemetry } = useSessionTelemetryStore.getState();
+
+    // Initial fetch
+    fetchTelemetry(tabId, sessionType, path, tab.cliSessionId);
+
+    const interval = setInterval(() => {
+      const currentTab = useTerminalTabsStore.getState().tabs.find((t) => t.id === tabId);
+      if (currentTab?.cliSessionId) {
+        fetchTelemetry(tabId, sessionType, path, currentTab.cliSessionId);
+      }
+    }, 5_000);
+
+    return () => clearInterval(interval);
+  }, [isAiCli, tabId, sessionType, path, tab?.cliSessionId]);
+
   // Derive pane command from tab's customName (set by terminal-session polling)
   const derivedPaneCommand = tab?.tmuxSessionName ? (tab?.customName || null) : null;
 
@@ -229,6 +288,54 @@ export const SessionStatusBar = memo(function SessionStatusBar({
                 <StatusItem tooltip={`Started at ${startTime}`}>
                   {elapsed}
                 </StatusItem>
+              </>
+            )}
+            {telemetry && telemetry.totalInputTokens > 0 && (
+              <>
+                {telemetry.contextPct != null && (
+                  <>
+                    <Separator />
+                    <StatusItem
+                      tooltip={`Context: ${telemetry.contextPct}% used (${formatTokens(telemetry.lastContextTokens)} tokens)`}
+                      className="flex items-center gap-1.5"
+                    >
+                      <span className="text-ctp-overlay1">Ctx</span>
+                      <ContextBar pct={telemetry.contextPct} />
+                      <span className={`tabular-nums ${contextColor(telemetry.contextPct)}`}>
+                        {telemetry.contextPct}%
+                      </span>
+                    </StatusItem>
+                  </>
+                )}
+                <Separator />
+                <StatusItem
+                  tooltip={`Tokens: ${telemetry.totalInputTokens.toLocaleString()} in / ${telemetry.totalOutputTokens.toLocaleString()} out${telemetry.totalCacheReadTokens > 0 ? ` / ${telemetry.totalCacheReadTokens.toLocaleString()} cached` : ""}`}
+                  className="text-ctp-subtext0 tabular-nums"
+                >
+                  {formatTokens(telemetry.totalInputTokens + telemetry.totalCacheWriteTokens + telemetry.totalCacheReadTokens)}
+                </StatusItem>
+                {telemetry.costUsd > 0 && (
+                  <>
+                    <Separator />
+                    <StatusItem
+                      tooltip={`Estimated cost: $${telemetry.costUsd.toFixed(4)}`}
+                      className="text-ctp-subtext0 tabular-nums"
+                    >
+                      ${telemetry.costUsd < 0.01 ? telemetry.costUsd.toFixed(3) : telemetry.costUsd.toFixed(2)}
+                    </StatusItem>
+                  </>
+                )}
+                {telemetry.lastTool && sessionState === "thinking" && (
+                  <>
+                    <Separator />
+                    <StatusItem
+                      tooltip={`Last tool used: ${telemetry.lastTool}`}
+                      className="text-ctp-yellow"
+                    >
+                      {telemetry.lastTool}
+                    </StatusItem>
+                  </>
+                )}
               </>
             )}
           </>
