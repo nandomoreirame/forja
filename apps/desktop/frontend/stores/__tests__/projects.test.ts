@@ -1168,6 +1168,7 @@ describe("useProjectsStore", () => {
       vi.mocked(invoke).mockResolvedValue(undefined);
 
       useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      useProjectsStore.setState({ activeProjectPath: "/my-project" });
 
       // Set up a tab for the project being saved
       const tabsStore = useTerminalTabsStore.getState();
@@ -1193,6 +1194,7 @@ describe("useProjectsStore", () => {
     it("includes rightPanelActiveView in the saved state", async () => {
       vi.mocked(invoke).mockResolvedValue(undefined);
       useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      useProjectsStore.setState({ activeProjectPath: "/my-project" });
 
       await saveCurrentProjectToDisk("/my-project");
 
@@ -1203,6 +1205,68 @@ describe("useProjectsStore", () => {
 
       const state = (saveCalls[0][1] as any).state;
       expect("rightPanelActiveView" in state).toBe(true);
+    });
+
+    it("skips the disk save when activeProjectPath changed during async operations", async () => {
+      // Simulate a race: while resolveMissingSessionIds is in flight, the user
+      // switches to a different project. The guard must abort the save to
+      // prevent contaminating the NEW project's config with the wrong layout.
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+
+      // When invoke is called (by resolveMissingSessionIds internally), switch the
+      // active project so that by the time saveCurrentProjectToDisk checks
+      // activeProjectPath it no longer matches the project being saved.
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_cli_sessions") {
+          // Simulate the project switch happening during the async IPC roundtrip
+          useProjectsStore.setState({ activeProjectPath: "/project-b" });
+          return [];
+        }
+        return undefined;
+      });
+
+      // Set up a tab that will trigger resolveMissingSessionIds (claude session with no cliSessionId)
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
+      const tabsStore = useTerminalTabsStore.getState();
+      const id1 = tabsStore.nextTabId();
+      tabsStore.addTab(id1, "/project-a", "claude");
+      // No cliSessionId — this causes resolveMissingSessionIds to call get_cli_sessions
+
+      // Initial state: active project is the one we're about to save
+      useProjectsStore.setState({ activeProjectPath: "/project-a" });
+
+      await saveCurrentProjectToDisk("/project-a");
+
+      // save_project_ui_state must NOT have been called because activeProjectPath
+      // changed from /project-a to /project-b during the async gap
+      const saveCalls = vi.mocked(invoke).mock.calls.filter(
+        (call) => call[0] === "save_project_ui_state"
+      );
+      expect(saveCalls).toHaveLength(0);
+    });
+
+    it("proceeds with the disk save when activeProjectPath still matches during async operations", async () => {
+      // When the active project does NOT change during async operations, the
+      // save must complete normally.
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+
+      vi.mocked(invoke).mockResolvedValue(undefined);
+
+      useProjectsStore.setState({ activeProjectPath: "/my-project" });
+
+      // A tab that does NOT trigger get_cli_sessions (terminal session has no sessionDirType)
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
+      const tabsStore = useTerminalTabsStore.getState();
+      const id1 = tabsStore.nextTabId();
+      tabsStore.addTab(id1, "/my-project", "terminal");
+
+      await saveCurrentProjectToDisk("/my-project");
+
+      const saveCalls = vi.mocked(invoke).mock.calls.filter(
+        (call) => call[0] === "save_project_ui_state"
+      );
+      expect(saveCalls).toHaveLength(1);
+      expect((saveCalls[0][1] as any).path).toBe("/my-project");
     });
   });
 
@@ -1400,6 +1464,143 @@ describe("useProjectsStore", () => {
       expect(blockTabsetMap["tab-left"]).not.toBe(blockTabsetMap["tab-right"]);
     });
 
+    it("removes orphan terminal blocks that belong to a different project after loading", async () => {
+      vi.restoreAllMocks();
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      const { useTilingLayoutStore } = await import("@/stores/tiling-layout");
+      useTilingLayoutStore.getState().resetToDefault();
+
+      // Simulate a contaminated layout: contains terminal blocks from Project A
+      // (orphan-block-from-a) mixed with a valid block for the project being loaded
+      // (valid-tab). This can happen when a previous save race captured another
+      // project's tiling state.
+      const contaminatedLayout = {
+        global: {
+          tabEnableClose: true,
+          tabSetEnableDeleteWhenEmpty: true,
+        },
+        layout: {
+          type: "row",
+          weight: 100,
+          children: [
+            {
+              type: "tabset",
+              weight: 50,
+              id: "tabset-a",
+              enableDeleteWhenEmpty: false,
+              children: [
+                {
+                  type: "tab",
+                  id: "valid-tab",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "valid-tab", sessionType: "claude" },
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              id: "tabset-b",
+              children: [
+                {
+                  type: "tab",
+                  id: "orphan-from-project-a",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "orphan-from-project-a", sessionType: "claude" },
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") {
+          return {
+            layoutJson: contaminatedLayout,
+            tabs: [
+              // Only valid-tab belongs to this project; orphan-from-project-a has no entry here
+              { id: "valid-tab", sessionType: "claude", cliSessionId: "sess-valid" },
+            ],
+            activeTabIndex: 0,
+          };
+        }
+        return undefined;
+      });
+
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null, counter: 0 });
+
+      await loadProjectFromDisk("/project-b");
+
+      const tilingStore = useTilingLayoutStore.getState();
+
+      // The valid block that matches a project tab must remain
+      expect(tilingStore.hasBlock("valid-tab")).toBe(true);
+
+      // The orphan block from a different project must be removed
+      expect(tilingStore.hasBlock("orphan-from-project-a")).toBe(false);
+    });
+
+    it("does not remove terminal blocks that match loaded project tabs", async () => {
+      vi.restoreAllMocks();
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      const { useTilingLayoutStore } = await import("@/stores/tiling-layout");
+      useTilingLayoutStore.getState().resetToDefault();
+
+      // Layout with a single terminal block that corresponds to the project's tab
+      const cleanLayout = {
+        global: {
+          tabEnableClose: true,
+          tabSetEnableDeleteWhenEmpty: true,
+        },
+        layout: {
+          type: "row",
+          weight: 100,
+          children: [
+            {
+              type: "tabset",
+              weight: 100,
+              id: "tabset-main",
+              enableDeleteWhenEmpty: false,
+              children: [
+                {
+                  type: "tab",
+                  id: "my-tab",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "my-tab", sessionType: "claude" },
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") {
+          return {
+            layoutJson: cleanLayout,
+            tabs: [
+              { id: "my-tab", sessionType: "claude", cliSessionId: "sess-ok" },
+            ],
+            activeTabIndex: 0,
+          };
+        }
+        return undefined;
+      });
+
+      useTerminalTabsStore.setState({ tabs: [], activeTabId: null, counter: 0 });
+
+      await loadProjectFromDisk("/my-clean-project");
+
+      const tilingStore = useTilingLayoutStore.getState();
+
+      // The matching block must survive the orphan cleanup
+      expect(tilingStore.hasBlock("my-tab")).toBe(true);
+    });
+
     it("strips terminal blocks from layout when no saved tabs exist", async () => {
       vi.restoreAllMocks();
       useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
@@ -1454,30 +1655,5 @@ describe("useProjectsStore", () => {
       expect(tilingLayoutStore.getState().hasBlock("orphan-block")).toBe(false);
     });
 
-    it("restores tmuxSessionName for terminal tabs loaded from disk", async () => {
-      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
-      vi.mocked(invoke).mockImplementation(async (ch: string) => {
-        if (ch === "get_project_ui_state") {
-          return {
-            tabs: [
-              {
-                id: "tab-1",
-                sessionType: "terminal",
-                tmuxSessionName: "forja-main-tab-1",
-                customName: "btop",
-              },
-            ],
-          };
-        }
-        return undefined;
-      });
-
-      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
-
-      await loadProjectFromDisk("/test/project");
-
-      const tab = useTerminalTabsStore.getState().tabs.find((t) => t.id === "tab-1");
-      expect(tab?.tmuxSessionName).toBe("forja-main-tab-1");
-    });
   });
 });

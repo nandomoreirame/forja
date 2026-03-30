@@ -311,7 +311,7 @@ function App({
       }
 
       const uiState = await invoke<{
-        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string; customName?: string; tmuxSessionName?: string }>;
+        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string; customName?: string }>;
         activeTabIndex?: number;
         previewFile?: string | null;
         layoutJson?: Record<string, unknown>;
@@ -368,18 +368,12 @@ function App({
           if (tab.cliSessionId) {
             tabsStore.setCliSessionId(id, tab.cliSessionId);
           }
-          if (tab.tmuxSessionName) {
-            tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
-          }
           activeProjectTabIds.push(id);
         } else {
           const id = tab.id || tabsStore.nextTabId();
           tabsStore.registerTab(id, tabPath, tab.sessionType as import("@/lib/cli-registry").SessionType, tab.customName);
           if (tab.cliSessionId) {
             tabsStore.setCliSessionId(id, tab.cliSessionId);
-          }
-          if (tab.tmuxSessionName) {
-            tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
           }
         }
       }
@@ -773,8 +767,13 @@ function App({
     if (initialWorkspaceId) return;
 
     const handler = () => {
-      const activeProjectPath = useProjectsStore.getState().activeProjectPath;
+      const projectsState = useProjectsStore.getState();
+      const activeProjectPath = projectsState.activeProjectPath;
       if (!activeProjectPath) return;
+
+      // Skip save if a project switch is in-flight — the layout may contain
+      // blocks from the outgoing project that would contaminate the new one.
+      if (projectsState.isSwitchingProject) return;
 
       const wsId = useWorkspaceStore.getState().activeWorkspaceId;
       if (!wsId) return;

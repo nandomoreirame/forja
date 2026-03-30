@@ -32,6 +32,15 @@ export async function saveCurrentProjectToDisk(projectPath: string): Promise<voi
   // Safety net: resolve any missing session IDs before saving
   await resolveMissingSessionIds(projectPath);
 
+  // Guard: if the active project changed during the async operations above
+  // (e.g., resolveMissingSessionIds IPC roundtrip), the tiling layout model
+  // no longer represents this project. Saving now would contaminate this
+  // project's config with another project's terminal blocks.
+  const { useProjectsStore: _ProjectsStore } = await import("./projects");
+  if (_ProjectsStore.getState().activeProjectPath !== projectPath) {
+    return;
+  }
+
   const tabsStore = useTerminalTabsStore.getState();
   const tilingStore = useTilingLayoutStore.getState();
 
@@ -63,7 +72,7 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
     previewFile?: string | null;
     activePluginName?: string | null;
     layoutJson?: Record<string, unknown>;
-    tabs?: Array<{ id?: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string; tmuxSessionName?: string }>;
+    tabs?: Array<{ id?: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string }>;
     activeTabIndex?: number;
   } | null>("get_project_ui_state", {
     workspaceId: wsId,
@@ -144,9 +153,29 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
         );
         if (tab.cliSessionId) tabsStore.setCliSessionId(id, tab.cliSessionId);
         if (tab.exited) tabsStore.markTabExited(id);
-        if (tab.tmuxSessionName) tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
       }
     }
+  }
+
+  // Clean up orphan terminal blocks that don't belong to this project.
+  // This can happen when a previous save captured the layout while the active
+  // project had already changed (race between async save and project switch).
+  const projectTabIds = new Set(
+    useTerminalTabsStore.getState().getTabsForProject(projectPath).map((t) => t.id),
+  );
+  const tilingModel = useTilingLayoutStore.getState().model;
+  const orphanBlockIds: string[] = [];
+  tilingModel.visitNodes((node) => {
+    if (
+      node.getType() === "tab" &&
+      (node as any).getComponent?.() === "terminal" &&
+      !projectTabIds.has(node.getId())
+    ) {
+      orphanBlockIds.push(node.getId());
+    }
+  });
+  for (const orphanId of orphanBlockIds) {
+    useTilingLayoutStore.getState().removeBlock(orphanId);
   }
 }
 
