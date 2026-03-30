@@ -29,11 +29,20 @@ interface PerformanceSettings {
   mode: "auto" | "full" | "lite";
 }
 
+interface TitlebarSettings {
+  commandBar: boolean;
+  quickActionsLeft: boolean;
+  quickActionsRight: boolean;
+  resourceUsage: boolean;
+  workspaceSwitcher: boolean;
+}
+
 interface UISettings {
   activePaneHighlight: boolean;
   hoverToFocus: boolean;
   shortcutHints: boolean;
   tabSetEnableMaximize: boolean;
+  titlebar: TitlebarSettings;
 }
 
 interface TerminalSettings extends FontSettings {
@@ -86,7 +95,19 @@ const DEFAULT_SETTINGS: UserSettings = {
     custom: [],
   },
   performance: { mode: "auto" },
-  ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true, tabSetEnableMaximize: false },
+  ui: {
+    activePaneHighlight: true,
+    hoverToFocus: true,
+    shortcutHints: true,
+    tabSetEnableMaximize: false,
+    titlebar: {
+      commandBar: true,
+      quickActionsLeft: true,
+      quickActionsRight: true,
+      resourceUsage: true,
+      workspaceSwitcher: true,
+    },
+  },
   notifications: {
     discordWebhookUrl: "",
     discordEnabled: true,
@@ -145,6 +166,10 @@ function mergeWithDefaults(
     ui: {
       ...DEFAULT_SETTINGS.ui,
       ...(input.ui ?? {}),
+      titlebar: {
+        ...DEFAULT_SETTINGS.ui.titlebar,
+        ...((input.ui as Partial<UISettings> | undefined)?.titlebar ?? {}),
+      },
     },
     notifications: {
       ...DEFAULT_SETTINGS.notifications,
