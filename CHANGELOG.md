@@ -8,6 +8,81 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-03-30
+
+### Added
+
+- Add titlebar section visibility settings with per-section toggles for command bar, quick actions, resource usage, and workspace switcher.
+- Add right-click context menu on titlebar to quickly toggle section visibility.
+- Add titlebar visibility configuration panel in Settings dialog under Appearance.
+- Add tabSetEnableMaximize user setting to control FlexLayout maximize button visibility.
+- Add ASCII art logo component for empty states, replacing the Anvil icon.
+
+### Changed
+
+- Replace Anvil icon with ASCII art logo in App empty state and ForjaEmptyState component.
+
+### Fixed
+
+- Fix false notification badges appearing on sidebar during session restoration by gating on actual user input.
+- Fix notification badges triggering for plain terminals and unrestored tabs instead of only AI CLI exits.
+- Fix text selection blocked in Monaco read-only preview mode by removing pointer-events and user-select CSS overrides.
+- Fix xterm rendering artifacts on reattach by deferring refresh after fit and clearing screen on dimension change.
+- Fix layout bleed between projects by resetting tiling layout before loading new project state and guarding against concurrent switches.
+- Fix workspace switcher closing the window when deleting an inactive workspace instead of only the active one.
+- Fix inflated context percentage in telemetry by using 1M context window for Opus models instead of 200k.
+
+---
+
+## [1.9.1] - 2026-03-29
+
+### Added
+
+- Add session telemetry display in status bar with real-time token usage, cost, context bar with semantic colors, and auto-detection of 200k vs 1M context windows.
+- Add Discord webhook notifications with PTY output summarization, ANSI stripping, noise filtering, and head+tail truncation for Discord's 2000 char limit.
+- Add Discord webhook configuration to settings UI with URL validation and enable/disable toggle.
+- Add notification hooks setup for CLI integration (Claude, Codex, Gemini, Cursor, gh-copilot) with graceful jq degradation.
+- Add OSC 9/99/777 notification handlers to terminal for ConEmu, key=value, and Urxvt notification sequences with 1s debounce.
+- Add beta disclaimer dialog on first launch.
+- Strip ephemeral file-preview blocks from persisted layouts to prevent self-reinforcing restore-auto-load-save cycle.
+- Create Fumadocs documentation site (`@forja/docs`) with Next.js 15 and MDX support.
+- Create Next.js marketing site (`@forja/site`) with static export and Catppuccin Mocha theme.
+- Create Expo remote control app (`@forja/mobile`) with WebSocket client and session management.
+
+### Changed
+
+- Restructure project as pnpm monorepo with `@forja/desktop`, `@forja/site`, `@forja/docs`, `@forja/mobile`, `@forja/shared`, and `@forja/tsconfig` workspaces.
+- Remove window opacity feature from frontend and backend, restoring GPU zero-copy flags for all platforms.
+- Add backpressure handling to IPC streams with batched PTY event broadcasting and circuit breaker for slow WebSocket clients.
+- Replace transparent backgrounds with theme base colors in terminal, Monaco editor, and CSS overrides to eliminate alpha compositing overhead.
+- Move build and CLI scripts to monorepo root `scripts/` directory.
+
+### Fixed
+
+- Fix terminal wrapper background color mismatch with xterm theme in padding area.
+- Fix notifications firing only once per tab by replacing one-shot guard with buffer delta snapshots.
+- Preserve terminal block tabset positions on project switch instead of recreating all blocks in first tabset.
+- Disable transparency on Wayland tiling WMs (Hyprland, Sway, Niri, i3, River) to prevent pointer freeze.
+- Fix monorepo restructure issues: move public assets, update gitignore patterns, remove old site directory.
+
+---
+
+## [1.9.0] - 2026-03-28
+
+### Added
+
+- Add External API server with Unix socket (named pipe on Windows) for programmatic control of Forja from shell scripts, hooks, and external tools.
+- Add WebSocket bridge for remote control over the local network with token-based authentication, rate limiting (10 msg/s), and connection limit (5 clients).
+- Add real-time PTY output streaming via WebSocket subscribe/unsubscribe protocol.
+- Add CLI client (`forja`) for controlling a running Forja instance from the terminal (ping, notify, open, sessions, send, output, screenshot, new-session).
+- Add CLI mode handler so the packaged `forja` binary doubles as both GUI launcher and CLI client.
+- Add Discord bot (`forja-bot`) with slash commands and `!forja` message prefix for remote session management.
+- Add PTY subscriber system for broadcasting terminal output events to external consumers.
+- Add WebSocket bridge UI controls: titlebar menu toggle, Ctrl+Shift+R keyboard shortcut, and status bar indicator with port and client count.
+- Add comprehensive External API documentation with examples in bash, Python, Node.js, and PowerShell.
+
+---
+
 ## [1.7.0] - 2026-03-19
 
 ### Added
