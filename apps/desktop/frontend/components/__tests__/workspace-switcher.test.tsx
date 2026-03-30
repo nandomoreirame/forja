@@ -216,10 +216,10 @@ describe("WorkspaceSwitcher", () => {
       });
       await user.click(trigger);
 
-      const editButton = screen.getByRole("button", {
+      const editButtons = screen.getAllByRole("button", {
         name: /edit workspace/i,
       });
-      expect(editButton).toBeInTheDocument();
+      expect(editButtons.length).toBeGreaterThanOrEqual(1);
     });
 
     it("clicking edit enters edit mode with name input", async () => {
@@ -232,10 +232,10 @@ describe("WorkspaceSwitcher", () => {
       });
       await user.click(trigger);
 
-      const editButton = screen.getByRole("button", {
+      const editButtons = screen.getAllByRole("button", {
         name: /edit workspace/i,
       });
-      await user.click(editButton);
+      await user.click(editButtons[0]);
 
       const nameInput = screen.getByRole("textbox");
       expect(nameInput).toBeInTheDocument();
@@ -252,10 +252,10 @@ describe("WorkspaceSwitcher", () => {
       });
       await user.click(trigger);
 
-      const editButton = screen.getByRole("button", {
+      const editButtons = screen.getAllByRole("button", {
         name: /edit workspace/i,
       });
-      await user.click(editButton);
+      await user.click(editButtons[0]);
 
       // Icon picker should have all 14 icons
       for (const icon of [
@@ -370,8 +370,8 @@ describe("WorkspaceSwitcher", () => {
       });
       await user.click(trigger);
 
-      const editButton = screen.getByRole("button", { name: /edit workspace/i });
-      await user.click(editButton);
+      const editButtons = screen.getAllByRole("button", { name: /edit workspace/i });
+      await user.click(editButtons[0]);
 
       const deleteBtn = screen.getByText(/delete workspace/i);
       await user.click(deleteBtn); // first click
@@ -397,8 +397,8 @@ describe("WorkspaceSwitcher", () => {
       });
       await user.click(trigger);
 
-      const editButton = screen.getByRole("button", { name: /edit workspace/i });
-      await user.click(editButton);
+      const editButtons = screen.getAllByRole("button", { name: /edit workspace/i });
+      await user.click(editButtons[0]);
 
       const deleteBtn = screen.getByText(/delete workspace/i);
       await user.click(deleteBtn); // first click
@@ -408,6 +408,77 @@ describe("WorkspaceSwitcher", () => {
       expect(mockOpenWorkspaceInNewWindow).toHaveBeenCalledWith("ws-2");
       expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-1");
       expect(mockInvoke).toHaveBeenCalledWith("window:close");
+    });
+
+    it("inactive workspace shows edit button on hover", async () => {
+      const user = userEvent.setup();
+      const { WorkspaceSwitcher } = await import("../workspace-switcher");
+      render(<WorkspaceSwitcher />);
+
+      const trigger = screen.getByRole("button", {
+        name: /workspace: my workspace/i,
+      });
+      await user.click(trigger);
+
+      // The inactive workspace row should contain an edit button
+      const editButtons = screen.getAllByRole("button", {
+        name: /edit workspace/i,
+      });
+      // Should have edit buttons for both active AND inactive workspaces
+      expect(editButtons.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it("clicking edit on inactive workspace enters edit mode for that workspace", async () => {
+      const user = userEvent.setup();
+      const { WorkspaceSwitcher } = await import("../workspace-switcher");
+      render(<WorkspaceSwitcher />);
+
+      const trigger = screen.getByRole("button", {
+        name: /workspace: my workspace/i,
+      });
+      await user.click(trigger);
+
+      // Find the edit button for the inactive workspace (Second Workspace)
+      const editButtons = screen.getAllByRole("button", {
+        name: /edit workspace/i,
+      });
+      // Click the edit button that is NOT on the active workspace
+      // The second edit button belongs to the inactive workspace
+      const inactiveEditBtn = editButtons[editButtons.length - 1];
+      await user.click(inactiveEditBtn);
+
+      // Should show name input pre-filled with inactive workspace name
+      const nameInput = screen.getByRole("textbox");
+      expect(nameInput).toBeInTheDocument();
+      expect((nameInput as HTMLInputElement).value).toBe("Second Workspace");
+    });
+
+    it("can delete inactive workspace without closing current window", async () => {
+      const user = userEvent.setup();
+      mockInvoke.mockResolvedValue(undefined);
+      const { WorkspaceSwitcher } = await import("../workspace-switcher");
+      render(<WorkspaceSwitcher />);
+
+      const trigger = screen.getByRole("button", {
+        name: /workspace: my workspace/i,
+      });
+      await user.click(trigger);
+
+      // Click edit on inactive workspace
+      const editButtons = screen.getAllByRole("button", {
+        name: /edit workspace/i,
+      });
+      const inactiveEditBtn = editButtons[editButtons.length - 1];
+      await user.click(inactiveEditBtn);
+
+      // Delete it
+      const deleteBtn = screen.getByText(/delete workspace/i);
+      await user.click(deleteBtn); // first click
+      await user.click(deleteBtn); // confirm
+
+      expect(mockDeleteWorkspace).toHaveBeenCalledWith("ws-2");
+      // Should NOT close current window since we deleted an inactive workspace
+      expect(mockInvoke).not.toHaveBeenCalledWith("window:close");
     });
 
     it("confirm button calls updateWorkspaceDetails without color", async () => {
@@ -422,10 +493,10 @@ describe("WorkspaceSwitcher", () => {
       });
       await user.click(trigger);
 
-      const editButton = screen.getByRole("button", {
+      const editButtons = screen.getAllByRole("button", {
         name: /edit workspace/i,
       });
-      await user.click(editButton);
+      await user.click(editButtons[0]);
 
       const confirmBtn = screen.getByRole("button", { name: /confirm/i });
       await user.click(confirmBtn);
