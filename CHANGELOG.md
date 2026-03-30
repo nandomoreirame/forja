@@ -8,6 +8,32 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.9.2] - 2026-03-30
+
+### Added
+
+- Add titlebar section visibility settings with per-section toggles for command bar, quick actions, resource usage, and workspace switcher.
+- Add right-click context menu on titlebar to quickly toggle section visibility.
+- Add titlebar visibility configuration panel in Settings dialog under Appearance.
+- Add tabSetEnableMaximize user setting to control FlexLayout maximize button visibility.
+- Add ASCII art logo component for empty states, replacing the Anvil icon.
+
+### Changed
+
+- Replace Anvil icon with ASCII art logo in App empty state and ForjaEmptyState component.
+
+### Fixed
+
+- Fix false notification badges appearing on sidebar during session restoration by gating on actual user input.
+- Fix notification badges triggering for plain terminals and unrestored tabs instead of only AI CLI exits.
+- Fix text selection blocked in Monaco read-only preview mode by removing pointer-events and user-select CSS overrides.
+- Fix xterm rendering artifacts on reattach by deferring refresh after fit and clearing screen on dimension change.
+- Fix layout bleed between projects by resetting tiling layout before loading new project state and guarding against concurrent switches.
+- Fix workspace switcher closing the window when deleting an inactive workspace instead of only the active one.
+- Fix inflated context percentage in telemetry by using 1M context window for Opus models instead of 200k.
+
+---
+
 ## [1.9.1] - 2026-03-29
 
 ### Added
