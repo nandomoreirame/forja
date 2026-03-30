@@ -31,6 +31,7 @@ const tabStoreActions = {
   nextTabId: vi.fn(() => "new-tab-1"),
   addTab: vi.fn(),
   getTabsForProject: vi.fn(() => []),
+  restoreLastClosedTab: vi.fn(() => false),
 };
 
 const rightPanelActions = {
@@ -129,6 +130,7 @@ vi.mock("@/stores/browser-pane", () => ({
 
 const wsBridgeActions = {
   toggle: vi.fn(),
+  openDialog: vi.fn(),
 };
 
 vi.mock("@/stores/ws-bridge", () => ({
@@ -280,8 +282,8 @@ describe("useKeyboardShortcuts tab management", () => {
     filePreviewActions.isOpen = false;
   });
 
-  it("Ctrl+Shift+T opens command palette in sessions mode", () => {
-    commandPaletteActions.open.mockReset();
+  it("Ctrl+Shift+T restores last closed tab", () => {
+    tabStoreActions.restoreLastClosedTab.mockReset();
     setupHook();
 
     window.dispatchEvent(
@@ -292,8 +294,8 @@ describe("useKeyboardShortcuts tab management", () => {
       }),
     );
 
-    expect(commandPaletteActions.open).toHaveBeenCalledWith("sessions");
-    expect(tabStoreActions.addTab).not.toHaveBeenCalled();
+    expect(tabStoreActions.restoreLastClosedTab).toHaveBeenCalled();
+    expect(commandPaletteActions.open).not.toHaveBeenCalledWith("sessions");
   });
 
   it("Ctrl+Shift+L opens command palette in projects mode", () => {
@@ -324,8 +326,8 @@ describe("useKeyboardShortcuts tab management", () => {
     expect(tabStoreActions.addTab).not.toHaveBeenCalled();
   });
 
-  it("Ctrl+Shift+R toggles the WS bridge server", () => {
-    wsBridgeActions.toggle.mockReset();
+  it("Ctrl+Shift+R opens the WS bridge dialog", () => {
+    wsBridgeActions.openDialog.mockReset();
     setupHook();
 
     window.dispatchEvent(
@@ -336,7 +338,7 @@ describe("useKeyboardShortcuts tab management", () => {
       }),
     );
 
-    expect(wsBridgeActions.toggle).toHaveBeenCalledTimes(1);
+    expect(wsBridgeActions.openDialog).toHaveBeenCalledTimes(1);
     expect(tilingActions.closeActiveTab).not.toHaveBeenCalled();
   });
 

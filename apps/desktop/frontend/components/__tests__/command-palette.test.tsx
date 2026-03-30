@@ -269,7 +269,7 @@ describe("CommandPalette", () => {
 
     const newSessionItem = screen.getByText("New Session").closest("[cmdk-item]") as HTMLElement;
     expect(newSessionItem).toBeInTheDocument();
-    expect(within(newSessionItem).getByText(/T$/)).toBeInTheDocument();
+    // New Session no longer has a keyboard shortcut badge
 
     const addProjectItem = screen.getByText("Add Project").closest("[cmdk-item]") as HTMLElement;
     expect(addProjectItem).toBeInTheDocument();

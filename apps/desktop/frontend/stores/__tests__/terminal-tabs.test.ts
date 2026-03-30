@@ -23,6 +23,7 @@ describe("useTerminalTabsStore", () => {
       activeTabId: null,
       counter: 0,
       isTerminalFullscreen: false,
+      recentlyClosed: [],
     });
   });
 
@@ -528,6 +529,126 @@ describe("useTerminalTabsStore", () => {
       // activeTabId should be set to first tab of the project
       const projectTabs = useTerminalTabsStore.getState().getTabsForProject("/project-a");
       expect(projectTabs.length).toBeGreaterThan(0);
+    });
+  });
+
+  describe("recentlyClosed", () => {
+    it("starts with empty recentlyClosed array", () => {
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed).toEqual([]);
+    });
+
+    it("removeTab pushes closed tab info to recentlyClosed", () => {
+      const id1 = createTab("/project-a", "claude");
+
+      useTerminalTabsStore.getState().removeTab(id1);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed).toHaveLength(1);
+      expect(state.recentlyClosed[0]).toEqual({
+        path: "/project-a",
+        sessionType: "claude",
+        customName: undefined,
+      });
+    });
+
+    it("removeTab preserves customName in recentlyClosed entry", () => {
+      const id1 = createTab("/project-a", "terminal");
+      useTerminalTabsStore.getState().renameTab(id1, "My Build");
+
+      useTerminalTabsStore.getState().removeTab(id1);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed[0].customName).toBe("My Build");
+    });
+
+    it("recentlyClosed stores multiple entries in LIFO order", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+      const id3 = createTab("/c", "gemini");
+
+      useTerminalTabsStore.getState().removeTab(id1);
+      useTerminalTabsStore.getState().removeTab(id2);
+      useTerminalTabsStore.getState().removeTab(id3);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed).toHaveLength(3);
+      // Last closed should be last in array (pop to restore)
+      expect(state.recentlyClosed[2].sessionType).toBe("gemini");
+      expect(state.recentlyClosed[1].sessionType).toBe("terminal");
+      expect(state.recentlyClosed[0].sessionType).toBe("claude");
+    });
+
+    it("recentlyClosed is capped at 20 entries", () => {
+      // Create and close 25 tabs
+      for (let i = 0; i < 25; i++) {
+        const id = createTab(`/path-${i}`, "terminal");
+        useTerminalTabsStore.getState().removeTab(id);
+      }
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed).toHaveLength(20);
+      // Oldest entries should have been dropped
+      expect(state.recentlyClosed[0].path).toBe("/path-5");
+    });
+
+    it("restoreLastClosedTab creates a new tab with the closed tab info", () => {
+      const id1 = createTab("/project-a", "gemini");
+      useTerminalTabsStore.getState().removeTab(id1);
+
+      const restored = useTerminalTabsStore.getState().restoreLastClosedTab();
+
+      expect(restored).toBe(true);
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs).toHaveLength(1);
+      expect(state.tabs[0].path).toBe("/project-a");
+      expect(state.tabs[0].sessionType).toBe("gemini");
+      expect(state.recentlyClosed).toHaveLength(0);
+    });
+
+    it("restoreLastClosedTab restores customName", () => {
+      const id1 = createTab("/project-a", "claude");
+      useTerminalTabsStore.getState().renameTab(id1, "My Session");
+      useTerminalTabsStore.getState().removeTab(id1);
+
+      useTerminalTabsStore.getState().restoreLastClosedTab();
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].customName).toBe("My Session");
+    });
+
+    it("restoreLastClosedTab returns false when no closed tabs", () => {
+      const restored = useTerminalTabsStore.getState().restoreLastClosedTab();
+
+      expect(restored).toBe(false);
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(0);
+    });
+
+    it("restoreLastClosedTab restores in LIFO order", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+
+      useTerminalTabsStore.getState().removeTab(id1);
+      useTerminalTabsStore.getState().removeTab(id2);
+
+      useTerminalTabsStore.getState().restoreLastClosedTab();
+      expect(useTerminalTabsStore.getState().tabs[0].sessionType).toBe("terminal");
+
+      useTerminalTabsStore.getState().restoreLastClosedTab();
+      const tabs = useTerminalTabsStore.getState().tabs;
+      expect(tabs).toHaveLength(2);
+      expect(tabs[1].sessionType).toBe("claude");
+    });
+
+    it("cleanupProjectState does not add to recentlyClosed", () => {
+      createTab("/project-a", "claude");
+      createTab("/project-a", "terminal");
+
+      useTerminalTabsStore.getState().cleanupProjectState("/project-a");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs).toHaveLength(0);
+      expect(state.recentlyClosed).toHaveLength(0);
     });
   });
 
