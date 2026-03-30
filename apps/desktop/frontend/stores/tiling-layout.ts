@@ -3,6 +3,7 @@ import { Model, Actions, DockLocation, TabNode, type IJsonModel } from "flexlayo
 import { DEFAULT_LAYOUT, TABSET_IDS } from "@/lib/default-layout";
 import type { BlockConfig } from "@/lib/block-registry";
 import { useTerminalTabsStore } from "./terminal-tabs";
+import { useUserSettingsStore } from "./user-settings";
 
 interface TilingLayoutState {
   model: Model;
@@ -50,6 +51,8 @@ interface TilingLayoutState {
   closeTabset: (tabsetId: string) => void;
   /** Reconciles tabCount with the actual number of tabs in the model. */
   syncTabCount: () => void;
+  /** Updates the global tabSetEnableMaximize attribute on the live model. */
+  setTabSetEnableMaximize: (enabled: boolean) => void;
 }
 
 /**
@@ -948,6 +951,13 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
   loadFromJson: (json) => {
     try {
       const cleaned = stripEmptyTabsetsFromJson(json);
+      // Enforce tabSetEnableMaximize from user settings on restored layouts
+      const enableMaximize = useUserSettingsStore.getState().settings.ui.tabSetEnableMaximize;
+      if (cleaned.global) {
+        cleaned.global.tabSetEnableMaximize = enableMaximize;
+      } else {
+        cleaned.global = { tabSetEnableMaximize: enableMaximize };
+      }
       const model = Model.fromJson(cleaned);
       removeEmptyTabsets(model);
       enforceBlockMinWidths(model);
@@ -1263,5 +1273,17 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
     if (actual !== tabCount) {
       set({ tabCount: actual });
     }
+  },
+
+  setTabSetEnableMaximize: (enabled) => {
+    const { model } = get();
+    const json = model.toJson() as IJsonModel;
+    if (json.global) {
+      json.global.tabSetEnableMaximize = enabled;
+    } else {
+      json.global = { tabSetEnableMaximize: enabled };
+    }
+    const rebuilt = Model.fromJson(json);
+    set({ model: rebuilt });
   },
 }));

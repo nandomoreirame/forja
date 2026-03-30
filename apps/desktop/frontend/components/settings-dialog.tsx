@@ -23,7 +23,8 @@ import { usePerformanceStore } from "@/stores/performance";
 import { invoke, getVersion } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { ContextSection } from "./context-settings-section";
-import type { UserSettings } from "@/lib/settings-types";
+import type { UserSettings, TitlebarSettings } from "@/lib/settings-types";
+import { DEFAULT_SETTINGS } from "@/lib/settings-types";
 
 type SettingsSection = "appearance" | "shortcuts" | "sessions" | "context" | "performance" | "notifications";
 
@@ -175,6 +176,58 @@ const inputClass =
 
 const numberInputClass =
   "h-7 w-24 rounded-sm border border-ctp-surface1 bg-overlay-mantle px-2 text-app text-ctp-text focus:border-ctp-mauve focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
+
+// ─── Titlebar Visibility Settings ─────────────────────────────────────────────
+
+const TITLEBAR_ITEMS: { key: keyof TitlebarSettings; label: string; description: string }[] = [
+  { key: "commandBar", label: "Command Bar", description: "Search bar in the center of the titlebar." },
+  { key: "quickActionsLeft", label: "Quick Actions (Left)", description: "Pinned actions on the left side of the titlebar." },
+  { key: "quickActionsRight", label: "Quick Actions (Right)", description: "Pinned actions on the right side of the titlebar." },
+  { key: "resourceUsage", label: "Resource Usage", description: "CPU and memory usage indicator." },
+  { key: "workspaceSwitcher", label: "Workspace Switcher", description: "Workspace selector next to the menu button." },
+];
+
+function TitlebarVisibilitySettings({
+  settings,
+  onUpdate,
+}: {
+  settings: UserSettings;
+  onUpdate: (partial: Partial<UserSettings>) => void;
+}) {
+  const titlebar = settings.ui.titlebar ?? DEFAULT_SETTINGS.ui.titlebar;
+
+  function toggle(key: keyof TitlebarSettings) {
+    onUpdate({
+      ui: {
+        ...settings.ui,
+        titlebar: { ...titlebar, [key]: !titlebar[key] },
+      },
+    });
+  }
+
+  return (
+    <>
+      {TITLEBAR_ITEMS.map((item) => (
+        <SettingItem
+          key={item.key}
+          category="Titlebar"
+          label={item.label}
+          description={item.description}
+        >
+          <label className="flex items-center gap-2 cursor-pointer" aria-label={item.label}>
+            <input
+              type="checkbox"
+              checked={titlebar[item.key]}
+              onChange={() => toggle(item.key)}
+              className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-surface0 accent-ctp-mauve"
+            />
+            <span className="text-app-xs text-ctp-subtext0">{titlebar[item.key] ? "Visible" : "Hidden"}</span>
+          </label>
+        </SettingItem>
+      ))}
+    </>
+  );
+}
 
 // ─── Appearance Section ───────────────────────────────────────────────────────
 
@@ -410,6 +463,27 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
           <span className="text-app-xs text-ctp-subtext0">{localSettings.ui.shortcutHints ? "Enabled" : "Disabled"}</span>
         </label>
       </SettingItem>
+
+      <SettingItem
+        category="UI"
+        label="Tab Set Maximize"
+        description="Show maximize button on tab set headers. When enabled, individual panes can be maximized to fill the entire layout."
+      >
+        <label className="flex items-center gap-2 cursor-pointer" aria-label="Tab set maximize">
+          <input
+            type="checkbox"
+            checked={localSettings.ui.tabSetEnableMaximize}
+            onChange={(e) => update({ ui: { ...localSettings.ui, tabSetEnableMaximize: e.target.checked } })}
+            className="h-4 w-4 rounded border-ctp-surface1 bg-ctp-surface0 accent-ctp-mauve"
+          />
+          <span className="text-app-xs text-ctp-subtext0">{localSettings.ui.tabSetEnableMaximize ? "Enabled" : "Disabled"}</span>
+        </label>
+      </SettingItem>
+
+      <TitlebarVisibilitySettings
+        settings={localSettings}
+        onUpdate={update}
+      />
     </div>
   );
 }

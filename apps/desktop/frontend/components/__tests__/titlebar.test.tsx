@@ -3,6 +3,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Titlebar } from "../titlebar";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
+import { useUserSettingsStore } from "@/stores/user-settings";
+import { DEFAULT_SETTINGS } from "@/lib/settings-types";
 
 vi.mock("@/lib/ipc", () => {
   const appWindow = {
@@ -140,5 +142,95 @@ describe("Titlebar", () => {
     expect(screen.queryByLabelText(/sidebar/i)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/toggle browser/i)).not.toBeInTheDocument();
   });
+});
 
+describe("Titlebar context menu visibility", () => {
+  beforeEach(() => {
+    useAppDialogsStore.setState({
+      aboutOpen: false,
+      shortcutsOpen: false,
+      settingsOpen: false,
+    });
+    useUserSettingsStore.setState({
+      settings: { ...DEFAULT_SETTINGS },
+      loaded: true,
+    });
+  });
+
+  it("hides command bar when titlebar.commandBar is false", () => {
+    useUserSettingsStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ui: {
+          ...DEFAULT_SETTINGS.ui,
+          titlebar: { ...DEFAULT_SETTINGS.ui.titlebar, commandBar: false },
+        },
+      },
+    });
+    render(<Titlebar />);
+    expect(screen.queryByText("Command Palette")).not.toBeInTheDocument();
+  });
+
+  it("shows project title with app name when command bar is hidden", () => {
+    useUserSettingsStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ui: {
+          ...DEFAULT_SETTINGS.ui,
+          titlebar: { ...DEFAULT_SETTINGS.ui.titlebar, commandBar: false },
+        },
+      },
+    });
+    render(<Titlebar />);
+    expect(screen.getByText("Forja")).toBeInTheDocument();
+  });
+
+  it("hides resource usage when titlebar.resourceUsage is false", () => {
+    useUserSettingsStore.setState({
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ui: {
+          ...DEFAULT_SETTINGS.ui,
+          titlebar: { ...DEFAULT_SETTINGS.ui.titlebar, resourceUsage: false },
+        },
+      },
+    });
+    render(<Titlebar />);
+    expect(screen.queryByText(/CPU:/)).not.toBeInTheDocument();
+  });
+
+  it("shows context menu with visibility options on right-click", async () => {
+    const user = userEvent.setup();
+    render(<Titlebar />);
+
+    const titlebar = screen.getByTestId("titlebar");
+    await user.pointer({ keys: "[MouseRight]", target: titlebar });
+
+    expect(screen.getByText("Command Bar")).toBeInTheDocument();
+    expect(screen.getByText("Quick Actions (Left)")).toBeInTheDocument();
+    expect(screen.getByText("Quick Actions (Right)")).toBeInTheDocument();
+    expect(screen.getByText("Resource Usage")).toBeInTheDocument();
+    expect(screen.getByText("Workspace Switcher")).toBeInTheDocument();
+  });
+
+  it("toggles command bar visibility via context menu", async () => {
+    const mockInvoke = vi.mocked((await import("@/lib/ipc")).invoke);
+    mockInvoke.mockResolvedValue(null);
+
+    const user = userEvent.setup();
+    render(<Titlebar />);
+
+    const titlebar = screen.getByTestId("titlebar");
+    await user.pointer({ keys: "[MouseRight]", target: titlebar });
+
+    const commandBarItem = screen.getByText("Command Bar");
+    await user.click(commandBarItem);
+
+    expect(mockInvoke).toHaveBeenCalledWith(
+      "save_user_settings",
+      expect.objectContaining({
+        content: expect.stringContaining('"commandBar": false'),
+      }),
+    );
+  });
 });

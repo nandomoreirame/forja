@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Anvil } from "lucide-react";
 import { MOD_KEY } from "@/lib/platform";
+import { ForjaAsciiLogo } from "@/components/forja-ascii-logo";
 
 interface ForjaEmptyStateProps {
   children?: ReactNode;
@@ -13,8 +13,7 @@ export function ForjaEmptyState({ children }: ForjaEmptyStateProps) {
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-4 rounded-lg border border-ctp-surface0">
-      <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
-      <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
+      <ForjaAsciiLogo />
       <p className="text-app text-ctp-overlay1">
         A dedicated desktop client for vibe coders
       </p>

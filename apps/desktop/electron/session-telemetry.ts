@@ -44,24 +44,20 @@ const PRICING: Record<
 };
 
 // Context window sizes per model family.
-// Opus supports both 200k and 1M — we auto-detect based on token usage.
+// Opus 4.6 defaults to 1M context; Sonnet/Haiku use 200k.
 const CONTEXT_WINDOW: Record<string, number> = {
-  opus: 200_000,
-  "opus-1m": 1_048_576,
+  opus: 1_048_576,
   sonnet: 200_000,
   haiku: 200_000,
 };
 
 /**
- * Returns context window size for a model. For Opus, auto-detects 1M context
- * when token usage exceeds the 200k window.
+ * Returns context window size for a model.
+ * Opus 4.6 always uses 1M context window.
  */
-export function getContextWindowSize(model: string | null, lastContextTokens: number): number {
+export function getContextWindowSize(model: string | null): number {
   const family = getModelFamily(model);
   if (!family) return 200_000;
-  if (family === "opus" && lastContextTokens > 200_000) {
-    return CONTEXT_WINDOW["opus-1m"];
-  }
   return CONTEXT_WINDOW[family] ?? 200_000;
 }
 
@@ -126,7 +122,7 @@ export function parseSessionUsage(lines: string[]): SessionTelemetry {
 
   // Calculate context window percentage from last message
   if (result.lastContextTokens > 0 && result.model) {
-    const windowSize = getContextWindowSize(result.model, result.lastContextTokens);
+    const windowSize = getContextWindowSize(result.model);
     result.contextPct = Math.min(100, Math.round((result.lastContextTokens / windowSize) * 100));
   }
 

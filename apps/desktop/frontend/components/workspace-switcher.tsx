@@ -74,26 +74,30 @@ export function WorkspaceSwitcher() {
       return;
     }
 
-    const otherWorkspaces = workspaces.filter((w) => w.id !== wsId);
+    const isDeletingActive = wsId === activeWorkspaceId;
 
-    if (otherWorkspaces.length === 0) {
-      // Last workspace — create a new default before deleting
-      await invoke("create_and_open_workspace");
-    } else {
-      // Ensure at least one other workspace has an open window
-      let anyOpen = false;
-      for (const other of otherWorkspaces) {
-        const open = await invoke<boolean>("is_workspace_window_open", {
-          workspaceId: other.id,
-        });
-        if (open) {
-          anyOpen = true;
-          break;
+    if (isDeletingActive) {
+      const otherWorkspaces = workspaces.filter((w) => w.id !== wsId);
+
+      if (otherWorkspaces.length === 0) {
+        // Last workspace — create a new default before deleting
+        await invoke("create_and_open_workspace");
+      } else {
+        // Ensure at least one other workspace has an open window
+        let anyOpen = false;
+        for (const other of otherWorkspaces) {
+          const open = await invoke<boolean>("is_workspace_window_open", {
+            workspaceId: other.id,
+          });
+          if (open) {
+            anyOpen = true;
+            break;
+          }
         }
-      }
-      if (!anyOpen) {
-        // Open the most recently used other workspace
-        await openWorkspaceInNewWindow(otherWorkspaces[0].id);
+        if (!anyOpen) {
+          // Open the most recently used other workspace
+          await openWorkspaceInNewWindow(otherWorkspaces[0].id);
+        }
       }
     }
 
@@ -101,8 +105,10 @@ export function WorkspaceSwitcher() {
     setEditingId(null);
     setDeleteConfirmId(null);
 
-    // Close this window since the workspace no longer exists
-    invoke("window:close").catch(() => {});
+    if (isDeletingActive) {
+      // Close this window since the active workspace no longer exists
+      invoke("window:close").catch(() => {});
+    }
   }
 
   async function handleSaveWorkspace() {
@@ -347,14 +353,9 @@ export function WorkspaceSwitcher() {
 
             // Inactive workspace — open in a new window (or focus existing)
             return (
-              <button
+              <div
                 key={ws.id}
-                onClick={async () => {
-                  await openWorkspaceInNewWindow(ws.id);
-                  setIsOpen(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-app text-ctp-text transition-colors hover:bg-ctp-surface0"
-                aria-label={ws.name}
+                className="group flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-app text-ctp-text transition-colors hover:bg-ctp-surface0"
               >
                 {showWorkspaceBadges && wsIndex < 9 && (
                   <ShortcutBadge
@@ -364,12 +365,31 @@ export function WorkspaceSwitcher() {
                     className="shrink-0"
                   />
                 )}
-                <WsIcon
-                  className="h-3.5 w-3.5 shrink-0 text-ctp-overlay1"
-                  strokeWidth={1.5}
-                />
-                <span className="flex-1 text-left truncate">{ws.name}</span>
-              </button>
+                <button
+                  onClick={async () => {
+                    await openWorkspaceInNewWindow(ws.id);
+                    setIsOpen(false);
+                  }}
+                  className="flex flex-1 items-center gap-2 min-w-0"
+                  aria-label={ws.name}
+                >
+                  <WsIcon
+                    className="h-3.5 w-3.5 shrink-0 text-ctp-overlay1"
+                    strokeWidth={1.5}
+                  />
+                  <span className="flex-1 text-left truncate">{ws.name}</span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startEdit(ws.id);
+                  }}
+                  className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded text-ctp-overlay1 opacity-0 transition-all group-hover:opacity-100 hover:bg-ctp-surface1 hover:text-ctp-text"
+                  aria-label="Edit workspace"
+                >
+                  <Pencil className="h-3 w-3" strokeWidth={1.5} />
+                </button>
+              </div>
             );
           })}
         </div>

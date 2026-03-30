@@ -554,19 +554,3 @@ select:active,
   user-select: none;
   pointer-events: none;
 }
-
-/* Monaco preview (read-only) mode: disable all interaction except scroll */
-.monaco-preview-readonly .monaco-editor .view-lines {
-  pointer-events: none;
-  user-select: none;
-  cursor: default;
-}
-.monaco-preview-readonly .monaco-editor .cursor {
-  display: none !important;
-}
-.monaco-preview-readonly .monaco-editor .selected-text {
-  display: none !important;
-}
-.monaco-preview-readonly .monaco-editor .view-overlays .current-line {
-  display: none !important;
-}

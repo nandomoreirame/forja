@@ -225,7 +225,19 @@ describe("user-settings module", () => {
     const { loadUserSettings } = await import("../user-settings");
     const result = await loadUserSettings();
 
-    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true, shortcutHints: true });
+    expect(result.ui).toEqual({
+      activePaneHighlight: true,
+      hoverToFocus: true,
+      shortcutHints: true,
+      tabSetEnableMaximize: false,
+      titlebar: {
+        commandBar: true,
+        quickActionsLeft: true,
+        quickActionsRight: true,
+        resourceUsage: true,
+        workspaceSwitcher: true,
+      },
+    });
   });
 
   it("loadUserSettings preserves explicit ui settings", async () => {

@@ -36,7 +36,19 @@ describe("DEFAULT_SETTINGS", () => {
         custom: [],
       },
       performance: { mode: "auto" },
-      ui: { activePaneHighlight: true, hoverToFocus: true, shortcutHints: true },
+      ui: {
+        activePaneHighlight: true,
+        hoverToFocus: true,
+        shortcutHints: true,
+        tabSetEnableMaximize: false,
+        titlebar: {
+          commandBar: true,
+          quickActionsLeft: true,
+          quickActionsRight: true,
+          resourceUsage: true,
+          workspaceSwitcher: true,
+        },
+      },
       notifications: {
         discordWebhookUrl: "",
         discordEnabled: true,
@@ -138,7 +150,7 @@ describe("ui settings", () => {
 
   it("preserves explicit ui settings", () => {
     const result = mergeWithDefaults({
-      ui: { activePaneHighlight: false, hoverToFocus: false, shortcutHints: false },
+      ui: { activePaneHighlight: false, hoverToFocus: false, shortcutHints: false, tabSetEnableMaximize: false },
     } as Partial<UserSettings>);
     expect(result.ui.activePaneHighlight).toBe(false);
     expect(result.ui.hoverToFocus).toBe(false);
@@ -158,9 +170,76 @@ describe("ui settings", () => {
     expect(result.ui.shortcutHints).toBe(true);
   });
 
+  it("defaults ui.tabSetEnableMaximize to false", () => {
+    const result = mergeWithDefaults({});
+    expect(result.ui.tabSetEnableMaximize).toBe(false);
+  });
+
+  it("preserves explicit ui.tabSetEnableMaximize true", () => {
+    const result = mergeWithDefaults({
+      ui: { tabSetEnableMaximize: true },
+    } as Partial<UserSettings>);
+    expect(result.ui.tabSetEnableMaximize).toBe(true);
+  });
+
   it("defaults ui when given undefined input", () => {
     const result = mergeWithDefaults(undefined as unknown as Partial<UserSettings>);
-    expect(result.ui).toEqual({ activePaneHighlight: true, hoverToFocus: true, shortcutHints: true });
+    expect(result.ui).toEqual({
+      activePaneHighlight: true,
+      hoverToFocus: true,
+      shortcutHints: true,
+      tabSetEnableMaximize: false,
+      titlebar: {
+        commandBar: true,
+        quickActionsLeft: true,
+        quickActionsRight: true,
+        resourceUsage: true,
+        workspaceSwitcher: true,
+      },
+    });
+  });
+});
+
+describe("titlebar visibility settings", () => {
+  it("defaults all titlebar sections to visible", () => {
+    const result = mergeWithDefaults({});
+    expect(result.ui.titlebar).toEqual({
+      commandBar: true,
+      quickActionsLeft: true,
+      quickActionsRight: true,
+      resourceUsage: true,
+      workspaceSwitcher: true,
+    });
+  });
+
+  it("preserves explicit titlebar visibility overrides", () => {
+    const result = mergeWithDefaults({
+      ui: {
+        titlebar: {
+          commandBar: false,
+          quickActionsLeft: false,
+          quickActionsRight: true,
+          resourceUsage: false,
+          workspaceSwitcher: true,
+        },
+      },
+    } as Partial<UserSettings>);
+    expect(result.ui.titlebar.commandBar).toBe(false);
+    expect(result.ui.titlebar.quickActionsLeft).toBe(false);
+    expect(result.ui.titlebar.quickActionsRight).toBe(true);
+    expect(result.ui.titlebar.resourceUsage).toBe(false);
+    expect(result.ui.titlebar.workspaceSwitcher).toBe(true);
+  });
+
+  it("merges partial titlebar settings with defaults", () => {
+    const result = mergeWithDefaults({
+      ui: { titlebar: { commandBar: false } },
+    } as Partial<UserSettings>);
+    expect(result.ui.titlebar.commandBar).toBe(false);
+    expect(result.ui.titlebar.quickActionsLeft).toBe(true);
+    expect(result.ui.titlebar.quickActionsRight).toBe(true);
+    expect(result.ui.titlebar.resourceUsage).toBe(true);
+    expect(result.ui.titlebar.workspaceSwitcher).toBe(true);
   });
 });
 

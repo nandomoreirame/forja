@@ -82,6 +82,7 @@ jobs:
 
       - name: Rebuild native addons for Electron
         run: npx electron-rebuild
+        working-directory: apps/desktop
 
       - name: Build and package
         run: pnpm build:electron

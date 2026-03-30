@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Layout,
   Model,
@@ -36,6 +36,7 @@ import { TabNameOverlay } from "@/components/tab-name-overlay";
 import { TabContextMenu } from "@/components/tab-context-menu";
 import { TabsetContextMenu } from "@/components/tabset-context-menu";
 import { useModifierHeldStore } from "@/stores/modifier-held";
+import { useUserSettingsStore } from "@/stores/user-settings";
 import { invoke } from "@/lib/ipc";
 import { getPluginIcon } from "@/lib/plugin-types";
 import { ShortcutBadge } from "./shortcut-badge";
@@ -91,6 +92,12 @@ export function TilingLayout() {
   // which causes FlexLayout to re-call onRenderTabSet and show/hide direction badges.
   const modifierVisible = useModifierHeldStore((s) => s.visible);
   const activeModifier = useModifierHeldStore((s) => s.activeModifier);
+
+  // Sync tabSetEnableMaximize from user settings to the live FlexLayout model
+  const tabSetEnableMaximize = useUserSettingsStore((s) => s.settings.ui.tabSetEnableMaximize);
+  useEffect(() => {
+    useTilingLayoutStore.getState().setTabSetEnableMaximize(tabSetEnableMaximize);
+  }, [tabSetEnableMaximize]);
 
   const handleAction = useCallback((action: Action) => {
     // Clear notification when user selects a tab belonging to a notified project

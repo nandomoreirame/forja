@@ -7,6 +7,11 @@
     "name": "Fernando Moreira",
     "email": "nandomoreira.me@gmail.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nandomoreirame/forja.git",
+    "directory": "apps/desktop"
+  },
   "type": "module",
   "sideEffects": [
     "**/*.css"

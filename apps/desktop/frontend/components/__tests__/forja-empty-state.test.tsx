@@ -8,10 +8,12 @@ vi.mock("@/lib/ipc", () => ({
 }));
 
 describe("ForjaEmptyState", () => {
-  it("renders Forja branding (logo text and tagline)", () => {
-    render(<ForjaEmptyState />);
+  it("renders Forja branding (ASCII logo and tagline)", () => {
+    const { container } = render(<ForjaEmptyState />);
 
-    expect(screen.getByText("Forja")).toBeInTheDocument();
+    const pre = container.querySelector("pre");
+    expect(pre).toBeInTheDocument();
+    expect(pre?.textContent).toContain("██");
     expect(screen.getByText("A dedicated desktop client for vibe coders")).toBeInTheDocument();
   });
 
@@ -30,7 +32,6 @@ describe("ForjaEmptyState", () => {
     );
 
     expect(screen.getByText("Custom Action")).toBeInTheDocument();
-    expect(screen.getByText("Forja")).toBeInTheDocument();
   });
 
   it("does not render children slot when no children provided", () => {

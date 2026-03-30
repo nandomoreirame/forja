@@ -131,10 +131,10 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         fitAddon = cached.fitAddon;
         hostElement = cached.hostElement;
         containerRef.current.appendChild(hostElement);
-        // Force xterm to re-render the full viewport after DOM reattachment.
-        // While parked, xterm wrote data to a detached DOM — the renderer's
-        // internal state may be stale, causing garbled text without this.
-        terminal.refresh(0, terminal.rows - 1);
+        // NOTE: refresh is deferred to the RAF callback (after fitAddon.fit())
+        // so the canvas repaints at the correct dimensions, not the stale
+        // pre-park size.  If dimensions changed, AI CLI sessions also get a
+        // screen clear so the TUI framework redraws cleanly via SIGWINCH.
         shouldSpawn = false; // PTY already running
         spawned = true; // treat as already started so park works on next unmount
       } else {
@@ -328,7 +328,33 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
       // so the PTY gets the correct initial dimensions.
       rafId = requestAnimationFrame(() => {
         if (aborted) return;
+
+        // Capture pre-fit dimensions for cache-reattach dimension-change detection
+        const prevCols = terminal.cols;
+        const prevRows = terminal.rows;
+
         fitAddon.fit();
+
+        // When reattaching from cache with different dimensions, clear the
+        // visible screen for AI CLI sessions.  Data written while parked was
+        // formatted for the old terminal size — TUI frameworks (Ink) use
+        // absolute cursor positioning that assumes the old column count, so
+        // the content appears garbled at the new size.  Clearing lets the
+        // TUI's SIGWINCH handler redraw cleanly at the correct dimensions.
+        if (cached && isAiCli) {
+          const dimsChanged = terminal.cols !== prevCols || terminal.rows !== prevRows;
+          if (dimsChanged) {
+            terminal.write("\x1b[2J\x1b[H");
+          }
+        }
+
+        // Force full viewport repaint after DOM reattachment — the canvas
+        // renderer's state may be stale from writes to a detached DOM while
+        // the terminal was parked in the cache.
+        if (cached) {
+          terminal.refresh(0, terminal.rows - 1);
+        }
+
         terminal.focus();
         const dims = fitAddon.proposeDimensions();
         const rows = dims?.rows ?? 24;

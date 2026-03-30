@@ -3,6 +3,7 @@ import {
   parseSessionUsage,
   calculateCost,
   formatTokens,
+  getContextWindowSize,
   type SessionTelemetry,
 } from "../session-telemetry.js";
 
@@ -42,6 +43,48 @@ describe("session-telemetry", () => {
       const result = parseSessionUsage(lines);
       expect(result.totalInputTokens).toBe(500);
       expect(result.model).toBe("claude-sonnet-4-6");
+    });
+  });
+
+  describe("getContextWindowSize", () => {
+    it("returns 1M for opus models", () => {
+      expect(getContextWindowSize("claude-opus-4-6")).toBe(1_048_576);
+    });
+
+    it("returns 200k for sonnet models", () => {
+      expect(getContextWindowSize("claude-sonnet-4-6")).toBe(200_000);
+    });
+
+    it("returns 200k for haiku models", () => {
+      expect(getContextWindowSize("claude-haiku-4-5-20251001")).toBe(200_000);
+    });
+
+    it("returns 200k for unknown models", () => {
+      expect(getContextWindowSize("unknown-model")).toBe(200_000);
+    });
+
+    it("returns 200k for null model", () => {
+      expect(getContextWindowSize(null)).toBe(200_000);
+    });
+  });
+
+  describe("parseSessionUsage contextPct", () => {
+    it("calculates context percentage using 1M window for opus", () => {
+      const lines = [
+        '{"type":"assistant","message":{"model":"claude-opus-4-6","usage":{"input_tokens":1000,"output_tokens":200,"cache_creation_input_tokens":500,"cache_read_input_tokens":60000},"content":[]}}',
+      ];
+      const result = parseSessionUsage(lines);
+      // 61500 tokens / 1_048_576 = ~5.9% → rounds to 6%
+      expect(result.contextPct).toBe(6);
+    });
+
+    it("calculates context percentage using 200k window for sonnet", () => {
+      const lines = [
+        '{"type":"assistant","message":{"model":"claude-sonnet-4-6","usage":{"input_tokens":1000,"output_tokens":200,"cache_creation_input_tokens":500,"cache_read_input_tokens":60000},"content":[]}}',
+      ];
+      const result = parseSessionUsage(lines);
+      // 61500 tokens / 200_000 = 30.75% → rounds to 31%
+      expect(result.contextPct).toBe(31);
     });
   });
 

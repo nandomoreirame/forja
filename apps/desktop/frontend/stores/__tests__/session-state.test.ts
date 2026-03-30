@@ -150,13 +150,23 @@ describe("useSessionStateStore", () => {
       expect(mockSetProjectThinking).not.toHaveBeenCalled();
     });
 
-    it("on thinking→ready marks project as notified with message", () => {
-      const { onData } = useSessionStateStore.getState();
+    it("on thinking→ready marks project as notified when user has typed input", () => {
+      const { onData, markTabInput } = useSessionStateStore.getState();
+      markTabInput("tab-1");
       onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
 
       vi.advanceTimersByTime(2500);
 
       expect(mockMarkProjectNotified).toHaveBeenCalledWith("/home/user/my-app", "Session finished");
+    });
+
+    it("on thinking→ready does NOT notify when no user input (buffer replay)", () => {
+      const { onData } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+
+      vi.advanceTimersByTime(2500);
+
+      expect(mockMarkProjectNotified).not.toHaveBeenCalled();
     });
 
     it("on thinking→ready does NOT mark terminal sessions as notified", () => {
@@ -240,11 +250,12 @@ describe("useSessionStateStore", () => {
       );
     });
 
-    it("calls pty:notify-session-finished on thinking → ready transition", async () => {
+    it("calls pty:notify-session-finished on thinking → ready transition when user has input", async () => {
       const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockClear();
 
-      const { onData } = useSessionStateStore.getState();
+      const { onData, markTabInput } = useSessionStateStore.getState();
+      markTabInput("tab-1");
       onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
 
       vi.advanceTimersByTime(2500);
@@ -256,6 +267,21 @@ describe("useSessionStateStore", () => {
         tabId: "tab-1",
         bufferSnapshotLength: 0,
       });
+    });
+
+    it("does NOT call pty:notify-session-finished on thinking → ready without user input", async () => {
+      const { invoke } = await import("@/lib/ipc");
+      vi.mocked(invoke).mockClear();
+
+      const { onData } = useSessionStateStore.getState();
+      onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
+
+      vi.advanceTimersByTime(2500);
+
+      expect(invoke).not.toHaveBeenCalledWith(
+        "pty:notify-session-finished",
+        expect.anything(),
+      );
     });
 
     it("does not call pty:notify-session-finished for terminal thinking → ready", async () => {
@@ -318,8 +344,9 @@ describe("useSessionStateStore", () => {
       const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockClear();
 
-      const { onData } = useSessionStateStore.getState();
+      const { onData, markTabInput } = useSessionStateStore.getState();
       const meta = { projectPath: "/home/user/my-app", sessionType: "claude" };
+      markTabInput("tab-1");
 
       // First cycle: thinking → ready (should notify)
       onData("tab-1", meta);
@@ -345,7 +372,8 @@ describe("useSessionStateStore", () => {
       vi.mocked(invoke).mockClear();
       vi.mocked(invoke).mockResolvedValue(42);
 
-      const { onData } = useSessionStateStore.getState();
+      const { onData, markTabInput } = useSessionStateStore.getState();
+      markTabInput("tab-1");
       onData("tab-1", { projectPath: "/home/user/my-app", sessionType: "claude" });
 
       // Let the buffer length IPC resolve
@@ -358,13 +386,14 @@ describe("useSessionStateStore", () => {
       expect(call![1]).toHaveProperty("bufferSnapshotLength");
     });
 
-    it("cleanup clears buffer snapshot for the tab", async () => {
+    it("cleanup clears buffer snapshot and input tracking for the tab", async () => {
       const { invoke } = await import("@/lib/ipc");
       vi.mocked(invoke).mockClear();
 
-      const { onData, cleanup } = useSessionStateStore.getState();
+      const { onData, cleanup, markTabInput } = useSessionStateStore.getState();
       const meta = { projectPath: "/home/user/my-app", sessionType: "claude" };
 
+      markTabInput("tab-1");
       onData("tab-1", meta);
       vi.advanceTimersByTime(2500);
 
@@ -372,6 +401,8 @@ describe("useSessionStateStore", () => {
 
       cleanup("tab-1");
 
+      // After cleanup, tab input tracking is cleared — need to re-mark
+      markTabInput("tab-1");
       onData("tab-1", meta);
       vi.advanceTimersByTime(2500);
 

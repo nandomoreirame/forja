@@ -1,4 +1,11 @@
-# Forja
+```
+███████╗ ██████╗ ██████╗      ██╗ █████╗
+██╔════╝██╔═══██╗██╔══██╗     ██║██╔══██╗
+█████╗  ██║   ██║██████╔╝     ██║███████║
+██╔══╝  ██║   ██║██╔══██╗██   ██║██╔══██║
+██║     ╚██████╔╝██║  ██║╚█████╔╝██║  ██║
+╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚════╝ ╚═╝  ╚═╝
+```
 
 A dedicated GUI client for Vibe Coders (and other AI coding CLIs), built with Electron + React. Not just another terminal: it's the forge where code is shaped with artificial intelligence.
 
