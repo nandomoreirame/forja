@@ -3,17 +3,25 @@ import {
   getActiveSessions,
   getSessionBuffer,
   writePty,
+  closePty,
   hasPty,
   subscribePtyOutput,
 } from "./pty.js";
 import type { PtySubscriberEvent } from "./pty.js";
 import { validateToken, getAuthToken } from "./auth-token.js";
+import { PtyOutputSanitizer } from "./pty-output-sanitizer.js";
+import { parseAiOutput } from "./ai-output-parser.js";
+import { OscParser } from "./osc-parser.js";
 
 export interface WsBridgeOptions {
   port?: number;
   host?: string;
   /** Called when a client requests a new session via WebSocket. Return true if handled. */
   onNewSession?: (sessionType: string, projectPath?: string) => boolean;
+  /** Called when a client closes a session via WebSocket. Used to notify the renderer. */
+  onCloseSession?: (tabId: string) => void;
+  /** Called when a client renames a session via WebSocket. Used to notify the renderer. */
+  onRenameSession?: (tabId: string, name: string) => void;
 }
 
 export interface WsBridgeStatus {
@@ -45,9 +53,18 @@ export function createWsBridge(opts?: WsBridgeOptions) {
   const port = opts?.port ?? 9400;
   const host = opts?.host ?? "0.0.0.0";
   const onNewSession = opts?.onNewSession;
+  const onCloseSession = opts?.onCloseSession;
+  const onRenameSession = opts?.onRenameSession;
   let wss: WebSocketServer | null = null;
   let unsubscribePty: (() => void) | null = null;
   let broadcastTimer: ReturnType<typeof setInterval> | null = null;
+  const sanitizer = new PtyOutputSanitizer();
+
+  // Per-session OSC 9 parsers and accumulated clean messages.
+  // OSC 9 sequences carry the AI's `last_assistant_message` in markdown format,
+  // emitted by notify.sh when FORJA_TERMINAL=1.
+  const oscParsers = new Map<string, OscParser>();
+  const sessionMessages = new Map<string, string[]>();
 
   const authenticatedClients = new WeakSet<WebSocket>();
   const clientSubscriptions = new Map<WebSocket, Set<string>>();
@@ -88,51 +105,77 @@ export function createWsBridge(opts?: WsBridgeOptions) {
     consecutiveDrops.delete(ws);
   }
 
-  function flushPendingEvents(): void {
-    if (!wss || pendingEvents.size === 0) return;
+  let flushInProgress = false;
 
-    for (const [tabId, events] of pendingEvents) {
-      // Merge data events: concatenate data strings into a single broadcast
-      let mergedData = "";
-      let lastEvent: PtySubscriberEvent | null = null;
-      const nonDataEvents: PtySubscriberEvent[] = [];
+  async function flushPendingEvents(): Promise<void> {
+    if (!wss || pendingEvents.size === 0 || flushInProgress) return;
+    flushInProgress = true;
 
-      for (const event of events) {
-        if (event.event === "data" && event.data) {
-          mergedData += event.data;
-          lastEvent = event;
-        } else {
-          nonDataEvents.push(event);
-        }
-      }
-
-      const toSend: PtySubscriberEvent[] = [...nonDataEvents];
-      if (lastEvent && mergedData) {
-        toSend.push({ ...lastEvent, data: mergedData });
-      }
-
-      for (const payload of toSend) {
-        const json = JSON.stringify({ type: "pty-event", ...payload });
-
-        for (const client of wss.clients) {
-          if (client.readyState !== WebSocket.OPEN) continue;
-          if (!authenticatedClients.has(client)) continue;
-
-          const subs = clientSubscriptions.get(client);
-          if (!subs || !subs.has(tabId)) continue;
-
-          if (isBackpressured(client)) {
-            trackDrop(client);
-            continue;
-          }
-
-          resetDrops(client);
-          client.send(json);
-        }
-      }
-    }
-
+    // Snapshot and clear to avoid holding events while we process
+    const snapshot = new Map(pendingEvents);
     pendingEvents.clear();
+
+    try {
+      for (const [tabId, events] of snapshot) {
+        // Merge data events: concatenate data strings into a single broadcast
+        let mergedData = "";
+        let lastEvent: PtySubscriberEvent | null = null;
+        const nonDataEvents: PtySubscriberEvent[] = [];
+
+        for (const event of events) {
+          if (event.event === "data" && event.data) {
+            mergedData += event.data;
+            lastEvent = event;
+          } else {
+            nonDataEvents.push(event);
+          }
+        }
+
+        // Write merged data to sanitizer and AWAIT so xterm finishes parsing
+        // before we read the screen buffer
+        if (mergedData && sanitizer.hasSession(tabId)) {
+          await sanitizer.writeAsync(tabId, mergedData);
+        }
+
+        const toSend: PtySubscriberEvent[] = [...nonDataEvents];
+        if (lastEvent && mergedData) {
+          toSend.push({ ...lastEvent, data: mergedData });
+        }
+
+        for (const payload of toSend) {
+          let extraFields: { cleanText?: string } = {};
+          if (payload.event === "data") {
+            // Only include cleanText when we have real OSC 9 messages (clean
+            // markdown from the AI's last_assistant_message via notify.sh hook).
+            // During streaming (before Stop), no cleanText is sent — the mobile
+            // falls back to its stripAnsi(data) append mode for live feedback.
+            const history = sessionMessages.get(tabId);
+            if (history && history.length > 0) {
+              extraFields = { cleanText: history.join("\n\n---\n\n") };
+            }
+          }
+          const json = JSON.stringify({ type: "pty-event", ...payload, ...extraFields });
+
+          for (const client of wss!.clients) {
+            if (client.readyState !== WebSocket.OPEN) continue;
+            if (!authenticatedClients.has(client)) continue;
+
+            const subs = clientSubscriptions.get(client);
+            if (!subs || !subs.has(tabId)) continue;
+
+            if (isBackpressured(client)) {
+              trackDrop(client);
+              continue;
+            }
+
+            resetDrops(client);
+            client.send(json);
+          }
+        }
+      }
+    } finally {
+      flushInProgress = false;
+    }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -173,11 +216,21 @@ export function createWsBridge(opts?: WsBridgeOptions) {
         break;
 
       case "session-output": {
-        const content = getSessionBuffer(msg.tabId);
-        if (content === null) {
+        const rawContent = getSessionBuffer(msg.tabId);
+        if (rawContent === null) {
           ws.send(JSON.stringify({ ok: false, error: `No session: ${msg.tabId}` }));
         } else {
-          ws.send(JSON.stringify({ ok: true, data: { tabId: msg.tabId, content } }));
+          // Include cleanText only when OSC 9 messages are available
+          const history = sessionMessages.get(msg.tabId);
+          const cleanText = history && history.length > 0
+            ? history.join("\n\n---\n\n")
+            : undefined;
+          ws.send(
+            JSON.stringify({
+              ok: true,
+              data: { tabId: msg.tabId, content: rawContent, ...(cleanText != null ? { cleanText } : {}) },
+            }),
+          );
         }
         break;
       }
@@ -210,6 +263,17 @@ export function createWsBridge(opts?: WsBridgeOptions) {
           clientSubscriptions.set(ws, subs);
         }
         subs.add(msg.tabId);
+
+        // Ensure sanitizer has a session for this tabId (may be subscribing to
+        // an already-running session that produced output before subscription)
+        if (!sanitizer.hasSession(msg.tabId)) {
+          sanitizer.addSession(msg.tabId);
+          const existingBuffer = getSessionBuffer(msg.tabId);
+          if (existingBuffer) {
+            sanitizer.write(msg.tabId, existingBuffer);
+          }
+        }
+
         ws.send(JSON.stringify({ ok: true, data: { subscribed: msg.tabId } }));
         break;
       }
@@ -220,6 +284,27 @@ export function createWsBridge(opts?: WsBridgeOptions) {
         ws.send(JSON.stringify({ ok: true }));
         break;
       }
+
+      case "rename-session":
+        if (!msg.tabId || typeof msg.name !== "string") {
+          ws.send(JSON.stringify({ ok: false, error: "Missing tabId or name" }));
+        } else {
+          onRenameSession?.(msg.tabId, msg.name);
+          ws.send(JSON.stringify({ ok: true }));
+        }
+        break;
+
+      case "close-session":
+        if (!msg.tabId) {
+          ws.send(JSON.stringify({ ok: false, error: "Missing tabId" }));
+        } else if (!hasPty(msg.tabId)) {
+          ws.send(JSON.stringify({ ok: false, error: `No session: ${msg.tabId}` }));
+        } else {
+          closePty(msg.tabId);
+          onCloseSession?.(msg.tabId);
+          ws.send(JSON.stringify({ ok: true }));
+        }
+        break;
 
       case "new-session": {
         const validTypes = ["claude", "gemini", "codex", "gh-copilot", "cursor-agent", "terminal"];
@@ -279,6 +364,35 @@ export function createWsBridge(opts?: WsBridgeOptions) {
           } else {
             pendingEvents.set(event.tabId, [event]);
           }
+
+          // Manage sanitizer + OSC parser lifecycle
+          if (event.event === "session-start") {
+            sanitizer.addSession(event.tabId);
+            oscParsers.set(event.tabId, new OscParser());
+            sessionMessages.set(event.tabId, []);
+          } else if (event.event === "session-exit") {
+            sanitizer.removeSession(event.tabId);
+            oscParsers.delete(event.tabId);
+            // Keep sessionMessages so reconnecting clients can still read history
+          } else if (event.event === "resize" && event.cols && event.rows) {
+            sanitizer.resize(event.tabId, event.cols, event.rows);
+          }
+
+          // Feed raw data to OSC parser to intercept clean markdown messages
+          if (event.event === "data" && event.data) {
+            const parser = oscParsers.get(event.tabId);
+            if (parser) {
+              const msgs = parser.feed(event.data);
+              if (msgs.length > 0) {
+                let history = sessionMessages.get(event.tabId);
+                if (!history) {
+                  history = [];
+                  sessionMessages.set(event.tabId, history);
+                }
+                history.push(...msgs);
+              }
+            }
+          }
         });
 
         // Start the broadcast interval timer
@@ -296,6 +410,9 @@ export function createWsBridge(opts?: WsBridgeOptions) {
           broadcastTimer = null;
         }
         pendingEvents.clear();
+        sanitizer.dispose();
+        oscParsers.clear();
+        sessionMessages.clear();
 
         if (unsubscribePty) {
           unsubscribePty();

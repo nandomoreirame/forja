@@ -2,9 +2,9 @@ import * as crypto from "crypto";
 
 let currentToken = "";
 
-/** Generate a new auth token. Returns the token string. */
+/** Generate a new 4-digit numeric auth token. Returns the token string. */
 export function generateToken(): string {
-  currentToken = crypto.randomUUID();
+  currentToken = String(crypto.randomInt(0, 10000)).padStart(4, "0");
   return currentToken;
 }
 

@@ -15,6 +15,7 @@ export type ExternalCommand =
   | { type: "session-input"; tabId: string; text: string }
   | { type: "subscribe"; tabId: string }
   | { type: "new-session"; sessionType: string; projectPath?: string }
+  | { type: "close-session"; tabId: string }
   | { type: "switch-project"; index: number };
 
 export type ExternalResponse =

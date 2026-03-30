@@ -19,12 +19,14 @@ interface PtySession {
 }
 
 export interface PtySubscriberEvent {
-  event: "data" | "session-start" | "session-exit";
+  event: "data" | "session-start" | "session-exit" | "resize";
   tabId: string;
   data?: string;
   projectPath?: string;
   sessionType?: string;
   exitCode?: number | null;
+  cols?: number;
+  rows?: number;
 }
 
 type PtySubscriberFn = (event: PtySubscriberEvent) => void;
@@ -55,6 +57,20 @@ const SESSION_DISPLAY_NAMES: Record<string, string> = {
   terminal: "Terminal",
 };
 
+/**
+ * Custom display names set by the renderer (e.g. user-renamed tabs, auto-numbered tabs).
+ * Updated via `setTabDisplayName()` IPC from the frontend.
+ */
+const tabDisplayNames = new Map<string, string>();
+
+export function setTabDisplayName(tabId: string, name: string): void {
+  if (name) {
+    tabDisplayNames.set(tabId, name);
+  } else {
+    tabDisplayNames.delete(tabId);
+  }
+}
+
 export function getActiveSessions(): Array<{
   tabId: string;
   projectPath: string;
@@ -67,7 +83,7 @@ export function getActiveSessions(): Array<{
       tabId,
       projectPath: session.projectPath,
       sessionType: session.sessionType,
-      displayName: SESSION_DISPLAY_NAMES[session.sessionType] ?? session.sessionType,
+      displayName: tabDisplayNames.get(tabId) ?? SESSION_DISPLAY_NAMES[session.sessionType] ?? session.sessionType,
     });
   }
   return result;
@@ -330,6 +346,7 @@ export function resizePty(tabId: string, rows: number, cols: number): void {
   const session = sessions.get(tabId);
   if (session) {
     session.process.resize(cols, rows);
+    notifyPtySubscribers({ event: "resize", tabId, cols, rows });
   }
 }
 

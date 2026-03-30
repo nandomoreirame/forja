@@ -41,7 +41,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // PTY must be eager (resolveShellPath used at module scope)
-import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closePtyAndTmux, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers, reattachPty, getActiveSessions } from "./pty.js";
+import { resolveShellPath, spawnPty, writePty, resizePty, closePty, closePtyAndTmux, closeAllPtysForWindow, getSessionBuffer, hasPty, getAllSessionBuffers, reattachPty, getActiveSessions, setTabDisplayName } from "./pty.js";
 import { isUiSaveSuspended, suspendUiSaves, resumeUiSaves } from "./ui-save-gate.js";
 import { attachWebviewKeyboardBridge } from "./webview-keyboard-bridge.js";
 import { getCliSessions, getActiveSessionModel } from "./cli-sessions.js";
@@ -482,6 +482,18 @@ app.whenReady().then(async () => {
           return { ok: true, data: { sessionType: cmd.sessionType } };
         }
 
+        case "close-session": {
+          if (!hasPty(cmd.tabId)) {
+            return { ok: false, error: `No active session for: ${cmd.tabId}` };
+          }
+          closePty(cmd.tabId);
+          // Notify renderer to remove the tab
+          for (const w of BrowserWindow.getAllWindows()) {
+            w.webContents.send("ws-bridge:close-session", cmd.tabId);
+          }
+          return { ok: true };
+        }
+
         case "switch-project": {
           // Get project list from frontend, switch by 1-based index
           const projects = await win.webContents.executeJavaScript(
@@ -532,6 +544,17 @@ app.whenReady().then(async () => {
   });
 
   // WebSocket Bridge remote server controls
+  function getLocalIp(): string {
+    const interfaces = os.networkInterfaces();
+    for (const iface of Object.values(interfaces)) {
+      if (!iface) continue;
+      for (const addr of iface) {
+        if (addr.family === "IPv4" && !addr.internal) return addr.address;
+      }
+    }
+    return "127.0.0.1";
+  }
+
   ipcMain.handle("ws-bridge:start", async () => {
     const authMod = await getAuthToken();
     const wsMod = await getWsBridge();
@@ -541,14 +564,33 @@ app.whenReady().then(async () => {
 
     // Create and start the bridge (lazy, only created when needed)
     if (!wsBridge) {
-      wsBridge = wsMod.createWsBridge();
+      wsBridge = wsMod.createWsBridge({
+        onNewSession: (sessionType, projectPath) => {
+          const focusedWin = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0];
+          if (!focusedWin) return false;
+          focusedWin.webContents.send("external:command", { type: "new-session", sessionType, projectPath });
+          focusedWin.focus();
+          return true;
+        },
+        onCloseSession: (tabId) => {
+          for (const win of BrowserWindow.getAllWindows()) {
+            win.webContents.send("ws-bridge:close-session", tabId);
+          }
+        },
+        onRenameSession: (tabId, name) => {
+          for (const win of BrowserWindow.getAllWindows()) {
+            win.webContents.send("ws-bridge:rename-session", { tabId, name });
+          }
+        },
+      });
     }
     await wsBridge.start();
 
     const status = wsBridge.getStatus();
     console.log(`[WS Bridge] Started on ws://${status.host}:${status.port} (token: ${token.slice(0, 8)}...)`);
 
-    return { ok: true, data: { port: status.port, host: status.host, token } };
+    const localIp = getLocalIp();
+    return { ok: true, data: { port: status.port, host: status.host, token, localIp } };
   });
 
   ipcMain.handle("ws-bridge:stop", async () => {
@@ -964,6 +1006,10 @@ ipcMain.handle("pty:get-buffer", (_event, args: { tabId: string }) => {
 
 ipcMain.handle("pty:has-session", (_event, args: { tabId: string }) => {
   return hasPty(args.tabId);
+});
+
+ipcMain.handle("pty:set-tab-display-name", (_event, args: { tabId: string; displayName: string }) => {
+  setTabDisplayName(args.tabId, args.displayName);
 });
 
 ipcMain.handle("pty:get-orphaned-sessions", async () => {
