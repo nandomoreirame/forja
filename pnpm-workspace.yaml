@@ -1,8 +1,9 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
 
 onlyBuiltDependencies:
   - electron
   - esbuild
   - node-pty
+  - sharp
