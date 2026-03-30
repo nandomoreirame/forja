@@ -25,7 +25,6 @@ vi.mock("../pty.js", () => ({
   writePty: vi.fn(),
   resizePty: vi.fn(),
   closePty: vi.fn(),
-  closePtyAndTmux: vi.fn(),
   closeAllPtysForWindow: vi.fn(),
   getSessionBuffer: vi.fn((tabId: string) => {
     const session = mockSessions.get(tabId);
@@ -33,7 +32,6 @@ vi.mock("../pty.js", () => ({
   }),
   hasPty: vi.fn((tabId: string) => mockSessions.has(tabId)),
   getAllSessionBuffers: vi.fn(),
-  reattachPty: vi.fn(),
   getActiveSessions: vi.fn(() => {
     return Array.from(mockSessions.values()).map((s) => ({
       tabId: s.tabId,
