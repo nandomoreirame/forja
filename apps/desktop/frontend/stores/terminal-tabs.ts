@@ -24,17 +24,28 @@ export interface TerminalTab {
   createdAt?: number;
 }
 
+export interface ClosedTabEntry {
+  path: string;
+  sessionType: SessionType;
+  customName?: string;
+}
+
+const MAX_RECENTLY_CLOSED = 20;
+
 interface TerminalTabsState {
   tabs: TerminalTab[];
   activeTabId: string | null;
   counter: number;
   isTerminalFullscreen: boolean;
+  recentlyClosed: ClosedTabEntry[];
 
   nextTabId: () => string;
   addTab: (id: string, path: string, sessionType?: SessionType, customName?: string) => void;
   /** Registers tab metadata WITHOUT creating a layout block. Used for non-active project tabs during session restore. */
   registerTab: (id: string, path: string, sessionType?: SessionType, customName?: string) => void;
   removeTab: (id: string) => void;
+  /** Restores the most recently closed tab. Returns true if a tab was restored, false if no closed tabs exist. */
+  restoreLastClosedTab: () => boolean;
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
   markTabRunning: (id: string) => void;
@@ -68,6 +79,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   activeTabId: null,
   counter: 0,
   isTerminalFullscreen: false,
+  recentlyClosed: [],
 
   nextTabId: () => {
     const newCounter = get().counter + 1;
@@ -116,9 +128,18 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
   },
 
   removeTab: (id: string) => {
-    const { tabs, activeTabId } = get();
+    const { tabs, activeTabId, recentlyClosed } = get();
     const index = tabs.findIndex((t) => t.id === id);
     if (index === -1) return;
+
+    // Save closed tab info for restore
+    const closedTab = tabs[index];
+    const entry: ClosedTabEntry = {
+      path: closedTab.path,
+      sessionType: closedTab.sessionType,
+      customName: closedTab.customName,
+    };
+    const updatedClosed = [...recentlyClosed, entry].slice(-MAX_RECENTLY_CLOSED);
 
     const newTabs = tabs.filter((t) => t.id !== id);
 
@@ -135,7 +156,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
       }
     }
 
-    set({ tabs: newTabs, activeTabId: newActiveTabId });
+    set({ tabs: newTabs, activeTabId: newActiveTabId, recentlyClosed: updatedClosed });
 
     // Remove the block from the tiling layout
     useTilingLayoutStore.getState().removeBlock(id);
@@ -144,6 +165,21 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     import("./session-telemetry").then(({ useSessionTelemetryStore }) => {
       useSessionTelemetryStore.getState().cleanup(id);
     }).catch(() => {});
+  },
+
+  restoreLastClosedTab: () => {
+    const { recentlyClosed } = get();
+    if (recentlyClosed.length === 0) return false;
+
+    const entry = recentlyClosed[recentlyClosed.length - 1];
+    const updatedClosed = recentlyClosed.slice(0, -1);
+    set({ recentlyClosed: updatedClosed });
+
+    // Create a new tab with the closed tab's info
+    const id = get().nextTabId();
+    get().addTab(id, entry.path, entry.sessionType, entry.customName);
+
+    return true;
   },
 
   setActiveTab: (id: string) =>

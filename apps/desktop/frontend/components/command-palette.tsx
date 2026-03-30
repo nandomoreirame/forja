@@ -302,7 +302,6 @@ export function CommandPalette() {
                 >
                   <Plus className="h-4 w-4" strokeWidth={1.5} />
                   New Session
-                  <CommandShortcut>{mod}+Shift+T</CommandShortcut>
                 </CommandItem>
               )}
               {projects.length > 0 && (

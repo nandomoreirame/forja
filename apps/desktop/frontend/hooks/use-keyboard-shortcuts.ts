@@ -63,14 +63,13 @@ export function useKeyboardShortcuts({
       if (mod && event.shiftKey && event.key.toLowerCase() === "t") {
         event.preventDefault();
 
-        if (!useFileTreeStore.getState().currentPath) return;
-        useCommandPaletteStore.getState().open("sessions");
+        useTerminalTabsStore.getState().restoreLastClosedTab();
         return;
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "r") {
         event.preventDefault();
 
-        useWsBridgeStore.getState().toggle();
+        useWsBridgeStore.getState().openDialog();
         return;
       }
       if (mod && event.key.toLowerCase() === "w") {

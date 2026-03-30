@@ -40,7 +40,7 @@ const shortcuts: { section: string; items: Shortcut[] }[] = [
   {
     section: "Tabs",
     items: [
-      { label: "New Tab", keys: [mod, "Shift", "T"] },
+      { label: "Reopen Closed Tab", keys: [mod, "Shift", "T"] },
       { label: "Close Tab", keys: [mod, "Shift", "W"] },
       { label: "Next Tab", keys: ["Ctrl", "Tab"] },
       { label: "Previous Tab", keys: ["Ctrl", "Shift", "Tab"] },
