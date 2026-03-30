@@ -1,0 +1,10 @@
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- GitHub Copilot: simplified copilot/octopilot icon -->
+  <circle cx="12" cy="8" r="5" fill="#b4befe"/>
+  <circle cx="12" cy="8" r="2.5" fill="#1e1e2e"/>
+  <path d="M7 14C7 14 5 15 5 17C5 19 7 20 9 20H15C17 20 19 19 19 17C19 15 17 14 17 14" stroke="#b4befe" stroke-width="1.5" fill="none"/>
+  <path d="M9 14C9 14 8 15.5 8 17C8 18 8.5 18.5 9 18.5" stroke="#b4befe" stroke-width="1" fill="none"/>
+  <path d="M15 14C15 14 16 15.5 16 17C16 18 15.5 18.5 15 18.5" stroke="#b4befe" stroke-width="1" fill="none"/>
+  <circle cx="9.5" cy="7" r="1" fill="#b4befe"/>
+  <circle cx="14.5" cy="7" r="1" fill="#b4befe"/>
+</svg>

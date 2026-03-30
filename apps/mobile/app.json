@@ -18,6 +18,9 @@
       "adaptiveIcon": {
         "backgroundColor": "#1e1e2e"
       }
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }
