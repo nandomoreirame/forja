@@ -837,6 +837,24 @@ function App({
     return () => { cleanup.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup external:command unlisten failed:", err)); };
   }, []);
 
+  // Handle remote close-session from WS bridge (mobile remote control)
+  useEffect(() => {
+    const cleanup = listen<string>("ws-bridge:close-session", (event) => {
+      const tabId = event.payload;
+      closeTab(tabId);
+    });
+    return () => { cleanup.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup ws-bridge:close-session unlisten failed:", err)); };
+  }, [closeTab]);
+
+  // Handle remote rename-session from WS bridge (mobile remote control)
+  useEffect(() => {
+    const cleanup = listen<{ tabId: string; name: string }>("ws-bridge:rename-session", (event) => {
+      const { tabId, name } = event.payload;
+      useTerminalTabsStore.getState().renameTab(tabId, name);
+    });
+    return () => { cleanup.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup ws-bridge:rename-session unlisten failed:", err)); };
+  }, []);
+
   // Expose project list getter for the external API `list-projects` command
   useEffect(() => {
     (window as any).__forjaExternalGetProjects = () => {

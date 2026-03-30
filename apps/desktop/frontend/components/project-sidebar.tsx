@@ -5,6 +5,7 @@ import {
   MessageSquare,
   Pencil,
   Plus,
+  Radio,
   X,
 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -29,6 +30,8 @@ import { useFileTreeStore } from "@/stores/file-tree";
 import { invoke, open } from "@/lib/ipc";
 import { cn } from "@/lib/utils";
 import { useAgentChatStore } from "@/stores/agent-chat";
+import { useWsBridgeStore } from "@/stores/ws-bridge";
+import { WsBridgeDialog } from "./ws-bridge-dialog";
 import {
   Tooltip,
   TooltipContent,
@@ -268,6 +271,10 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
   const toggleChat = useAgentChatStore((s) => s.togglePanel);
   const isChatOpen = useAgentChatStore((s) => s.isPanelOpen);
 
+  const wsBridgeRunning = useWsBridgeStore((s) => s.running);
+  const wsBridgeDialogOpen = useWsBridgeStore((s) => s.dialogOpen);
+  const setWsBridgeDialogOpen = useWsBridgeStore((s) => s.setDialogOpen);
+
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editName, setEditName] = useState("");
   const [editIconPath, setEditIconPath] = useState("");
@@ -435,8 +442,37 @@ export function ProjectSidebar({ onOpenProject }: ProjectSidebarProps) {
             </TooltipContent>
           </Tooltip>
 
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Remote Server"
+                aria-pressed={wsBridgeRunning}
+                onClick={() => setWsBridgeDialogOpen(true)}
+                className={cn(
+                  "relative flex h-9 w-9 items-center justify-center rounded-md transition-colors",
+                  wsBridgeRunning
+                    ? "bg-ctp-green/10 text-ctp-green hover:bg-ctp-green/20"
+                    : "text-ctp-overlay1 hover:bg-ctp-surface0 hover:text-ctp-text"
+                )}
+              >
+                <Radio className="h-4 w-4" strokeWidth={1.5} />
+                {wsBridgeRunning && (
+                  <span
+                    className="absolute top-1 right-1 h-1.5 w-1.5 animate-pulse rounded-full bg-ctp-green ring-1 ring-ctp-mantle"
+                    aria-hidden="true"
+                  />
+                )}
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p>{wsBridgeRunning ? "Remote Server: Running" : "Remote Server"}</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
       </div>
+
+      <WsBridgeDialog open={wsBridgeDialogOpen} onOpenChange={setWsBridgeDialogOpen} />
 
       {/* Edit Project Dialog */}
       <Dialog open={!!editingProject} onOpenChange={(open) => !open && setEditingProject(null)}>

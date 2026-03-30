@@ -1,4 +1,4 @@
-import { getCurrentWindow } from "@/lib/ipc";
+import { getCurrentWindow, invoke } from "@/lib/ipc";
 import { computeTabDisplayNames, getSessionDisplayName, type SessionType } from "@/lib/cli-registry";
 import { create } from "zustand";
 import { useTilingLayoutStore } from "./tiling-layout";
@@ -297,3 +297,35 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
     });
   },
 }));
+
+/**
+ * Sync tab display names to the main process whenever tabs change.
+ * This allows the WS bridge (mobile remote control) to show the correct
+ * tab name including customName and auto-numbered names like "Claude #2".
+ */
+let prevDisplayNames: Record<string, string> = {};
+
+function syncDisplayNames(state: { tabs: TerminalTab[] }): void {
+  const names = computeTabDisplayNames(state.tabs);
+  try {
+    for (const [tabId, name] of Object.entries(names)) {
+      if (prevDisplayNames[tabId] !== name) {
+        invoke("pty:set-tab-display-name", { tabId, displayName: name }).catch(() => {});
+      }
+    }
+    // Clean up removed tabs
+    for (const tabId of Object.keys(prevDisplayNames)) {
+      if (!(tabId in names)) {
+        invoke("pty:set-tab-display-name", { tabId, displayName: "" }).catch(() => {});
+      }
+    }
+  } catch {
+    // Silently ignore in test environments where invoke is not available
+  }
+  prevDisplayNames = names;
+}
+
+useTerminalTabsStore.subscribe(syncDisplayNames);
+
+// Sync immediately for any tabs that already exist at store creation time
+syncDisplayNames(useTerminalTabsStore.getState());

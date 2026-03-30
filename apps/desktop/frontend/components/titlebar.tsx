@@ -248,9 +248,9 @@ export function Titlebar() {
                     </span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => useWsBridgeStore.getState().toggle()}>
+                  <DropdownMenuItem onClick={() => useWsBridgeStore.getState().openDialog()}>
                     <Radio className="h-3.5 w-3.5" />
-                    {wsBridgeRunning ? "Stop Remote Server" : "Start Remote Server"}
+                    Remote Server
                     <span className="ml-auto font-mono text-app-xs text-ctp-overlay0">
                       Ctrl+Shift+R
                     </span>
