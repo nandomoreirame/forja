@@ -2,9 +2,9 @@ import { getAllCliIds } from "@/lib/cli-registry";
 import { invoke, listen } from "@/lib/ipc";
 import {
   AlertCircle,
-  Anvil,
   Plus,
 } from "lucide-react";
+import { ForjaAsciiLogo } from "@/components/forja-ascii-logo";
 import {
   Component,
   lazy,
@@ -148,8 +148,7 @@ function EmptyState() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-8 rounded-lg border border-ctp-surface0">
       <div className="flex flex-col items-center gap-4">
-        <Anvil className="h-16 w-16 text-brand" strokeWidth={1.5} />
-        <h1 className="text-3xl font-bold text-ctp-text">Forja</h1>
+        <ForjaAsciiLogo />
         <p className="text-app text-ctp-overlay1">
           A dedicated desktop client for vibe coders
         </p>

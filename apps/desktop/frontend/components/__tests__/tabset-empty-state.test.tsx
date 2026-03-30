@@ -27,10 +27,12 @@ describe("TabsetEmptyState", () => {
     vi.clearAllMocks();
   });
 
-  it("renders Forja branding", () => {
-    render(<TabsetEmptyState />);
+  it("renders Forja branding (ASCII logo and tagline)", () => {
+    const { container } = render(<TabsetEmptyState />);
 
-    expect(screen.getByText("Forja")).toBeInTheDocument();
+    const pre = container.querySelector("pre");
+    expect(pre).toBeInTheDocument();
+    expect(pre?.textContent).toContain("██");
     expect(screen.getByText("A dedicated desktop client for vibe coders")).toBeInTheDocument();
   });
 
