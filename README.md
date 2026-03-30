@@ -38,10 +38,26 @@ Forja opens directly into Claude Code. The user picks a project directory and th
 - **Agent Chat** - Chat panel with slash command menu for AI CLI interaction
 - **Keyboard Shortcuts** - Comprehensive shortcuts with customizable bindings, fullscreen toggle (F11)
 - **Font Settings** - Separate font configuration for 3 areas: app UI, editor/preview, and terminal
-- **Window Controls** - Custom titlebar with opacity and zoom level settings (hidden on macOS)
+- **Window Controls** - Custom titlebar with opacity and zoom level settings, configurable section visibility
 - **System Metrics** - Demand-driven CPU, memory, swap, disk, and network metrics in status bar
+- **Session Telemetry** - Real-time token usage, cost tracking, context bar with semantic colors
+- **Discord Notifications** - Webhook notifications with PTY output summarization
+- **Plugin System** - Plugin bridge, loader, registry, and permissions management
 - **Session State** - Visual indicators for "thinking" vs "ready" states with notification support
 - **Error Handling** - Graceful fallback when AI CLI is not installed
+
+## Monorepo
+
+Forja is organized as a pnpm monorepo with multiple applications and shared packages:
+
+| Package | Path | Description |
+|---------|------|-------------|
+| **@forja/desktop** | `apps/desktop/` | Electron desktop app (main product) |
+| **@forja/site** | `apps/site/` | Next.js 15 marketing site |
+| **@forja/docs** | `apps/docs/` | Fumadocs documentation site |
+| **@forja/mobile** | `apps/mobile/` | Expo remote control app (React Native) |
+| **@forja/tsconfig** | `packages/tsconfig/` | Shared TypeScript configurations |
+| **@forja/shared** | `packages/shared/` | Shared types and constants |
 
 ## Stack
 
@@ -55,12 +71,17 @@ Forja opens directly into Claude Code. The user picks a project directory and th
 | **Shiki** | Syntax highlighting (14+ themes) |
 | **react-markdown + remark-gfm** | Markdown output rendering |
 | **Zustand 5** | State management |
+| **FlexLayout** | Tiling window layout system |
 | **chokidar 4** | File watching (.git/ changes, project files, settings) |
-| **electron-store 10** | Config storage (~/.config/forja/config.json) |
+| **electron-store 10** | Config storage |
 | **systeminformation** | System metrics (CPU, memory, disk, network) |
+| **Discord.js 14** | Webhook notifications |
 | **Lucide React** | Icon system |
 | **@dnd-kit** | Drag-and-drop (project sidebar) |
-| **Vitest + React Testing Library** | Testing framework (1498+ tests) |
+| **Next.js 15** | Marketing site and documentation |
+| **Fumadocs** | MDX documentation framework |
+| **Expo 52 + React Native** | Mobile remote control app |
+| **Vitest + React Testing Library** | Testing framework |
 
 ## Architecture
 
@@ -80,6 +101,8 @@ Forja opens directly into Claude Code. The user picks a project directory and th
     +-- Git Reader (git CLI)
     |   +-- Branch info, file status, diff content
     +-- Context System (hub, sync, tool registry)
+    +-- Plugin System (bridge, loader, registry, permissions)
+    +-- WebSocket Bridge (mobile remote control)
     +-- Agent Chat (IPC-based AI CLI interaction)
     +-- Config Manager (electron-store)
     +-- User Settings (~/.config/forja/settings.json)
@@ -114,7 +137,7 @@ Home Screen (Project Selector)
       +-- File Preview Pane (code + markdown + images + diffs)
       +-- Browser Pane (embedded webview, auto-opens on localhost)
       +-- Chat Panel (agent chat with slash commands)
-      +-- Status Bar (git branch + system metrics)
+      +-- Status Bar (git branch + system metrics + telemetry)
 ```
 
 ## Inspirations
@@ -149,6 +172,7 @@ Download the latest release from [GitHub Releases](https://github.com/nandomorei
 
 - **macOS**: `.dmg` (Apple Silicon + Intel)
 - **Linux**: `.AppImage` or `.deb`
+- **Windows**: `.exe` (NSIS installer)
 
 ### Prerequisites
 
@@ -191,7 +215,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for full development setup.
 | [PRD](docs/specs/PRD.md) | Full product requirements, user stories, technical spec |
 | [MVP Scope](docs/specs/MVP-SCOPE.md) | What's in/out of MVP, timeline, stack decisions |
 | [Design Guidelines](docs/design/DESIGN-GUIDELINES.md) | Complete design system (colors, typography, components) |
-| [Landing Page Spec](docs/design/LANDING-PAGE-SPEC.md) | Landing page structure and design tokens |
 | [CONTRIBUTING](CONTRIBUTING.md) | Development setup, testing, and contribution guide |
 | [CHANGELOG](CHANGELOG.md) | Version history and release notes |
 
