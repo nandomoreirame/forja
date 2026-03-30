@@ -4,7 +4,6 @@ import { getMonacoThemeName, getMonacoThemeData } from "@/lib/monaco-theme";
 import { useThemeStore } from "@/stores/theme";
 import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
-import { cn } from "@/lib/utils";
 
 function ensureTheme(): string {
   const themeName = getMonacoThemeName();
@@ -163,7 +162,7 @@ export function MonacoEditor({
     <div
       ref={containerRef}
       data-testid="monaco-editor-container"
-      className={cn(className, readOnly && "monaco-preview-readonly")}
+      className={className}
       style={{ width: "100%", height: "100%" }}
     />
   );
