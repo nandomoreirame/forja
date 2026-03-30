@@ -129,6 +129,14 @@ describe("MonacoEditor", () => {
     expect(editorInstance.onDidChangeModelContent).toHaveBeenCalled();
   });
 
+  it("should not apply pointer-events-blocking class in readOnly mode", () => {
+    const { container } = render(
+      <MonacoEditor value="hello" language="json" readOnly />
+    );
+    const el = container.querySelector("[data-testid='monaco-editor-container']");
+    expect(el).not.toHaveClass("monaco-preview-readonly");
+  });
+
   it("should dispose editor on unmount", () => {
     const { unmount } = render(
       <MonacoEditor value="hello" language="typescript" />
