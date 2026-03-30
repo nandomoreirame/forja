@@ -202,7 +202,6 @@ describe("AboutDialog", () => {
       expect(screen.getByText("React")).toBeInTheDocument();
       expect(screen.getByText("TypeScript")).toBeInTheDocument();
       expect(screen.getByText("xterm.js")).toBeInTheDocument();
-      expect(screen.getByText("tmux")).toBeInTheDocument();
     });
 
     it("opens creator GitHub when creator row is clicked", async () => {

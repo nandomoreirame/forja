@@ -233,9 +233,6 @@ export const SessionStatusBar = memo(function SessionStatusBar({
     return () => clearInterval(interval);
   }, [isAiCli, tabId, sessionType, path, tab?.cliSessionId]);
 
-  // Derive pane command from tab's customName (set by terminal-session polling)
-  const derivedPaneCommand = tab?.tmuxSessionName ? (tab?.customName || null) : null;
-
   const projectName = path.split("/").pop() ?? path;
   const branchDisplay = gitInfo
     ? `${gitInfo.branch}${gitInfo.modified_count > 0 ? "*" : ""}`
@@ -343,17 +340,6 @@ export const SessionStatusBar = memo(function SessionStatusBar({
 
         {isTerminal && (
           <>
-            {tab?.tmuxSessionName && (
-              <>
-                <StatusItem
-                  tooltip="Persistent terminal (tmux)"
-                  className="text-ctp-green text-[10px] font-medium"
-                >
-                  {derivedPaneCommand ?? "Terminal"}
-                </StatusItem>
-                <Separator />
-              </>
-            )}
             {hostInfo && (
               <StatusItem tooltip={`Host: ${hostInfo.hostname}`}>
                 {hostInfo.username}@{hostInfo.hostname}

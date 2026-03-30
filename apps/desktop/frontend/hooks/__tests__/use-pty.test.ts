@@ -149,7 +149,7 @@ describe("usePty", () => {
     const { result } = renderHook(() => usePty({ tabId: "tab-1", onExit }));
 
     // Simulate spawn to set isRunning
-    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1" });
     await act(async () => {
       await result.current.spawn("/test/path");
     });
@@ -165,10 +165,10 @@ describe("usePty", () => {
   });
 
   it("calls spawn_pty and returns tab_id from spawn", async () => {
-    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1" });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
-    let spawnResult: { tabId: string; tmuxSessionName: string | null } | undefined;
+    let spawnResult: { tabId: string } | undefined;
     await act(async () => {
       spawnResult = await result.current.spawn("/test/path");
     });
@@ -179,12 +179,11 @@ describe("usePty", () => {
       windowLabel: "main",
     });
     expect(spawnResult?.tabId).toBe("tab-1");
-    expect(spawnResult?.tmuxSessionName).toBeNull();
     expect(result.current.isRunning).toBe(true);
   });
 
   it("passes sessionType to spawn_pty", async () => {
-    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1" });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
     await act(async () => {
@@ -200,7 +199,7 @@ describe("usePty", () => {
   });
 
   it("spawn passes resumeArgs to spawn_pty IPC when provided", async () => {
-    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1" });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
     await act(async () => {
@@ -217,7 +216,7 @@ describe("usePty", () => {
   });
 
   it("spawn works without resumeArgs — invoke does not include resumeArgs field", async () => {
-    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1" });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
     await act(async () => {
@@ -229,7 +228,7 @@ describe("usePty", () => {
   });
 
   it("close passes force=true to close_pty when called with force", async () => {
-    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1" });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
     await act(async () => {
@@ -245,7 +244,7 @@ describe("usePty", () => {
   });
 
   it("close passes force=false by default to close_pty", async () => {
-    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1", tmuxSessionName: null });
+    mockInvoke.mockResolvedValueOnce({ tabId: "tab-1" });
     const { result } = renderHook(() => usePty({ tabId: "tab-1" }));
 
     await act(async () => {

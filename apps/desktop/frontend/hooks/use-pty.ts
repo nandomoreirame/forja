@@ -203,10 +203,10 @@ export function usePty(options: UsePtyOptions) {
     };
   }, []);
 
-  const spawn = useCallback(async (path: string, sessionType?: string, resumeArgs?: string[]): Promise<{ tabId: string; tmuxSessionName: string | null }> => {
+  const spawn = useCallback(async (path: string, sessionType?: string, resumeArgs?: string[]): Promise<{ tabId: string }> => {
     const tabId = tabIdRef.current;
 
-    const result = await invoke<{ tabId: string; tmuxSessionName: string | null }>("spawn_pty", {
+    const result = await invoke<{ tabId: string }>("spawn_pty", {
       tabId,
       path,
       sessionType,

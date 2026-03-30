@@ -72,22 +72,4 @@ describe("session ID save/restore cycle", () => {
     expect(restoredTabs[0].cliSessionId).not.toBe(restoredTabs[1].cliSessionId);
   });
 
-  it("tmuxSessionName survives serialize/restore cycle", () => {
-    const store = useTerminalTabsStore.getState();
-    store.addTab("tab-T", "/project", "terminal", "btop");
-    store.setTmuxSessionName("tab-T", "forja-main-tab-T");
-
-    const saved = useTerminalTabsStore.getState().serializeTabsForSave("/project");
-    expect(saved.tabs[0].tmuxSessionName).toBe("forja-main-tab-T");
-
-    useTerminalTabsStore.setState({ tabs: [], activeTabId: null, counter: 0 });
-    const freshStore = useTerminalTabsStore.getState();
-    for (const tab of saved.tabs) {
-      freshStore.registerTab(tab.id, "/project", tab.sessionType as any, tab.customName);
-      if (tab.tmuxSessionName) freshStore.setTmuxSessionName(tab.id, tab.tmuxSessionName);
-    }
-
-    const restored = useTerminalTabsStore.getState().tabs[0];
-    expect(restored.tmuxSessionName).toBe("forja-main-tab-T");
-  });
 });

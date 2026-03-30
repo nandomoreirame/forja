@@ -62,7 +62,7 @@ export const terminalCache = {
   },
 
   /**
-   * Parks a terminal instance for later reattach.
+   * Parks a terminal instance for later retrieval.
    * Detaches hostElement from DOM and registers temporary
    * ptyDispatcher handlers via queueMicrotask (runs AFTER
    * use-pty's cleanup unregisters its handlers).

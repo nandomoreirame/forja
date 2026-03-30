@@ -260,7 +260,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const projectPath = workspace.lastActiveProjectPath || workspace.projects[0]?.path;
     if (projectPath) {
       const uiState = await invoke<{
-        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string; tmuxSessionName?: string }>;
+        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string }>;
         activeTabIndex?: number;
       } | null>("get_project_ui_state", { workspaceId, path: projectPath });
 
@@ -277,9 +277,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           }
           if (tab.exited) {
             tabsStore.markTabExited(id);
-          }
-          if (tab.tmuxSessionName) {
-            tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
           }
           restoredIds.push(id);
         }
