@@ -13,16 +13,26 @@ export class ForjaClient {
 
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
+      console.log(`[ForjaClient] Connecting to ${this.url}...`);
       this.ws = new WebSocket(this.url);
-      this.ws.onopen = () => resolve();
-      this.ws.onerror = (e) => reject(e);
+      this.ws.onopen = () => {
+        console.log("[ForjaClient] WebSocket connected");
+        resolve();
+      };
+      this.ws.onerror = (e) => {
+        console.error("[ForjaClient] WebSocket error:", e);
+        reject(new Error(`Connection failed to ${this.url}`));
+      };
       this.ws.onmessage = (event) => {
         const data = JSON.parse(typeof event.data === "string" ? event.data : "{}");
         if (data.type === "pty-event") {
           this.emit("pty-event", data);
         }
       };
-      this.ws.onclose = () => this.emit("close", null);
+      this.ws.onclose = (event) => {
+        console.log(`[ForjaClient] WebSocket closed: code=${event.code} reason=${event.reason}`);
+        this.emit("close", null);
+      };
     });
   }
 
@@ -38,8 +48,11 @@ export class ForjaClient {
         return;
       }
       const handler = (event: MessageEvent) => {
+        const data = JSON.parse(typeof event.data === "string" ? event.data : "{}");
+        // Skip PTY broadcast events — wait for the actual API response
+        if (data.type === "pty-event") return;
         this.ws?.removeEventListener("message", handler);
-        resolve(JSON.parse(typeof event.data === "string" ? event.data : "{}"));
+        resolve(data);
       };
       this.ws.addEventListener("message", handler);
       this.ws.send(JSON.stringify({ token: this.token, ...msg }));
@@ -54,8 +67,12 @@ export class ForjaClient {
     return this.send({ type: "list-sessions" });
   }
 
-  getSessionOutput(tabId: string): Promise<ApiResponse<{ tabId: string; content: string }>> {
-    return this.send({ type: "session-output", tabId });
+  getSessionOutput(
+    tabId: string
+  ): Promise<ApiResponse<{ tabId: string; content: string; cleanText?: string }>> {
+    return this.send({ type: "session-output", tabId }) as Promise<
+      ApiResponse<{ tabId: string; content: string; cleanText?: string }>
+    >;
   }
 
   sendInput(tabId: string, text: string): Promise<ApiResponse> {
@@ -68,6 +85,18 @@ export class ForjaClient {
 
   unsubscribe(tabId: string): Promise<ApiResponse> {
     return this.send({ type: "unsubscribe", tabId });
+  }
+
+  closeSession(tabId: string): Promise<ApiResponse> {
+    return this.send({ type: "close-session", tabId });
+  }
+
+  renameSession(tabId: string, name: string): Promise<ApiResponse> {
+    return this.send({ type: "rename-session", tabId, name });
+  }
+
+  newSession(sessionType: string, projectPath?: string): Promise<ApiResponse<{ sessionType: string }>> {
+    return this.send({ type: "new-session", sessionType, ...(projectPath ? { projectPath } : {}) });
   }
 
   on(event: string, callback: (data: unknown) => void): () => void {

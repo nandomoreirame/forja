@@ -19,6 +19,7 @@ import {
 import { useLocalSearchParams, useNavigation } from "expo-router";
 import { ForjaClient } from "@/lib/forja-client";
 import { stripAnsi } from "@/lib/ansi-strip";
+import { SimpleMarkdown } from "@/components/simple-markdown";
 
 const MONO_FONT = Platform.OS === "ios" ? "Menlo" : "monospace";
 
@@ -27,6 +28,7 @@ interface PtyEvent {
   event: "data" | "session-start" | "session-exit";
   tabId: string;
   data?: string;
+  cleanText?: string; // sanitized full screen snapshot (server v1.9+)
   exitCode?: number;
 }
 
@@ -76,7 +78,11 @@ export default function SessionChatScreen() {
         try {
           const res = await client.getSessionOutput(tabId);
           if (res.ok && res.data) {
-            setOutput(stripAnsi(res.data.content));
+            setOutput(
+              "cleanText" in res.data && res.data.cleanText != null
+                ? res.data.cleanText
+                : stripAnsi(res.data.content)
+            );
           }
         } catch {
           // Non-fatal
@@ -95,8 +101,14 @@ export default function SessionChatScreen() {
           const event = raw as PtyEvent;
           if (event.tabId !== tabId) return;
 
-          if (event.event === "data" && event.data) {
-            setOutput((prev) => prev + stripAnsi(event.data!));
+          if (event.event === "data") {
+            if (event.cleanText !== undefined) {
+              // Server provides a full screen snapshot — replace rather than append
+              setOutput(event.cleanText);
+            } else if (event.data) {
+              // Fallback for older server versions without cleanText
+              setOutput((prev) => prev + stripAnsi(event.data!));
+            }
             requestAnimationFrame(() => {
               scrollRef.current?.scrollToEnd({ animated: false });
             });
@@ -156,9 +168,7 @@ export default function SessionChatScreen() {
             indicatorStyle="white"
           >
             {output.length > 0 ? (
-              <Text style={styles.outputText} selectable>
-                {output}
-              </Text>
+              <SimpleMarkdown content={output} style={styles.markdownContainer} />
             ) : (
               <Text style={styles.emptyOutput}>No output yet. Send a prompt below.</Text>
             )}
@@ -210,11 +220,8 @@ const styles = StyleSheet.create({
   loadingText: { color: "#a6adc8", fontSize: 13 },
   scroll: { flex: 1 },
   scrollContent: { padding: 12, paddingBottom: 8 },
-  outputText: {
-    fontFamily: MONO_FONT,
-    fontSize: 12,
-    lineHeight: 18,
-    color: "#cdd6f4",
+  markdownContainer: {
+    paddingBottom: 4,
   },
   emptyOutput: {
     fontFamily: MONO_FONT,

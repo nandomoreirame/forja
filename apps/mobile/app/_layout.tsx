@@ -11,7 +11,9 @@ export default function RootLayout() {
           headerTintColor: "#cdd6f4",
           contentStyle: { backgroundColor: "#1e1e2e" },
         }}
-      />
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+      </Stack>
     </>
   );
 }
