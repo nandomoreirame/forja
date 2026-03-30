@@ -127,10 +127,10 @@ describe("ws-bridge", () => {
 
   // ─── list-sessions ────────────────────────────────────────────────────────
 
-  it("responds to list-sessions command", async () => {
+  it("responds to list-sessions command with displayName", async () => {
     const { getActiveSessions } = await import("../pty.js");
     vi.mocked(getActiveSessions).mockReturnValue([
-      { tabId: "tab-1", projectPath: "/proj/a", sessionType: "claude" },
+      { tabId: "tab-1", projectPath: "/proj/a", sessionType: "claude", displayName: "Claude" },
     ]);
 
     const ws = await connectClient();
@@ -147,7 +147,7 @@ describe("ws-bridge", () => {
     const response = await receivePromise;
     expect(response).toMatchObject({
       ok: true,
-      data: [{ tabId: "tab-1", projectPath: "/proj/a", sessionType: "claude" }],
+      data: [{ tabId: "tab-1", projectPath: "/proj/a", sessionType: "claude", displayName: "Claude" }],
     });
   });
 
@@ -231,7 +231,10 @@ describe("ws-bridge", () => {
 
     const response = await receivePromise;
     expect(response).toMatchObject({ ok: true });
-    expect(writePty).toHaveBeenCalledWith("tab-1", "echo hello\n");
+    // Text ending with \n is split: body first, then \r
+    expect(writePty).toHaveBeenCalledTimes(2);
+    expect(writePty).toHaveBeenNthCalledWith(1, "tab-1", "echo hello");
+    expect(writePty).toHaveBeenNthCalledWith(2, "tab-1", "\r");
   });
 
   it("returns error for session-input when session not found", async () => {
@@ -255,6 +258,89 @@ describe("ws-bridge", () => {
 
     const response = await receivePromise;
     expect(response).toMatchObject({ ok: false });
+  });
+
+  it("splits text and CR for session-input ending with carriage return", async () => {
+    const { writePty, hasPty } = await import("../pty.js");
+    vi.mocked(hasPty).mockReturnValue(true);
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, {
+      type: "session-input",
+      token: "test-token-12345",
+      tabId: "tab-1",
+      text: "hello world\r",
+    });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true });
+
+    // Should split: first write the body, then write CR separately
+    expect(writePty).toHaveBeenCalledTimes(2);
+    expect(writePty).toHaveBeenNthCalledWith(1, "tab-1", "hello world");
+    expect(writePty).toHaveBeenNthCalledWith(2, "tab-1", "\r");
+  });
+
+  it("splits text and CR for session-input ending with newline", async () => {
+    const { writePty, hasPty } = await import("../pty.js");
+    vi.mocked(hasPty).mockReturnValue(true);
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, {
+      type: "session-input",
+      token: "test-token-12345",
+      tabId: "tab-1",
+      text: "hello world\n",
+    });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true });
+
+    // Should split: first write the body, then write CR separately (convert \n to \r for PTY)
+    expect(writePty).toHaveBeenCalledTimes(2);
+    expect(writePty).toHaveBeenNthCalledWith(1, "tab-1", "hello world");
+    expect(writePty).toHaveBeenNthCalledWith(2, "tab-1", "\r");
+  });
+
+  it("writes text without split when no trailing newline/CR", async () => {
+    const { writePty, hasPty } = await import("../pty.js");
+    vi.mocked(hasPty).mockReturnValue(true);
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, {
+      type: "session-input",
+      token: "test-token-12345",
+      tabId: "tab-1",
+      text: "partial input",
+    });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true });
+
+    // No split needed — single write
+    expect(writePty).toHaveBeenCalledTimes(1);
+    expect(writePty).toHaveBeenCalledWith("tab-1", "partial input");
   });
 
   it("returns error for session-input when missing tabId", async () => {
@@ -618,5 +704,113 @@ describe("ws-bridge", () => {
     expect(exitMsg.type).toBe("pty-event");
     expect(exitMsg.event).toBe("session-exit");
     expect(exitMsg.exitCode).toBe(0);
+  });
+
+  // ─── new-session ──────────────────────────────────────────────────────────
+
+  it("new-session: calls onNewSession callback and returns ok", async () => {
+    // Stop default bridge (no onNewSession) and create one with callback
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onNewSession = vi.fn(() => true);
+    bridge = createWsBridge({ port: TEST_PORT, onNewSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "new-session", token: "test-token-12345", sessionType: "claude" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true, data: { sessionType: "claude" } });
+    expect(onNewSession).toHaveBeenCalledWith("claude", undefined);
+  });
+
+  it("new-session: passes projectPath to callback", async () => {
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onNewSession = vi.fn(() => true);
+    bridge = createWsBridge({ port: TEST_PORT, onNewSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, {
+      type: "new-session",
+      token: "test-token-12345",
+      sessionType: "terminal",
+      projectPath: "/home/user/projects/my-app",
+    });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true, data: { sessionType: "terminal" } });
+    expect(onNewSession).toHaveBeenCalledWith("terminal", "/home/user/projects/my-app");
+  });
+
+  it("new-session: returns error when onNewSession callback returns false", async () => {
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onNewSession = vi.fn(() => false);
+    bridge = createWsBridge({ port: TEST_PORT, onNewSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "new-session", token: "test-token-12345", sessionType: "gemini" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false });
+  });
+
+  it("new-session: returns error when no onNewSession callback is configured", async () => {
+    // Default bridge has no onNewSession
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "new-session", token: "test-token-12345", sessionType: "claude" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false, error: "Session creation not available" });
+  });
+
+  it("new-session: returns error for invalid session type", async () => {
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onNewSession = vi.fn(() => true);
+    bridge = createWsBridge({ port: TEST_PORT, onNewSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "new-session", token: "test-token-12345", sessionType: "unknown-cli" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false });
+    expect((response as { error: string }).error).toContain("Invalid session type");
+    expect(onNewSession).not.toHaveBeenCalled();
   });
 });

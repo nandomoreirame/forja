@@ -3,6 +3,8 @@ export interface ActiveSession {
   tabId: string;
   projectPath: string;
   sessionType: string;
+  /** Human-readable display name for the session (e.g. "Claude", "Gemini CLI") */
+  displayName: string;
 }
 
 /** Project info returned by list-projects */

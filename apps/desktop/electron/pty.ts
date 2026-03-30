@@ -45,17 +45,29 @@ export function notifyPtySubscribers(event: PtySubscriberEvent): void {
   }
 }
 
+/** Map sessionType to a human-readable display name for the mobile remote control. */
+const SESSION_DISPLAY_NAMES: Record<string, string> = {
+  claude: "Claude",
+  gemini: "Gemini",
+  codex: "Codex",
+  "cursor-agent": "Cursor",
+  "gh-copilot": "Copilot",
+  terminal: "Terminal",
+};
+
 export function getActiveSessions(): Array<{
   tabId: string;
   projectPath: string;
   sessionType: string;
+  displayName: string;
 }> {
-  const result: Array<{ tabId: string; projectPath: string; sessionType: string }> = [];
+  const result: Array<{ tabId: string; projectPath: string; sessionType: string; displayName: string }> = [];
   for (const [tabId, session] of sessions) {
     result.push({
       tabId,
       projectPath: session.projectPath,
       sessionType: session.sessionType,
+      displayName: SESSION_DISPLAY_NAMES[session.sessionType] ?? session.sessionType,
     });
   }
   return result;

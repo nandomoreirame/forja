@@ -12,6 +12,8 @@ import { validateToken, getAuthToken } from "./auth-token.js";
 export interface WsBridgeOptions {
   port?: number;
   host?: string;
+  /** Called when a client requests a new session via WebSocket. Return true if handled. */
+  onNewSession?: (sessionType: string, projectPath?: string) => boolean;
 }
 
 export interface WsBridgeStatus {
@@ -42,6 +44,7 @@ interface RateLimit {
 export function createWsBridge(opts?: WsBridgeOptions) {
   const port = opts?.port ?? 9400;
   const host = opts?.host ?? "0.0.0.0";
+  const onNewSession = opts?.onNewSession;
   let wss: WebSocketServer | null = null;
   let unsubscribePty: (() => void) | null = null;
   let broadcastTimer: ReturnType<typeof setInterval> | null = null;
@@ -185,7 +188,13 @@ export function createWsBridge(opts?: WsBridgeOptions) {
         } else if (!hasPty(msg.tabId)) {
           ws.send(JSON.stringify({ ok: false, error: `No session: ${msg.tabId}` }));
         } else {
-          writePty(msg.tabId, msg.text);
+          // Split text and submit char so CLIs that distinguish typed vs pasted
+          // input (e.g. bracketed-paste) handle the submit correctly.
+          const text = msg.text as string;
+          const hasSubmit = text.endsWith("\r") || text.endsWith("\n");
+          const body = hasSubmit ? text.slice(0, -1) : text;
+          if (body) writePty(msg.tabId, body);
+          if (hasSubmit) writePty(msg.tabId, "\r");
           ws.send(JSON.stringify({ ok: true }));
         }
         break;
@@ -209,6 +218,25 @@ export function createWsBridge(opts?: WsBridgeOptions) {
         const subs = clientSubscriptions.get(ws);
         if (subs) subs.delete(msg.tabId);
         ws.send(JSON.stringify({ ok: true }));
+        break;
+      }
+
+      case "new-session": {
+        const validTypes = ["claude", "gemini", "codex", "gh-copilot", "cursor-agent", "terminal"];
+        if (!msg.sessionType || !validTypes.includes(msg.sessionType)) {
+          ws.send(JSON.stringify({ ok: false, error: `Invalid session type. Valid: ${validTypes.join(", ")}` }));
+          break;
+        }
+        if (!onNewSession) {
+          ws.send(JSON.stringify({ ok: false, error: "Session creation not available" }));
+          break;
+        }
+        const handled = onNewSession(msg.sessionType, msg.projectPath as string | undefined);
+        if (handled) {
+          ws.send(JSON.stringify({ ok: true, data: { sessionType: msg.sessionType } }));
+        } else {
+          ws.send(JSON.stringify({ ok: false, error: "Failed to create session" }));
+        }
         break;
       }
 
