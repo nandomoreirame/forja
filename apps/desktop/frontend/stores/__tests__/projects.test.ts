@@ -1656,4 +1656,71 @@ describe("useProjectsStore", () => {
     });
 
   });
+
+  describe("switchToProject — session persistence", () => {
+    beforeEach(() => {
+      // Reset terminal tabs and project store to a clean state
+      useTerminalTabsStore.setState({
+        tabs: [],
+        activeTabId: null,
+        counter: 0,
+        isTerminalFullscreen: false,
+      });
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+        isSwitchingProject: false,
+      });
+
+      // Default IPC mock: return null for all channels (no saved disk state)
+      vi.mocked(invoke).mockResolvedValue(null);
+
+      // Default file-tree mock
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+      } as never);
+    });
+
+    it("tabs for outgoing project remain in store after switch", async () => {
+      // Add a tab for project-a (outgoing project)
+      const tabsStore = useTerminalTabsStore.getState();
+      const tabId = tabsStore.nextTabId();
+      tabsStore.addTab(tabId, "/project-a", "claude");
+
+      // Confirm the tab exists before the switch
+      expect(tabsStore.hasTab(tabId)).toBe(true);
+
+      // Switch to project-b
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      // Project-a's tab must still exist in the store after the switch
+      expect(useTerminalTabsStore.getState().hasTab(tabId)).toBe(true);
+    });
+
+    it("close_pty is NOT called during project switch", async () => {
+      // Track any close_pty IPC calls
+      const closePtyCalls: unknown[][] = [];
+      vi.mocked(invoke).mockImplementation(async (channel: string, ...args: unknown[]) => {
+        if (channel === "close_pty") {
+          closePtyCalls.push(args);
+        }
+        return null as never;
+      });
+
+      // Add a tab for project-a so there is something to "switch away from"
+      const tabsStore = useTerminalTabsStore.getState();
+      const tabId = tabsStore.nextTabId();
+      tabsStore.addTab(tabId, "/project-a", "claude");
+
+      // Switch to project-b
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      // close_pty must never be called during a project switch
+      expect(closePtyCalls).toHaveLength(0);
+    });
+  });
 });
