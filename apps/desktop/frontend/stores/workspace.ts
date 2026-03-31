@@ -1,9 +1,8 @@
 import { create } from "zustand";
 import { invoke } from "@/lib/ipc";
-import type { SessionType } from "@/lib/cli-registry";
 import { parseLayoutJson } from "@/lib/layout-migration";
 import { useFileTreeStore } from "./file-tree";
-import { useProjectsStore } from "./projects";
+import { restorePersistedProjectTab, useProjectsStore, type PersistedProjectTab } from "./projects";
 import { useTerminalTabsStore } from "./terminal-tabs";
 import { useSessionStateStore } from "./session-state";
 import { useTilingLayoutStore } from "./tiling-layout";
@@ -208,23 +207,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     useProjectsStore.setState({ projects: [], activeProjectPath: null });
     await useProjectsStore.getState().loadProjects();
 
+    const targetProjectPath = workspace.lastActiveProjectPath || workspace.projects[0]?.path;
+
     // Set activeProjectPath BEFORE layout restoration so that terminal blocks
     // rendered by blockFactory get the correct project path for PTY spawn.
-    const targetProjectPath = workspace.lastActiveProjectPath || workspace.projects[0]?.path;
     if (targetProjectPath) {
       useProjectsStore.setState({ activeProjectPath: targetProjectPath });
     }
 
-    // Clean up session state BEFORE closing PTYs so that the pty:exit
-    // events do not trigger spurious "finished with new output" notifications.
+    // Clean up session state before detaching renderer-owned UI state so exit
+    // notifications from stale tabs do not leak into the next workspace.
     const existingTabs = useTerminalTabsStore.getState().tabs;
     for (const tab of existingTabs) {
       useSessionStateStore.getState().cleanup(tab.id);
-    }
-
-    // Close existing PTY sessions before clearing tabs to prevent orphan processes
-    for (const tab of existingTabs) {
-      invoke("close_pty", { tabId: tab.id }).catch(() => {});
     }
 
     // Clear terminal tabs
@@ -252,32 +247,32 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       await fileTreeState.loadProjectTree(project.path);
     }
 
-    if (workspace.projects.length > 0) {
-      fileTreeState.openProjectPath(workspace.projects[0].path);
+    if (targetProjectPath) {
+      fileTreeState.openProjectPath(targetProjectPath);
     }
 
     // Restore saved tabs from config.json for the new workspace
-    const projectPath = workspace.lastActiveProjectPath || workspace.projects[0]?.path;
-    if (projectPath) {
+    if (targetProjectPath) {
       const uiState = await invoke<{
-        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string }>;
+        tabs?: PersistedProjectTab[];
         activeTabIndex?: number;
-      } | null>("get_project_ui_state", { workspaceId, path: projectPath });
+      } | null>("get_project_ui_state", { workspaceId, path: targetProjectPath });
 
       if (uiState?.tabs && uiState.tabs.length > 0) {
         const tabsStore = useTerminalTabsStore.getState();
+        const tilingStore = useTilingLayoutStore.getState();
         const restoredIds: string[] = [];
 
         for (const tab of uiState.tabs) {
-          const tabPath = tab.path || projectPath;
-          const id = tab.id || tabsStore.nextTabId();
-          tabsStore.addTab(id, tabPath, (tab.sessionType || "claude") as SessionType, tab.customName);
-          if (tab.cliSessionId) {
-            tabsStore.setCliSessionId(id, tab.cliSessionId);
-          }
-          if (tab.exited) {
-            tabsStore.markTabExited(id);
-          }
+          const tabId = tab.id && tilingStore.hasBlock(tab.id)
+            ? tab.id
+            : tabsStore.nextTabId();
+          const id = restorePersistedProjectTab({
+            addToLayout: true,
+            projectPath: targetProjectPath,
+            tab,
+            tabId,
+          });
           restoredIds.push(id);
         }
 

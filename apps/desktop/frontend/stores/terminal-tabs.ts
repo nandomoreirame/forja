@@ -205,6 +205,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
           const { customName: _removed, ...rest } = t;
           return rest;
         }
+        // customName is presentation only; tab identity stays in id/path/cliSessionId.
         return { ...t, customName: trimmed };
       }),
     })),

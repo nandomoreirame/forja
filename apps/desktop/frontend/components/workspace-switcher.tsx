@@ -86,9 +86,14 @@ export function WorkspaceSwitcher() {
         // Ensure at least one other workspace has an open window
         let anyOpen = false;
         for (const other of otherWorkspaces) {
-          const open = await invoke<boolean>("is_workspace_window_open", {
-            workspaceId: other.id,
-          });
+          let open = false;
+          try {
+            open = await invoke<boolean>("is_workspace_window_open", {
+              workspaceId: other.id,
+            });
+          } catch {
+            // IPC failure — treat as not open and continue
+          }
           if (open) {
             anyOpen = true;
             break;

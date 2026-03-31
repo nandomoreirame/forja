@@ -457,7 +457,7 @@ export function stripFilePreviewBlocksFromJson(json: IJsonModel): IJsonModel {
  * "orphaned". They are only stripped by stripProjectBlocksFromJson() when
  * switching to a project with no saved layout at all.
  */
-function stripOrphanTerminalBlocksFromJson(
+export function stripOrphanTerminalBlocksFromJson(
   json: IJsonModel,
   validIds: Set<string>,
 ): IJsonModel {
@@ -1079,7 +1079,7 @@ export const useTilingLayoutStore = create<TilingLayoutState>((set, get) => ({
       Actions.updateNodeAttributes(nodeId, { name: newName }),
     );
 
-    // Sync to terminal-tabs store if this is a terminal tab
+    // customName is presentation only; tab identity stays in terminal-tabs.
     if (useTerminalTabsStore.getState().hasTab(nodeId)) {
       useTerminalTabsStore.getState().renameTab(nodeId, name);
     }

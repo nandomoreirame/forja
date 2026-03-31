@@ -57,6 +57,8 @@ function getAppWindow() {
   return _appWindow;
 }
 
+let _saveSettingsTimer: ReturnType<typeof setTimeout> | null = null;
+
 const isMac = IS_MAC;
 const mod = isMac ? "\u2318" : "Ctrl";
 
@@ -90,7 +92,11 @@ export function Titlebar() {
         },
       };
       useUserSettingsStore.getState().setSettings(updated);
-      invoke("save_user_settings", { content: JSON.stringify(updated, null, 2) }).catch(() => {});
+      if (_saveSettingsTimer !== null) clearTimeout(_saveSettingsTimer);
+      _saveSettingsTimer = setTimeout(() => {
+        _saveSettingsTimer = null;
+        invoke("save_user_settings", { content: JSON.stringify(updated, null, 2) }).catch(() => {});
+      }, 300);
     },
     [settings, titlebar],
   );

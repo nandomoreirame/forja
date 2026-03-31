@@ -20,6 +20,25 @@ interface UsePtyOptions {
   onExit?: (code: number) => void;
 }
 
+export type PtyTerminationReason =
+  | "tab-delete"
+  | "project-remove"
+  | "window-close"
+  | "project-switch"
+  | "workspace-switch"
+  | "park"
+  | "remount";
+
+const EXPLICIT_CLOSE_REASONS = new Set<PtyTerminationReason>([
+  "tab-delete",
+  "project-remove",
+  "window-close",
+]);
+
+export function shouldForceClosePty(reason: PtyTerminationReason): boolean {
+  return EXPLICIT_CLOSE_REASONS.has(reason);
+}
+
 /** Interval for lazy session ID detection polling (ms). */
 const SESSION_DETECT_INTERVAL_MS = 10_000;
 
@@ -237,7 +256,8 @@ export function usePty(options: UsePtyOptions) {
     [],
   );
 
-  const close = useCallback(async (force = false) => {
+  const close = useCallback(async (force = false, reason?: PtyTerminationReason) => {
+    if (reason && !shouldForceClosePty(reason)) return;
     await invoke("close_pty", { tabId: tabIdRef.current, force });
     setIsRunning(false);
   }, []);
