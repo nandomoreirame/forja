@@ -5,4 +5,5 @@ const withMDX = createMDX();
 export default withMDX({
   reactStrictMode: true,
   output: "export",
+  basePath: "/forja",
 });
