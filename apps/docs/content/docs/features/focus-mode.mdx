@@ -1,0 +1,53 @@
+---
+title: Focus Mode
+description: Distraction-free mode that hides the titlebar, status bar, file tree, and project sidebar, leaving only your terminal sessions visible.
+---
+
+# Focus Mode
+
+Focus mode removes every UI element except the terminal sessions, giving you an unobstructed view of your AI CLI output. It is designed for deep work sessions where you want the interface to get out of the way.
+
+![Forja — Fullscreen focus mode](/screenshots/4.fullscreen-focus-mode.png)
+
+## Toggling Focus Mode
+
+| Action | Shortcut |
+|--------|----------|
+| Toggle focus mode | `Ctrl+Alt+F` |
+| Toggle fullscreen | `F11` |
+
+Focus mode and fullscreen are independent. You can use either one alone or combine them for a fully immersive experience.
+
+## What Gets Hidden
+
+When focus mode is active, the following UI elements are hidden:
+
+| Element | Hidden in Focus Mode |
+|---------|---------------------|
+| Titlebar | Yes |
+| Status bar | Yes |
+| File tree sidebar | Yes |
+| Project sidebar | Yes |
+| Tab bar | **No** — remains visible for session switching |
+
+The tab bar stays visible so you can switch between sessions with `Ctrl+Tab` or `Ctrl+Shift+1-9` without exiting focus mode.
+
+## Exit Indicator
+
+A subtle exit indicator appears in a corner of the screen when focus mode is active. Hovering over it reveals a tooltip showing the keyboard shortcut to exit. This ensures you can always find your way out even if you have forgotten the shortcut.
+
+## Fullscreen vs Focus Mode
+
+| Feature | Focus Mode (`Ctrl+Alt+F`) | Fullscreen (`F11`) |
+|---------|--------------------------|-------------------|
+| Hides titlebar | Yes | Depends on OS |
+| Hides status bar | Yes | No |
+| Hides sidebars | Yes | No |
+| Removes window chrome | No | Yes |
+| Can be combined | — | Yes |
+
+Use fullscreen alone when you want to maximize screen real estate but keep all UI panels visible. Use focus mode when you want minimal distraction. Combine both for maximum immersion.
+
+<Callout type="info">
+  On macOS, `F11` triggers native fullscreen, which animates the window into its own Space. On Linux and Windows, `F11` toggles borderless fullscreen within the same virtual desktop.
+</Callout>

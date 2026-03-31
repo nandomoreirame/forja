@@ -1,0 +1,62 @@
+---
+title: Prerequisites
+description: Supported operating systems, required AI CLIs, and optional dependencies before installing Forja.
+---
+
+# Prerequisites
+
+## Supported operating systems
+
+Forja ships pre-built binaries for the following platforms:
+
+| Platform | Architecture | Notes |
+|----------|-------------|-------|
+| **macOS** | Apple Silicon (arm64) | Recommended for M-series Macs |
+| **macOS** | Intel (x64) | Rosetta 2 not needed — native binary |
+| **Linux** | x64 | AppImage and .deb packages available |
+| **Windows** | x64 | Supported since v1.6.0 via NSIS installer |
+
+<Callout type="info">
+  ARM Linux and 32-bit architectures are not officially supported. Building from source is possible but untested on those targets.
+</Callout>
+
+## AI CLI requirement
+
+Forja is a GUI wrapper — it does not include an AI CLI of its own. You need at least one of the following installed and authenticated before opening your first session:
+
+| CLI | Package | Recommendation |
+|-----|---------|---------------|
+| **Claude Code** | `@anthropic-ai/claude-code` | Recommended. Best tested with Forja. |
+| **Gemini CLI** | `@google/gemini-cli` | Full support |
+| **Codex CLI** | `@openai/codex` | Full support |
+| **Cursor Agent** | `cursor` binary | Full support |
+
+To install Claude Code globally with npm or pnpm:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+# or
+pnpm add -g @anthropic-ai/claude-code
+```
+
+After installation, authenticate once by running `claude` in a terminal and following the login flow. Forja will use the same credentials automatically.
+
+## Node.js
+
+**Node.js is not required at runtime.** The distributed Forja packages are self-contained Electron applications that bundle their own Node.js runtime.
+
+Node.js is only needed if you intend to [build Forja from source](/docs/contributing/building-from-source).
+
+## Git (optional)
+
+Git is not required to run Forja, but several features degrade gracefully without it:
+
+- The git status badges in the file tree will not appear.
+- The branch indicator in the session header will be hidden.
+- The diff viewer will be unavailable.
+
+If git is installed and available in `PATH`, Forja detects it automatically — no additional configuration is needed.
+
+## Plain terminal
+
+Forja also supports plain terminal sessions (bash, zsh, fish) without any AI CLI. This can be useful for running build commands or scripts alongside your AI sessions in the same interface.

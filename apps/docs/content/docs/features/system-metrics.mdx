@@ -1,0 +1,54 @@
+---
+title: System Metrics
+description: Demand-driven CPU, memory, swap, disk, and network metrics displayed in the status bar and titlebar resource usage popover, sampled only when visible.
+---
+
+# System Metrics
+
+Forja displays real-time system resource usage in the status bar and in a titlebar popover. Metrics are **demand-driven**: sampling starts when the metrics UI becomes visible and stops when it is hidden, avoiding any background polling overhead.
+
+## Status Bar Metrics
+
+The bottom status bar shows a compact summary:
+
+| Metric | Example | Description |
+|--------|---------|-------------|
+| **CPU** | `CPU 12%` | Current CPU utilization across all cores |
+| **Memory** | `MEM 4.2 GB` | Used physical memory |
+| **Swap** | `SWP 512 MB` | Used swap / page file space |
+| **Disk** | `DISK 78%` | Usage percentage of the primary disk |
+| **Network** | `↑ 1.2 MB/s ↓ 4.8 MB/s` | Current upload and download throughput |
+
+## Resource Usage Popover
+
+Click the resource usage badge in the titlebar to open a detailed popover with:
+
+- CPU usage per core (bar chart)
+- Total memory and breakdown (used, cached, free)
+- Swap usage
+- Disk read/write throughput
+- Network interface list with individual upload/download rates
+
+The titlebar badge can be toggled on or off via **Settings -> Titlebar -> resourceUsage** or from the titlebar context menu.
+
+## Sampling Behavior
+
+Forja uses the **`systeminformation`** library to read hardware counters. Sampling only occurs when the metrics UI is actively displayed:
+
+| Condition | Sampling |
+|-----------|---------|
+| Status bar visible | Active — 2-second interval |
+| Resource popover open | Active — 2-second interval |
+| Status bar hidden | Paused |
+| Window minimized | Paused |
+| App backgrounded | Paused |
+
+This demand-driven approach means Forja has zero CPU overhead from metrics when you are not looking at them.
+
+## Clear UI Cache
+
+The resource usage popover includes a **Clear UI Cache** button. This triggers an Electron `session.defaultSession.clearCache()` call, which frees Chromium's renderer cache. This is useful if the embedded browser pane is consuming significant memory after heavy use.
+
+<Callout type="info">
+  System metrics are read-only. Forja does not set CPU affinity, process priority, or any system configuration — it only reads values.
+</Callout>

@@ -1,0 +1,88 @@
+---
+title: Installation
+description: Download and install Forja on macOS, Linux, or Windows. Covers package formats, Gatekeeper bypass, and config file locations.
+---
+
+# Installation
+
+## Download
+
+All releases are published on the [Forja GitHub Releases](https://github.com/forja-app/forja/releases) page. Download the package that matches your platform and architecture.
+
+| Platform | Package | Notes |
+|----------|---------|-------|
+| macOS (Apple Silicon) | `Forja-x.y.z-arm64.dmg` | M1, M2, M3, M4 chips |
+| macOS (Intel) | `Forja-x.y.z-x64.dmg` | Intel Core Macs |
+| Linux | `Forja-x.y.z-x86_64.AppImage` | Universal, no install needed |
+| Linux | `Forja-x.y.z-amd64.deb` | Debian / Ubuntu / Mint |
+| Windows | `Forja-x.y.z-x64-setup.exe` | NSIS installer |
+
+## macOS
+
+1. Open the downloaded `.dmg` file.
+2. Drag the **Forja** application icon to your **Applications** folder.
+3. Eject the disk image.
+
+### Gatekeeper bypass
+
+Because Forja is not yet notarized with Apple, macOS may block the first launch. To open it:
+
+```bash
+xattr -cr /Applications/Forja.app
+```
+
+Then double-click Forja in your Applications folder as usual. You only need to do this once.
+
+Alternatively, right-click the app icon and choose **Open**, then confirm in the dialog that appears.
+
+## Linux
+
+### AppImage
+
+The AppImage is a self-contained executable that runs on most x86_64 Linux distributions without installation.
+
+```bash
+chmod +x Forja-x.y.z-x86_64.AppImage
+./Forja-x.y.z-x86_64.AppImage
+```
+
+To integrate with your desktop environment, you can move the AppImage to `~/.local/bin/` or use a tool like [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher).
+
+### Debian / Ubuntu package
+
+```bash
+sudo dpkg -i Forja-x.y.z-amd64.deb
+```
+
+After installation, Forja appears in your applications menu and can be launched with the `forja` command from a terminal.
+
+## Windows
+
+Run the downloaded `Forja-x.y.z-x64-setup.exe` installer and follow the on-screen steps. Forja is installed per-user by default and added to the Start menu. A desktop shortcut is created optionally.
+
+<Callout type="info">
+  Windows support was added in v1.6.0. If you encounter issues specific to Windows, please [open an issue](https://github.com/forja-app/forja/issues) with your Windows version and a description of the problem.
+</Callout>
+
+## Verify the installation
+
+Launch Forja. You should see the initial welcome screen where you can add your first project.
+
+![Forja — Add your first project](/screenshots/1.first-screen-add-project.png)
+
+If Forja opens successfully, the installation is complete.
+
+## Configuration file locations
+
+Forja stores two JSON files outside the application bundle so your settings persist across updates:
+
+| File | Unix path | Windows path | Purpose |
+|------|-----------|--------------|---------|
+| `config.json` | `~/.config/forja/config.json` | `%APPDATA%\forja\config.json` | Projects list and UI preferences (managed by electron-store) |
+| `settings.json` | `~/.config/forja/settings.json` | `%APPDATA%\forja\settings.json` | Fonts, window state, theme, and session defaults |
+
+These files are plain JSON — you can inspect or back them up at any time. Forja writes to them automatically; manual edits take effect on the next launch (or on a settings reload).
+
+<Callout type="warn">
+  Deleting `config.json` removes your projects list. Forja will start fresh but your actual project files on disk are not affected.
+</Callout>

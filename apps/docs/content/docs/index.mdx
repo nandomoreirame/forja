@@ -1,21 +1,40 @@
 ---
-title: Getting Started
-description: Install and run Forja on your machine.
+title: Forja Documentation
+description: Desktop GUI client for Vibe Coders and AI coding CLIs.
 ---
 
-# Getting Started with Forja
+# Welcome to Forja
 
-Forja is a desktop GUI client for AI coding CLIs like Claude Code, Codex CLI, and Gemini CLI.
+Forja is an open-source desktop GUI client for AI coding CLIs like **Claude Code**, **Gemini CLI**, and **Codex CLI**. Instead of a raw terminal, you get a dedicated interface with rich rendering, multi-session management, and deep project integration.
 
-## Installation
+![Forja — Workspaces with Projects](/screenshots/0.workspaces-with-projects.png)
 
-Download the latest release from [GitHub Releases](https://github.com/nandomoreirame/forja/releases).
+## What Forja does
 
-## Features
+| Feature | Description |
+|---------|-------------|
+| **Enhanced Rendering** | Markdown and code blocks rendered with syntax highlighting |
+| **Multi-Session Tabs** | Multiple concurrent AI sessions per project |
+| **File Tree & Preview** | Browse files with git status badges and syntax-highlighted preview |
+| **Git Integration** | Branch, modified files, diff viewer — always visible |
+| **Embedded Browser** | In-app browser that auto-opens on localhost URLs |
+| **14+ Themes** | Catppuccin, Dracula, Nord, Tokyo Night, and more |
+| **Workspaces** | Group projects into named workspaces |
+| **External API** | Control Forja from scripts, hooks, and Discord |
 
-- Hybrid terminal rendering (xterm.js + React markdown)
-- Multi-project workspace management
-- 14+ built-in editor themes
-- External API for programmatic control
-- WebSocket bridge for remote access
-- Discord bot integration
+## Quick Navigation
+
+<Cards>
+  <Card title="Installation" href="/docs/getting-started/installation" description="Download and install Forja on macOS, Linux, or Windows." />
+  <Card title="First Session" href="/docs/getting-started/first-session" description="Open your first project and start chatting with an AI CLI." />
+  <Card title="Features" href="/docs/features/terminal" description="Explore all features: terminal, file tree, browser, themes, and more." />
+  <Card title="External API" href="/docs/external-api/overview" description="Control Forja programmatically via Unix socket or WebSocket." />
+</Cards>
+
+## Supported CLIs
+
+- [Claude Code](https://claude.ai/code)
+- [Gemini CLI](https://github.com/google-gemini/gemini-cli)
+- [Codex CLI](https://github.com/openai/codex)
+- [Cursor Agent](https://cursor.sh) — via cursor binary
+- Plain terminal — bash, zsh, fish

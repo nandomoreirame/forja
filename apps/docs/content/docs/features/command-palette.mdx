@@ -1,0 +1,60 @@
+---
+title: Command Palette
+description: Fuzzy file search (Ctrl+P) and command palette (Ctrl+Shift+P) with grouped commands for sessions, themes, layout, plugins, and developer tools.
+---
+
+# Command Palette
+
+Forja provides two keyboard-driven overlays for fast navigation and action execution: a **file search** palette and a **command palette**. Both are accessible from anywhere in the app without leaving your keyboard.
+
+![Forja — Command Bar](/screenshots/7.command-bar.png)
+
+## File Search
+
+Press `Ctrl+P` to open the file search palette. Start typing to fuzzy-search all files in the current project. Results are ranked by relevance and show the file path and extension icon.
+
+Press `Enter` to open the selected file in the File Preview Pane, or `Escape` to dismiss.
+
+## Command Palette
+
+Press `Ctrl+Shift+P` to open the command palette. Commands are grouped by category:
+
+| Group | Example Commands |
+|-------|-----------------|
+| **Sessions** | New session, Close session, Rename session, Relaunch session |
+| **Themes** | Switch Theme (opens inline picker with live preview) |
+| **Layout** | Split pane vertically, Split pane horizontally, Maximize tabset |
+| **Plugins** | Enable / disable installed plugins |
+| **Developer** | Reload app, Open DevTools, Clear cache, Inspect element |
+
+![Forja — Command palette for AI sessions](/screenshots/8.command-for-ai-sessions.png)
+
+Start typing to filter commands. The palette supports substring and fuzzy matching — typing `sp v` matches **Split pane vertically**.
+
+Press `Enter` to execute the highlighted command, or `Escape` to dismiss.
+
+## Quick Actions in the Titlebar
+
+The titlebar exposes a configurable set of **Quick Action** buttons for the commands you use most often. Quick Actions are visible at a glance and do not require opening the palette.
+
+You can customize which Quick Actions appear in **Settings -> Appearance -> Titlebar -> Quick Actions**. Available slots include:
+
+- New session
+- Split pane
+- Focus mode toggle
+- Theme switcher
+- Command palette trigger
+
+<Callout type="info">
+  The set of available Quick Actions can be configured in settings. See the [Settings](/docs/features/settings) page for the full `titlebar.quickActions` option reference.
+</Callout>
+
+## Keyboard Reference
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+P` | Open file search |
+| `Ctrl+Shift+P` | Open command palette |
+| `↑` / `↓` | Navigate results |
+| `Enter` | Execute / open selected item |
+| `Escape` | Dismiss palette |

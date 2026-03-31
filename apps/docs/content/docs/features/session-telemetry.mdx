@@ -1,0 +1,56 @@
+---
+title: Session Telemetry
+description: Per-session token count, estimated cost, and context window usage bar parsed from Claude Code PTY output — no API calls made by Forja.
+---
+
+# Session Telemetry
+
+Forja parses Claude Code's PTY output to extract token usage, estimated cost, and context window consumption for each session. This data is displayed inline in the session tab header and as a context bar below the terminal.
+
+<Callout type="info">
+  Session telemetry is currently only available for **Claude Code** sessions. Gemini CLI and Codex CLI do not yet output parseable telemetry in a consistent format.
+</Callout>
+
+## Displayed Metrics
+
+| Metric | Description |
+|--------|-------------|
+| **Tokens used** | Total input + output tokens consumed in the session |
+| **Estimated cost** | Approximate USD cost based on Claude's published token pricing |
+| **Context bar** | Visual indicator showing what percentage of the context window has been used |
+
+## Context Window Auto-Detection
+
+Forja infers the context window size from the model name reported in PTY output:
+
+| Model | Assumed Context Window |
+|-------|----------------------|
+| Claude Opus (any version) | 1,000,000 tokens |
+| All other Claude models | 200,000 tokens |
+
+If the model name cannot be determined, Forja defaults to 200,000 tokens.
+
+## Context Bar Colors
+
+The context bar below the terminal changes color as the context window fills up:
+
+| Usage | Color | Meaning |
+|-------|-------|---------|
+| 0 – 50% | Green | Plenty of context remaining |
+| 50 – 80% | Yellow | Context is filling up |
+| 80 – 95% | Orange | Approaching limit — consider starting a new session |
+| 95 – 100% | Red | Near the context limit — new session recommended |
+
+## How Telemetry is Parsed
+
+Forja does not make any API calls to retrieve telemetry. All data is extracted by parsing the plain text that Claude Code prints to the terminal, specifically the usage summary lines that appear after each response (e.g., `Tokens: 1,234 input, 567 output • $0.012`).
+
+The parser runs in the main process as a lightweight regex pass over each PTY chunk, with no impact on terminal rendering latency.
+
+## Privacy
+
+Because telemetry is parsed from local PTY output:
+
+- No data is sent to Forja's servers (Forja has no telemetry backend).
+- No API keys or account credentials are read or stored by Forja.
+- The parsed values are kept in memory for the session duration and discarded when the tab is closed.

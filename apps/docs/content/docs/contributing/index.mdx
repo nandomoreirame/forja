@@ -1,0 +1,132 @@
+---
+title: Contributing
+description: How to contribute to Forja — prerequisites, fork workflow, commit conventions, and scope guidelines.
+---
+
+# Contributing
+
+Contributions to Forja are welcome. This section covers everything you need to get started: prerequisites, setting up a development environment, our commit conventions, and how to submit a pull request.
+
+## Prerequisites
+
+Before you begin, make sure the following tools are installed:
+
+| Tool | Minimum version | Notes |
+|------|----------------|-------|
+| **Node.js** | 22.x | Managed via `mise` or `nvm` |
+| **pnpm** | 9.x | Package manager for the monorepo |
+| **Git** | 2.30+ | Required for branching and commits |
+
+### Platform-specific dependencies
+
+Native addons (`node-pty`) require a C++ build toolchain.
+
+**Linux**
+
+```bash
+sudo apt-get install build-essential python3
+# Fedora / RHEL
+sudo dnf install gcc-c++ make python3
+```
+
+**macOS**
+
+```bash
+xcode-select --install
+```
+
+**Windows**
+
+Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022) with the **Desktop development with C++** workload. Python 3 must also be available in `PATH`.
+
+## Fork and branch workflow
+
+Forja uses **Trunk-Based Development**: `main` is the single integration branch. All changes go through short-lived feature or fix branches.
+
+```bash
+# 1. Fork the repo on GitHub, then clone your fork
+git clone https://github.com/<your-username>/forja.git
+cd forja
+
+# 2. Add the upstream remote
+git remote add upstream https://github.com/forja-app/forja.git
+
+# 3. Create a branch from main
+git checkout -b feature/my-feature
+# or
+git checkout -b fix/the-bug-description
+
+# 4. Make your changes, commit, and push
+git push -u origin feature/my-feature
+
+# 5. Open a pull request against main on the upstream repo
+```
+
+Keep branches short-lived and focused on a single concern. Rebase on `main` before opening a PR if your branch has diverged.
+
+## Commit conventions
+
+Forja follows [Conventional Commits](https://www.conventionalcommits.org/). Every commit message must begin with a type and optional scope:
+
+```
+<type>(<scope>): <description>
+
+[optional body]
+
+[optional footer]
+```
+
+### Types
+
+| Type | When to use |
+|------|-------------|
+| `feat` | A new feature or user-visible capability |
+| `fix` | A bug fix |
+| `refactor` | Code restructuring with no behavior change |
+| `test` | Adding or updating tests only |
+| `docs` | Documentation changes only |
+| `chore` | Build scripts, dependency updates, tooling |
+| `perf` | Performance improvements |
+| `style` | Formatting, whitespace, lint — no logic change |
+| `ci` | CI/CD configuration changes |
+
+### Scopes
+
+Use the package or area of the codebase your change touches:
+
+| Scope | Area |
+|-------|------|
+| `frontend` | React frontend (`apps/desktop/frontend/`) |
+| `electron` | Electron main process (`apps/desktop/electron/`) |
+| `desktop` | Desktop app in general (both layers) |
+| `site` | Marketing site (`apps/site/`) |
+| `docs` | Documentation site (`apps/docs/`) |
+| `mobile` | Mobile app (`apps/mobile/`) |
+| `shared` | Shared package (`packages/shared/`) |
+| `config` | `electron/config.ts` / electron-store |
+| `settings` | `electron/user-settings.ts` |
+| `terminal` | PTY / xterm.js layer |
+
+### Examples
+
+```
+feat(frontend): add drag-to-reorder for session tabs
+fix(electron): handle SIGTERM gracefully on Linux
+test(terminal): add PTY resize event coverage
+docs(contributing): add monorepo dependency diagram
+chore(deps): bump electron to 33.x
+```
+
+## Pull request checklist
+
+Before submitting a PR, make sure:
+
+- [ ] All existing tests pass: `pnpm test`
+- [ ] New behavior is covered by tests (TDD preferred)
+- [ ] TypeScript compiles without errors: `pnpm build`
+- [ ] Commit messages follow Conventional Commits
+- [ ] The PR description explains the **why**, not just the what
+
+## Getting help
+
+If you are unsure about an approach or want feedback before investing significant time, open a GitHub Discussion or draft PR first. We are happy to review early.

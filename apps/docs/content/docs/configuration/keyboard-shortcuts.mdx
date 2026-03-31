@@ -1,0 +1,70 @@
+---
+title: Keyboard Shortcuts
+description: Complete reference for all Forja keyboard shortcuts organized by category — general, sessions, terminal, and layout.
+---
+
+# Keyboard Shortcuts
+
+All keyboard shortcuts use the `Ctrl` modifier on Linux and Windows. On macOS, substitute `Ctrl` with `Cmd` where applicable.
+
+## General
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+,` | Open Settings |
+| `Ctrl+P` | Open file search |
+| `Ctrl+Shift+P` | Open command palette |
+| `F11` | Toggle fullscreen |
+
+## Sessions
+
+Manage terminal tabs and switch between open projects.
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+T` | New tab (session) |
+| `Ctrl+W` | Close current tab |
+| `Ctrl+Tab` | Switch to next tab |
+| `Ctrl+Shift+Tab` | Switch to previous tab |
+| `Ctrl+Shift+1` | Switch to project 1 |
+| `Ctrl+Shift+2` | Switch to project 2 |
+| `Ctrl+Shift+3` | Switch to project 3 |
+| `Ctrl+Shift+4` | Switch to project 4 |
+| `Ctrl+Shift+5` | Switch to project 5 |
+| `Ctrl+Shift+6` | Switch to project 6 |
+| `Ctrl+Shift+7` | Switch to project 7 |
+| `Ctrl+Shift+8` | Switch to project 8 |
+| `Ctrl+Shift+9` | Switch to project 9 |
+
+## Terminal
+
+Shortcuts active when a terminal pane is focused.
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+C` | Copy selected text |
+| `Ctrl+V` | Paste from clipboard |
+| `Ctrl++` | Zoom in (increase terminal font size) |
+| `Ctrl+-` | Zoom out (decrease terminal font size) |
+| `Ctrl+0` | Reset terminal zoom to default |
+
+<Callout type="info">
+  `Ctrl+C` in the terminal copies selected text when text is selected, and sends an interrupt signal (`SIGINT`) to the running process otherwise. This matches the behavior of most native terminal emulators.
+</Callout>
+
+## Layout
+
+Manage pane layout, visibility, and focus.
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+\` | Split pane vertically |
+| `Ctrl+Shift+\` | Split pane horizontally |
+| `Ctrl+Shift+B` | Toggle file tree sidebar |
+| `Ctrl+Alt+F` | Toggle focus mode (hide all chrome) |
+
+## Customizing shortcuts
+
+Keyboard shortcuts are not currently configurable via the UI. They are defined in the Electron main process and the frontend key handler layer.
+
+If you need to remap shortcuts, you can contribute a configuration option — see [Contributing](/docs/contributing) for how to get started.

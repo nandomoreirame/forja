@@ -1,0 +1,86 @@
+---
+title: Theme System
+description: 14+ built-in themes with CSS variable-based application across the UI, xterm.js, Shiki, and Monaco Editor. Switch via Settings or Command Palette.
+---
+
+# Theme System
+
+Forja ships with 14+ built-in themes and applies them consistently across every rendering surface: the app UI (Tailwind CSS variables), the terminal (xterm.js theme API), the file preview (Shiki highlighter), and the code editor (Monaco Editor theme).
+
+## Built-in Themes
+
+| Theme | Style | Notes |
+|-------|-------|-------|
+| **Catppuccin Mocha** | Dark | Default theme |
+| **Catppuccin Latte** | Light | Default light variant |
+| **Dracula** | Dark | |
+| **Nord** | Dark | |
+| **One Dark Pro** | Dark | |
+| **Tokyo Night** | Dark | |
+| **Solarized Dark** | Dark | |
+| **Monokai Pro** | Dark | |
+| **Gruvbox Dark** | Dark | |
+| **GitHub Dark** | Dark | |
+| **Darcula** | Dark | JetBrains-inspired |
+| **Alucard** | Dark | |
+| **Night Owl** | Dark | |
+| **Synthwave 84** | Dark | |
+
+## How Themes Work
+
+Selecting a theme triggers a single `applyTheme()` call that updates all rendering surfaces simultaneously:
+
+```mermaid
+flowchart TD
+    Store["Theme Store\n(Zustand)"] -->|applyTheme()| A["CSS Variables\non :root"]
+    Store --> B["xterm.js\ntheme API"]
+    Store --> C["Shiki\nhighlighter"]
+    Store --> D["Monaco Editor\ntheme"]
+    A --> UI["App UI\n(Tailwind)"]
+    B --> Term["Terminal\ncolors"]
+    C --> Preview["File Preview\ncode blocks"]
+    D --> Editor["Monaco\neditor"]
+```
+
+### CSS Variables
+
+Theme colors are expressed as CSS custom properties on `:root`. Tailwind utility classes reference these variables using the `ctp-*` prefix (Catppuccin naming convention, reused across all themes for consistency). For example:
+
+```css
+:root {
+  --ctp-base: 30 30 46;
+  --ctp-surface0: 49 50 68;
+  --ctp-mauve: 203 166 247;
+  /* ... */
+}
+```
+
+### xterm.js
+
+The terminal color palette (foreground, background, cursor, and all 16 ANSI colors) is updated via the xterm.js `ITheme` API every time the theme changes. This ensures that CLI output rendered in the terminal respects the selected palette.
+
+### Shiki
+
+The file preview pane re-renders highlighted code using the matching Shiki theme bundle. The Shiki highlighter is initialized in the main process and notified of theme changes via IPC.
+
+### Monaco Editor
+
+Monaco's built-in theme registry is updated with a custom theme definition derived from the Shiki token colors, ensuring that JSON, YAML, and diff views use the same palette as the rest of the app.
+
+## Brand Color
+
+The brand accent color is `#cba6f7` (Catppuccin Mauve). It is used sparingly for high-signal interactive elements:
+
+- Active project border in the sidebar
+- Selected tab indicator
+- Active file highlight in the file tree
+- Focus rings on interactive elements
+- Primary CTAs in dialogs
+
+## Changing the Theme
+
+**Via Settings** (`Ctrl+,`): open Settings -> Appearance -> Theme and select from the dropdown.
+
+**Via Command Palette** (`Ctrl+Shift+P`): type `Switch Theme` and press Enter to open an inline theme picker with a live preview.
+
+The selected theme is saved to `~/.config/forja/settings.json` and restored on next launch.

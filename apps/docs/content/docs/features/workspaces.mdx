@@ -1,0 +1,67 @@
+---
+title: Workspaces
+description: Group related projects into named workspaces, each opening in its own window. Switch between workspaces from the titlebar.
+---
+
+# Workspaces
+
+A **workspace** is a named collection of projects. Each workspace opens in its own Electron window, letting you keep client work, personal projects, and open source contributions visually separated without juggling separate app instances.
+
+![Forja — Workspaces with Projects](/screenshots/0.workspaces-with-projects.png)
+
+## Creating a Workspace
+
+1. Click the **workspace switcher** in the titlebar (it shows the current workspace name).
+2. Select **New Workspace** from the dropdown.
+3. Enter a name, choose a color or icon to distinguish it visually.
+4. Add one or more projects from the file system picker or by typing a path.
+5. Click **Create** — the new workspace opens in a fresh window.
+
+## Workspace Switcher
+
+The workspace switcher lives in the titlebar and is always visible. It shows:
+
+- The current workspace name and color indicator
+- A dropdown listing all other workspaces
+- A **New Workspace** entry at the bottom of the list
+
+Clicking a workspace in the dropdown opens it in its own window (or focuses the existing window if it is already open).
+
+![Forja — Focus Workspace view](/screenshots/3.focus-workspace.png)
+
+## Managing Projects in a Workspace
+
+From the workspace settings panel (gear icon in the sidebar), you can:
+
+- **Add projects** — pick any folder from the filesystem
+- **Remove projects** — remove from the workspace without deleting from disk
+- **Reorder projects** — drag to change the order in the sidebar
+
+## Persistence
+
+Workspaces and their project lists are saved to `~/.config/forja/config.json` (Unix) or `%APPDATA%\forja\config.json` (Windows). The file is managed by `electron-store` and is human-readable JSON.
+
+Example structure:
+
+```json
+{
+  "workspaces": [
+    {
+      "id": "ws_personal",
+      "name": "Personal",
+      "color": "#cba6f7",
+      "projects": [
+        { "path": "/home/user/projects/forja", "name": "forja" }
+      ]
+    }
+  ]
+}
+```
+
+## Default Workspace
+
+If you launch Forja without selecting a workspace, it opens the last active workspace. If no workspace exists, Forja shows the **Add Project** screen so you can create your first project.
+
+<Callout type="info">
+  Each workspace window is fully independent. Closing one workspace does not affect sessions running in other workspace windows.
+</Callout>
