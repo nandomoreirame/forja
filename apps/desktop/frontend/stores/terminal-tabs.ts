@@ -273,6 +273,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
 
   cleanupProjectState: (projectPath: string) => {
     const { tabs, activeTabId } = get();
+    const removedTabs = tabs.filter((t) => t.path === projectPath);
     const remainingTabs = tabs.filter((t) => t.path !== projectPath);
 
     // If the active tab belonged to the removed project, switch to another
@@ -283,6 +284,12 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
       tabs: remainingTabs,
       activeTabId: newActiveTabId,
     });
+
+    // Remove layout blocks for all tabs that belonged to the removed project
+    const layout = useTilingLayoutStore.getState();
+    for (const tab of removedTabs) {
+      layout.removeBlock(tab.id);
+    }
   },
 }));
 

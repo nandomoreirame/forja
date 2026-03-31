@@ -392,6 +392,11 @@ export function removeProjectFromWorkspace(
     ...workspace,
     projects: workspace.projects.filter((p) => p.path !== projectPath),
     lastUsedAt: new Date().toISOString(),
+    // Clear lastActiveProjectPath if it pointed to the removed project,
+    // otherwise the session restore will re-add it on next reload.
+    ...(workspace.lastActiveProjectPath === projectPath
+      ? { lastActiveProjectPath: undefined }
+      : {}),
   };
 
   const newWorkspaces = [...workspaces];
