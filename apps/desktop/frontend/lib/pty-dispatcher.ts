@@ -19,6 +19,7 @@ interface PtyExitPayload {
 type DataHandler = (data: string) => void;
 type ExitHandler = (code: number) => void;
 type GlobalDataHandler = (tabId: string, data: string) => void;
+type PermanentExitHandler = (tabId: string, code: number) => void;
 
 export interface PtyDispatcher {
   registerData: (tabId: string, handler: DataHandler) => void;
@@ -26,6 +27,8 @@ export interface PtyDispatcher {
   registerExit: (tabId: string, handler: ExitHandler) => void;
   unregisterExit: (tabId: string) => void;
   onGlobalData: (handler: GlobalDataHandler) => void;
+  /** Register a fallback exit handler for tabs with no tab-specific handler. */
+  registerPermanentExitHandler: (handler: PermanentExitHandler) => void;
   handleData: (payload: PtyDataPayload) => void;
   handleExit: (payload: PtyExitPayload) => void;
   destroy: () => void;
@@ -38,6 +41,7 @@ export function createPtyDispatcher(): PtyDispatcher {
   const dataHandlers = new Map<string, DataHandler>();
   const exitHandlers = new Map<string, ExitHandler>();
   let globalDataHandler: GlobalDataHandler | null = null;
+  let permanentExitHandler: PermanentExitHandler | null = null;
 
   return {
     registerData(tabId, handler) {
@@ -60,19 +64,29 @@ export function createPtyDispatcher(): PtyDispatcher {
       globalDataHandler = handler;
     },
 
+    registerPermanentExitHandler(handler) {
+      permanentExitHandler = handler;
+    },
+
     handleData(payload) {
       globalDataHandler?.(payload.tab_id, payload.data);
       dataHandlers.get(payload.tab_id)?.(payload.data);
     },
 
     handleExit(payload) {
-      exitHandlers.get(payload.tab_id)?.(payload.code);
+      const tabHandler = exitHandlers.get(payload.tab_id);
+      if (tabHandler) {
+        tabHandler(payload.code);
+      } else {
+        permanentExitHandler?.(payload.tab_id, payload.code);
+      }
     },
 
     destroy() {
       dataHandlers.clear();
       exitHandlers.clear();
       globalDataHandler = null;
+      permanentExitHandler = null;
     },
   };
 }

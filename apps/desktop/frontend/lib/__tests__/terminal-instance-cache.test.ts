@@ -16,6 +16,15 @@ vi.mock("@/lib/ipc", () => ({
   invoke: (...args: unknown[]) => mockInvoke(...args),
 }));
 
+// Mock terminal-tabs store for cache TTL tab-existence checks.
+// Default: tab does NOT exist (allow eviction).
+const mockHasTab = vi.fn().mockReturnValue(false);
+vi.mock("@/stores/terminal-tabs", () => ({
+  useTerminalTabsStore: {
+    getState: () => ({ hasTab: mockHasTab }),
+  },
+}));
+
 // Must import AFTER mock declaration
 import { terminalCache, CACHE_TTL_MS, CACHE_MAX_SIZE } from "../terminal-instance-cache";
 import { ptyDispatcher } from "@/lib/pty-dispatcher";
@@ -203,55 +212,101 @@ describe("terminalCache", () => {
   describe("TTL eviction", () => {
     beforeEach(() => {
       vi.useFakeTimers();
+      mockHasTab.mockReturnValue(false); // default: tab gone → allow eviction
     });
 
     afterEach(() => {
       vi.useRealTimers();
     });
 
+    /** Advance timers and flush the async dynamic import chain. */
+    async function advanceAndFlush(ms: number) {
+      // advanceTimersByTimeAsync handles both timers and microtask flushing
+      await vi.advanceTimersByTimeAsync(ms);
+      // Extra flush for dynamic import().then() chain
+      for (let i = 0; i < 20; i++) await Promise.resolve();
+    }
+
     it("exports TTL and max size constants", () => {
       expect(CACHE_TTL_MS).toBe(5 * 60 * 1000);
       expect(CACHE_MAX_SIZE).toBe(20);
     });
 
-    it("evicts entries after TTL expires", () => {
+    it("evicts entries after TTL expires when tab does not exist", async () => {
       const terminal = makeMockTerminal();
       const fitAddon = makeMockFitAddon();
       const host = makeMockHostElement();
+      mockHasTab.mockReturnValue(false);
 
       terminalCache.park("tab-ttl", terminal, fitAddon, host);
       expect(terminalCache.has("tab-ttl")).toBe(true);
 
-      vi.advanceTimersByTime(CACHE_TTL_MS + 100);
+      await advanceAndFlush(CACHE_TTL_MS + 100);
 
       expect(terminalCache.has("tab-ttl")).toBe(false);
       expect(terminal.dispose).toHaveBeenCalled();
     });
 
-    it("does NOT kill backend PTY when TTL eviction fires (PTY survives for reconnection)", () => {
+    it("does NOT evict when tab still exists in store", async () => {
+      const terminal = makeMockTerminal();
+      const fitAddon = makeMockFitAddon();
+      const host = makeMockHostElement();
+      mockHasTab.mockReturnValue(true); // tab still exists
+
+      terminalCache.park("tab-ttl-keep", terminal, fitAddon, host);
+
+      await advanceAndFlush(CACHE_TTL_MS + 100);
+
+      // Should still be in cache
+      expect(terminalCache.has("tab-ttl-keep")).toBe(true);
+      expect(terminal.dispose).not.toHaveBeenCalled();
+    });
+
+    it("reschedules TTL when tab exists, then evicts once tab is removed", async () => {
+      const terminal = makeMockTerminal();
+      const fitAddon = makeMockFitAddon();
+      const host = makeMockHostElement();
+      mockHasTab.mockReturnValue(true); // tab exists initially
+
+      terminalCache.park("tab-ttl-resched", terminal, fitAddon, host);
+
+      // First TTL fires — tab exists, reschedule
+      await advanceAndFlush(CACHE_TTL_MS + 100);
+      expect(terminalCache.has("tab-ttl-resched")).toBe(true);
+
+      // Now tab is removed
+      mockHasTab.mockReturnValue(false);
+
+      // Second TTL fires — tab gone, evict
+      await advanceAndFlush(CACHE_TTL_MS + 100);
+      expect(terminalCache.has("tab-ttl-resched")).toBe(false);
+      expect(terminal.dispose).toHaveBeenCalled();
+    });
+
+    it("does NOT kill backend PTY when TTL eviction fires (PTY survives for reconnection)", async () => {
       const terminal = makeMockTerminal();
       const fitAddon = makeMockFitAddon();
       const host = makeMockHostElement();
 
       terminalCache.park("tab-ttl-kill", terminal, fitAddon, host);
-      vi.advanceTimersByTime(CACHE_TTL_MS + 100);
+      await advanceAndFlush(CACHE_TTL_MS + 100);
 
       expect(mockInvoke).not.toHaveBeenCalledWith("close_pty", { tabId: "tab-ttl-kill" });
     });
 
-    it("unregisters dispatcher handlers when TTL eviction fires", () => {
+    it("unregisters dispatcher handlers when TTL eviction fires", async () => {
       const terminal = makeMockTerminal();
       const fitAddon = makeMockFitAddon();
       const host = makeMockHostElement();
 
       terminalCache.park("tab-ttl-unreg", terminal, fitAddon, host);
-      vi.advanceTimersByTime(CACHE_TTL_MS + 100);
+      await advanceAndFlush(CACHE_TTL_MS + 100);
 
       expect(ptyDispatcher.unregisterData).toHaveBeenCalledWith("tab-ttl-unreg");
       expect(ptyDispatcher.unregisterExit).toHaveBeenCalledWith("tab-ttl-unreg");
     });
 
-    it("cancels TTL timer when entry is retrieved via get()", () => {
+    it("cancels TTL timer when entry is retrieved via get()", async () => {
       const terminal = makeMockTerminal();
       const fitAddon = makeMockFitAddon();
       const host = makeMockHostElement();
@@ -262,13 +317,13 @@ describe("terminalCache", () => {
       const entry = terminalCache.get("tab-get");
       expect(entry).toBeDefined();
 
-      vi.advanceTimersByTime(CACHE_TTL_MS + 100);
+      await advanceAndFlush(CACHE_TTL_MS + 100);
 
       // Should NOT have been evicted since it was retrieved
       expect(terminal.dispose).not.toHaveBeenCalled();
     });
 
-    it("cancels TTL timer when entry is manually disposed", () => {
+    it("cancels TTL timer when entry is manually disposed", async () => {
       const terminal = makeMockTerminal();
       const fitAddon = makeMockFitAddon();
       const host = makeMockHostElement();
@@ -279,7 +334,7 @@ describe("terminalCache", () => {
       // dispose should have been called once (manually)
       expect(terminal.dispose).toHaveBeenCalledTimes(1);
 
-      vi.advanceTimersByTime(CACHE_TTL_MS + 100);
+      await advanceAndFlush(CACHE_TTL_MS + 100);
 
       // Should NOT double-dispose
       expect(terminal.dispose).toHaveBeenCalledTimes(1);
