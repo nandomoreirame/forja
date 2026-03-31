@@ -126,7 +126,7 @@ describe("WsBridgeDialog", () => {
   it("shows port info when server is running", () => {
     mockBridgeStore({ running: true, token: "test-token", port: 9400, host: "0.0.0.0" });
     render(<WsBridgeDialog open={true} onOpenChange={vi.fn()} />);
-    expect(screen.getByText("9400")).toBeInTheDocument();
+    expect(screen.getByText(/9400/)).toBeInTheDocument();
   });
 
   it("shows copy button when token is available", () => {

@@ -31,8 +31,12 @@ vi.mock("monaco-editor", () => {
     getModel: vi.fn(() => mockModel),
     onDidChangeModelContent: vi.fn(() => disposable),
     onDidDispose: vi.fn(() => disposable),
+    onDidChangeCursorPosition: vi.fn(() => disposable),
+    onDidScrollChange: vi.fn(() => disposable),
     layout: vi.fn(), updateOptions: vi.fn(), focus: vi.fn(),
     getAction: vi.fn(), addCommand: vi.fn(),
+    setPosition: vi.fn(), revealPositionInCenter: vi.fn(),
+    setScrollTop: vi.fn(),
   };
   const mockDiffEditor = {
     getOriginalEditor: vi.fn(() => mockEditor),

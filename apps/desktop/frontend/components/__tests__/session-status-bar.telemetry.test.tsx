@@ -29,6 +29,14 @@ vi.mock("@/lib/cli-registry", () => ({
     "cursor-agent": { displayName: "Cursor Agent", iconColor: "text-ctp-peach" },
     "gh-copilot": { displayName: "GitHub Copilot", iconColor: "text-ctp-lavender" },
   },
+  computeTabDisplayNames: (tabs: Array<{ id: string; sessionType: string; customName?: string }>) => {
+    const result: Record<string, string> = {};
+    for (const tab of tabs) {
+      result[tab.id] = tab.customName ?? tab.sessionType;
+    }
+    return result;
+  },
+  getSessionDisplayName: (sessionType: string) => sessionType,
 }));
 
 describe("SessionStatusBar telemetry", () => {
