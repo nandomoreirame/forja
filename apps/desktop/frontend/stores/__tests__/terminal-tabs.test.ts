@@ -650,6 +650,25 @@ describe("useTerminalTabsStore", () => {
       expect(state.tabs).toHaveLength(0);
       expect(state.recentlyClosed).toHaveLength(0);
     });
+
+    it("cleanupProjectState removes layout blocks for removed tabs", async () => {
+      const { useTilingLayoutStore } = await import("../tiling-layout");
+      const removeBlockSpy = vi.spyOn(useTilingLayoutStore.getState(), "removeBlock");
+
+      const id1 = createTab("/project-a", "claude");
+      const id2 = createTab("/project-a", "terminal");
+      createTab("/project-b", "claude");
+
+      useTerminalTabsStore.getState().cleanupProjectState("/project-a");
+
+      expect(removeBlockSpy).toHaveBeenCalledTimes(2);
+      expect(removeBlockSpy).toHaveBeenCalledWith(id1);
+      expect(removeBlockSpy).toHaveBeenCalledWith(id2);
+
+      // project-b tabs remain untouched
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(1);
+      removeBlockSpy.mockRestore();
+    });
   });
 
   describe("terminal fullscreen", () => {
