@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
-import { usePty, resolveMissingSessionIds } from "../use-pty";
+import { usePty, resolveMissingSessionIds, shouldForceClosePty } from "../use-pty";
 import { ptyDispatcher } from "@/lib/pty-dispatcher";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 
@@ -119,6 +119,7 @@ describe("usePty", () => {
 
     expect(ptyDispatcher.unregisterData).toHaveBeenCalledWith("tab-1");
     expect(ptyDispatcher.unregisterExit).toHaveBeenCalledWith("tab-1");
+    expect(mockInvoke).not.toHaveBeenCalledWith("close_pty", expect.anything());
   });
 
   it("calls onData callback when dispatcher routes data to this tab", () => {
@@ -257,6 +258,33 @@ describe("usePty", () => {
     });
 
     expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-1", force: false });
+  });
+
+  it("only explicit teardown boundaries force close_pty", () => {
+    expect(shouldForceClosePty("window-close")).toBe(true);
+    expect(shouldForceClosePty("project-remove")).toBe(true);
+    expect(shouldForceClosePty("tab-delete")).toBe(true);
+    expect(shouldForceClosePty("workspace-switch")).toBe(false);
+    expect(shouldForceClosePty("project-switch")).toBe(false);
+    expect(shouldForceClosePty("park")).toBe(false);
+    expect(shouldForceClosePty("remount")).toBe(false);
+  });
+
+  it("close(reason) only invokes close_pty for explicit termination boundaries", async () => {
+    const { result } = renderHook(() =>
+      usePty({ tabId: "tab-reason", onData: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.close(false, "park");
+    });
+    expect(mockInvoke).not.toHaveBeenCalledWith("close_pty", expect.anything());
+
+    mockInvoke.mockResolvedValueOnce(undefined);
+    await act(async () => {
+      await result.current.close(true, "tab-delete");
+    });
+    expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-reason", force: true });
   });
 
   describe("session ID detection via PTY regex (CLIs without filesystem detection)", () => {

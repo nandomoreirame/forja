@@ -347,6 +347,7 @@ describe("useWorkspaceStore", () => {
       useFileTreeStore.setState({
         loadProjectTree: mockLoadProjectTree,
         openProjectPath: mockOpenProjectPath,
+        currentPath: "/project/restore",
       });
 
       mockInvoke
@@ -527,10 +528,11 @@ describe("useWorkspaceStore", () => {
       expect(tabsState.activeTabId).toBeNull();
     });
 
-    it("closes existing PTYs via IPC before clearing terminal tabs on workspace switch", async () => {
+    it("does not call close_pty during workspace activation", async () => {
       const ws = makeWorkspace({
         id: "ws-2",
         projects: [makeProject("/project/new")],
+        lastActiveProjectPath: "/project/new",
       });
       useWorkspaceStore.setState({ workspaces: [ws] });
 
@@ -557,9 +559,8 @@ describe("useWorkspaceStore", () => {
 
       await useWorkspaceStore.getState().activateWorkspace("ws-2");
 
-      // Must have called close_pty for each tab before clearing
-      expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-old-1" });
-      expect(mockInvoke).toHaveBeenCalledWith("close_pty", { tabId: "tab-old-2" });
+      // Workspace activation must detach UI state without killing PTYs.
+      expect(mockInvoke).not.toHaveBeenCalledWith("close_pty", expect.anything());
     });
 
     it("does not call close_pty when there are no existing tabs on workspace switch", async () => {
@@ -764,6 +765,62 @@ describe("useWorkspaceStore", () => {
       loadFromJsonSpy.mockRestore();
     });
 
+    it("opens the workspace lastActiveProjectPath before restoring tabs", async () => {
+      const ws = makeWorkspace({
+        id: "ws-2",
+        projects: [makeProject("/project/alpha"), makeProject("/project/beta")],
+        lastActiveProjectPath: "/project/beta",
+      });
+      useWorkspaceStore.setState({ workspaces: [ws] });
+
+      const mockLoadProjectTree = vi.fn().mockResolvedValue(undefined);
+      const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
+      useFileTreeStore.setState({
+        loadProjectTree: mockLoadProjectTree,
+        openProjectPath: mockOpenProjectPath,
+        currentPath: null,
+      });
+
+      const savedUiState = {
+        tabs: [
+          {
+            id: "tab-beta-1",
+            path: "/project/beta",
+            sessionType: "claude",
+          },
+        ],
+        activeTabIndex: 0,
+      };
+
+      mockInvoke.mockImplementation((cmd: string, args?: any) => {
+        if (cmd === "set_active_workspace") return Promise.resolve(undefined);
+        if (cmd === "get_workspace_projects") {
+          return Promise.resolve([
+            { path: "/project/alpha", name: "alpha", last_opened: "2026-01-01" },
+            { path: "/project/beta", name: "beta", last_opened: "2026-01-01" },
+          ]);
+        }
+        if (cmd === "get_ui_preferences") {
+          expect(args).toEqual({ workspaceId: "ws-2", projectPath: "/project/beta" });
+          return Promise.resolve({ layoutJson: { global: {}, layout: { type: "row", children: [] } } });
+        }
+        if (cmd === "get_project_ui_state") {
+          expect(args).toEqual({ workspaceId: "ws-2", path: "/project/beta" });
+          return Promise.resolve(savedUiState);
+        }
+        return Promise.resolve(undefined);
+      });
+
+      await useWorkspaceStore.getState().activateWorkspace("ws-2");
+
+      expect(mockOpenProjectPath).toHaveBeenCalledWith("/project/beta");
+      expect(mockOpenProjectPath).not.toHaveBeenCalledWith("/project/alpha");
+
+      const tabsState = useTerminalTabsStore.getState();
+      expect(tabsState.tabs).toHaveLength(1);
+      expect(tabsState.tabs[0].path).toBe("/project/beta");
+    });
+
     it("restores saved tabs from config.json when switching workspaces", async () => {
       const ws = makeWorkspace({
         id: "ws-2",
@@ -848,6 +905,25 @@ describe("useWorkspaceStore", () => {
       mockInvoke.mockImplementation((cmd: string, args?: any) => {
         if (cmd === "set_active_workspace") return Promise.resolve(undefined);
         if (cmd === "get_workspace_projects") return Promise.resolve([]);
+        if (cmd === "get_ui_preferences") {
+          expect(args).toEqual({ workspaceId: "ws-session", projectPath: "/project/c" });
+          return Promise.resolve({
+            layoutJson: {
+              global: {},
+              layout: {
+                type: "row",
+                children: [
+                  {
+                    type: "tabset",
+                    children: [
+                      { type: "tab", id: "tab-resumed", name: "Claude", component: "terminal" },
+                    ],
+                  },
+                ],
+              },
+            },
+          });
+        }
         if (cmd === "get_project_ui_state") {
           expect(args).toEqual({ workspaceId: "ws-session", path: "/project/c" });
           return Promise.resolve(savedUiState);
@@ -863,6 +939,137 @@ describe("useWorkspaceStore", () => {
       expect(tabsState.tabs).toHaveLength(1);
       expect(tabsState.tabs[0].id).toBe("tab-resumed");
       expect(tabsState.tabs[0].cliSessionId).toBe("abc-session-9f3e21");
+    });
+
+    it("restores provider matrix tabs on workspace activation without killing sessions", async () => {
+      const ws = makeWorkspace({
+        id: "ws-matrix",
+        projects: [makeProject("/project/matrix")],
+        lastActiveProjectPath: "/project/matrix",
+      });
+      useWorkspaceStore.setState({ workspaces: [ws] });
+
+      useFileTreeStore.setState({
+        loadProjectTree: vi.fn().mockResolvedValue(undefined),
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+        currentPath: "/project/matrix",
+      });
+
+      const savedUiState = {
+        tabs: [
+          { id: "tab-claude", path: "/project/matrix", sessionType: "claude", cliSessionId: "claude-1", customName: "Claude Rename" },
+          { id: "tab-codex", path: "/project/matrix", sessionType: "codex", cliSessionId: "codex-1", customName: "Codex Rename" },
+          { id: "tab-gemini", path: "/project/matrix", sessionType: "gemini", cliSessionId: "gemini-1", customName: "Gemini Rename" },
+          { id: "tab-terminal", path: "/project/matrix", sessionType: "terminal", exited: true },
+        ],
+        activeTabIndex: 2,
+      };
+
+      mockInvoke.mockImplementation((cmd: string, args?: any) => {
+        if (cmd === "set_active_workspace") return Promise.resolve(undefined);
+        if (cmd === "get_workspace_projects") return Promise.resolve([]);
+        if (cmd === "get_ui_preferences") {
+          expect(args).toEqual({ workspaceId: "ws-matrix", projectPath: "/project/matrix" });
+          return Promise.resolve({
+            layoutJson: {
+              global: {},
+              layout: {
+                type: "row",
+                children: [
+                  {
+                    type: "tabset",
+                    children: [
+                      { type: "tab", id: "tab-claude", name: "Claude", component: "terminal" },
+                      { type: "tab", id: "tab-codex", name: "Codex", component: "terminal" },
+                      { type: "tab", id: "tab-gemini", name: "Gemini", component: "terminal" },
+                      { type: "tab", id: "tab-terminal", name: "Terminal", component: "terminal" },
+                    ],
+                  },
+                ],
+              },
+            },
+          });
+        }
+        if (cmd === "get_project_ui_state") {
+          expect(args).toEqual({ workspaceId: "ws-matrix", path: "/project/matrix" });
+          return Promise.resolve(savedUiState);
+        }
+        if (cmd === "close_pty") return Promise.resolve(undefined);
+        return Promise.resolve(undefined);
+      });
+
+      await useWorkspaceStore.getState().activateWorkspace("ws-matrix");
+
+      expect(mockInvoke).not.toHaveBeenCalledWith("close_pty", expect.anything());
+
+      const tabs = useTerminalTabsStore.getState().getTabsForProject("/project/matrix");
+      expect(tabs).toHaveLength(4);
+      expect(tabs.map((tab) => [tab.id, tab.sessionType, tab.cliSessionId, tab.customName, tab.isRunning])).toEqual([
+        ["tab-claude", "claude", "claude-1", "Claude Rename", true],
+        ["tab-codex", "codex", "codex-1", "Codex Rename", true],
+        ["tab-gemini", "gemini", "gemini-1", "Gemini Rename", true],
+        ["tab-terminal", "terminal", undefined, undefined, false],
+      ]);
+      expect(useTerminalTabsStore.getState().activeTabId).toBe("tab-gemini");
+    });
+
+    it("uses hasBlock to decide whether to preserve saved tab IDs on workspace activation", async () => {
+      const ws = makeWorkspace({
+        id: "ws-restore",
+        projects: [makeProject("/project/restore")],
+        lastActiveProjectPath: "/project/restore",
+      });
+      useWorkspaceStore.setState({ workspaces: [ws], activeWorkspaceId: "ws-old" });
+
+      const mockLoadProjectTree = vi.fn().mockResolvedValue(undefined);
+      const mockOpenProjectPath = vi.fn();
+      useFileTreeStore.setState({
+        loadProjectTree: mockLoadProjectTree,
+        openProjectPath: mockOpenProjectPath,
+      });
+
+      const savedLayout = {
+        global: {},
+        layout: {
+          type: "row",
+          children: [
+            {
+              type: "tabset",
+              children: [
+                { type: "tab", id: "tab-file-tree", name: "Files", component: "file-tree" },
+                { type: "tab", id: "saved-tab-1", name: "Claude", component: "terminal" },
+              ],
+            },
+          ],
+        },
+      };
+
+      mockInvoke.mockImplementation((cmd: string, args?: any) => {
+        if (cmd === "set_active_workspace") return Promise.resolve(undefined);
+        if (cmd === "get_workspace_projects") return Promise.resolve([]);
+        if (cmd === "get_ui_preferences") {
+          expect(args).toEqual({ workspaceId: "ws-restore", projectPath: "/project/restore" });
+          return Promise.resolve({ layoutJson: savedLayout });
+        }
+        if (cmd === "get_project_ui_state") {
+          expect(args).toEqual({ workspaceId: "ws-restore", path: "/project/restore" });
+          return Promise.resolve({
+            tabs: [
+              { id: "saved-tab-1", sessionType: "claude", cliSessionId: "cls-1" },
+              { id: "saved-tab-2", sessionType: "terminal" },
+            ],
+            activeTabIndex: 0,
+          });
+        }
+        return Promise.resolve(undefined);
+      });
+
+      await useWorkspaceStore.getState().activateWorkspace("ws-restore");
+
+      const tabs = useTerminalTabsStore.getState().tabs;
+      expect(tabs).toHaveLength(2);
+      expect(tabs[0].id).toBe("saved-tab-1");
+      expect(tabs[1].id).not.toBe("saved-tab-2");
     });
 
     it("sets isSwitchingProject during workspace activation to guard reactive saves", async () => {

@@ -324,13 +324,40 @@ describe("useTerminalTabsStore", () => {
       expect(state.tabs[1].customName).toBeUndefined();
     });
 
+    it("renameTab only changes customName and preserves tab identity", () => {
+      const id1 = createTab("/a", "claude");
+      const store = useTerminalTabsStore.getState();
+      store.setCliSessionId(id1, "session-123");
+
+      const before = useTerminalTabsStore.getState().tabs.find((t) => t.id === id1);
+      expect(before?.id).toBe(id1);
+      expect(before?.path).toBe("/a");
+      expect(before?.cliSessionId).toBe("session-123");
+      expect(before?.customName).toBeUndefined();
+
+      useTerminalTabsStore.getState().renameTab(id1, "   My Build   ");
+
+      const renamed = useTerminalTabsStore.getState().tabs.find((t) => t.id === id1);
+      expect(renamed).toMatchObject({
+        id: id1,
+        path: "/a",
+        cliSessionId: "session-123",
+        customName: "My Build",
+      });
+      expect(renamed?.name).toBe("Claude Code");
+    });
+
     it("renameTab with empty string clears customName", () => {
       const id1 = createTab("/a", "claude");
       useTerminalTabsStore.getState().renameTab(id1, "Custom Name");
       useTerminalTabsStore.getState().renameTab(id1, "");
 
       const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].id).toBe(id1);
+      expect(state.tabs[0].path).toBe("/a");
+      expect(state.tabs[0].cliSessionId).toBeUndefined();
       expect(state.tabs[0].customName).toBeUndefined();
+      expect(useTerminalTabsStore.getState().getTabDisplayNames()[id1]).toBe("Claude Code");
     });
 
     it("renameTab does nothing for unknown tabId", () => {

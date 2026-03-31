@@ -1129,6 +1129,46 @@ describe("TerminalSession", () => {
       expect(resumeArgs).toBeUndefined();
       expect(mockSetCliSessionId).not.toHaveBeenCalled();
     });
+
+    it("resumes Codex sessions with the stored cliSessionId", async () => {
+      mockStoreTabs.push({
+        id: "tab-codex-resume",
+        sessionType: "codex",
+        cliSessionId: "codex-session-123",
+        isRunning: true,
+      });
+
+      render(<TerminalSession tabId="tab-codex-resume" path="/test" sessionType="codex" />);
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockPtySpawn).toHaveBeenCalled();
+      const spawnCall = mockPtySpawn.mock.calls[0];
+      expect(spawnCall[2]).toEqual(["resume", "codex-session-123"]);
+      expect(mockSetCliSessionId).not.toHaveBeenCalled();
+    });
+
+    it("resumes Gemini sessions with latest even when cliSessionId is persisted", async () => {
+      mockStoreTabs.push({
+        id: "tab-gemini-resume",
+        sessionType: "gemini",
+        cliSessionId: "gemini-session-456",
+        isRunning: true,
+      });
+
+      render(<TerminalSession tabId="tab-gemini-resume" path="/test" sessionType="gemini" />);
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(mockPtySpawn).toHaveBeenCalled();
+      const spawnCall = mockPtySpawn.mock.calls[0];
+      expect(spawnCall[2]).toEqual(["--resume", "latest"]);
+      expect(mockSetCliSessionId).not.toHaveBeenCalled();
+    });
   });
 
   describe("deferred spawn via ResizeObserver (0x0 container guard)", () => {

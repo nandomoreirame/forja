@@ -1,5 +1,5 @@
 import { beforeEach, describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Titlebar } from "../titlebar";
 import { useAppDialogsStore } from "@/stores/app-dialogs";
@@ -226,11 +226,17 @@ describe("Titlebar context menu visibility", () => {
     const commandBarItem = screen.getByText("Command Bar");
     await user.click(commandBarItem);
 
-    expect(mockInvoke).toHaveBeenCalledWith(
-      "save_user_settings",
-      expect.objectContaining({
-        content: expect.stringContaining('"commandBar": false'),
-      }),
+    // save_user_settings is debounced 300ms — wait for it to fire
+    await waitFor(
+      () => {
+        expect(mockInvoke).toHaveBeenCalledWith(
+          "save_user_settings",
+          expect.objectContaining({
+            content: expect.stringContaining('"commandBar": false'),
+          }),
+        );
+      },
+      { timeout: 1000 },
     );
   });
 });

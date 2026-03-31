@@ -166,6 +166,51 @@ describe("useProjectsStore", () => {
     expect(invoke).toHaveBeenCalledWith("remove_project_from_workspace", { workspaceId: "ws-test", projectPath: "/a" });
   });
 
+  it("removing a project clears only that project's in-memory tabs and layout blocks", async () => {
+    vi.mocked(invoke).mockResolvedValue(undefined);
+
+    const { useTilingLayoutStore } = await import("@/stores/tiling-layout");
+    useTilingLayoutStore.getState().resetToDefault();
+
+    try {
+      useProjectsStore.setState({
+        projects: [
+          { path: "/a", name: "a", lastOpened: "" },
+          { path: "/b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/a",
+      });
+
+      useTerminalTabsStore.setState({
+        tabs: [],
+        activeTabId: null,
+        counter: 0,
+        isTerminalFullscreen: false,
+      });
+
+      const tabsStore = useTerminalTabsStore.getState();
+      const tabA = "tab-a";
+      const tabB = "tab-b";
+      tabsStore.addTab(tabA, "/a", "claude");
+      tabsStore.addTab(tabB, "/b", "claude");
+
+      expect(tabsStore.getTabsForProject("/a")).toHaveLength(1);
+      expect(tabsStore.getTabsForProject("/b")).toHaveLength(1);
+      expect(useTilingLayoutStore.getState().hasBlock(tabA)).toBe(true);
+      expect(useTilingLayoutStore.getState().hasBlock(tabB)).toBe(true);
+
+      useProjectsStore.getState().removeProject("/a");
+
+      const afterTabs = useTerminalTabsStore.getState();
+      expect(afterTabs.getTabsForProject("/a")).toHaveLength(0);
+      expect(afterTabs.getTabsForProject("/b")).toHaveLength(1);
+      expect(useTilingLayoutStore.getState().hasBlock(tabA)).toBe(false);
+      expect(useTilingLayoutStore.getState().hasBlock(tabB)).toBe(true);
+    } finally {
+      useTilingLayoutStore.getState().resetToDefault();
+    }
+  });
+
   it("switches to project and loads file tree", async () => {
     const mockOpenProjectPath = vi.fn().mockResolvedValue(undefined);
     vi.mocked(useFileTreeStore.getState).mockReturnValue({
@@ -610,6 +655,50 @@ describe("useProjectsStore", () => {
       expect(savedState.activeTabIndex).toBeDefined();
     });
 
+    it("persists provider matrix metadata on the window-close save path", async () => {
+      vi.mocked(invoke).mockResolvedValue(undefined);
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      useProjectsStore.setState({ activeProjectPath: "/project-a" });
+
+      useTerminalTabsStore.setState({
+        tabs: [],
+        activeTabId: null,
+        counter: 0,
+        isTerminalFullscreen: false,
+      });
+
+      const tabsStore = useTerminalTabsStore.getState();
+      const matrix = [
+        { id: "tab-claude", path: "/project-a", sessionType: "claude" as const, cliSessionId: "claude-1", customName: "Claude Rename" },
+        { id: "tab-codex", path: "/project-a", sessionType: "codex" as const, cliSessionId: "codex-1", customName: "Codex Rename" },
+        { id: "tab-gemini", path: "/project-a", sessionType: "gemini" as const, cliSessionId: "gemini-1", customName: "Gemini Rename" },
+        { id: "tab-terminal", path: "/project-a", sessionType: "terminal" as const, exited: true },
+      ] as const;
+
+      for (const tab of matrix) {
+        tabsStore.registerTab(tab.id, tab.path, tab.sessionType, tab.customName);
+        if (tab.cliSessionId) tabsStore.setCliSessionId(tab.id, tab.cliSessionId);
+        if (tab.exited) tabsStore.markTabExited(tab.id);
+      }
+      tabsStore.setActiveTab("tab-gemini");
+
+      await saveCurrentProjectToDisk("/project-a");
+
+      const saveCalls = vi.mocked(invoke).mock.calls.filter(
+        (call) => call[0] === "save_project_ui_state",
+      );
+      expect(saveCalls).toHaveLength(1);
+
+      const payload = saveCalls[0][1] as any;
+      expect(payload.path).toBe("/project-a");
+      expect(payload.state.tabs).toEqual([
+        { id: "tab-claude", sessionType: "claude", cliSessionId: "claude-1", customName: "Claude Rename" },
+        { id: "tab-codex", sessionType: "codex", cliSessionId: "codex-1", customName: "Codex Rename" },
+        { id: "tab-gemini", sessionType: "gemini", cliSessionId: "gemini-1", customName: "Gemini Rename" },
+        { id: "tab-terminal", sessionType: "terminal", exited: true },
+      ]);
+    });
+
     it("restores terminal tabs from disk when switching to a project with no in-memory tabs", async () => {
       const savedTabs = [
         { id: "saved-tab-1", sessionType: "claude", cliSessionId: "sess-abc" },
@@ -649,6 +738,48 @@ describe("useProjectsStore", () => {
       expect(projectBTabs[1].isRunning).toBe(false);
     });
 
+    it("restores provider matrix metadata from disk with exact session IDs", async () => {
+      const savedTabs = [
+        { id: "tab-claude", sessionType: "claude", cliSessionId: "claude-1", customName: "Claude Rename" },
+        { id: "tab-codex", sessionType: "codex", cliSessionId: "codex-1", customName: "Codex Rename" },
+        { id: "tab-gemini", sessionType: "gemini", cliSessionId: "gemini-1", customName: "Gemini Rename" },
+        { id: "tab-terminal", sessionType: "terminal", exited: true },
+      ];
+
+      vi.mocked(invoke).mockImplementation(async (ch: string) => {
+        if (ch === "get_project_ui_state") {
+          return {
+            tabs: savedTabs,
+            activeTabIndex: 2,
+          };
+        }
+        return undefined;
+      });
+
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+      } as never);
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      const projectBTabs = useTerminalTabsStore.getState().getTabsForProject("/project-b");
+      expect(projectBTabs).toHaveLength(4);
+      expect(projectBTabs.map((tab) => [tab.id, tab.sessionType, tab.cliSessionId, tab.customName, tab.isRunning])).toEqual([
+        ["tab-claude", "claude", "claude-1", "Claude Rename", true],
+        ["tab-codex", "codex", "codex-1", "Codex Rename", true],
+        ["tab-gemini", "gemini", "gemini-1", "Gemini Rename", true],
+        ["tab-terminal", "terminal", undefined, undefined, false],
+      ]);
+    });
+
     it("does not restore tabs from disk when in-memory tabs already exist", async () => {
       vi.mocked(invoke).mockImplementation(async (ch: string) => {
         if (ch === "get_project_ui_state") {
@@ -682,6 +813,38 @@ describe("useProjectsStore", () => {
       const projectBTabs = useTerminalTabsStore.getState().getTabsForProject("/project-b");
       expect(projectBTabs).toHaveLength(1);
       expect(projectBTabs[0].id).toBe("mem-tab-1");
+    });
+
+    it("keeps a Codex session alive across a project switch", async () => {
+      vi.mocked(invoke).mockResolvedValue(null);
+      vi.mocked(useFileTreeStore.getState).mockReturnValue({
+        openProjectPath: vi.fn().mockResolvedValue(undefined),
+      } as never);
+
+      const tabsStore = useTerminalTabsStore.getState();
+      const codexTabId = tabsStore.nextTabId();
+      tabsStore.addTab(codexTabId, "/project-a", "codex", "Codex Rename");
+      tabsStore.setCliSessionId(codexTabId, "codex-session-42");
+
+      useProjectsStore.setState({
+        projects: [
+          { path: "/project-a", name: "a", lastOpened: "" },
+          { path: "/project-b", name: "b", lastOpened: "" },
+        ],
+        activeProjectPath: "/project-a",
+      });
+
+      await useProjectsStore.getState().switchToProject("/project-b");
+
+      const outgoingTab = useTerminalTabsStore.getState().getTabsForProject("/project-a")[0];
+      expect(outgoingTab).toMatchObject({
+        id: codexTabId,
+        path: "/project-a",
+        sessionType: "codex",
+        customName: "Codex Rename",
+        cliSessionId: "codex-session-42",
+        isRunning: true,
+      });
     });
   });
 
@@ -1191,6 +1354,44 @@ describe("useProjectsStore", () => {
       expect(payload.state.tabs).toBeDefined();
     });
 
+    it("persists customName, cliSessionId, exited, and activeTabIndex", async () => {
+      vi.mocked(invoke).mockResolvedValue(undefined);
+
+      useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
+      useProjectsStore.setState({ activeProjectPath: "/my-project" });
+      useTerminalTabsStore.setState({
+        tabs: [],
+        activeTabId: null,
+        counter: 0,
+        isTerminalFullscreen: false,
+      });
+
+      const tabsStore = useTerminalTabsStore.getState();
+      const tabId = tabsStore.nextTabId();
+      tabsStore.addTab(tabId, "/my-project", "claude", "Renamed Session");
+      tabsStore.setCliSessionId(tabId, "session-abc");
+      tabsStore.markTabExited(tabId);
+
+      await saveCurrentProjectToDisk("/my-project");
+
+      const saveCalls = vi.mocked(invoke).mock.calls.filter(
+        (call) => call[0] === "save_project_ui_state"
+      );
+      expect(saveCalls).toHaveLength(1);
+
+      const state = (saveCalls[0][1] as any).state;
+      expect(state.activeTabIndex).toBe(0);
+      expect(state.tabs).toEqual([
+        {
+          id: tabId,
+          sessionType: "claude",
+          cliSessionId: "session-abc",
+          exited: true,
+          customName: "Renamed Session",
+        },
+      ]);
+    });
+
     it("includes rightPanelActiveView in the saved state", async () => {
       vi.mocked(invoke).mockResolvedValue(undefined);
       useWorkspaceStore.setState({ activeWorkspaceId: "ws-test" });
@@ -1326,7 +1527,7 @@ describe("useProjectsStore", () => {
         if (ch === "get_project_ui_state") {
           return {
             tabs: [
-              { id: "loaded-tab-1", sessionType: "claude", cliSessionId: "sess-xyz" },
+              { id: "loaded-tab-1", sessionType: "claude", cliSessionId: "sess-xyz", customName: "Renamed Session" },
             ],
             activeTabIndex: 0,
           };
@@ -1344,6 +1545,7 @@ describe("useProjectsStore", () => {
       expect(tabs[0].id).toBe("loaded-tab-1");
       expect(tabs[0].sessionType).toBe("claude");
       expect(tabs[0].cliSessionId).toBe("sess-xyz");
+      expect(tabs[0].customName).toBe("Renamed Session");
     });
 
     it("does not overwrite existing in-memory tabs when loading from disk", async () => {
