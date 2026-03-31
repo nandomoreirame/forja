@@ -142,6 +142,16 @@ vi.mock("@/hooks/use-pty", () => ({
 describe("TerminalSession", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // Mock non-zero container dimensions so the 0x0 guard in the RAF callback
+    // does not defer spawn (in happy-dom, offsetWidth/offsetHeight are 0 by default).
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get() { return 800; },
+    });
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+      configurable: true,
+      get() { return 600; },
+    });
     mockOpen.mockClear();
     mockWrite.mockClear();
     mockDispose.mockClear();
@@ -178,28 +188,26 @@ describe("TerminalSession", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    // Restore offsetWidth/offsetHeight to default happy-dom behavior (0)
+    Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+      configurable: true,
+      get() { return 0; },
+    });
+    Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+      configurable: true,
+      get() { return 0; },
+    });
   });
 
   it("renders with correct aria-label including tab name", () => {
-    render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+    render(<TerminalSession tabId="tab-1" path="/test" />);
     const container = screen.getByRole("region", { name: /terminal/i });
     expect(container).toBeInTheDocument();
   });
 
-  it("applies hidden class when not visible", () => {
-    render(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-    const container = screen.getByRole("region", { name: /terminal/i });
-    expect(container).toHaveClass("hidden");
-  });
-
-  it("does not apply hidden class when visible", () => {
-    render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
-    const container = screen.getByRole("region", { name: /terminal/i });
-    expect(container).not.toHaveClass("hidden");
-  });
 
   it("creates xterm Terminal on mount", async () => {
-    render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+    render(<TerminalSession tabId="tab-1" path="/test" />);
     // Flush async init (pty:has-session IPC)
     await Promise.resolve();
     expect(mockOpen).toHaveBeenCalled();
@@ -207,7 +215,7 @@ describe("TerminalSession", () => {
 
   it("disposes terminal and calls close on unmount when tab is removed", async () => {
     const { unmount } = render(
-      <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
+      <TerminalSession tabId="tab-1" path="/test" />
     );
     // Flush async init so terminalLocal is assigned
     await Promise.resolve();
@@ -221,7 +229,7 @@ describe("TerminalSession", () => {
 
   it("does NOT call close on unmount when tab still exists in store (reorder/remount)", async () => {
     const { unmount } = render(
-      <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
+      <TerminalSession tabId="tab-1" path="/test" />
     );
     // Flush async init so terminalLocal is assigned
     await Promise.resolve();
@@ -239,13 +247,13 @@ describe("TerminalSession", () => {
 
   describe("link routing", () => {
     it("passes a custom handler to WebLinksAddon", () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       expect(capturedWebLinksHandler).toBeDefined();
       expect(typeof capturedWebLinksHandler).toBe("function");
     });
 
     it("calls routeLinkClick when link handler is invoked", () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       expect(capturedWebLinksHandler).toBeDefined();
 
       capturedWebLinksHandler!(new MouseEvent("click"), "http://localhost:3000");
@@ -256,7 +264,7 @@ describe("TerminalSession", () => {
 
   describe("autofocus", () => {
     it("focuses terminal on initial mount", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
 
       // The focus happens inside a requestAnimationFrame (~16ms)
       await vi.advanceTimersByTimeAsync(16);
@@ -264,35 +272,6 @@ describe("TerminalSession", () => {
       expect(mockFocus).toHaveBeenCalled();
     });
 
-    it("focuses terminal when becoming visible (tab switch)", async () => {
-      const { rerender } = render(
-        <TerminalSession tabId="tab-1" path="/test" isVisible={false} />
-      );
-      await vi.advanceTimersByTimeAsync(16);
-      mockFocus.mockClear();
-
-      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
-
-      // The focus happens inside a double-RAF (~32ms)
-      await vi.advanceTimersByTimeAsync(32);
-
-      expect(mockFocus).toHaveBeenCalled();
-    });
-
-    it("does not focus terminal when becoming hidden", async () => {
-      const { rerender } = render(
-        <TerminalSession tabId="tab-1" path="/test" isVisible={true} />
-      );
-
-      // Clear the focus from initial mount (single RAF + double RAF)
-      await vi.advanceTimersByTimeAsync(32);
-      mockFocus.mockClear();
-
-      rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-      await vi.advanceTimersByTimeAsync(32);
-
-      expect(mockFocus).not.toHaveBeenCalled();
-    });
   });
 
   describe("copy/paste keyboard shortcuts", () => {
@@ -314,7 +293,7 @@ describe("TerminalSession", () => {
 
     it("Ctrl+Shift+C copies selected terminal text to clipboard", async () => {
       mockGetSelection.mockReturnValue("selected text");
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       // Flush async init so capturedKeyHandler is set
       await Promise.resolve();
       await Promise.resolve();
@@ -334,7 +313,7 @@ describe("TerminalSession", () => {
 
     it("Ctrl+Shift+C does nothing when no text is selected", async () => {
       mockGetSelection.mockReturnValue("");
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -350,7 +329,7 @@ describe("TerminalSession", () => {
 
     it("Ctrl+Shift+V does NOT call handlePaste directly (relies on native paste event)", async () => {
       mockClipboardReadText.mockResolvedValue("pasted text");
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -371,7 +350,7 @@ describe("TerminalSession", () => {
     });
 
     it("Ctrl+C (without Shift) passes through to xterm for SIGINT", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -387,7 +366,7 @@ describe("TerminalSession", () => {
 
     it("does not trigger copy on keyup events", async () => {
       mockGetSelection.mockReturnValue("some text");
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -404,7 +383,7 @@ describe("TerminalSession", () => {
 
   describe("dead key / IME composition", () => {
     it("returns false for events during composition (isComposing)", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedKeyHandler).toBeDefined();
@@ -419,7 +398,7 @@ describe("TerminalSession", () => {
     });
 
     it("returns false for Dead key events", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedKeyHandler).toBeDefined();
@@ -433,7 +412,7 @@ describe("TerminalSession", () => {
     });
 
     it("returns false for post-composition keydown on Linux (composingRef flag)", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedKeyHandler).toBeDefined();
@@ -469,7 +448,7 @@ describe("TerminalSession", () => {
     });
 
     it("still allows normal key events through", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedKeyHandler).toBeDefined();
@@ -490,7 +469,7 @@ describe("TerminalSession", () => {
       // This test verifies that ć events during composition are blocked (return false),
       // NOT remapped via writeRef (which would be wrong — the character is already
       // being handled by the onData cedilla remap at the PTY level).
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedKeyHandler).toBeDefined();
@@ -517,7 +496,7 @@ describe("TerminalSession", () => {
 
   describe("cedilla remap in onData", () => {
     it("remaps ć to ç when onData callback is called", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedOnDataCallback).toBeDefined();
@@ -530,7 +509,7 @@ describe("TerminalSession", () => {
     });
 
     it("remaps Ć to Ç when onData callback is called", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedOnDataCallback).toBeDefined();
@@ -541,7 +520,7 @@ describe("TerminalSession", () => {
     });
 
     it("passes through normal characters unchanged via onData", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedOnDataCallback).toBeDefined();
@@ -552,7 +531,7 @@ describe("TerminalSession", () => {
     });
 
     it("passes through ç unchanged via onData (already correct)", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedOnDataCallback).toBeDefined();
@@ -563,7 +542,7 @@ describe("TerminalSession", () => {
     });
 
     it("remaps ć embedded in escape sequences via onData", async () => {
-      render(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-1" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
       expect(capturedOnDataCallback).toBeDefined();
@@ -578,7 +557,7 @@ describe("TerminalSession", () => {
   describe("terminal instance cache", () => {
     it("parks terminal on unmount when tab still exists in store", async () => {
       const { unmount } = render(
-        <TerminalSession tabId="tab-cache-1" path="/test" isVisible={true} />
+        <TerminalSession tabId="tab-cache-1" path="/test" />
       );
       // Flush async init so terminalLocal is assigned
       await Promise.resolve();
@@ -599,7 +578,7 @@ describe("TerminalSession", () => {
 
     it("disposes cache and calls close on unmount when tab is removed", async () => {
       const { unmount } = render(
-        <TerminalSession tabId="tab-cache-2" path="/test" isVisible={true} />
+        <TerminalSession tabId="tab-cache-2" path="/test" />
       );
       // Flush async init so terminalLocal is assigned
       await Promise.resolve();
@@ -641,7 +620,7 @@ describe("TerminalSession", () => {
       });
 
       render(
-        <TerminalSession tabId="tab-cached" path="/test" isVisible={true} />
+        <TerminalSession tabId="tab-cached" path="/test" />
       );
 
       // Should NOT create a new Terminal (mockOpen is for new xterm instances)
@@ -655,7 +634,7 @@ describe("TerminalSession", () => {
 
     it("does not call terminal.dispose() when parking", async () => {
       const { unmount } = render(
-        <TerminalSession tabId="tab-park" path="/test" isVisible={true} />
+        <TerminalSession tabId="tab-park" path="/test" />
       );
       // Flush async init so terminalLocal is assigned
       await Promise.resolve();
@@ -673,7 +652,7 @@ describe("TerminalSession", () => {
 
     it("disposes terminal without parking when PTY was never spawned (strict mode fast remount)", async () => {
       const { unmount } = render(
-        <TerminalSession tabId="tab-strict" path="/test" isVisible={true} />
+        <TerminalSession tabId="tab-strict" path="/test" />
       );
       // Flush async init so terminalLocal is assigned but BEFORE rAF fires
       await Promise.resolve();
@@ -693,7 +672,7 @@ describe("TerminalSession", () => {
     it("removes tab after delay when AI CLI session exits", async () => {
       mockStoreTabs.push({ id: "tab-ai", sessionType: "claude" });
 
-      render(<TerminalSession tabId="tab-ai" path="/test" isVisible={true} sessionType="claude" />);
+      render(<TerminalSession tabId="tab-ai" path="/test" sessionType="claude" />);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -714,7 +693,7 @@ describe("TerminalSession", () => {
     it("does NOT remove tab when plain terminal session exits", async () => {
       mockStoreTabs.push({ id: "tab-term", sessionType: "terminal" });
 
-      render(<TerminalSession tabId="tab-term" path="/test" isVisible={true} sessionType="terminal" />);
+      render(<TerminalSession tabId="tab-term" path="/test" sessionType="terminal" />);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -729,7 +708,7 @@ describe("TerminalSession", () => {
     it("does NOT remove tab when sessionType is undefined (defaults to claude but check behavior)", async () => {
       mockStoreTabs.push({ id: "tab-default", sessionType: "claude" });
 
-      render(<TerminalSession tabId="tab-default" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-default" path="/test" />);
       await Promise.resolve();
       await Promise.resolve();
 
@@ -753,7 +732,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-exited" path="/test" isVisible={true} sessionType="claude" />);
+      render(<TerminalSession tabId="tab-exited" path="/test" sessionType="claude" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -774,7 +753,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-buf-exit" path="/test" isVisible={true} sessionType="claude" />);
+      render(<TerminalSession tabId="tab-buf-exit" path="/test" sessionType="claude" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -792,7 +771,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-exit-close" path="/test" isVisible={true} sessionType="gemini" />);
+      render(<TerminalSession tabId="tab-exit-close" path="/test" sessionType="gemini" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -815,7 +794,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-term-exit" path="/test" isVisible={true} sessionType="terminal" />);
+      render(<TerminalSession tabId="tab-term-exit" path="/test" sessionType="terminal" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -838,7 +817,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-active" path="/test" isVisible={true} sessionType="claude" />);
+      render(<TerminalSession tabId="tab-active" path="/test" sessionType="claude" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -859,7 +838,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-cursor" path="/test" isVisible={true} sessionType="claude" />);
+      render(<TerminalSession tabId="tab-cursor" path="/test" sessionType="claude" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -878,7 +857,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-term-cursor" path="/test" isVisible={true} sessionType="terminal" />);
+      render(<TerminalSession tabId="tab-term-cursor" path="/test" sessionType="terminal" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -897,7 +876,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-gemini-cursor" path="/test" isVisible={true} sessionType="gemini" />);
+      render(<TerminalSession tabId="tab-gemini-cursor" path="/test" sessionType="gemini" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -915,7 +894,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-strip-cursor" path="/test" isVisible={true} sessionType="claude" />);
+      render(<TerminalSession tabId="tab-strip-cursor" path="/test" sessionType="claude" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -943,7 +922,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-term-keep-cursor" path="/test" isVisible={true} sessionType="terminal" />);
+      render(<TerminalSession tabId="tab-term-keep-cursor" path="/test" sessionType="terminal" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -983,7 +962,7 @@ describe("TerminalSession", () => {
         }),
       }));
 
-      render(<TerminalSession tabId="tab-reconnect" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-reconnect" path="/test" />);
 
       // Wait for the async IPC check to complete
       await vi.runAllTimersAsync();
@@ -1002,7 +981,7 @@ describe("TerminalSession", () => {
         return Promise.resolve(undefined);
       });
 
-      render(<TerminalSession tabId="tab-buf" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-buf" path="/test" />);
 
       // Flush async IPC + microtasks
       await vi.runAllTimersAsync();
@@ -1032,7 +1011,7 @@ describe("TerminalSession", () => {
         }),
       }));
 
-      render(<TerminalSession tabId="tab-dead" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-dead" path="/test" />);
 
       // Advance RAF so spawn fires
       await vi.runAllTimersAsync();
@@ -1047,7 +1026,7 @@ describe("TerminalSession", () => {
       mockCacheGet.mockReturnValue(undefined);
       mockInvoke.mockResolvedValue(false);
 
-      render(<TerminalSession tabId="tab-check" path="/test" isVisible={true} />);
+      render(<TerminalSession tabId="tab-check" path="/test" />);
 
       // Wait for async init
       await vi.runAllTimersAsync();
@@ -1072,7 +1051,7 @@ describe("TerminalSession", () => {
       // Tab with NO cliSessionId (brand new session), isRunning: true so it spawns
       mockStoreTabs.push({ id: "tab-new-claude", sessionType: "claude", isRunning: true });
 
-      render(<TerminalSession tabId="tab-new-claude" path="/test" isVisible={true} sessionType="claude" />);
+      render(<TerminalSession tabId="tab-new-claude" path="/test" sessionType="claude" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -1097,7 +1076,7 @@ describe("TerminalSession", () => {
     it("does NOT generate session ID for restored tabs with existing cliSessionId", async () => {
       mockStoreTabs.push({ id: "tab-restored", sessionType: "claude", cliSessionId: "existing-uuid-1234", isRunning: true });
 
-      render(<TerminalSession tabId="tab-restored" path="/test" isVisible={true} sessionType="claude" />);
+      render(<TerminalSession tabId="tab-restored" path="/test" sessionType="claude" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -1117,7 +1096,7 @@ describe("TerminalSession", () => {
     it("does NOT generate session ID for terminal sessions", async () => {
       mockStoreTabs.push({ id: "tab-plain-term", sessionType: "terminal", isRunning: true });
 
-      render(<TerminalSession tabId="tab-plain-term" path="/test" isVisible={true} sessionType="terminal" />);
+      render(<TerminalSession tabId="tab-plain-term" path="/test" sessionType="terminal" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -1135,7 +1114,7 @@ describe("TerminalSession", () => {
     it("does NOT generate session ID for CLIs without sessionIdFlag (e.g. codex)", async () => {
       mockStoreTabs.push({ id: "tab-codex", sessionType: "codex", isRunning: true });
 
-      render(<TerminalSession tabId="tab-codex" path="/test" isVisible={true} sessionType="codex" />);
+      render(<TerminalSession tabId="tab-codex" path="/test" sessionType="codex" />);
 
       await vi.runAllTimersAsync();
       await Promise.resolve();
@@ -1149,6 +1128,115 @@ describe("TerminalSession", () => {
       // codex has no sessionIdFlag, so no --session-id should be passed
       expect(resumeArgs).toBeUndefined();
       expect(mockSetCliSessionId).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("deferred spawn via ResizeObserver (0x0 container guard)", () => {
+    let capturedResizeObserverCallback: (() => void) | undefined;
+
+    beforeEach(() => {
+      capturedResizeObserverCallback = undefined;
+      // Override ResizeObserver to capture the callback
+      vi.stubGlobal("ResizeObserver", class MockResizeObserver {
+        constructor(cb: () => void) {
+          capturedResizeObserverCallback = cb;
+        }
+        observe = vi.fn();
+        unobserve = vi.fn();
+        disconnect = vi.fn();
+      });
+    });
+
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("sets spawnDeferred when RAF fires with 0x0 container and spawns on next resize", async () => {
+      // Simulate a 0x0 container (e.g. during FlexLayout transition)
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+        configurable: true,
+        get() { return 0; },
+      });
+      Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+        configurable: true,
+        get() { return 0; },
+      });
+
+      render(<TerminalSession tabId="tab-deferred-1" path="/test" sessionType="claude" />);
+
+      // Flush async init (pty:has-session IPC)
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Advance RAF — container is 0x0, so spawn is deferred
+      await vi.advanceTimersByTimeAsync(16);
+
+      // Spawn should NOT have been called yet
+      expect(mockPtySpawn).not.toHaveBeenCalled();
+
+      // Now simulate the container expanding (ResizeObserver fires)
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+        configurable: true,
+        get() { return 800; },
+      });
+      Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+        configurable: true,
+        get() { return 600; },
+      });
+
+      expect(capturedResizeObserverCallback).toBeDefined();
+      capturedResizeObserverCallback!();
+
+      // Allow spawnWithResume async work to complete
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Spawn should now be called
+      expect(mockPtySpawn).toHaveBeenCalled();
+    });
+
+    it("does not double-spawn when ResizeObserver fires multiple times after deferred spawn", async () => {
+      // Simulate a 0x0 container
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+        configurable: true,
+        get() { return 0; },
+      });
+      Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+        configurable: true,
+        get() { return 0; },
+      });
+
+      render(<TerminalSession tabId="tab-deferred-2" path="/test" sessionType="claude" />);
+
+      await Promise.resolve();
+      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(16);
+
+      expect(mockPtySpawn).not.toHaveBeenCalled();
+
+      // Container becomes visible
+      Object.defineProperty(HTMLElement.prototype, "offsetWidth", {
+        configurable: true,
+        get() { return 800; },
+      });
+      Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
+        configurable: true,
+        get() { return 600; },
+      });
+
+      expect(capturedResizeObserverCallback).toBeDefined();
+
+      // Fire ResizeObserver twice
+      capturedResizeObserverCallback!();
+      capturedResizeObserverCallback!();
+
+      await vi.runAllTimersAsync();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Spawn should only be called once (spawnDeferred cleared after first call)
+      expect(mockPtySpawn).toHaveBeenCalledTimes(1);
     });
   });
 });

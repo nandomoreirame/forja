@@ -677,6 +677,16 @@ function App({
       useSessionStateStore.getState().onData(tabId, meta);
     });
 
+    // Permanent exit handler for PTY exits that happen when no terminal
+    // component is mounted (e.g., cache TTL expired during project switch).
+    // This ensures the tab store correctly reflects the PTY lifecycle.
+    ptyDispatcher.registerPermanentExitHandler((tabId, _code) => {
+      const tabsStore = useTerminalTabsStore.getState();
+      if (tabsStore.hasTab(tabId)) {
+        tabsStore.markTabExited(tabId);
+      }
+    });
+
     // Single IPC listener for pty:data
     const unlistenData = listen<{ tab_id: string; data: string }>("pty:data", (event) => {
       ptyDispatcher.handleData(event.payload);

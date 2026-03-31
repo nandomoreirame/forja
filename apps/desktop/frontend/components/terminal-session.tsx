@@ -21,17 +21,14 @@ import { SessionStatusBar } from "./session-status-bar";
 interface TerminalSessionProps {
   tabId: string;
   path: string;
-  isVisible: boolean;
   sessionType?: SessionType;
 }
 
-export const TerminalSession = memo(function TerminalSession({ tabId, path, isVisible, sessionType = "claude" }: TerminalSessionProps) {
+export const TerminalSession = memo(function TerminalSession({ tabId, path, sessionType = "claude" }: TerminalSessionProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const terminalRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const composingRef = useRef(false);
-  const isVisibleRef = useRef(isVisible);
-  isVisibleRef.current = isVisible;
 
   // RAF-coalesced write buffer: accumulate PTY data chunks and flush once per
   // animation frame.  This prevents visible viewport "jumps" when the CLI's
@@ -323,10 +320,111 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         }
       });
 
+      // Tracks when spawn was skipped due to 0x0 container dimensions so that
+      // handleResize can trigger the deferred spawn when the container expands.
+      let spawnDeferred = false;
+
+      // Load persisted buffer for visual continuity before spawning.
+      // Defined outside the RAF so it can be called from both the RAF callback
+      // and the deferred spawn path in handleResize.
+      const spawnWithResume = async (rows: number, cols: number) => {
+        try {
+          const persistedBuffer = await invoke<string | null>("pty:load-persisted-buffer", {
+            projectPath: path,
+            tabId,
+          });
+          if (persistedBuffer && !aborted) {
+            terminal.write(persistedBuffer);
+          }
+        } catch {
+          // Non-fatal: buffer replay failure
+        }
+
+        // Check if this is a restored session that had already exited.
+        const tab = useTerminalTabsStore.getState().tabs?.find(t => t.id === tabId);
+
+        // Build resume args if we have a stored session ID
+        let resumeArgs: string[] | undefined;
+        const cliSessionId = tab?.cliSessionId;
+
+        // NEW: For CLIs with sessionIdFlag and NO existing cliSessionId,
+        // generate a deterministic UUID at spawn time to eliminate heuristic
+        // filesystem-based session ID detection.
+        // Only generate for active (non-exited) sessions: tab doesn't exist yet,
+        // or tab.isRunning is not explicitly false.
+        const isActiveSession = !tab || tab.isRunning !== false;
+        if (!cliSessionId && isActiveSession && sessionType && sessionType !== "terminal") {
+          const cliDef = CLI_REGISTRY[sessionType as import("@/lib/cli-registry").CliId];
+          if (cliDef?.sessionIdFlag && cliDef.sessionIdFlag !== "create-chat") {
+            const newSessionId = crypto.randomUUID();
+            useTerminalTabsStore.getState().setCliSessionId(tabId, newSessionId);
+            resumeArgs = [cliDef.sessionIdFlag, newSessionId];
+          }
+        }
+
+        if (!resumeArgs && cliSessionId && sessionType && sessionType !== "terminal") {
+          const def = CLI_REGISTRY[sessionType];
+          if (def?.resumeFlag) {
+            const resumeValue =
+              def.resumeIdType === "latest" ? "latest" : cliSessionId;
+            if (def.resumeFlag.endsWith("=")) {
+              resumeArgs = [`${def.resumeFlag}${resumeValue}`];
+            } else {
+              resumeArgs = [def.resumeFlag, resumeValue];
+            }
+          }
+        }
+
+        // If the session exited before app restart and has no resume ID,
+        // auto-close AI CLI tabs (plain terminals stay with their buffer).
+        if (tab && !tab.isRunning) {
+          if (resumeArgs) {
+            // Resumable session — mark as running and proceed to spawn with --resume
+            useTerminalTabsStore.getState().markTabRunning(tab.id);
+          } else if (sessionType && sessionType !== "terminal") {
+            setTimeout(() => {
+              useTerminalTabsStore.getState().removeTab(tabId);
+            }, 500);
+            return;
+          } else {
+            return;
+          }
+        }
+
+        await spawn(path, sessionType, resumeArgs);
+        if (!aborted) {
+          resize(rows, cols);
+          // Hide xterm.js hardware cursor for AI CLI sessions.
+          // TUI frameworks (Ink) render their own visual cursor in the
+          // input field; the real terminal cursor sits at the PTY's last
+          // write position (usually the bottom), causing a phantom
+          // second cursor.  DECTCEM hide keeps only the TUI cursor.
+          if (sessionType && sessionType !== "terminal") {
+            terminal.write("\x1b[?25l");
+          }
+          // Clean up persisted buffer after successful spawn
+          invoke("pty:delete-persisted-buffer", { projectPath: path, tabId }).catch(() => {});
+        }
+      };
+
       // Wait for layout to stabilize before fitting and spawning
       // so the PTY gets the correct initial dimensions.
       rafId = requestAnimationFrame(() => {
         if (aborted) return;
+
+        // Guard against 0x0 containers during FlexLayout transitions
+        // (display:none → visible). Calling fitAddon.fit() with zero dimensions
+        // collapses the terminal to minimum size and corrupts subsequent output.
+        // The ResizeObserver will fire again when the container expands to its
+        // real size, at which point we will fit and spawn correctly.
+        const el = containerRef.current;
+        if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) {
+          if (shouldSpawn) {
+            spawnDeferred = true;
+          }
+          terminal.focus();
+          return;
+        }
 
         // Capture pre-fit dimensions for cache-reattach dimension-change detection
         const prevCols = terminal.cols;
@@ -360,89 +458,7 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         const cols = dims?.cols ?? 80;
         if (shouldSpawn) {
           spawned = true;
-
-          // Load persisted buffer for visual continuity before spawning
-          const spawnWithResume = async () => {
-            try {
-              const persistedBuffer = await invoke<string | null>("pty:load-persisted-buffer", {
-                projectPath: path,
-                tabId,
-              });
-              if (persistedBuffer && !aborted) {
-                terminal.write(persistedBuffer);
-              }
-            } catch {
-              // Non-fatal: buffer replay failure
-            }
-
-            // Check if this is a restored session that had already exited.
-            const tab = useTerminalTabsStore.getState().tabs?.find(t => t.id === tabId);
-
-            // Build resume args if we have a stored session ID
-            let resumeArgs: string[] | undefined;
-            const cliSessionId = tab?.cliSessionId;
-
-            // NEW: For CLIs with sessionIdFlag and NO existing cliSessionId,
-            // generate a deterministic UUID at spawn time to eliminate heuristic
-            // filesystem-based session ID detection.
-            // Only generate for active (non-exited) sessions: tab doesn't exist yet,
-            // or tab.isRunning is not explicitly false.
-            const isActiveSession = !tab || tab.isRunning !== false;
-            if (!cliSessionId && isActiveSession && sessionType && sessionType !== "terminal") {
-              const cliDef = CLI_REGISTRY[sessionType as import("@/lib/cli-registry").CliId];
-              if (cliDef?.sessionIdFlag && cliDef.sessionIdFlag !== "create-chat") {
-                const newSessionId = crypto.randomUUID();
-                useTerminalTabsStore.getState().setCliSessionId(tabId, newSessionId);
-                resumeArgs = [cliDef.sessionIdFlag, newSessionId];
-              }
-            }
-
-            if (!resumeArgs && cliSessionId && sessionType && sessionType !== "terminal") {
-              const def = CLI_REGISTRY[sessionType];
-              if (def?.resumeFlag) {
-                const resumeValue =
-                  def.resumeIdType === "latest" ? "latest" : cliSessionId;
-                if (def.resumeFlag.endsWith("=")) {
-                  resumeArgs = [`${def.resumeFlag}${resumeValue}`];
-                } else {
-                  resumeArgs = [def.resumeFlag, resumeValue];
-                }
-              }
-            }
-
-            // If the session exited before app restart and has no resume ID,
-            // auto-close AI CLI tabs (plain terminals stay with their buffer).
-            if (tab && !tab.isRunning) {
-              if (resumeArgs) {
-                // Resumable session — mark as running and proceed to spawn with --resume
-                useTerminalTabsStore.getState().markTabRunning(tab.id);
-              } else if (sessionType && sessionType !== "terminal") {
-                setTimeout(() => {
-                  useTerminalTabsStore.getState().removeTab(tabId);
-                }, 500);
-                return;
-              } else {
-                return;
-              }
-            }
-
-            const spawnResult = await spawn(path, sessionType, resumeArgs);
-            if (!aborted) {
-              resize(rows, cols);
-              // Hide xterm.js hardware cursor for AI CLI sessions.
-              // TUI frameworks (Ink) render their own visual cursor in the
-              // input field; the real terminal cursor sits at the PTY's last
-              // write position (usually the bottom), causing a phantom
-              // second cursor.  DECTCEM hide keeps only the TUI cursor.
-              if (sessionType && sessionType !== "terminal") {
-                terminal.write("\x1b[?25l");
-              }
-              // Clean up persisted buffer after successful spawn
-              invoke("pty:delete-persisted-buffer", { projectPath: path, tabId }).catch(() => {});
-            }
-          };
-
-          spawnWithResume();
+          spawnWithResume(rows, cols);
         } else {
           resize(rows, cols);
         }
@@ -458,6 +474,35 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
         if (!el || el.offsetWidth === 0 || el.offsetHeight === 0) return;
 
         fitAddon.fit();
+
+        // Handle deferred spawn from skipped init (dimension guard above).
+        // When the init RAF detected a 0x0 container, spawn was skipped and
+        // spawnDeferred was set. Now that the container has real dimensions,
+        // perform the spawn here.
+        if (spawnDeferred) {
+          spawnDeferred = false;
+
+          // For cached reattach, clear screen
+          if (cached && isAiCli) {
+            terminal.write("\x1b[2J\x1b[H");
+          }
+          if (cached) {
+            terminal.refresh(0, terminal.rows - 1);
+          }
+
+          terminal.focus();
+          const dims = fitAddon.proposeDimensions();
+          const rows = dims?.rows ?? 24;
+          const cols = dims?.cols ?? 80;
+          if (shouldSpawn) {
+            spawned = true;
+            spawnWithResume(rows, cols);
+          } else {
+            resize(rows, cols);
+          }
+          return;
+        }
+
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
           const newDims = fitAddon.proposeDimensions();
@@ -555,35 +600,11 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, isVi
     return () => { paneFocusRegistry.unregister(tabId); };
   }, [tabId]);
 
-  // Re-fit, refresh, and focus when terminal becomes visible again
-  useEffect(() => {
-    const terminal = terminalRef.current;
-
-    if (isVisible && fitAddonRef.current) {
-      const id = requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          // Force full viewport re-render to clear stale canvas state
-          // that accumulates while the terminal was hidden (display:none).
-          if (terminal) {
-            terminal.refresh(0, terminal.rows - 1);
-          }
-          fitAddonRef.current?.fit();
-          terminal?.focus();
-          const dims = fitAddonRef.current?.proposeDimensions();
-          if (dims) {
-            resize(dims.rows, dims.cols);
-          }
-        });
-      });
-      return () => cancelAnimationFrame(id);
-    }
-  }, [isVisible]); // eslint-disable-line react-hooks/exhaustive-deps
-
   return (
     <div
       role="region"
       aria-label="Claude Code Terminal"
-      className={`flex h-full w-full flex-col ${!isVisible ? "hidden" : ""}`}
+      className="flex h-full w-full flex-col"
     >
       <TerminalContextMenu tabId={tabId} onCopy={handleCopy} onPaste={handlePaste}>
         <div className="h-full bg-[var(--bg-base)] pt-3 pl-4 pb-1">
