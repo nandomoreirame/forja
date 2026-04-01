@@ -20,6 +20,8 @@ export interface TerminalTab {
   /** Epoch ms when this tab was created. Used by session detection to ignore
    *  filesystem sessions that existed before the tab was spawned. */
   createdAt?: number;
+  /** Set to true when the tab was spawned via --resume (restore). Used to suppress auto-close on exit. */
+  wasResumed?: boolean;
 }
 
 export interface ClosedTabEntry {
@@ -47,6 +49,7 @@ interface TerminalTabsState {
   setActiveTab: (id: string) => void;
   markTabExited: (id: string) => void;
   markTabRunning: (id: string) => void;
+  markTabResumed: (id: string) => void;
   /** Renames a tab with a custom user-defined name. Empty string clears the custom name. */
   renameTab: (id: string, name: string) => void;
   toggleTerminalFullscreen: () => void;
@@ -61,7 +64,7 @@ interface TerminalTabsState {
   hasTab: (tabId: string) => boolean;
   /** Serializes tabs for a specific project path into a disk-persistable format. */
   serializeTabsForSave: (projectPath: string) => {
-    tabs: Array<{ id: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string }>;
+    tabs: Array<{ id: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string; wasResumed?: boolean }>;
     activeTabIndex: number;
   };
   /** Stores the detected CLI session ID on the specified tab for future resume capability. */
@@ -195,6 +198,13 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
       ),
     })),
 
+  markTabResumed: (id) =>
+    set((state) => ({
+      tabs: state.tabs.map((t) =>
+        t.id === id ? { ...t, wasResumed: true } : t
+      ),
+    })),
+
   renameTab: (id: string, name: string) =>
     set((state) => ({
       tabs: state.tabs.map((t) => {
@@ -260,6 +270,7 @@ export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
         ...(tab.cliSessionId ? { cliSessionId: tab.cliSessionId } : {}),
         ...(!tab.isRunning ? { exited: true } : {}),
         ...(tab.customName ? { customName: tab.customName } : {}),
+        ...(tab.wasResumed ? { wasResumed: true } : {}),
       })),
       activeTabIndex: activeIdx >= 0 ? activeIdx : 0,
     };

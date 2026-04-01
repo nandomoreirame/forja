@@ -1,6 +1,13 @@
 import { create } from "zustand";
 
-export type CommandPaletteMode = "files" | "commands" | "sessions" | "themes" | "projects" | "quick-actions";
+export type CommandPaletteMode =
+  | "files"
+  | "commands"
+  | "sessions"
+  | "saved-sessions"
+  | "themes"
+  | "projects"
+  | "quick-actions";
 
 interface CommandPaletteState {
   isOpen: boolean;
