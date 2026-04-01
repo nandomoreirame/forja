@@ -8,6 +8,40 @@ This project adheres to [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## [Unreleased]
 
+## [1.9.3] - 2026-04-01
+
+### Added
+
+- Add session save/restore feature with save dialog on tab close, command palette restore mode, and Cmd+Shift+T shortcut integration.
+- Add saved sessions persistence in project config with TTL-based pruning (7 days) and bounded storage (max 20 entries).
+- Add session resume validation with stale session ID detection and fallback to bare --resume for CLI session picker.
+- Add WS bridge dialog with connection info and remote session controls for close and rename operations.
+- Add PTY output sanitizer modules for stripping TUI chrome from AI CLI output and extracting OSC 9 markdown messages.
+- Add mobile remote control UI with session management, SimpleMarkdown renderer, and ANSI stripping.
+- Add comprehensive Fumadocs documentation site with 34 pages covering architecture, features, configuration, and contributing.
+- Add image lightbox component for screenshot zoom in documentation.
+- Add reopen closed tab with Ctrl+Shift+T (stack of 20, LIFO order).
+- Add GitHub Actions workflow for gh-pages documentation deployment.
+
+### Changed
+
+- Remove tmux integration from electron backend and frontend, spawning shell directly via node-pty on all platforms.
+- Upgrade Expo SDK from 52 to 54 with new dependencies for mobile app.
+- Update project documentation for monorepo structure (AGENTS.md, CONTRIBUTING.md, README.md).
+
+### Fixed
+
+- Fix session tab cross-contamination between projects caused by race condition in saveCurrentProjectToDisk during async IPC roundtrip.
+- Fix terminal output corruption on project switch by guarding fitAddon.fit() against 0x0 containers and clearing screen on cache reattach.
+- Fix permanent PTY exit handler and harden cache TTL to keep AI CLI sessions alive across project switches.
+- Fix layout block and lastActiveProjectPath cleanup on project removal preventing stale panels.
+- Fix session lifecycle and restoration across projects by unifying restore semantics via shared PersistedProjectTab contract.
+- Fix context menu border color to use correct dark theme border in context menu primitive.
+- Fix test mocks for telemetry, preview pane, and ws-bridge components.
+- Fix Python setuptools availability for node-gyp native addon compilation on Python 3.12+.
+
+---
+
 ## [1.9.2] - 2026-03-30
 
 ### Added
