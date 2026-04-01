@@ -1,7 +1,7 @@
 {
   "name": "@forja/monorepo",
   "private": true,
-  "version": "1.9.2",
+  "version": "1.9.3",
   "description": "Forja - Desktop GUI client for Vibe Coders and other AI coding CLIs",
   "author": {
     "name": "Fernando Moreira",
