@@ -3,6 +3,7 @@ import { useUserSettingsStore } from "@/stores/user-settings";
 import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
+import { useSavedSessionsStore } from "@/stores/saved-sessions";
 import { useThemeStore } from "@/stores/theme";
 import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useProjectsStore } from "@/stores/projects";
@@ -41,7 +42,7 @@ import { useMemo } from "react";
 import { useInstalledClis } from "@/hooks/use-installed-clis";
 import { CliIcon } from "./cli-icon";
 import { FileIcon } from "./file-icon";
-import type { SessionType } from "@/lib/cli-registry";
+import { getSessionDisplayName, type SessionType } from "@/lib/cli-registry";
 import {
   CommandDialog,
   CommandEmpty,
@@ -54,6 +55,22 @@ import {
 
 import { MOD_KEY } from "@/lib/platform";
 const mod = MOD_KEY;
+
+function formatRelativeTime(isoDate: string): string {
+  const elapsedMs = Date.now() - new Date(isoDate).getTime();
+  const elapsedMinutes = Math.max(1, Math.round(elapsedMs / 60000));
+  if (elapsedMinutes < 60) {
+    return `${elapsedMinutes}m ago`;
+  }
+
+  const elapsedHours = Math.round(elapsedMinutes / 60);
+  if (elapsedHours < 24) {
+    return `${elapsedHours}h ago`;
+  }
+
+  const elapsedDays = Math.round(elapsedHours / 24);
+  return `${elapsedDays}d ago`;
+}
 
 function getIconByName(iconName: string): React.ComponentType<{ className?: string; strokeWidth?: number }> {
   const pascalCase = iconName
@@ -71,6 +88,8 @@ export function CommandPalette() {
   const { projects, activeProjectPath, getProjectInitial, getProjectColor } = useProjectsStore();
   const isFileTreeOpen = useTilingLayoutStore((s) => s.hasBlock("tab-file-tree"));
   const { plugins, pluginOrder } = usePluginsStore();
+  const savedSessions = useSavedSessionsStore((state) => state.sessions);
+  const restoreSavedSession = useSavedSessionsStore((state) => state.restoreSession);
   const enabledPlugins = useMemo(
     () => getOrderedEnabledPlugins({ plugins, pluginOrder }),
     [plugins, pluginOrder],
@@ -110,6 +129,11 @@ export function CommandPalette() {
       const id = tabStore.nextTabId();
       tabStore.addTab(id, cp, sessionType);
     }
+    close();
+  };
+
+  const handleSavedSessionSelect = async (sessionId: string) => {
+    await restoreSavedSession(sessionId);
     close();
   };
 
@@ -161,6 +185,8 @@ export function CommandPalette() {
             ? "Search files..."
             : mode === "sessions"
               ? "Select session type..."
+              : mode === "saved-sessions"
+                ? "Restore a saved session..."
               : mode === "themes"
                 ? "Select theme..."
                 : mode === "projects"
@@ -176,6 +202,8 @@ export function CommandPalette() {
             ? "No files found."
             : mode === "sessions"
               ? "No session types found."
+              : mode === "saved-sessions"
+                ? "No saved sessions found."
               : mode === "themes"
                 ? "No themes found."
                 : mode === "projects"
@@ -231,6 +259,36 @@ export function CommandPalette() {
                 </CommandItem>
               </>
             )}
+          </CommandGroup>
+        )}
+
+        {mode === "saved-sessions" && (
+          <CommandGroup heading="Saved Sessions">
+            {[...savedSessions]
+              .sort((left, right) => new Date(right.savedAt).getTime() - new Date(left.savedAt).getTime())
+              .map((session) => {
+                const displayName = getSessionDisplayName(session.sessionType);
+                return (
+                  <CommandItem
+                    key={session.id}
+                    value={`${displayName} ${session.customName ?? ""} ${session.savedAt}`}
+                    onSelect={() => {
+                      void handleSavedSessionSelect(session.id);
+                    }}
+                  >
+                    <CliIcon sessionType={session.sessionType} className="h-4 w-4" />
+                    <span className="truncate">{displayName}</span>
+                    {session.customName ? (
+                      <span className="truncate text-app-sm text-ctp-overlay1">
+                        "{session.customName}"
+                      </span>
+                    ) : null}
+                    <span className="ml-auto shrink-0 text-app-sm text-ctp-overlay1">
+                      {formatRelativeTime(session.savedAt)}
+                    </span>
+                  </CommandItem>
+                );
+              })}
           </CommandGroup>
         )}
 
@@ -388,6 +446,16 @@ export function CommandPalette() {
                       <TerminalSquare className="h-4 w-4 text-ctp-overlay1" strokeWidth={1.5} />
                       Terminal
                     </CommandItem>
+                    {savedSessions.length > 0 && (
+                      <CommandItem
+                        value="Restore session"
+                        onSelect={() => open("saved-sessions")}
+                      >
+                        <RotateCcw className="h-4 w-4" strokeWidth={1.5} />
+                        Restore session
+                        <CommandShortcut>{mod}+Shift+T</CommandShortcut>
+                      </CommandItem>
+                    )}
                   </>
                 )}
               </CommandGroup>

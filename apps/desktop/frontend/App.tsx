@@ -62,6 +62,8 @@ import { useWebviewShortcutBridge } from "./hooks/use-webview-shortcut-bridge";
 import {
   usePanelPreferences,
 } from "./hooks/use-panel-preferences";
+import { useAppDialogsStore } from "./stores/app-dialogs";
+import { useSavedSessionsStore } from "./stores/saved-sessions";
 
 // Root error boundary to prevent blank screen on any React crash
 interface AppErrorBoundaryState {
@@ -124,6 +126,11 @@ const ClaudeNotFoundDialog = lazy(() =>
 const BetaDisclaimerDialog = lazy(() =>
   import("./components/beta-disclaimer-dialog").then((m) => ({
     default: m.BetaDisclaimerDialog,
+  }))
+);
+const SaveSessionDialog = lazy(() =>
+  import("./components/save-session-dialog").then((m) => ({
+    default: m.SaveSessionDialog,
   }))
 );
 
@@ -636,6 +643,18 @@ function App({
 
   const closeTab = useCallback(
     async (tabId: string) => {
+      const tab = useTerminalTabsStore.getState().tabs.find((currentTab) => currentTab.id === tabId);
+
+      if (tab && tab.sessionType !== "terminal") {
+        const action = await useAppDialogsStore.getState().openSaveSessionDialog(tabId);
+        if (action === "cancel") {
+          return;
+        }
+        if (action === "save") {
+          await useSavedSessionsStore.getState().saveSession(tab);
+        }
+      }
+
       try {
         await invoke("close_pty", { tabId });
       } catch {
@@ -909,6 +928,9 @@ function App({
               }}
             />
           )}
+        </Suspense>
+        <Suspense fallback={null}>
+          <SaveSessionDialog />
         </Suspense>
         <PluginPermissionDialog />
       </div>

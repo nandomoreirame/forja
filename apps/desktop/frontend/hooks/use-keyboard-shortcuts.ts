@@ -5,6 +5,7 @@ import { useFilePreviewStore } from "@/stores/file-preview";
 import { useFileTreeStore } from "@/stores/file-tree";
 import { useGitDiffStore } from "@/stores/git-diff";
 import { useProjectsStore } from "@/stores/projects";
+import { useSavedSessionsStore } from "@/stores/saved-sessions";
 import { useTilingLayoutStore } from "@/stores/tiling-layout";
 import { useTerminalTabsStore } from "@/stores/terminal-tabs";
 import { useTerminalZoomStore } from "@/stores/terminal-zoom";
@@ -27,7 +28,7 @@ export function useKeyboardShortcuts({
   closeTab,
 }: UseKeyboardShortcutsOptions) {
   useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
+    const handler = async (event: KeyboardEvent) => {
       const mod = event.metaKey || event.ctrlKey;
       const tilingStore = useTilingLayoutStore.getState();
 
@@ -63,7 +64,10 @@ export function useKeyboardShortcuts({
       if (mod && event.shiftKey && event.key.toLowerCase() === "t") {
         event.preventDefault();
 
-        useTerminalTabsStore.getState().restoreLastClosedTab();
+        const restored = await useSavedSessionsStore.getState().restoreLastSaved();
+        if (!restored) {
+          useTerminalTabsStore.getState().restoreLastClosedTab();
+        }
         return;
       }
       if (mod && event.shiftKey && event.key.toLowerCase() === "r") {

@@ -5,6 +5,7 @@ import { remapCedilla } from "@/lib/cedilla-remap";
 import { terminalCache } from "@/lib/terminal-instance-cache";
 import { invoke } from "@/lib/ipc";
 import { CLI_REGISTRY, type SessionType } from "@/lib/cli-registry";
+import { resolveResumeArgs } from "@/lib/resolve-resume-args";
 import { paneFocusRegistry } from "@/lib/pane-focus-registry";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
@@ -64,8 +65,10 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, sess
     },
     onExit: () => {
       terminalRef.current?.write("\r\n\x1b[1;33m[Session ended]\x1b[0m\r\n");
-      // Auto-close tab for AI CLI sessions (not plain terminals)
-      if (sessionType && sessionType !== "terminal") {
+      const currentTab = useTerminalTabsStore.getState().tabs.find(t => t.id === tabId);
+      // Auto-close fresh AI CLI sessions, but keep resumed tabs open
+      // so the user can see error output or start a new session.
+      if (sessionType && sessionType !== "terminal" && !currentTab?.wasResumed) {
         setTimeout(() => {
           useTerminalTabsStore.getState().removeTab(tabId);
         }, 500);
@@ -362,15 +365,18 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, sess
           }
         }
 
+        // For restored sessions with existing cliSessionId: validate before --resume
         if (!resumeArgs && cliSessionId && sessionType && sessionType !== "terminal") {
-          const def = CLI_REGISTRY[sessionType];
-          if (def?.resumeFlag) {
-            const resumeValue =
-              def.resumeIdType === "latest" ? "latest" : cliSessionId;
-            if (def.resumeFlag.endsWith("=")) {
-              resumeArgs = [`${def.resumeFlag}${resumeValue}`];
-            } else {
-              resumeArgs = [def.resumeFlag, resumeValue];
+          const resolved = await resolveResumeArgs({
+            sessionType,
+            cliSessionId,
+            projectPath: path,
+          });
+          if (resolved) {
+            resumeArgs = resolved.args;
+            // Clear stale session ID so subsequent spawns don't retry the same bad ID
+            if (!resolved.sessionIdValid) {
+              useTerminalTabsStore.getState().setCliSessionId(tabId, "");
             }
           }
         }
@@ -391,6 +397,9 @@ export const TerminalSession = memo(function TerminalSession({ tabId, path, sess
           }
         }
 
+        if (resumeArgs && tab) {
+          useTerminalTabsStore.getState().markTabResumed(tabId);
+        }
         await spawn(path, sessionType, resumeArgs);
         if (!aborted) {
           resize(rows, cols);
