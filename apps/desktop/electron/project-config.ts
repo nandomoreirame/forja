@@ -3,11 +3,22 @@ import * as path from "path";
 
 const FORJA_DIR = ".forja";
 const CONFIG_FILE = "config.json";
+const SAVED_SESSIONS_MAX = 20;
+const SAVED_SESSIONS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+export interface SavedSessionEntry {
+  id: string;
+  sessionType: string;
+  customName?: string;
+  cliSessionId?: string;
+  savedAt: string;
+}
 
 export interface ForjaProjectConfig {
   name?: string;
   icon_path?: string | null;
   last_opened?: string;
+  savedSessions?: SavedSessionEntry[];
   ui?: {
     sidebarOpen?: boolean;
     sidebarSize?: number;
@@ -92,6 +103,46 @@ export function clearProjectUi(projectPath: string): void {
   writeProjectConfig(projectPath, rest);
 }
 
+export function readSavedSessions(projectPath: string): SavedSessionEntry[] {
+  const existing = readProjectConfig(projectPath);
+  if (!existing?.savedSessions?.length) return [];
+
+  const savedSessions = pruneExpiredSavedSessions(existing.savedSessions);
+  if (savedSessions.length !== existing.savedSessions.length) {
+    writeProjectConfig(projectPath, {
+      ...existing,
+      savedSessions,
+    });
+  }
+
+  return savedSessions;
+}
+
+export function addSavedSession(
+  projectPath: string,
+  entry: SavedSessionEntry,
+): void {
+  const existing = readProjectConfig(projectPath) ?? {};
+  const activeSessions = pruneExpiredSavedSessions(existing.savedSessions ?? []);
+  const boundedSessions = activeSessions.slice(-(SAVED_SESSIONS_MAX - 1));
+
+  writeProjectConfig(projectPath, {
+    ...existing,
+    savedSessions: [...boundedSessions, entry],
+  });
+}
+
+export function removeSavedSession(projectPath: string, id: string): void {
+  const existing = readProjectConfig(projectPath);
+  if (!existing?.savedSessions?.length) return;
+
+  const savedSessions = existing.savedSessions.filter((entry) => entry.id !== id);
+  writeProjectConfig(projectPath, {
+    ...existing,
+    savedSessions,
+  });
+}
+
 export function ensureGitignore(projectPath: string): void {
   const gitDir = path.join(projectPath, ".git");
   const gitignorePath = path.join(projectPath, ".gitignore");
@@ -111,4 +162,15 @@ export function ensureGitignore(projectPath: string): void {
   } catch {
     // Non-fatal: gitignore update failure
   }
+}
+
+function pruneExpiredSavedSessions(
+  entries: SavedSessionEntry[],
+): SavedSessionEntry[] {
+  const now = Date.now();
+  return entries.filter((entry) => {
+    const savedAt = Date.parse(entry.savedAt);
+    if (Number.isNaN(savedAt)) return false;
+    return now - savedAt <= SAVED_SESSIONS_TTL_MS;
+  });
 }

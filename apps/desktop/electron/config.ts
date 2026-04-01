@@ -53,7 +53,7 @@ export interface ProjectUiState {
     cliSessionId?: string;  // For CLI session resume
     exited?: boolean;       // True when session had ended before persistence
     customName?: string;    // User-defined tab name (persisted across restarts)
-    tmuxSessionName?: string;  // Tmux session name for persistent terminal sessions
+
   }>;
   activeTabIndex?: number;
   layoutJson?: Record<string, unknown>;
@@ -392,6 +392,11 @@ export function removeProjectFromWorkspace(
     ...workspace,
     projects: workspace.projects.filter((p) => p.path !== projectPath),
     lastUsedAt: new Date().toISOString(),
+    // Clear lastActiveProjectPath if it pointed to the removed project,
+    // otherwise the session restore will re-add it on next reload.
+    ...(workspace.lastActiveProjectPath === projectPath
+      ? { lastActiveProjectPath: undefined }
+      : {}),
   };
 
   const newWorkspaces = [...workspaces];

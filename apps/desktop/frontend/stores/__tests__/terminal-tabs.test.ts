@@ -23,6 +23,7 @@ describe("useTerminalTabsStore", () => {
       activeTabId: null,
       counter: 0,
       isTerminalFullscreen: false,
+      recentlyClosed: [],
     });
   });
 
@@ -323,13 +324,40 @@ describe("useTerminalTabsStore", () => {
       expect(state.tabs[1].customName).toBeUndefined();
     });
 
+    it("renameTab only changes customName and preserves tab identity", () => {
+      const id1 = createTab("/a", "claude");
+      const store = useTerminalTabsStore.getState();
+      store.setCliSessionId(id1, "session-123");
+
+      const before = useTerminalTabsStore.getState().tabs.find((t) => t.id === id1);
+      expect(before?.id).toBe(id1);
+      expect(before?.path).toBe("/a");
+      expect(before?.cliSessionId).toBe("session-123");
+      expect(before?.customName).toBeUndefined();
+
+      useTerminalTabsStore.getState().renameTab(id1, "   My Build   ");
+
+      const renamed = useTerminalTabsStore.getState().tabs.find((t) => t.id === id1);
+      expect(renamed).toMatchObject({
+        id: id1,
+        path: "/a",
+        cliSessionId: "session-123",
+        customName: "My Build",
+      });
+      expect(renamed?.name).toBe("Claude Code");
+    });
+
     it("renameTab with empty string clears customName", () => {
       const id1 = createTab("/a", "claude");
       useTerminalTabsStore.getState().renameTab(id1, "Custom Name");
       useTerminalTabsStore.getState().renameTab(id1, "");
 
       const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].id).toBe(id1);
+      expect(state.tabs[0].path).toBe("/a");
+      expect(state.tabs[0].cliSessionId).toBeUndefined();
       expect(state.tabs[0].customName).toBeUndefined();
+      expect(useTerminalTabsStore.getState().getTabDisplayNames()[id1]).toBe("Claude Code");
     });
 
     it("renameTab does nothing for unknown tabId", () => {
@@ -531,6 +559,145 @@ describe("useTerminalTabsStore", () => {
     });
   });
 
+  describe("recentlyClosed", () => {
+    it("starts with empty recentlyClosed array", () => {
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed).toEqual([]);
+    });
+
+    it("removeTab pushes closed tab info to recentlyClosed", () => {
+      const id1 = createTab("/project-a", "claude");
+
+      useTerminalTabsStore.getState().removeTab(id1);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed).toHaveLength(1);
+      expect(state.recentlyClosed[0]).toEqual({
+        path: "/project-a",
+        sessionType: "claude",
+        customName: undefined,
+      });
+    });
+
+    it("removeTab preserves customName in recentlyClosed entry", () => {
+      const id1 = createTab("/project-a", "terminal");
+      useTerminalTabsStore.getState().renameTab(id1, "My Build");
+
+      useTerminalTabsStore.getState().removeTab(id1);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed[0].customName).toBe("My Build");
+    });
+
+    it("recentlyClosed stores multiple entries in LIFO order", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+      const id3 = createTab("/c", "gemini");
+
+      useTerminalTabsStore.getState().removeTab(id1);
+      useTerminalTabsStore.getState().removeTab(id2);
+      useTerminalTabsStore.getState().removeTab(id3);
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed).toHaveLength(3);
+      // Last closed should be last in array (pop to restore)
+      expect(state.recentlyClosed[2].sessionType).toBe("gemini");
+      expect(state.recentlyClosed[1].sessionType).toBe("terminal");
+      expect(state.recentlyClosed[0].sessionType).toBe("claude");
+    });
+
+    it("recentlyClosed is capped at 20 entries", () => {
+      // Create and close 25 tabs
+      for (let i = 0; i < 25; i++) {
+        const id = createTab(`/path-${i}`, "terminal");
+        useTerminalTabsStore.getState().removeTab(id);
+      }
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.recentlyClosed).toHaveLength(20);
+      // Oldest entries should have been dropped
+      expect(state.recentlyClosed[0].path).toBe("/path-5");
+    });
+
+    it("restoreLastClosedTab creates a new tab with the closed tab info", () => {
+      const id1 = createTab("/project-a", "gemini");
+      useTerminalTabsStore.getState().removeTab(id1);
+
+      const restored = useTerminalTabsStore.getState().restoreLastClosedTab();
+
+      expect(restored).toBe(true);
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs).toHaveLength(1);
+      expect(state.tabs[0].path).toBe("/project-a");
+      expect(state.tabs[0].sessionType).toBe("gemini");
+      expect(state.recentlyClosed).toHaveLength(0);
+    });
+
+    it("restoreLastClosedTab restores customName", () => {
+      const id1 = createTab("/project-a", "claude");
+      useTerminalTabsStore.getState().renameTab(id1, "My Session");
+      useTerminalTabsStore.getState().removeTab(id1);
+
+      useTerminalTabsStore.getState().restoreLastClosedTab();
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs[0].customName).toBe("My Session");
+    });
+
+    it("restoreLastClosedTab returns false when no closed tabs", () => {
+      const restored = useTerminalTabsStore.getState().restoreLastClosedTab();
+
+      expect(restored).toBe(false);
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(0);
+    });
+
+    it("restoreLastClosedTab restores in LIFO order", () => {
+      const id1 = createTab("/a", "claude");
+      const id2 = createTab("/b", "terminal");
+
+      useTerminalTabsStore.getState().removeTab(id1);
+      useTerminalTabsStore.getState().removeTab(id2);
+
+      useTerminalTabsStore.getState().restoreLastClosedTab();
+      expect(useTerminalTabsStore.getState().tabs[0].sessionType).toBe("terminal");
+
+      useTerminalTabsStore.getState().restoreLastClosedTab();
+      const tabs = useTerminalTabsStore.getState().tabs;
+      expect(tabs).toHaveLength(2);
+      expect(tabs[1].sessionType).toBe("claude");
+    });
+
+    it("cleanupProjectState does not add to recentlyClosed", () => {
+      createTab("/project-a", "claude");
+      createTab("/project-a", "terminal");
+
+      useTerminalTabsStore.getState().cleanupProjectState("/project-a");
+
+      const state = useTerminalTabsStore.getState();
+      expect(state.tabs).toHaveLength(0);
+      expect(state.recentlyClosed).toHaveLength(0);
+    });
+
+    it("cleanupProjectState removes layout blocks for removed tabs", async () => {
+      const { useTilingLayoutStore } = await import("../tiling-layout");
+      const removeBlockSpy = vi.spyOn(useTilingLayoutStore.getState(), "removeBlock");
+
+      const id1 = createTab("/project-a", "claude");
+      const id2 = createTab("/project-a", "terminal");
+      createTab("/project-b", "claude");
+
+      useTerminalTabsStore.getState().cleanupProjectState("/project-a");
+
+      expect(removeBlockSpy).toHaveBeenCalledTimes(2);
+      expect(removeBlockSpy).toHaveBeenCalledWith(id1);
+      expect(removeBlockSpy).toHaveBeenCalledWith(id2);
+
+      // project-b tabs remain untouched
+      expect(useTerminalTabsStore.getState().tabs).toHaveLength(1);
+      removeBlockSpy.mockRestore();
+    });
+  });
+
   describe("terminal fullscreen", () => {
     it("starts with isTerminalFullscreen as false", () => {
       const state = useTerminalTabsStore.getState();
@@ -686,40 +853,4 @@ describe("useTerminalTabsStore", () => {
     });
   });
 
-  describe("tmuxSessionName", () => {
-    it("setTmuxSessionName stores tmux session name on the tab", () => {
-      const id1 = createTab("/project", "terminal");
-
-      useTerminalTabsStore.getState().setTmuxSessionName(id1, "forja-tab-1");
-
-      const state = useTerminalTabsStore.getState();
-      expect(state.tabs[0].tmuxSessionName).toBe("forja-tab-1");
-    });
-
-    it("serializeTabsForSave includes tmuxSessionName when set", () => {
-      const id1 = createTab("/project", "terminal");
-      useTerminalTabsStore.getState().setTmuxSessionName(id1, "forja-tab-1");
-
-      const serialized = useTerminalTabsStore.getState().serializeTabsForSave("/project");
-      expect(serialized.tabs[0].tmuxSessionName).toBe("forja-tab-1");
-    });
-
-    it("serializeTabsForSave omits tmuxSessionName when not set", () => {
-      createTab("/project", "claude");
-
-      const serialized = useTerminalTabsStore.getState().serializeTabsForSave("/project");
-      expect(serialized.tabs[0].tmuxSessionName).toBeUndefined();
-    });
-
-    it("tmuxSessionName is preserved through other state changes", () => {
-      const id1 = createTab("/project", "terminal");
-
-      useTerminalTabsStore.getState().setTmuxSessionName(id1, "forja-persist");
-      useTerminalTabsStore.getState().markTabExited(id1);
-
-      const state = useTerminalTabsStore.getState();
-      expect(state.tabs[0].tmuxSessionName).toBe("forja-persist");
-      expect(state.tabs[0].isRunning).toBe(false);
-    });
-  });
 });

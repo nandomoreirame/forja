@@ -25,7 +25,6 @@ export function TerminalBlock({
       <TerminalSession
         tabId={tabId}
         path={effectivePath ?? ""}
-        isVisible={true}
         sessionType={config.sessionType ?? "terminal"}
       />
     </div>

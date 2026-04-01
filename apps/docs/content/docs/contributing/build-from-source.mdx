@@ -1,0 +1,114 @@
+---
+title: Build from Source
+description: Step-by-step instructions to clone, install, run in development mode, and build native Forja binaries from source.
+---
+
+# Build from Source
+
+This guide walks you through cloning the repository, installing dependencies, running the app in development mode, and producing distributable binaries.
+
+## Clone the repository
+
+```bash
+git clone https://github.com/forja-app/forja.git
+cd forja
+```
+
+## Install dependencies
+
+Forja uses pnpm workspaces. A single install at the root resolves all workspace packages:
+
+```bash
+pnpm install
+```
+
+This installs dependencies for all apps and packages in the monorepo. Native addons (primarily `node-pty`) are compiled automatically by `electron-rebuild` as part of the postinstall script.
+
+<Callout type="info">
+  If the native addon compilation fails, see [Rebuilding native addons](#rebuilding-native-addons) below.
+</Callout>
+
+## Development mode
+
+| Command | What it runs |
+|---------|-------------|
+| `pnpm dev` | Vite dev server + Electron concurrently (desktop app) |
+| `pnpm dev:site` | Next.js dev server for the marketing site (port 3000) |
+| `pnpm dev:docs` | Next.js dev server for the docs site (port 3001) |
+| `pnpm dev:mobile` | Expo dev server for the mobile app |
+
+For most contributors, `pnpm dev` is all you need. It starts:
+
+1. The **Vite** development server on port 1420, serving the React frontend with HMR.
+2. The **Electron** main process, which waits for Vite to be ready before launching a window.
+
+Changes to the frontend source trigger instant hot module replacement. Changes to Electron main process files (`electron/`) require restarting the process — press `Ctrl+R` in the Electron window or restart the dev command.
+
+## Running tests
+
+| Command | What it runs |
+|---------|-------------|
+| `pnpm test` | All tests across all projects |
+| `pnpm test:desktop` | Desktop app tests only (frontend + electron) |
+| `pnpm test path/to/file.test.ts` | A single test file |
+| `pnpm test --project frontend` | Frontend tests only (happy-dom environment) |
+| `pnpm test --project electron` | Electron tests only (Node environment) |
+| `pnpm test --watch` | Watch mode — re-run on file changes |
+| `pnpm test:coverage` | Tests with V8 coverage report |
+
+Forja uses **Vitest** with a multi-project configuration:
+
+- **frontend** — runs in happy-dom, mocks `@/lib/ipc`
+- **electron** — runs in Node.js, mocks `fs`, `chokidar`, `node-pty`
+- **scripts** — runs in Node.js, tests the CLI and bot scripts
+
+## Building distributable packages
+
+### TypeScript + Vite build
+
+```bash
+pnpm build
+```
+
+Compiles TypeScript and runs the Vite production build. Output goes to `apps/desktop/dist/`.
+
+### Electron installer
+
+```bash
+pnpm build:electron
+```
+
+Runs `electron-builder` to package the app and produce platform-native installers. Targets the current platform by default.
+
+### Output artifacts
+
+| Platform | Format | Notes |
+|----------|--------|-------|
+| **macOS** | `.dmg` | Universal or architecture-specific |
+| **Linux** | `.AppImage` | Portable, no install required |
+| **Linux** | `.deb` | Debian/Ubuntu package |
+| **Windows** | `.exe` (NSIS) | Installer with Start Menu integration |
+
+Artifacts are written to `apps/desktop/dist/`.
+
+## Rebuilding native addons
+
+If `node-pty` or other native addons fail to load after an Electron version change, rebuild them manually:
+
+```bash
+cd apps/desktop
+pnpm electron-rebuild
+```
+
+This recompiles all native modules against the exact Electron Node.js ABI version. Run this any time you:
+
+- Bump the `electron` dependency version
+- Switch Node.js versions and reinstall
+
+## Preview a production build
+
+```bash
+pnpm preview
+```
+
+Serves the production Vite build locally without Electron, useful for inspecting the renderer output in a browser.

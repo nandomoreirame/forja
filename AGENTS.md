@@ -4,83 +4,63 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What is Forja
 
-Forja is a desktop GUI client for Vibe Coders and other AI coding CLIs, built with Electron + React + TypeScript. It features a hybrid rendering approach with xterm.js for terminal emulation and React for rich markdown/code output.
+Forja is a desktop GUI client for Vibe Coders and other AI coding CLIs, built as a pnpm monorepo with Electron + React + TypeScript. It features a hybrid rendering approach with xterm.js for terminal emulation and React for rich markdown/code output.
 
-**Status:** Active development. v1.5.0. 1498+ tests passing across 117 test files.
+**Status:** Active development. v1.9.2. Cross-platform: macOS, Linux, Windows.
+
+## Monorepo Structure
+
+pnpm workspaces with `apps/*` and `packages/*`:
+
+| Package | Path | Description |
+|---------|------|-------------|
+| `@forja/desktop` | `apps/desktop/` | Electron desktop app (main product) |
+| `@forja/site` | `apps/site/` | Next.js 15 marketing site (port 3030) |
+| `@forja/docs` | `apps/docs/` | Fumadocs documentation site (port 3031) |
+| `@forja/mobile` | `apps/mobile/` | Expo remote control app (React Native) |
+| `@forja/tsconfig` | `packages/tsconfig/` | Shared TypeScript configs (base, react, node, nextjs) |
+| `@forja/shared` | `packages/shared/` | Shared types and constants (WebSocket bridge, IPC types) |
+
+All packages reference each other via `workspace:*` protocol.
 
 ## Build Commands
 
 ```bash
-# Development
-pnpm dev              # Run Vite + Electron concurrently
-pnpm dev:vite         # Run Vite dev server only (port 1420)
-pnpm dev:electron     # Run Electron main process (waits for Vite)
+# Development (all from monorepo root)
+pnpm dev              # Desktop app (Vite + Electron concurrently)
+pnpm dev:site         # Marketing site (Next.js, port 3030)
+pnpm dev:docs         # Documentation site (Fumadocs, port 3031)
+pnpm dev:mobile       # Mobile app (Expo)
 
 # Build
-pnpm build            # TypeScript compile + Vite build
-pnpm build:electron   # Full Electron build with electron-builder
-pnpm preview          # Preview production build
+pnpm build            # Desktop: TypeScript compile + Vite build
+pnpm build:electron   # Desktop: full Electron build (dmg/AppImage/deb/nsis)
+pnpm build:site       # Site: Next.js static export
+pnpm build:docs       # Docs: Next.js build
 
 # Testing
-pnpm test             # Run all tests (multi-project: jsdom + node)
-pnpm test:ui          # Run tests with Vitest UI
-pnpm test:coverage    # Run tests with coverage report
+pnpm test             # All workspaces (pnpm -r run test)
+pnpm test:desktop     # Desktop only (multi-project: frontend + electron + scripts)
 
-# Landing page
-pnpm site:dev         # Serve site/public on localhost:3030
-pnpm site:deploy      # Deploy to Firebase Hosting
+# Cleanup
+pnpm clean            # Clean all workspace build artifacts
 ```
 
-### Running Single Tests
+### Running Desktop Tests
 
 ```bash
-pnpm test path/to/file.test.ts          # Specific test file
-pnpm test --grep "pattern"              # Tests matching a pattern
-pnpm test --project frontend            # Frontend tests only (jsdom)
-pnpm test --project electron            # Electron tests only (node)
-pnpm test --watch                       # Watch mode
-pnpm test --reporter=verbose            # Verbose output
+# From root (filters to @forja/desktop)
+pnpm test:desktop -- path/to/file.test.ts    # Specific file
+pnpm test:desktop -- --project frontend      # Frontend tests only (happy-dom)
+pnpm test:desktop -- --project electron      # Electron tests only (node)
+pnpm test:desktop -- --watch                 # Watch mode
+
+# From apps/desktop/ directly
+pnpm test path/to/file.test.ts
+pnpm test --project frontend
+pnpm test --reporter=verbose
+pnpm test:coverage
 ```
-
-## Tech Stack
-
-### Frontend
-
-| Technology | Purpose |
-|-----------|---------|
-| **React 19 + TypeScript** | UI framework |
-| **Tailwind CSS 4 + shadcn/ui** | Styling and components |
-| **xterm.js 6** | Terminal emulation (PTY rendering, VT sequences) |
-| **Monaco Editor** | Code editing (settings, file editing) |
-| **react-markdown + remark-gfm** | Markdown output rendering |
-| **Shiki** | Syntax highlighting (Catppuccin Mocha default theme) |
-| **Zustand 5** | State management (18 stores) |
-| **Lucide React** | Icon system |
-| **@dnd-kit** | Drag-and-drop (project sidebar reorder) |
-| **@tanstack/react-virtual** | Virtualized lists (file tree) |
-
-### Backend (Electron Main Process)
-
-| Technology | Purpose |
-|-----------|---------|
-| **Electron 32** | Desktop framework (Node.js main + Chromium renderer) |
-| **node-pty** | PTY management, spawns AI CLI processes |
-| **chokidar 4** | File watching (`.git/`, settings, project files) |
-| **electron-store 10** | Config storage (`~/.config/forja/config.json`) |
-| **systeminformation** | System metrics (CPU, memory, disk, network) |
-| **git CLI** | Branch info + file status via child_process |
-
-### IPC
-
-Electron IPC via `contextBridge` + `ipcMain`/`ipcRenderer`. Frontend uses `frontend/lib/ipc.ts` as a unified abstraction layer.
-
-### Testing
-
-| Technology | Purpose |
-|-----------|---------|
-| **Vitest 4** | Multi-project test runner (jsdom for frontend, node for electron) |
-| **React Testing Library** | Component testing |
-| **happy-dom** | Frontend test environment |
 
 ## Architecture
 
@@ -94,101 +74,60 @@ Electron IPC via `contextBridge` + `ipcMain`/`ipcRenderer`. Frontend uses `front
     |   +-- Spawns claude / gemini / codex / terminal processes
     |   +-- Streams output -> Frontend via IPC events
     |   +-- Ring buffer for output buffering
-    +-- File System
-    |   +-- File Reader/Writer/Operations (CRUD)
-    |   +-- File Tree (shallow loading, on-demand subdirectories)
-    |   +-- LRU File Cache
-    |   +-- Path Validation (assertPathWithinScope)
+    +-- File System (reader, writer, tree, LRU cache)
     +-- File Watchers (chokidar)
-    |   +-- Project directory watcher (depth: 3, 1s debounce)
-    |   +-- Git directory watcher (.git/ changes, 500ms debounce)
-    |   +-- Settings watcher (live reload)
-    +-- Git Reader (git CLI)
-    |   +-- Branch info, file status, diff content
-    |   +-- TTL-cached git refresh per project
-    +-- Context System
-    |   +-- Context Hub (coordination)
-    |   +-- Context Sync (in/out/watch)
-    |   +-- Tool Registry
-    +-- Agent Chat (IPC-based chat with AI CLIs)
+    |   +-- Project directory (depth: 3, 1s debounce)
+    |   +-- Git directory (.git/ changes, 500ms debounce)
+    |   +-- Settings (live reload)
+    +-- Git Reader (git CLI, TTL-cached)
+    +-- Context System (hub, sync, tool registry)
+    +-- Plugin System (bridge, loader, registry, permissions)
+    +-- WebSocket Bridge (@forja/shared types)
     +-- Config Manager (electron-store)
-    +-- User Settings (~/.config/forja/settings.json)
     +-- System Metrics (demand-driven sampling)
 ```
 
-### File Organization
+### Desktop App File Organization
+
+All paths below are relative to `apps/desktop/`:
 
 ```
 frontend/
-├── components/     # 43 React components
-├── hooks/          # 7 custom hooks
-├── stores/         # 18 Zustand stores
-├── lib/            # 21 utility modules
-├── themes/         # 14+ theme definitions (apply.ts, schema.ts, index.ts)
-├── styles/         # CSS (Tailwind + globals)
-└── types/          # Shared type definitions
+  components/     # React components
+  hooks/          # Custom hooks
+  stores/         # Zustand stores (state management)
+  lib/            # Utility modules (ipc.ts is the key IPC abstraction)
+  themes/         # 14+ theme definitions (CSS variable-based)
+  styles/         # Tailwind + globals
 
 electron/
-├── main.ts         # Entry point, all ipcMain handlers
-├── preload.ts      # contextBridge for window.electronAPI
-├── pty.ts          # PTY management
-├── config.ts       # electron-store
-├── context/        # Context synchronization system (6 modules)
-├── agent-chat*.ts  # Agent chat backend
-├── __tests__/      # 26 electron test files
+  main.ts         # Entry point, all ipcMain handlers
+  preload.cts     # contextBridge for window.electronAPI
+  pty.ts          # PTY management (node-pty, cross-platform)
+  config.ts       # electron-store
+  paths.ts        # Cross-platform path utilities
+  context/        # Context synchronization system
+  plugins/        # Plugin system (bridge, loader, registry, permissions)
+  __tests__/      # Electron tests (node env)
 
-site/
-├── public/         # Landing page (static HTML + Tailwind CDN)
-└── firebase.json   # Firebase Hosting config
-
-docs/
-├── specs/          # BRIEF, PRD, MVP-SCOPE
-├── design/         # Design guidelines, landing page specs
-├── sdlc/           # ADRs, PRDs, user stories, tasks
-├── plans/          # 22 implementation plan docs
-├── guides/         # Performance optimization guides
-└── performance/    # Benchmarks
+scripts/          # Root monorepo scripts (CLI, Discord bot)
 ```
 
-### Key Files
+## Code Style
 
-| File | Purpose |
-|------|---------|
-| `electron/main.ts` | Entry point, all ipcMain handlers |
-| `electron/preload.ts` | contextBridge for window.electronAPI |
-| `electron/pty.ts` | PTY management with node-pty |
-| `electron/config.ts` | electron-store at `~/.config/forja/config.json` |
-| `electron/user-settings.ts` | User settings at `~/.config/forja/settings.json` |
-| `electron/watcher.ts` | Git directory watcher (500ms debounce) |
-| `electron/file-watcher.ts` | Project file watcher (1s debounce) |
-| `electron/git-info.ts` | Git status/branch/diff reader |
-| `electron/context/context-hub.ts` | Context synchronization coordinator |
-| `electron/agent-chat.ts` | Agent chat backend logic |
-| `electron/path-validation.ts` | `assertPathWithinScope()` security |
-| `frontend/lib/ipc.ts` | IPC abstraction layer (invoke + listen) |
-| `frontend/stores/*.ts` | 18 Zustand state stores |
-| `frontend/themes/index.ts` | Theme registry (14+ themes) |
+### TypeScript
 
-## Code Style Guidelines
-
-### TypeScript Configuration
-
-- **Frontend**: Strict mode, `moduleResolution: bundler`, paths alias `@/*` to `frontend/*`
-- **Electron**: Strict mode, `moduleResolution: NodeNext`, `.js` extensions in imports
-- **No unused locals/parameters** enforced by compiler
+- **Frontend** (`apps/desktop/tsconfig.json`): Strict mode, `moduleResolution: bundler`, `@/*` alias to `frontend/*`
+- **Electron** (`apps/desktop/electron/tsconfig.json`): Strict mode, `moduleResolution: NodeNext`, `.js` extensions in imports
+- **Shared configs**: All extend `@forja/tsconfig` presets (base, react, node, nextjs)
 
 ### Imports
 
-**Order** (by convention):
-
-1. External libraries (React, Zustand, etc.)
-2. Internal imports (`@/` paths)
-3. Relative imports (`./`, `../`)
-4. Type-only imports (use `import type`)
+Order: external libraries, `@/` paths, relative imports, `import type` last.
 
 ```typescript
-// Frontend
-import { useState, useEffect } from "react";
+// Frontend (apps/desktop/frontend/)
+import { useState } from "react";
 import { create } from "zustand";
 import { getCurrentWindow } from "@/lib/ipc";
 import type { SessionType } from "@/lib/cli-registry";
@@ -198,57 +137,25 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import type { UiPreferences } from "./config.js";
 ```
 
-### Naming Conventions
+### Naming
 
 - **Files**: kebab-case (`file-tree.ts`, `use-pty.ts`)
-- **Components**: PascalCase (`TerminalPane.tsx`, `FileTree.tsx`)
-- **Hooks**: camelCase with `use` prefix (`usePty.ts`, `useInstalledClis.ts`)
-- **Stores**: kebab-case (`terminal-tabs.ts`, `user-settings.ts`)
-- **Types/Interfaces**: PascalCase (`TerminalTab`, `TerminalTabsState`)
-- **Constants**: SCREAMING_SNAKE_CASE for magic values
+- **Components**: PascalCase (`TerminalPane.tsx`)
+- **Stores**: kebab-case Zustand stores (`terminal-tabs.ts`)
+- **Types**: PascalCase (`TerminalTab`, `TerminalTabsState`)
 
 ### React Patterns
 
-- **Function components** only (no classes)
-- **Zustand** for state management (not Context)
-- **Defensive returns** when data is missing
-- **Colocate** types with their usage
-
-```typescript
-// Defensive return
-function FileTree({ rootPath }: { rootPath: string | null }) {
-  if (!rootPath) return null;
-  // ...
-}
-
-// Zustand store
-export const useTerminalTabsStore = create<TerminalTabsState>((set, get) => ({
-  tabs: [],
-  // ...
-}));
-```
-
-### CSS / Tailwind
-
-- **Tailwind CSS 4** with theme system (14+ themes, default Catppuccin Mocha)
-- Theme colors applied via CSS variables (see `frontend/themes/apply.ts`)
-- Use **cn()** utility (`clsx` + `tailwind-merge`) for conditional classes
-
-```typescript
-import { cn } from "@/lib/utils";
-
-<div className={cn(
-  "flex items-center gap-2",
-  isActive && "bg-ctp-surface0"
-)} />
-```
+- Function components only, Zustand for state (not Context)
+- Defensive returns when data is missing
+- `cn()` utility (clsx + tailwind-merge) for conditional classes
 
 ### Testing Patterns
 
-- **Frontend tests**: happy-dom environment, mock `@/lib/ipc`
-- **Electron tests**: node environment, pool: forks, mock fs/chokidar/node-pty
+- **Frontend tests**: happy-dom environment, always mock `@/lib/ipc`
+- **Electron tests**: node environment, forks pool, mock fs/chokidar/node-pty
 - Test files colocated in `__tests__/` directories
-- Max 2 workers per project (configured in vitest.config.ts)
+- Max 2 workers per project
 
 ```typescript
 // Standard IPC mock for frontend tests
@@ -258,54 +165,29 @@ vi.mock("@/lib/ipc", () => ({
 }));
 ```
 
-### Electron IPC
+### IPC
 
-- `invoke()` for request/response (returns Promise)
-- `listen()` for events (always return cleanup function)
-- All IPC channels defined in `electron/preload.ts` via `contextBridge`
-- `frontend/lib/dedup-invoke.ts` deduplicates concurrent identical IPC calls
+- `invoke()` for request/response, `listen()` for events (always return cleanup)
+- All channels defined in `electron/preload.cts` via `contextBridge`
+- `frontend/lib/dedup-invoke.ts` deduplicates concurrent identical calls
+- `frontend/lib/ipc.ts` is the unified abstraction layer
 
 ### Security
 
-- Validate file paths with `assertPathWithinScope()` in all IPC handlers
-- No `nodeIntegration` in renderer (use `contextBridge`)
+- `assertPathWithinScope()` in all file-related IPC handlers
+- No `nodeIntegration`, use `contextBridge` only
 - DOMPurify for HTML sanitization
-- URL scheme blocking in browser pane (javascript, file, data, vbscript, blob)
+- URL scheme blocking (javascript, file, data, vbscript, blob)
 - Sandbox enabled, filtered PTY environment variables
-
-## Theme System
-
-14+ built-in themes with CSS variable-based application. Themes defined in `frontend/themes/`:
-
-- **Core**: Catppuccin Mocha (default dark), Catppuccin Latte (light)
-- **Popular**: Dracula, Nord, One Dark Pro, Tokyo Night, Solarized Dark, Monokai Pro, Gruvbox Dark, GitHub Dark, Darcula, Alucard, Night Owl, Synthwave 84
-
-Theme switching via settings dialog or command palette. Schema validated in `frontend/themes/schema.ts`.
-
-## Design System
-
-Full guidelines in `docs/design/DESIGN-GUIDELINES.md`.
-
-**Brand color:** `#cba6f7` (Catppuccin Mauve). Use sparingly for selected items, CTAs, highlights.
-
-**Fonts (3 groups via user settings):**
-
-- App UI: Geist Sans, Inter (fallback: system-ui) - default 14px
-- Editor/Preview: JetBrains Mono, Fira Code (fallback: Menlo, monospace) - default 13px
-- Terminal: JetBrains Mono, Fira Code (fallback: Menlo, monospace) - default 14px
-
-**Component sizes:** Titlebar 40px, Pane Header 36px, Status Bar 24px, Buttons `size="sm"`, Icons `h-4 w-4` toolbar / `h-3 w-3` status / `strokeWidth={1.5}`.
 
 ## Key Design Decisions
 
-1. **Config is JSON via electron-store** - `~/.config/forja/config.json` stores projects and preferences
-2. **User settings is separate JSON** - `~/.config/forja/settings.json` for fonts, window, sessions, theme
-3. **Git via CLI, not libgit2** - Uses `git branch --show-current` and `git status --porcelain`
-4. **No authentication** - AI CLIs manage their own auth; Forja doesn't store API keys
-5. **Local-first** - No cloud, no accounts, no telemetry without opt-in
-6. **macOS + Linux only for MVP** - Windows deferred
-7. **Hybrid rendering** - xterm.js for raw PTY, React components for rich markdown output
-8. **Shallow file tree** - On-demand subdirectory loading for performance
-9. **Demand-driven metrics** - System metrics sampled only when visible
-10. **TTL-cached git** - Git refresh coalesced per project with cache
-11. **Trunk-Based Development** - main is the single trunk, release/X.Y branches for releases, no develop branch
+1. **pnpm monorepo** - Shared configs (`@forja/tsconfig`) and types (`@forja/shared`) across desktop, site, docs, mobile
+2. **Config via electron-store** - `~/.config/forja/config.json` (Unix) or `%APPDATA%/forja/config.json` (Windows)
+3. **Cross-platform paths** - `electron/paths.ts` with `getForjaConfigDir()` handles OS differences
+4. **Git via CLI, not libgit2** - `git branch --show-current`, `git status --porcelain`
+5. **No authentication** - AI CLIs manage their own auth
+6. **Local-first** - No cloud, no accounts, no telemetry without opt-in
+7. **Hybrid rendering** - xterm.js for raw PTY, React for rich markdown output
+8. **Trunk-Based Development** - main is the trunk, `release/X.Y` branches for releases
+9. **Native addons** - `node-pty` requires `electron-rebuild` (CI runs `npx electron-rebuild` in `apps/desktop/`)

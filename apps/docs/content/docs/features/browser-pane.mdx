@@ -1,0 +1,60 @@
+---
+title: Browser Pane
+description: Embedded in-app browser that auto-opens on localhost URL detection, with navigation toolbar, DevTools toggle, and security URL scheme blocking.
+---
+
+# Browser Pane
+
+Forja includes an embedded browser powered by Electron's `<webview>` tag. When your AI CLI starts a local dev server, Forja detects the URL and opens the browser pane automatically — so you can iterate without leaving the app.
+
+![Forja — Browser pane with DevTools open](/screenshots/5.open-browser-dev-mode.png)
+
+## Auto-Open on Localhost Detection
+
+Forja watches PTY output for localhost URL patterns using the following regular expressions:
+
+```
+http://localhost:\d+
+http://127.0.0.1:\d+
+```
+
+When a match is found — for example, `Local: http://localhost:5173/` printed by Vite — the browser pane opens automatically and navigates to that URL. If the browser pane is already open, it navigates to the new URL without replacing the current page history.
+
+<Callout type="info">
+  Auto-open only applies to `localhost` and `127.0.0.1`. External URLs printed by the CLI do not trigger auto-open.
+</Callout>
+
+## Navigation Toolbar
+
+The browser pane includes a full navigation toolbar:
+
+| Control | Action |
+|---------|--------|
+| **Back** | Navigate to the previous page in history |
+| **Forward** | Navigate forward in history |
+| **Reload** | Reload the current page (`Ctrl+R` inside the pane) |
+| **URL bar** | Type or paste a URL and press Enter to navigate |
+| **DevTools toggle** | Open/close the webview's own DevTools panel |
+| **Close** | Hide the browser pane (session continues in the background) |
+
+## Keyboard Bridge
+
+Application shortcuts continue to work when focus is inside the webview. Forja intercepts key events at the window level and forwards them to the appropriate handler, so shortcuts like `Ctrl+Tab` (switch session), `Ctrl+W` (close tab), and `Ctrl+,` (settings) work regardless of whether the browser pane has focus.
+
+## Security
+
+The embedded browser enforces the following restrictions:
+
+- **Blocked URL schemes**: `javascript:`, `file:`, `data:`, `vbscript:`, `blob:` — navigation to these schemes is prevented silently.
+- **No node integration** in the webview: the embedded page runs in a sandboxed renderer with no access to Node.js APIs.
+- **No cross-origin relaxation**: the webview respects standard Chromium same-origin policies.
+
+These restrictions apply to all pages loaded in the browser pane, including pages navigated to by clicking links within an embedded app.
+
+## Resizing and Layout
+
+The browser pane is part of the FlexLayout tiling system. You can:
+
+- Drag the divider between the browser pane and the terminal area to resize
+- Drag the browser tab to a different tabset to rearrange the layout
+- Maximize the browser pane to full width using the tabset maximize button

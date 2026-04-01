@@ -6,6 +6,7 @@ vi.mock("../pty.js", () => ({
   getActiveSessions: vi.fn(() => []),
   getSessionBuffer: vi.fn(() => null),
   writePty: vi.fn(),
+  closePty: vi.fn(),
   hasPty: vi.fn(() => true),
   subscribePtyOutput: vi.fn(() => () => {}),
 }));
@@ -14,6 +15,30 @@ vi.mock("../pty.js", () => ({
 vi.mock("../auth-token.js", () => ({
   getAuthToken: vi.fn(() => "test-token-12345"),
   validateToken: vi.fn((t: string) => t === "test-token-12345"),
+}));
+
+// Mock PtyOutputSanitizer to avoid @xterm/headless in test environment
+const mockSanitizer = {
+  addSession: vi.fn(),
+  removeSession: vi.fn(),
+  write: vi.fn(),
+  writeAsync: vi.fn(() => Promise.resolve()),
+  getScreenText: vi.fn(() => ""),
+  hasSession: vi.fn(() => false),
+  dispose: vi.fn(),
+};
+
+vi.mock("../pty-output-sanitizer.js", () => {
+  return {
+    PtyOutputSanitizer: function PtyOutputSanitizer() {
+      return mockSanitizer;
+    },
+  };
+});
+
+// Mock ai-output-parser to return predictable values
+vi.mock("../ai-output-parser.js", () => ({
+  parseAiOutput: vi.fn((screenText: string) => ({ content: screenText, hadChrome: false })),
 }));
 
 const TEST_PORT = 19401;
@@ -67,6 +92,22 @@ describe("ws-bridge", () => {
     vi.mocked(getSessionBuffer).mockReturnValue(null);
     vi.mocked(hasPty).mockReturnValue(true);
     vi.mocked(subscribePtyOutput).mockReturnValue(() => {});
+
+    // Re-establish sanitizer mock defaults after reset
+    mockSanitizer.addSession.mockReset();
+    mockSanitizer.removeSession.mockReset();
+    mockSanitizer.write.mockReset();
+    mockSanitizer.writeAsync.mockReset().mockResolvedValue(undefined);
+    mockSanitizer.getScreenText.mockReset().mockReturnValue("");
+    mockSanitizer.hasSession.mockReset().mockReturnValue(false);
+    mockSanitizer.dispose.mockReset();
+
+    // Re-establish ai-output-parser mock default
+    const { parseAiOutput } = await import("../ai-output-parser.js");
+    vi.mocked(parseAiOutput).mockImplementation((screenText: string) => ({
+      content: screenText,
+      hadChrome: false,
+    }));
 
     const { createWsBridge } = await import("../ws-bridge.js");
     bridge = createWsBridge({ port: TEST_PORT });
@@ -127,10 +168,10 @@ describe("ws-bridge", () => {
 
   // ─── list-sessions ────────────────────────────────────────────────────────
 
-  it("responds to list-sessions command", async () => {
+  it("responds to list-sessions command with displayName", async () => {
     const { getActiveSessions } = await import("../pty.js");
     vi.mocked(getActiveSessions).mockReturnValue([
-      { tabId: "tab-1", projectPath: "/proj/a", sessionType: "claude" },
+      { tabId: "tab-1", projectPath: "/proj/a", sessionType: "claude", displayName: "Claude" },
     ]);
 
     const ws = await connectClient();
@@ -147,7 +188,7 @@ describe("ws-bridge", () => {
     const response = await receivePromise;
     expect(response).toMatchObject({
       ok: true,
-      data: [{ tabId: "tab-1", projectPath: "/proj/a", sessionType: "claude" }],
+      data: [{ tabId: "tab-1", projectPath: "/proj/a", sessionType: "claude", displayName: "Claude" }],
     });
   });
 
@@ -231,7 +272,10 @@ describe("ws-bridge", () => {
 
     const response = await receivePromise;
     expect(response).toMatchObject({ ok: true });
-    expect(writePty).toHaveBeenCalledWith("tab-1", "echo hello\n");
+    // Text ending with \n is split: body first, then \r
+    expect(writePty).toHaveBeenCalledTimes(2);
+    expect(writePty).toHaveBeenNthCalledWith(1, "tab-1", "echo hello");
+    expect(writePty).toHaveBeenNthCalledWith(2, "tab-1", "\r");
   });
 
   it("returns error for session-input when session not found", async () => {
@@ -255,6 +299,89 @@ describe("ws-bridge", () => {
 
     const response = await receivePromise;
     expect(response).toMatchObject({ ok: false });
+  });
+
+  it("splits text and CR for session-input ending with carriage return", async () => {
+    const { writePty, hasPty } = await import("../pty.js");
+    vi.mocked(hasPty).mockReturnValue(true);
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, {
+      type: "session-input",
+      token: "test-token-12345",
+      tabId: "tab-1",
+      text: "hello world\r",
+    });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true });
+
+    // Should split: first write the body, then write CR separately
+    expect(writePty).toHaveBeenCalledTimes(2);
+    expect(writePty).toHaveBeenNthCalledWith(1, "tab-1", "hello world");
+    expect(writePty).toHaveBeenNthCalledWith(2, "tab-1", "\r");
+  });
+
+  it("splits text and CR for session-input ending with newline", async () => {
+    const { writePty, hasPty } = await import("../pty.js");
+    vi.mocked(hasPty).mockReturnValue(true);
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, {
+      type: "session-input",
+      token: "test-token-12345",
+      tabId: "tab-1",
+      text: "hello world\n",
+    });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true });
+
+    // Should split: first write the body, then write CR separately (convert \n to \r for PTY)
+    expect(writePty).toHaveBeenCalledTimes(2);
+    expect(writePty).toHaveBeenNthCalledWith(1, "tab-1", "hello world");
+    expect(writePty).toHaveBeenNthCalledWith(2, "tab-1", "\r");
+  });
+
+  it("writes text without split when no trailing newline/CR", async () => {
+    const { writePty, hasPty } = await import("../pty.js");
+    vi.mocked(hasPty).mockReturnValue(true);
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, {
+      type: "session-input",
+      token: "test-token-12345",
+      tabId: "tab-1",
+      text: "partial input",
+    });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true });
+
+    // No split needed — single write
+    expect(writePty).toHaveBeenCalledTimes(1);
+    expect(writePty).toHaveBeenCalledWith("tab-1", "partial input");
   });
 
   it("returns error for session-input when missing tabId", async () => {
@@ -618,5 +745,410 @@ describe("ws-bridge", () => {
     expect(exitMsg.type).toBe("pty-event");
     expect(exitMsg.event).toBe("session-exit");
     expect(exitMsg.exitCode).toBe(0);
+  });
+
+  // ─── new-session ──────────────────────────────────────────────────────────
+
+  it("new-session: calls onNewSession callback and returns ok", async () => {
+    // Stop default bridge (no onNewSession) and create one with callback
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onNewSession = vi.fn(() => true);
+    bridge = createWsBridge({ port: TEST_PORT, onNewSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "new-session", token: "test-token-12345", sessionType: "claude" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true, data: { sessionType: "claude" } });
+    expect(onNewSession).toHaveBeenCalledWith("claude", undefined);
+  });
+
+  it("new-session: passes projectPath to callback", async () => {
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onNewSession = vi.fn(() => true);
+    bridge = createWsBridge({ port: TEST_PORT, onNewSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, {
+      type: "new-session",
+      token: "test-token-12345",
+      sessionType: "terminal",
+      projectPath: "/home/user/projects/my-app",
+    });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true, data: { sessionType: "terminal" } });
+    expect(onNewSession).toHaveBeenCalledWith("terminal", "/home/user/projects/my-app");
+  });
+
+  it("new-session: returns error when onNewSession callback returns false", async () => {
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onNewSession = vi.fn(() => false);
+    bridge = createWsBridge({ port: TEST_PORT, onNewSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "new-session", token: "test-token-12345", sessionType: "gemini" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false });
+  });
+
+  it("new-session: returns error when no onNewSession callback is configured", async () => {
+    // Default bridge has no onNewSession
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "new-session", token: "test-token-12345", sessionType: "claude" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false, error: "Session creation not available" });
+  });
+
+  it("new-session: returns error for invalid session type", async () => {
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onNewSession = vi.fn(() => true);
+    bridge = createWsBridge({ port: TEST_PORT, onNewSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "new-session", token: "test-token-12345", sessionType: "unknown-cli" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false });
+    expect((response as { error: string }).error).toContain("Invalid session type");
+    expect(onNewSession).not.toHaveBeenCalled();
+  });
+
+  // ─── close-session ─────────────────────────────────────────────────────
+
+  it("close-session: calls closePty and returns ok", async () => {
+    const { closePty, hasPty } = await import("../pty.js");
+    vi.mocked(hasPty).mockReturnValue(true);
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "close-session", token: "test-token-12345", tabId: "tab-1" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true });
+    expect(closePty).toHaveBeenCalledWith("tab-1");
+  });
+
+  it("close-session: returns error when session not found", async () => {
+    const { hasPty } = await import("../pty.js");
+    vi.mocked(hasPty).mockReturnValue(false);
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "close-session", token: "test-token-12345", tabId: "unknown-tab" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false });
+  });
+
+  it("close-session: returns error when missing tabId", async () => {
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "close-session", token: "test-token-12345" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false });
+  });
+
+  // ─── rename-session ────────────────────────────────────────────────────
+
+  it("rename-session: calls onRenameSession callback and returns ok", async () => {
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    const onRenameSession = vi.fn();
+    bridge = createWsBridge({ port: TEST_PORT, onRenameSession });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "rename-session", token: "test-token-12345", tabId: "tab-1", name: "CLAUDINHO" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true });
+    expect(onRenameSession).toHaveBeenCalledWith("tab-1", "CLAUDINHO");
+  });
+
+  it("rename-session: returns error when missing tabId or name", async () => {
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "rename-session", token: "test-token-12345", tabId: "tab-1" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: false });
+  });
+
+  // ─── PtyOutputSanitizer integration ──────────────────────────────────────
+
+  it("session-output: response includes cleanText only when OSC 9 messages exist", async () => {
+    const { getSessionBuffer } = await import("../pty.js");
+    vi.mocked(getSessionBuffer).mockReturnValue("some terminal output");
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "session-output", token: "test-token-12345", tabId: "tab-1" });
+
+    const response = await receivePromise;
+    // Without OSC 9 messages, no cleanText is sent
+    expect(response).toMatchObject({
+      ok: true,
+      data: { tabId: "tab-1", content: "some terminal output" },
+    });
+    expect((response as { ok: true; data: { cleanText?: string } }).data.cleanText).toBeUndefined();
+  });
+
+  it("session-output: returns content without cleanText when no OSC 9 messages", async () => {
+    const { getSessionBuffer } = await import("../pty.js");
+    vi.mocked(getSessionBuffer).mockReturnValue("raw buffer data");
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "session-output", token: "test-token-12345", tabId: "tab-2" });
+
+    const response = await receivePromise;
+    expect(response).toMatchObject({ ok: true, data: { tabId: "tab-2", content: "raw buffer data" } });
+  });
+
+  it("session-output: does not re-create sanitizer session if already tracked", async () => {
+    const { getSessionBuffer } = await import("../pty.js");
+    vi.mocked(getSessionBuffer).mockReturnValue("existing output");
+    // Pretend session already exists in the sanitizer
+    mockSanitizer.hasSession.mockReturnValue(true);
+    mockSanitizer.getScreenText.mockReturnValue("existing output");
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const receivePromise = wsReceive(ws);
+    wsSend(ws, { type: "session-output", token: "test-token-12345", tabId: "tab-3" });
+
+    await receivePromise;
+
+    // addSession should NOT be called because hasSession returned true
+    expect(mockSanitizer.addSession).not.toHaveBeenCalled();
+  });
+
+  it("subscribe: creates sanitizer session and replays buffer for already-running session", async () => {
+    const { getSessionBuffer } = await import("../pty.js");
+    vi.mocked(getSessionBuffer).mockReturnValue("previously buffered output");
+    mockSanitizer.hasSession.mockReturnValue(false);
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const subReceive = wsReceive(ws);
+    wsSend(ws, { type: "subscribe", token: "test-token-12345", tabId: "tab-1" });
+    await subReceive;
+
+    expect(mockSanitizer.addSession).toHaveBeenCalledWith("tab-1");
+    expect(mockSanitizer.write).toHaveBeenCalledWith("tab-1", "previously buffered output");
+  });
+
+  it("subscribe: skips sanitizer session creation when already tracked", async () => {
+    mockSanitizer.hasSession.mockReturnValue(true);
+
+    const ws = await connectClient();
+
+    // Authenticate
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const subReceive = wsReceive(ws);
+    wsSend(ws, { type: "subscribe", token: "test-token-12345", tabId: "tab-1" });
+    await subReceive;
+
+    expect(mockSanitizer.addSession).not.toHaveBeenCalled();
+    expect(mockSanitizer.write).not.toHaveBeenCalled();
+  });
+
+  it("pty-event broadcast: data events omit cleanText when no OSC 9 messages", async () => {
+    const { subscribePtyOutput } = await import("../pty.js");
+    let ptyCallback: ((event: import("../pty.js").PtySubscriberEvent) => void) | null = null;
+    vi.mocked(subscribePtyOutput).mockImplementation((fn) => {
+      ptyCallback = fn;
+      return () => {};
+    });
+
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    bridge = createWsBridge({ port: TEST_PORT });
+    await bridge.start();
+
+    const ws = await connectClient();
+
+    const authReceive = wsReceive(ws);
+    wsSend(ws, { type: "ping", token: "test-token-12345" });
+    await authReceive;
+
+    const subReceive = wsReceive(ws);
+    wsSend(ws, { type: "subscribe", token: "test-token-12345", tabId: "tab-1" });
+    await subReceive;
+
+    // Emit data without any OSC 9 messages
+    expect(ptyCallback).not.toBeNull();
+    ptyCallback!({ event: "data", tabId: "tab-1", data: "raw terminal output" });
+
+    const batchedMsg = await new Promise<unknown>((resolve) => {
+      ws.once("message", (data) => resolve(JSON.parse(data.toString())));
+    });
+
+    const msg = batchedMsg as { type: string; event: string; tabId: string; data: string; cleanText?: string };
+    expect(msg.type).toBe("pty-event");
+    expect(msg.event).toBe("data");
+    expect(msg.data).toBe("raw terminal output");
+    // No OSC 9 messages → no cleanText
+    expect(msg.cleanText).toBeUndefined();
+  });
+
+  it("pty-event broadcast: feeds data into sanitizer via writeAsync() during flush", async () => {
+    const { subscribePtyOutput } = await import("../pty.js");
+    let ptyCallback: ((event: import("../pty.js").PtySubscriberEvent) => void) | null = null;
+    vi.mocked(subscribePtyOutput).mockImplementation((fn) => {
+      ptyCallback = fn;
+      return () => {};
+    });
+
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    bridge = createWsBridge({ port: TEST_PORT });
+    await bridge.start();
+
+    expect(ptyCallback).not.toBeNull();
+    mockSanitizer.hasSession.mockReturnValue(true);
+    ptyCallback!({ event: "data", tabId: "tab-1", data: "output chunk" });
+
+    // writeAsync is called during the flush interval, not immediately
+    expect(mockSanitizer.writeAsync).not.toHaveBeenCalled();
+    // Wait for the flush interval to fire (100ms + processing)
+    await new Promise((r) => setTimeout(r, 200));
+    expect(mockSanitizer.writeAsync).toHaveBeenCalledWith("tab-1", "output chunk");
+  });
+
+  it("pty-event: session-start creates sanitizer session", async () => {
+    const { subscribePtyOutput } = await import("../pty.js");
+    let ptyCallback: ((event: import("../pty.js").PtySubscriberEvent) => void) | null = null;
+    vi.mocked(subscribePtyOutput).mockImplementation((fn) => {
+      ptyCallback = fn;
+      return () => {};
+    });
+
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    bridge = createWsBridge({ port: TEST_PORT });
+    await bridge.start();
+
+    expect(ptyCallback).not.toBeNull();
+    ptyCallback!({ event: "session-start", tabId: "tab-new", projectPath: "/proj", sessionType: "claude" });
+
+    expect(mockSanitizer.addSession).toHaveBeenCalledWith("tab-new");
+  });
+
+  it("pty-event: session-exit removes sanitizer session", async () => {
+    const { subscribePtyOutput } = await import("../pty.js");
+    let ptyCallback: ((event: import("../pty.js").PtySubscriberEvent) => void) | null = null;
+    vi.mocked(subscribePtyOutput).mockImplementation((fn) => {
+      ptyCallback = fn;
+      return () => {};
+    });
+
+    await bridge.stop();
+    const { createWsBridge } = await import("../ws-bridge.js");
+    bridge = createWsBridge({ port: TEST_PORT });
+    await bridge.start();
+
+    expect(ptyCallback).not.toBeNull();
+    ptyCallback!({ event: "session-exit", tabId: "tab-old", projectPath: "/proj", exitCode: 0 });
+
+    expect(mockSanitizer.removeSession).toHaveBeenCalledWith("tab-old");
+  });
+
+  it("stop(): disposes sanitizer", async () => {
+    await bridge.stop();
+    expect(mockSanitizer.dispose).toHaveBeenCalled();
   });
 });

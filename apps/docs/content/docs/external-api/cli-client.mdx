@@ -1,0 +1,194 @@
+---
+title: CLI Client
+description: Use the forja command-line client to control a running Forja desktop app from your terminal, shell scripts, or CI/CD pipelines.
+---
+
+# CLI Client
+
+The `forja` CLI is a thin shell wrapper around `scripts/forja-cli.js` that communicates with the running Forja desktop application via the [External API](/docs/external-api/overview).
+
+## Installation
+
+The CLI is included in the Forja repository under `scripts/`. To make it globally available, add the `scripts/` directory to your `PATH`, or create a symlink:
+
+```bash
+# Option 1 — add to PATH (add to your shell profile)
+export PATH="$PATH:/path/to/forja/scripts"
+
+# Option 2 — symlink to a directory already in PATH
+ln -sf /path/to/forja/scripts/forja ~/.local/bin/forja
+```
+
+<Callout type="info">
+  The CLI requires Node.js 22 or newer. The `forja` shell script delegates to `forja-cli.js` automatically.
+</Callout>
+
+## Commands
+
+### `ping`
+
+Check whether Forja is currently running and get the version number.
+
+```bash
+forja ping
+```
+
+```json
+{
+  "version": "1.9.2"
+}
+```
+
+### `sessions`
+
+List all active terminal sessions with their tab IDs, project paths, and session types.
+
+```bash
+forja sessions
+```
+
+```json
+[
+  {
+    "tabId": "tab-abc123",
+    "projectPath": "/home/user/my-project",
+    "sessionType": "claude",
+    "displayName": "Claude"
+  }
+]
+```
+
+### `projects`
+
+List all projects that are currently open in Forja.
+
+```bash
+forja projects
+```
+
+```json
+[
+  { "path": "/home/user/my-project", "name": "my-project" },
+  { "path": "/home/user/another-project", "name": "another-project" }
+]
+```
+
+### `project [N]`
+
+Without an argument, lists all projects. With a numeric argument, switches Forja focus to that project (1-based index).
+
+```bash
+forja project          # list projects with index numbers
+forja project 2        # switch focus to project number 2
+```
+
+### `send <tabId> <text>`
+
+Send text input to an active session. The tab ID is obtained from `forja sessions`.
+
+```bash
+forja send tab-abc123 "npm test"
+```
+
+The text is automatically terminated with a carriage return (`\r`) so the command executes immediately.
+
+### `output <tabId>`
+
+Retrieve the current output buffer of a session. Useful for capturing the last output from a running AI session.
+
+```bash
+forja output tab-abc123
+```
+
+### `new-session <type> [path]`
+
+Start a new session inside Forja. Valid session types are `claude`, `codex`, `gemini`, `gh-copilot`, and `terminal`.
+
+```bash
+forja new-session claude /home/user/my-project
+forja new-session terminal
+```
+
+### `notify <message>`
+
+Display a notification message inside the Forja application.
+
+```bash
+forja notify "Build finished successfully"
+```
+
+### `screenshot`
+
+Take a screenshot of the Forja window and receive the image data.
+
+```bash
+forja screenshot
+```
+
+### `open-project <path>`
+
+Open a project directory in Forja.
+
+```bash
+forja open-project /home/user/my-project
+```
+
+## Integration examples
+
+### Shell script: run tests and notify
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+SESSION=$(forja sessions | jq -r '.[0].tabId')
+
+forja send "$SESSION" "pnpm test"
+forja notify "Tests triggered in Forja"
+```
+
+### CI/CD: verify Forja is available before automation
+
+```bash
+#!/usr/bin/env bash
+if ! forja ping > /dev/null 2>&1; then
+  echo "Forja is not running — skipping UI automation"
+  exit 0
+fi
+
+forja notify "CI pipeline started: $CI_PIPELINE_ID"
+```
+
+### Polling session output
+
+```bash
+#!/usr/bin/env bash
+TAB_ID="tab-abc123"
+
+while true; do
+  OUTPUT=$(forja output "$TAB_ID" 2>/dev/null)
+  if echo "$OUTPUT" | grep -q "Task complete"; then
+    echo "Session finished!"
+    break
+  fi
+  sleep 2
+done
+```
+
+## Full command reference
+
+```
+Usage: forja <command> [args]
+
+Commands:
+  ping                        Check if Forja is running
+  notify <message>            Send a notification message
+  open-project <path>         Open a project by path
+  list-projects               List all open projects
+  project [N]                 List projects or switch to project N
+  sessions                    List active terminal sessions
+  output <tabId>              Get output buffer of a session
+  send <tabId> <text>         Send input to a terminal session
+  new-session <type> [path]   Start a new session (claude, codex, gemini, terminal)
+  screenshot                  Take a screenshot of the Forja window
+```

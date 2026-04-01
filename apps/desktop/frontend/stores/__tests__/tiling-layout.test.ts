@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { Model, Actions, DockLocation, Rect, type IJsonModel } from "flexlayout-react";
-import { useTilingLayoutStore, stripFilePreviewBlocksFromJson } from "../tiling-layout";
+import {
+  useTilingLayoutStore,
+  stripFilePreviewBlocksFromJson,
+  stripOrphanTerminalBlocksFromJson,
+} from "../tiling-layout";
 import { useTerminalTabsStore } from "../terminal-tabs";
 import { DEFAULT_LAYOUT, TABSET_IDS } from "@/lib/default-layout";
 import type { BlockConfig } from "@/lib/block-registry";
@@ -313,6 +317,113 @@ describe("tiling-layout store", () => {
         .loadFromJson({} as never);
       const { model } = useTilingLayoutStore.getState();
       expect(model.getNodeById(TABSET_IDS.main)).toBeDefined();
+    });
+
+    it("preserves exact terminal block ids and tabset positions when loading saved layout", () => {
+      const layout = {
+        global: {
+          tabEnableClose: true,
+          tabSetEnableDeleteWhenEmpty: true,
+        },
+        layout: {
+          type: "row",
+          weight: 100,
+          children: [
+            {
+              type: "tabset",
+              weight: 60,
+              id: "tabset-left",
+              enableDeleteWhenEmpty: false,
+              children: [
+                {
+                  type: "tab",
+                  id: "tab-left",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "tab-left", sessionType: "claude" },
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 40,
+              id: "tabset-right",
+              children: [
+                {
+                  type: "tab",
+                  id: "tab-right",
+                  name: "Terminal",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "tab-right", sessionType: "terminal" },
+                },
+              ],
+            },
+          ],
+        },
+      } as any;
+
+      useTilingLayoutStore.getState().loadFromJson(layout);
+
+      const { model } = useTilingLayoutStore.getState();
+      expect(model.getNodeById("tab-left")?.getParent()?.getId()).toBe("tabset-left");
+      expect(model.getNodeById("tab-right")?.getParent()?.getId()).toBe("tabset-right");
+      expect(model.getNodeById("tab-left")?.getId()).toBe("tab-left");
+      expect(model.getNodeById("tab-right")?.getId()).toBe("tab-right");
+    });
+
+    it("strips foreign terminal blocks before loading another project", () => {
+      const contaminatedLayout: IJsonModel = {
+        global: {
+          tabEnableClose: true,
+          tabSetEnableDeleteWhenEmpty: true,
+        },
+        layout: {
+          type: "row",
+          weight: 100,
+          children: [
+            {
+              type: "tabset",
+              weight: 50,
+              id: "tabset-a",
+              children: [
+                {
+                  type: "tab",
+                  id: "valid-tab",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "valid-tab", sessionType: "claude" },
+                },
+              ],
+            },
+            {
+              type: "tabset",
+              weight: 50,
+              id: "tabset-b",
+              children: [
+                {
+                  type: "tab",
+                  id: "foreign-tab",
+                  name: "Claude",
+                  component: "terminal",
+                  config: { type: "terminal", tabId: "foreign-tab", sessionType: "claude" },
+                },
+              ],
+            },
+          ],
+        },
+      };
+
+      const cleaned = stripOrphanTerminalBlocksFromJson(
+        contaminatedLayout,
+        new Set(["valid-tab"]),
+      );
+
+      useTilingLayoutStore.getState().loadFromJson(cleaned);
+
+      const { model } = useTilingLayoutStore.getState();
+      expect(model.getNodeById("valid-tab")?.getParent()?.getId()).toBe("tabset-a");
+      expect(model.getNodeById("valid-tab")?.getId()).toBe("valid-tab");
+      expect(model.getNodeById("foreign-tab")).toBeUndefined();
     });
   });
 
@@ -1860,13 +1971,6 @@ describe("tiling-layout store", () => {
     });
 
     it("syncs customName to terminal-tabs store", () => {
-      // Mock getCurrentWindow for terminal-tabs store
-      vi.mock("@/lib/ipc", () => ({
-        invoke: vi.fn(),
-        listen: vi.fn(() => () => {}),
-        getCurrentWindow: vi.fn(() => ({ label: "main" })),
-      }));
-
       // Add a tab to the terminal-tabs store first
       useTerminalTabsStore.setState({
         tabs: [{ id: "tab-sync", name: "Claude", path: "/test", isRunning: true, sessionType: "claude" }],
@@ -1884,6 +1988,68 @@ describe("tiling-layout store", () => {
 
       const tab = useTerminalTabsStore.getState().tabs.find((t) => t.id === "tab-sync");
       expect(tab?.customName).toBe("Renamed");
+    });
+
+    it("only mutates customName and preserves tab identity", () => {
+      useTerminalTabsStore.setState({
+        tabs: [
+          {
+            id: "tab-identity",
+            name: "Claude",
+            path: "/project",
+            isRunning: true,
+            sessionType: "claude",
+            cliSessionId: "session-123",
+          },
+        ],
+        activeTabId: "tab-identity",
+      });
+
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "tab-identity",
+      );
+
+      useTilingLayoutStore.getState().renameBlock("tab-identity", "My Display Name");
+
+      const tab = useTerminalTabsStore.getState().tabs.find((t) => t.id === "tab-identity");
+      expect(tab?.id).toBe("tab-identity");
+      expect(tab?.path).toBe("/project");
+      expect(tab?.cliSessionId).toBe("session-123");
+      expect(tab?.customName).toBe("My Display Name");
+    });
+
+    it("clearing customName restores the auto name without changing identity", () => {
+      useTerminalTabsStore.setState({
+        tabs: [
+          {
+            id: "tab-reset",
+            name: "Claude",
+            path: "/project",
+            isRunning: true,
+            sessionType: "claude",
+            cliSessionId: "session-456",
+            customName: "Temp Name",
+          },
+        ],
+        activeTabId: "tab-reset",
+      });
+
+      useTilingLayoutStore.getState().addBlock(
+        { type: "terminal", sessionType: "claude" },
+        TABSET_IDS.main,
+        "tab-reset",
+      );
+
+      useTilingLayoutStore.getState().renameBlock("tab-reset", "");
+
+      const tab = useTerminalTabsStore.getState().tabs.find((t) => t.id === "tab-reset");
+      expect(tab?.id).toBe("tab-reset");
+      expect(tab?.path).toBe("/project");
+      expect(tab?.cliSessionId).toBe("session-456");
+      expect(tab?.customName).toBeUndefined();
+      expect(useTilingLayoutStore.getState().model.getNodeById("tab-reset")?.getName()).toBe("Claude");
     });
   });
 

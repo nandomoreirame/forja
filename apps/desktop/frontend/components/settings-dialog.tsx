@@ -416,7 +416,7 @@ function AppearanceSection({ settings, onSave }: AppearanceSectionProps) {
       <SettingItem
         category="Terminal"
         label="Persist terminal sessions"
-        description="Keep terminal processes alive when closing Forja (requires tmux)."
+        description="Keep terminal processes alive when closing Forja."
       >
         <label className="flex items-center gap-2 cursor-pointer" aria-label="Persist terminal sessions">
           <input

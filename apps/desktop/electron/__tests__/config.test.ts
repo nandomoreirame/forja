@@ -290,6 +290,30 @@ describe("config module", () => {
       );
     });
 
+    it("removeProjectFromWorkspace clears lastActiveProjectPath when removing the active project", async () => {
+      const { createWorkspace, addProjectToWorkspace, removeProjectFromWorkspace, setLastActiveProjectPath, getActiveWorkspace } =
+        await import("../config");
+      createWorkspace("Workspace");
+      addProjectToWorkspace("test-uuid-1", "/home/user/project-a");
+      addProjectToWorkspace("test-uuid-1", "/home/user/project-b");
+      setLastActiveProjectPath("test-uuid-1", "/home/user/project-a");
+
+      const updated = removeProjectFromWorkspace("test-uuid-1", "/home/user/project-a");
+      expect(updated!.lastActiveProjectPath).toBeUndefined();
+    });
+
+    it("removeProjectFromWorkspace preserves lastActiveProjectPath when removing a different project", async () => {
+      const { createWorkspace, addProjectToWorkspace, removeProjectFromWorkspace, setLastActiveProjectPath } =
+        await import("../config");
+      createWorkspace("Workspace");
+      addProjectToWorkspace("test-uuid-1", "/home/user/project-a");
+      addProjectToWorkspace("test-uuid-1", "/home/user/project-b");
+      setLastActiveProjectPath("test-uuid-1", "/home/user/project-a");
+
+      const updated = removeProjectFromWorkspace("test-uuid-1", "/home/user/project-b");
+      expect(updated!.lastActiveProjectPath).toBe("/home/user/project-a");
+    });
+
     it("getWorkspaceProjects returns projects for a workspace", async () => {
       const { createWorkspace, addProjectToWorkspace, getWorkspaceProjects } =
         await import("../config");

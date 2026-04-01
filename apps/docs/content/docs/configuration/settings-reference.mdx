@@ -1,0 +1,119 @@
+---
+title: Settings Reference
+description: Complete reference for all settings in ~/.config/forja/settings.json — appearance, window, titlebar, sessions, and notifications.
+---
+
+# Settings Reference
+
+Forja stores user preferences in a JSON file separate from the main config. This file is read on startup and watched for live changes — most settings take effect immediately without a restart.
+
+| Platform | Path |
+|----------|------|
+| **macOS / Linux** | `~/.config/forja/settings.json` |
+| **Windows** | `%APPDATA%\forja\settings.json` |
+
+<Callout type="info">
+  You can open this file directly from Forja via **Settings (`Ctrl+,`) > Advanced > Open settings.json**.
+</Callout>
+
+---
+
+## Appearance
+
+Controls the visual theme and font configuration across all three rendering contexts.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `theme` | `string` | `"catppuccin-mocha"` | Active color theme. See [Themes](/docs/configuration/themes) for all available options. |
+| `appFont` | `string` | `"Geist Sans"` | Font used for the application UI (panels, menus, labels). |
+| `editorFont` | `string` | `"JetBrains Mono"` | Font used in the Monaco editor and markdown code blocks. |
+| `terminalFont` | `string` | `"JetBrains Mono"` | Font used in xterm.js terminal sessions. |
+| `appFontSize` | `number` | `14` | Base font size (px) for the application UI. |
+| `editorFontSize` | `number` | `13` | Font size (px) for the editor and code preview. |
+| `terminalFontSize` | `number` | `14` | Font size (px) for the terminal renderer. |
+
+---
+
+## Window
+
+Controls the application window behavior.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `titlebarVisible` | `boolean` | `true` | Show or hide the custom titlebar. When hidden, the window uses the native OS titlebar. |
+| `tabSetEnableMaximize` | `boolean` | `true` | Show the maximize button on tab set panes. |
+
+---
+
+## Titlebar
+
+Fine-grained control over which elements appear in the custom titlebar. These settings have no effect when `titlebarVisible` is `false`.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `titlebar.commandBar` | `boolean` | `true` | Show the command bar / search button in the titlebar center. |
+| `titlebar.quickActions` | `boolean` | `true` | Show quick action buttons (new session, screenshot) in the titlebar. |
+| `titlebar.resourceUsage` | `boolean` | `true` | Show the CPU / memory usage indicator in the titlebar. |
+| `titlebar.workspaceSwitcher` | `boolean` | `true` | Show the workspace switcher dropdown in the titlebar. |
+
+---
+
+## Sessions
+
+Controls session behavior on startup and defaults for new sessions.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `restoreSessionsOnStartup` | `boolean` | `true` | Automatically re-open sessions from the previous run when Forja starts. |
+| `defaultCli` | `string` | `"claude"` | Default CLI to use when creating a new session. Accepted values: `claude`, `codex`, `gemini`, `gh-copilot`, `terminal`. |
+
+---
+
+## Notifications
+
+Discord integration settings for outbound webhook notifications.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `discord.enabled` | `boolean` | `false` | Enable Discord webhook notifications for session events. |
+| `discord.webhookUrl` | `string` | `""` | Discord webhook URL. Create one in your server's channel settings under **Integrations > Webhooks**. |
+
+<Callout type="warning">
+  The webhook URL grants anyone who has it the ability to post messages to your channel. Keep it private and do not commit it to version control.
+</Callout>
+
+---
+
+## Example: full settings.json
+
+```json
+{
+  "theme": "catppuccin-mocha",
+  "appFont": "Geist Sans",
+  "editorFont": "JetBrains Mono",
+  "terminalFont": "JetBrains Mono",
+  "appFontSize": 14,
+  "editorFontSize": 13,
+  "terminalFontSize": 14,
+  "titlebarVisible": true,
+  "tabSetEnableMaximize": true,
+  "titlebar": {
+    "commandBar": true,
+    "quickActions": true,
+    "resourceUsage": true,
+    "workspaceSwitcher": true
+  },
+  "restoreSessionsOnStartup": true,
+  "defaultCli": "claude",
+  "discord": {
+    "enabled": false,
+    "webhookUrl": ""
+  }
+}
+```
+
+---
+
+## Projects config
+
+Project list and window preferences are stored separately in `~/.config/forja/config.json` (managed by `electron-store`). This file is not intended for manual editing — use the Forja UI to add, remove, and reorder projects.

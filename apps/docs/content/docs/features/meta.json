@@ -1,0 +1,22 @@
+{
+  "title": "Features",
+  "pages": [
+    "---Core---",
+    "terminal",
+    "multi-session",
+    "file-tree",
+    "file-preview",
+    "git-integration",
+    "browser-pane",
+    "---Customization---",
+    "theme-system",
+    "workspaces",
+    "command-palette",
+    "focus-mode",
+    "settings",
+    "---Monitoring---",
+    "system-metrics",
+    "session-telemetry",
+    "discord-notifications"
+  ]
+}

@@ -1,0 +1,107 @@
+---
+title: Settings
+description: Full reference for Forja's settings file — appearance, window, titlebar, sessions, and notification options, with live JSON validation in Monaco Editor.
+---
+
+# Settings
+
+Open the settings panel with `Ctrl+,` or via **Settings** in the titlebar context menu. Settings are stored as a human-readable JSON file and validated live in a Monaco Editor instance.
+
+## File Location
+
+| Platform | Path |
+|----------|------|
+| **Linux / macOS** | `~/.config/forja/settings.json` |
+| **Windows** | `%APPDATA%\forja\settings.json` |
+
+## Appearance
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `theme` | string | `"catppuccin-mocha"` | Active theme name. See [Theme System](/docs/features/theme-system) for valid values. |
+| `fontFamily.ui` | string | `"Geist Sans"` | Font for the application UI |
+| `fontFamily.editor` | string | `"JetBrains Mono"` | Font for Monaco Editor and file preview |
+| `fontFamily.terminal` | string | `"JetBrains Mono"` | Font for xterm.js terminal sessions |
+| `fontSize.ui` | number | `14` | UI font size in pixels |
+| `fontSize.editor` | number | `13` | Editor font size in pixels |
+| `fontSize.terminal` | number | `14` | Terminal font size in pixels |
+
+## Window
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `window.titlebarVisible` | boolean | `true` | Show or hide the custom titlebar |
+| `window.tabSetEnableMaximize` | boolean | `true` | Show maximize button on tabsets |
+
+## Titlebar
+
+The titlebar is divided into configurable sections. Each section can be independently shown or hidden.
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `titlebar.commandBar` | boolean | `true` | Show the command bar search field |
+| `titlebar.quickActions` | boolean | `true` | Show quick action buttons |
+| `titlebar.resourceUsage` | boolean | `true` | Show CPU / memory usage badge |
+| `titlebar.workspaceSwitcher` | boolean | `true` | Show workspace switcher dropdown |
+
+You can also toggle these from the **titlebar context menu** (right-click on an empty area of the titlebar) without opening the settings file.
+
+## Sessions
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `sessions.restoreSessionsOnStartup` | boolean | `true` | Reopen all tabs from the previous session on launch |
+| `sessions.defaultCli` | string | `"claude"` | CLI to pre-select in the new session launcher |
+
+## Notifications
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `notifications.discord.enabled` | boolean | `false` | Enable Discord webhook notifications |
+| `notifications.discord.webhookUrl` | string | `""` | Discord webhook URL. See [Discord Notifications](/docs/features/discord-notifications). |
+
+## Live Validation
+
+The settings panel uses a **Monaco Editor** instance with a JSON schema for live validation. Errors appear as red underlines with hover tooltips. Invalid settings are not applied until corrected — Forja falls back to the last valid value for each option.
+
+## Example Settings File
+
+```json
+{
+  "theme": "dracula",
+  "fontFamily": {
+    "ui": "Inter",
+    "editor": "Fira Code",
+    "terminal": "JetBrains Mono"
+  },
+  "fontSize": {
+    "ui": 14,
+    "editor": 13,
+    "terminal": 14
+  },
+  "window": {
+    "titlebarVisible": true,
+    "tabSetEnableMaximize": true
+  },
+  "titlebar": {
+    "commandBar": true,
+    "quickActions": true,
+    "resourceUsage": false,
+    "workspaceSwitcher": true
+  },
+  "sessions": {
+    "restoreSessionsOnStartup": true,
+    "defaultCli": "claude"
+  },
+  "notifications": {
+    "discord": {
+      "enabled": true,
+      "webhookUrl": "https://discord.com/api/webhooks/..."
+    }
+  }
+}
+```
+
+<Callout type="info">
+  Forja watches `settings.json` with chokidar and applies changes live — there is no need to restart the app after editing the file externally.
+</Callout>

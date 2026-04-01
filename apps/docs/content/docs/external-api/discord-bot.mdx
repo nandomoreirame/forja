@@ -1,0 +1,140 @@
+---
+title: Discord Bot
+description: Control Forja from a Discord server using slash commands and message prefixes via the forja-bot script powered by Discord.js 14.
+---
+
+# Discord Bot
+
+The Forja Discord bot (`scripts/forja-bot`) lets you control a running Forja instance from any Discord channel. It uses Discord.js 14 and communicates with the desktop app via the same Unix socket / named pipe as the [CLI client](/docs/external-api/cli-client).
+
+This is useful for monitoring long-running AI sessions, triggering commands remotely, or getting notified about session events while away from your desk.
+
+<Callout type="info">
+  The Discord bot is a separate script — it is not bundled inside the Forja application. It must be started manually and requires a Discord bot token.
+</Callout>
+
+## Prerequisites
+
+- Node.js 22 or newer
+- A Discord application with a bot user ([Discord Developer Portal](https://discord.com/developers/applications))
+- The bot must be invited to your server with `bot` and `applications.commands` scopes
+- Forja must be running on the same machine as the bot script
+
+## Setup
+
+### 1. Create a Discord bot
+
+1. Go to the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Click **New Application** and give it a name (e.g. "Forja").
+3. Navigate to **Bot** and click **Add Bot**.
+4. Under **Privileged Gateway Intents**, enable **Message Content Intent**.
+5. Copy the bot token from the **Bot** page.
+
+### 2. Invite the bot to your server
+
+Generate an invite URL from **OAuth2 > URL Generator** with the following scopes and permissions:
+
+- Scopes: `bot`, `applications.commands`
+- Bot permissions: `Send Messages`, `Read Messages/View Channels`
+
+### 3. Configure the token
+
+Create a `.env` file in the Forja repository root:
+
+```bash
+DISCORD_BOT_TOKEN=your_bot_token_here
+```
+
+Alternatively, export the variable before running:
+
+```bash
+export DISCORD_BOT_TOKEN=your_bot_token_here
+```
+
+### 4. Start the bot
+
+```bash
+./scripts/forja-bot
+```
+
+The bot will register slash commands globally and log in. Slash commands may take up to an hour to propagate to all servers after first registration.
+
+## Slash commands
+
+Once the bot is online, the following slash commands are available in any channel it has access to:
+
+| Command | Description |
+|---------|-------------|
+| `/forja-ping` | Check if Forja is running and get the version |
+| `/forja-sessions` | List all active PTY sessions |
+| `/forja-projects` | List all open projects |
+| `/forja-project [number]` | List projects or switch to project N |
+| `/forja-output tabid:<id>` | Get the last output buffer of a session |
+| `/forja-send tabid:<id> text:<text>` | Send input to a terminal session |
+| `/forja-new-session type:<type>` | Start a new session (claude, codex, gemini, gh-copilot, terminal) |
+
+## Message-based commands
+
+As an alternative to slash commands, the bot also responds to messages prefixed with `!forja`:
+
+```
+!forja ping
+!forja sessions
+!forja projects
+!forja output <tabId>
+!forja send <tabId> <text>
+!forja new-session <type>
+!forja project [N]
+```
+
+This is useful in channels where slash commands are not available or for quick automation with other bots.
+
+## Usage examples
+
+```
+/forja-ping
+✅ Forja is running (v1.9.2)
+
+/forja-sessions
+1. `tab-abc123`
+   📂 /home/user/my-project
+   🤖 claude
+
+/forja-output tabid:tab-abc123
+```
+> Running 42 tests...
+> ✓ 42 tests passed
+```
+
+/forja-send tabid:tab-abc123 text:npm test
+✅ Sent to `tab-abc123`: npm test
+```
+
+## Discord bot vs webhook notifications
+
+Forja supports two distinct Discord integrations with different purposes:
+
+| Feature | Discord Bot | Webhook Notifications |
+|---------|-------------|----------------------|
+| Setup | Bot application + token | Webhook URL only |
+| Direction | Bidirectional (send + receive) | Outbound only |
+| Commands | Full command set | N/A |
+| Use case | Remote control | Event alerts |
+| Configured in | `.env` / environment | Settings > Notifications |
+
+Webhook notifications (configured at **Settings > Notifications**) send one-way alerts to a Discord channel when sessions start or finish. The bot integration provides full bidirectional control.
+
+Both can be used simultaneously — they are independent.
+
+## Running as a background service
+
+To keep the bot running persistently, use a process manager:
+
+```bash
+# With pm2
+pm2 start scripts/forja-discord-bot.js --name forja-bot
+
+# With systemd (create a service unit)
+# Environment=DISCORD_BOT_TOKEN=...
+# ExecStart=node /path/to/forja/scripts/forja-discord-bot.js
+```

@@ -1,0 +1,74 @@
+---
+title: Discord Notifications
+description: Send session completion summaries to a Discord channel via webhook — includes project name, duration, and the last N lines of PTY output with ANSI codes stripped.
+---
+
+# Discord Notifications
+
+Forja can post a summary to a Discord channel when an AI session completes. This is useful for monitoring long-running tasks — start a session, step away, and get a notification in Discord when the CLI finishes.
+
+## Setup
+
+1. Open Discord and navigate to the channel you want to post to.
+2. Click **Edit Channel -> Integrations -> Webhooks -> New Webhook**.
+3. Copy the webhook URL.
+4. Open Forja Settings (`Ctrl+,`) and navigate to **Notifications -> Discord**.
+5. Paste the webhook URL into the `discord.webhookUrl` field.
+6. Toggle `discord.enabled` to `true`.
+
+Settings are saved immediately. You can test the connection by clicking **Send Test Notification** in the settings panel.
+
+## Notification Content
+
+Each notification sent to Discord includes:
+
+| Field | Content |
+|-------|---------|
+| **Project name** | The name of the project where the session ran |
+| **Session duration** | How long the session ran (e.g., `4m 32s`) |
+| **Session name** | The tab label for the session |
+| **PTY output tail** | Last N lines of output with ANSI escape codes stripped, truncated to 2,000 characters |
+
+ANSI codes are stripped so the message is readable in Discord without raw escape sequences. Long outputs are truncated at 2,000 characters to stay within Discord's message size limit.
+
+## Configuration
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `notifications.discord.enabled` | boolean | `false` | Enable or disable Discord notifications |
+| `notifications.discord.webhookUrl` | string | `""` | The full Discord webhook URL |
+
+These options can also be edited directly in `~/.config/forja/settings.json`.
+
+## OSC Notification Sequences
+
+In addition to Discord webhooks, Forja listens for **OSC (Operating System Command) notification sequences** emitted by the terminal process. These are a standard mechanism for terminal applications to trigger desktop or app-level notifications.
+
+Forja supports three OSC notification formats:
+
+| Sequence | Format | Standard |
+|----------|--------|----------|
+| **OSC 9** | `\e]9;message\a` | ConEmu |
+| **OSC 99** | `\e]99;key=value\a` | Key-value pairs |
+| **OSC 777** | `\e]777;notify;title;body\a` | Urxvt |
+
+A 1-second debounce is applied to prevent rapid-fire notifications from the same session. When an OSC notification is detected, Forja can optionally forward it to Discord in addition to showing a system desktop notification.
+
+<Callout type="info">
+  Keep your webhook URL private. Anyone with the URL can post messages to your Discord channel. If a URL is compromised, regenerate it from the Discord channel settings and update `settings.json`.
+</Callout>
+
+## Example Discord Message
+
+```
+**forja** — Session completed
+Project: my-app
+Duration: 4m 32s
+Session: claude (main)
+
+---
+> Task complete. I've refactored the authentication module,
+> added 12 new tests, and updated the README. All tests pass.
+>
+> Tokens used: 42,341 · Estimated cost: $0.31
+```

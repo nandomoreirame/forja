@@ -1,10 +1,81 @@
 import { create } from "zustand";
+import type { SessionType } from "@/lib/cli-registry";
 import { invoke } from "@/lib/ipc";
+import { useTerminalTabsStore } from "./terminal-tabs";
 import { useWorkspaceStore } from "./workspace";
 
 // ---------------------------------------------------------------------------
 // Module-level helpers (Task 6): single source of truth for project UI state
 // ---------------------------------------------------------------------------
+
+export type PersistedProjectTab = {
+  id?: string;
+  path?: string;
+  sessionType: SessionType;
+  cliSessionId?: string;
+  exited?: boolean;
+  customName?: string;
+};
+
+interface PersistedProjectUiState {
+  sidebarOpen?: boolean;
+  rightPanelOpen?: boolean;
+  rightPanelActiveView?: string;
+  terminalFullscreen?: boolean;
+  previewFile?: string | null;
+  activePluginName?: string | null;
+  layoutJson?: Record<string, unknown>;
+  tabs?: PersistedProjectTab[];
+  activeTabIndex?: number;
+}
+
+type RestorePersistedProjectTabOptions = {
+  addToLayout?: boolean;
+  projectPath: string;
+  tab: PersistedProjectTab;
+  tabId?: string;
+};
+
+export function restorePersistedProjectTab({
+  addToLayout = false,
+  projectPath,
+  tab,
+  tabId,
+}: RestorePersistedProjectTabOptions): string {
+  const tabsStore = useTerminalTabsStore.getState();
+  const id = tabId ?? tab.id ?? tabsStore.nextTabId();
+  const restoredPath = tab.path || projectPath;
+
+  if (addToLayout) {
+    tabsStore.addTab(
+      id,
+      restoredPath,
+      tab.sessionType,
+      tab.customName,
+    );
+  } else {
+    tabsStore.registerTab(
+      id,
+      restoredPath,
+      tab.sessionType,
+      tab.customName,
+    );
+  }
+
+  if (tab.cliSessionId) tabsStore.setCliSessionId(id, tab.cliSessionId);
+  if (tab.exited) tabsStore.markTabExited(id);
+
+  return id;
+}
+
+function restorePersistedProjectTabs(
+  projectPath: string,
+  tabs: PersistedProjectTab[],
+): string[] {
+  return tabs.map((tab) =>
+    restorePersistedProjectTab({ projectPath, tab }),
+  );
+}
 
 export async function saveCurrentProjectToDisk(projectPath: string): Promise<void> {
   const wsId = useWorkspaceStore.getState().activeWorkspaceId;
@@ -12,7 +83,6 @@ export async function saveCurrentProjectToDisk(projectPath: string): Promise<voi
 
   // Dynamic imports to avoid circular dependencies
   const [
-    { useTerminalTabsStore },
     { useTilingLayoutStore },
     { useFileTreeStore },
     { useRightPanelStore },
@@ -20,7 +90,6 @@ export async function saveCurrentProjectToDisk(projectPath: string): Promise<voi
     { usePluginsStore },
     { resolveMissingSessionIds },
   ] = await Promise.all([
-    import("./terminal-tabs"),
     import("./tiling-layout"),
     import("./file-tree"),
     import("./right-panel"),
@@ -31,6 +100,14 @@ export async function saveCurrentProjectToDisk(projectPath: string): Promise<voi
 
   // Safety net: resolve any missing session IDs before saving
   await resolveMissingSessionIds(projectPath);
+
+  // Guard: if the active project changed during the async operations above
+  // (e.g., resolveMissingSessionIds IPC roundtrip), the tiling layout model
+  // no longer represents this project. Saving now would contaminate this
+  // project's config with another project's terminal blocks.
+  if (useProjectsStore.getState().activeProjectPath !== projectPath) {
+    return;
+  }
 
   const tabsStore = useTerminalTabsStore.getState();
   const tilingStore = useTilingLayoutStore.getState();
@@ -55,17 +132,7 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
   const wsId = useWorkspaceStore.getState().activeWorkspaceId;
   if (!wsId) return;
 
-  const savedState = await invoke<{
-    sidebarOpen?: boolean;
-    rightPanelOpen?: boolean;
-    rightPanelActiveView?: string;
-    terminalFullscreen?: boolean;
-    previewFile?: string | null;
-    activePluginName?: string | null;
-    layoutJson?: Record<string, unknown>;
-    tabs?: Array<{ id?: string; sessionType: string; cliSessionId?: string; exited?: boolean; customName?: string; tmuxSessionName?: string }>;
-    activeTabIndex?: number;
-  } | null>("get_project_ui_state", {
+  const savedState = await invoke<PersistedProjectUiState | null>("get_project_ui_state", {
     workspaceId: wsId,
     path: projectPath,
   });
@@ -74,13 +141,11 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
 
   // Dynamic imports
   const [
-    { useTerminalTabsStore },
     { useTilingLayoutStore },
     { useFileTreeStore },
     { useRightPanelStore },
     { usePluginsStore },
   ] = await Promise.all([
-    import("./terminal-tabs"),
     import("./tiling-layout"),
     import("./file-tree"),
     import("./right-panel"),
@@ -107,12 +172,20 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
     useTerminalTabsStore.setState({ isTerminalFullscreen: savedState.terminalFullscreen });
   }
 
+  // Restore terminal tabs from disk on first visit in this session
+  if (savedState.tabs?.length) {
+    const existingTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
+    if (existingTabs.length === 0) {
+      restorePersistedProjectTabs(projectPath, savedState.tabs);
+    }
+  }
+
   // Restore tiling layout
   if (savedState.layoutJson) {
     const { parseLayoutJson } = await import("@/lib/layout-migration");
     let layout = parseLayoutJson(savedState.layoutJson);
 
-    const { stripFilePreviewBlocksFromJson } = await import("./tiling-layout");
+    const { stripFilePreviewBlocksFromJson, stripProjectBlocksFromJson, stripOrphanTerminalBlocksFromJson } = await import("./tiling-layout");
     layout = stripFilePreviewBlocksFromJson(layout);
 
     const projectTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
@@ -122,31 +195,18 @@ export async function loadProjectFromDisk(projectPath: string): Promise<void> {
       // When saved tabs exist, keep blocks in the layout so they preserve
       // their tabset positions (left/right split). ensureBlocksForProjectTabs()
       // will skip creation for blocks that already exist in the model.
-      const { stripProjectBlocksFromJson } = await import("./tiling-layout");
       layout = stripProjectBlocksFromJson(layout);
+    } else {
+      // Strip orphan terminal blocks (blocks whose session ID is not in the
+      // project's tab list) BEFORE creating the FlexLayout model to prevent
+      // a brief render of stale blocks and multiple model updates.
+      const projectTabIds = new Set(
+        useTerminalTabsStore.getState().getTabsForProject(projectPath).map((t) => t.id),
+      );
+      layout = stripOrphanTerminalBlocksFromJson(layout, projectTabIds);
     }
 
     useTilingLayoutStore.getState().loadFromJson(layout);
-  }
-
-  // Restore terminal tabs from disk on first visit in this session
-  if (savedState.tabs?.length) {
-    const existingTabs = useTerminalTabsStore.getState().getTabsForProject(projectPath);
-    if (existingTabs.length === 0) {
-      const tabsStore = useTerminalTabsStore.getState();
-      for (const tab of savedState.tabs) {
-        const id = tab.id || tabsStore.nextTabId();
-        tabsStore.registerTab(
-          id,
-          projectPath,
-          (tab.sessionType || "claude") as import("@/lib/cli-registry").SessionType,
-          tab.customName,
-        );
-        if (tab.cliSessionId) tabsStore.setCliSessionId(id, tab.cliSessionId);
-        if (tab.exited) tabsStore.markTabExited(id);
-        if (tab.tmuxSessionName) tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
-      }
-    }
   }
 }
 
@@ -314,6 +374,10 @@ export const useProjectsStore = create<ProjectsState>((set, get) => ({
     }
 
     set({ projects: newProjects, activeProjectPath: newActive });
+
+    // Project removal is the explicit forget-this-project boundary: remove
+    // its in-memory tabs and layout blocks, but leave other projects intact.
+    useTerminalTabsStore.getState().cleanupProjectState(projectPath);
 
     // Persist removal to disk
     const workspaceId = useWorkspaceStore.getState().activeWorkspaceId;

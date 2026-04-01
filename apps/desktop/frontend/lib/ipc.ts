@@ -42,6 +42,11 @@ declare global {
         reload: () => Promise<void>;
         screenshot: (webContentsId: number) => Promise<{ success: boolean }>;
       };
+      savedSessions: {
+        save: (projectPath: string, entry: unknown) => Promise<void>;
+        load: (projectPath: string) => Promise<unknown[]>;
+        remove: (projectPath: string, id: string) => Promise<void>;
+      };
     };
   }
 }

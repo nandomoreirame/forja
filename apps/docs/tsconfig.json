@@ -3,8 +3,14 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
-    }
+      "@/*": [
+        "./*"
+      ]
+    },
+    "noEmit": true,
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    "declaration": false
   },
   "include": [
     "next-env.d.ts",
@@ -14,5 +20,7 @@
     ".next/types/**/*.ts",
     ".source/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

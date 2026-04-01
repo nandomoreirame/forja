@@ -387,6 +387,20 @@ if ! command -v node &>/dev/null; then
   exit 1
 fi
 
+# Python distutils is required by node-gyp to compile native addons (node-pty).
+# Python 3.12+ removed distutils from stdlib; setuptools provides it.
+if ! python3 -c "import distutils" &>/dev/null; then
+  warn "Python distutils not found (required by node-gyp for native addons)."
+  warn "Install setuptools to provide it:"
+  case "$PLATFORM" in
+    macos)   warn "  brew install python-setuptools" ;;
+    debian)  warn "  sudo apt-get install python3-setuptools" ;;
+    linux)   warn "  pip install setuptools  # or: sudo pacman -S python-setuptools" ;;
+    windows) warn "  pip install setuptools" ;;
+  esac
+  exit 1
+fi
+
 # ─── Build ───────────────────────────────────────────────────────────────────
 if [[ "$SKIP_BUILD" == true ]]; then
   info "Skipping build (--skip-build)"

@@ -1,0 +1,116 @@
+---
+title: Themes
+description: All 14+ built-in Forja themes, how to switch between them, and how the CSS variable-based theme system works.
+---
+
+# Themes
+
+Forja ships with 14 built-in themes covering a range of dark and light styles. Themes are applied via CSS custom properties and affect the entire application — the UI, the terminal, the editor, and the markdown renderer.
+
+## Available themes
+
+| Theme | Style | Base palette |
+|-------|-------|-------------|
+| `catppuccin-mocha` | Dark | Catppuccin Mocha (default) |
+| `catppuccin-latte` | Light | Catppuccin Latte |
+| `dracula` | Dark | Dracula |
+| `nord` | Dark | Nord |
+| `one-dark-pro` | Dark | One Dark Pro |
+| `tokyo-night` | Dark | Tokyo Night |
+| `solarized-dark` | Dark | Solarized Dark |
+| `monokai-pro` | Dark | Monokai Pro |
+| `gruvbox-dark` | Dark | Gruvbox Dark |
+| `github-dark` | Dark | GitHub Dark |
+| `darcula` | Dark | Darcula (IntelliJ) |
+| `alucard` | Dark | Alucard |
+| `night-owl` | Dark | Night Owl |
+| `synthwave-84` | Dark | Synthwave '84 |
+
+## Switching themes
+
+**Settings dialog**
+
+1. Open settings with `Ctrl+,`.
+2. Navigate to **Appearance > Theme**.
+3. Select a theme from the dropdown — the preview updates in real time.
+
+**Command Palette**
+
+1. Open the command palette with `Ctrl+Shift+P`.
+2. Type `theme` to filter to theme commands.
+3. Select **Change Theme** and pick from the list.
+
+The selected theme is saved to `settings.json` as the `theme` key and restored on next launch.
+
+## Brand color
+
+Forja's brand color is **`#cba6f7`** (Catppuccin Mauve). It is used sparingly for:
+
+- Selected items and active states
+- Primary call-to-action buttons
+- Highlights and focus rings
+- The application icon accent
+
+All themes apply this color via the `--ctp-mauve` CSS variable, ensuring consistent branding regardless of the base palette.
+
+## Font groups
+
+Forja uses three independent font groups, each configurable in settings:
+
+| Group | Default font | Fallback | Default size | Used for |
+|-------|-------------|---------|--------------|---------|
+| **App UI** | Geist Sans | Inter, system-ui | 14px | Navigation, panels, menus, labels |
+| **Editor** | JetBrains Mono | Fira Code, Menlo, monospace | 13px | Monaco editor, inline code, file preview |
+| **Terminal** | JetBrains Mono | Fira Code, Menlo, monospace | 14px | xterm.js terminal sessions |
+
+Font names must match the exact name of an installed system font or a web font loaded by Forja. If the specified font is not available, the fallback chain is used.
+
+Change fonts and sizes via **Settings (`Ctrl+,`) > Appearance**.
+
+## Theme structure
+
+Each theme is defined as a set of CSS custom properties applied to `:root`. The properties follow the Catppuccin naming convention (`--ctp-*`) supplemented by semantic aliases.
+
+```css
+/* Example: a partial theme definition */
+:root {
+  --ctp-base: #1e1e2e;
+  --ctp-surface0: #313244;
+  --ctp-surface1: #45475a;
+  --ctp-text: #cdd6f4;
+  --ctp-subtext0: #a6adc8;
+  --ctp-mauve: #cba6f7;    /* brand color */
+  --ctp-blue: #89b4fa;
+  --ctp-green: #a6e3a1;
+  --ctp-red: #f38ba8;
+  --ctp-yellow: #f9e2af;
+  /* ... */
+}
+```
+
+Theme definitions live in `frontend/themes/` in the desktop app source:
+
+| File | Purpose |
+|------|---------|
+| `index.ts` | Theme registry — maps theme IDs to theme objects |
+| `apply.ts` | Runtime CSS variable injection |
+| `schema.ts` | TypeScript type definitions for theme shape |
+
+## Using theme colors in components
+
+All components use the `--ctp-*` variables via Tailwind's `ctp-*` utilities:
+
+```tsx
+// Active item highlight using brand color
+<div className="bg-ctp-surface0 text-ctp-text border-ctp-mauve" />
+
+// Using cn() for conditional classes
+import { cn } from "@/lib/utils";
+
+<button className={cn(
+  "px-3 py-1.5 rounded text-ctp-text",
+  isActive && "bg-ctp-mauve text-ctp-base"
+)}>
+  Click me
+</button>
+```

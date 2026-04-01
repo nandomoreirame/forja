@@ -8,78 +8,153 @@ Thank you for your interest in contributing to Forja! This guide will help you g
 |------|---------|---------|
 | **Node.js** | 22+ | [nodejs.org](https://nodejs.org/) or via `mise` |
 | **pnpm** | 9+ | `npm install -g pnpm` |
+| **Git** | 2.30+ | [git-scm.com](https://git-scm.com/) |
 
-### Linux additional dependencies
+### Platform-specific dependencies
+
+**Linux (Ubuntu/Debian):**
 
 ```bash
-# Ubuntu/Debian (for native modules like node-pty)
 sudo apt install build-essential python3
+```
 
-# Arch Linux
+**Linux (Arch Linux):**
+
+```bash
 sudo pacman -S base-devel python
 ```
 
-### macOS additional dependencies
+**macOS:**
 
 ```bash
 xcode-select --install
 ```
 
-## Setup
+**Windows:**
+
+- Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) with "Desktop development with C++" workload
+- Or install `windows-build-tools`: `npm install -g windows-build-tools`
+
+## Cloning and Setup
 
 ```bash
 # Clone the repository
 git clone https://github.com/nandomoreirame/forja.git
 cd forja
 
-# Install dependencies
+# Install all workspace dependencies
 pnpm install
+```
+
+This installs dependencies for all workspace packages (`@forja/desktop`, `@forja/site`, `@forja/docs`, `@forja/mobile`, `@forja/tsconfig`, `@forja/shared`) and builds native addons like `node-pty`.
+
+## Monorepo Structure
+
+Forja uses pnpm workspaces. All commands can be run from the monorepo root:
+
+```
+forja/                          # @forja/monorepo (root)
+  apps/
+    desktop/                    # @forja/desktop  - Electron app (main product)
+    site/                       # @forja/site     - Next.js marketing site
+    docs/                       # @forja/docs     - Fumadocs documentation
+    mobile/                     # @forja/mobile   - Expo remote control app
+  packages/
+    tsconfig/                   # @forja/tsconfig - Shared TS configurations
+    shared/                     # @forja/shared   - Shared types and constants
+  scripts/                      # CLI and automation scripts
+  docs/                         # Specs, design docs, plans
+```
+
+Packages reference each other via `workspace:*` in `package.json`:
+
+```json
+"devDependencies": {
+  "@forja/tsconfig": "workspace:*",
+  "@forja/shared": "workspace:*"
+}
 ```
 
 ## Development
 
+### Desktop App (main)
+
 ```bash
-# Run the app in development mode (Vite + Electron with hot reload)
+# Run Electron + Vite with hot reload (from root)
 pnpm dev
 
-# Run frontend only (useful for UI work without Electron)
-pnpm dev:vite
-
-# Run Electron main process only (requires Vite running on port 1420)
-pnpm dev:electron
+# Or run parts separately
+pnpm --filter @forja/desktop dev:vite       # Vite dev server (port 1420)
+pnpm --filter @forja/desktop dev:electron   # Electron (waits for Vite)
 ```
+
+### Marketing Site
+
+```bash
+pnpm dev:site       # Next.js dev server on port 3030
+pnpm build:site     # Static export
+```
+
+### Documentation Site
+
+```bash
+pnpm dev:docs       # Fumadocs dev server on port 3031
+pnpm build:docs     # Build docs
+```
+
+### Mobile App
+
+```bash
+pnpm dev:mobile     # Expo start
+```
+
+### Working with a specific package
+
+You can filter any pnpm command to a specific workspace:
+
+```bash
+pnpm --filter @forja/desktop <command>
+pnpm --filter @forja/site <command>
+pnpm --filter @forja/docs <command>
+```
+
+Or `cd` into the package directory and run scripts directly.
 
 ## Testing
 
-Tests use Vitest with a multi-project setup: `frontend` (happy-dom) and `electron` (node).
+Tests use Vitest with a multi-project setup for `@forja/desktop`:
+
+- **frontend** project: happy-dom environment (React components, stores, hooks)
+- **electron** project: node environment with forks pool (main process, IPC handlers)
+- **scripts** project: node environment (CLI scripts)
 
 ```bash
-# Run all tests
+# Run all tests across all workspaces
 pnpm test
 
-# Run a specific test file
-pnpm test path/to/file.test.ts
+# Run desktop tests only
+pnpm test:desktop
+
+# Specific test file
+pnpm test:desktop -- path/to/file.test.ts
 
 # Run tests by project
-pnpm test --project frontend    # Frontend tests only
-pnpm test --project electron    # Electron tests only
+pnpm test:desktop -- --project frontend     # Frontend tests only
+pnpm test:desktop -- --project electron     # Electron tests only
 
 # Watch mode
-pnpm test --watch
+pnpm test:desktop -- --watch
 
 # Coverage report
-pnpm test:coverage
+pnpm --filter @forja/desktop test:coverage
 
 # Visual UI
-pnpm test:ui
+pnpm --filter @forja/desktop test:ui
 ```
 
 ### Testing conventions
 
-- **Frontend tests**: Use happy-dom environment. Mock `@/lib/ipc` for all component/store tests.
-- **Electron tests**: Use node environment with `forks` pool. Mock `fs`, `chokidar`, `node-pty` as needed.
-- **Test location**: Colocated in `__tests__/` directories next to source files.
-- **IPC mock pattern**:
+- **Frontend tests**: Mock `@/lib/ipc` for all component/store tests:
 
 ```typescript
 vi.mock("@/lib/ipc", () => ({
@@ -88,17 +163,38 @@ vi.mock("@/lib/ipc", () => ({
 }));
 ```
 
+- **Electron tests**: Mock `fs`, `chokidar`, `node-pty` as needed
+- **Test location**: Colocated in `__tests__/` directories next to source files
+
 ## Building
 
 ```bash
-# TypeScript compile + Vite build
+# TypeScript compile + Vite build (desktop frontend + electron main)
 pnpm build
 
-# Full Electron build (DMG for macOS, AppImage/DEB for Linux)
+# Full Electron build with packaging
 pnpm build:electron
 ```
 
-Build output goes to `release/`. App ID: `dev.forja.terminal`.
+`pnpm build:electron` produces platform-specific packages in `apps/desktop/release/`:
+
+| Platform | Output |
+|----------|--------|
+| macOS | `.dmg` (x64 + arm64) |
+| Linux | `.AppImage` + `.deb` (x64) |
+| Windows | `.exe` NSIS installer (x64) |
+
+App ID: `dev.forja.terminal`.
+
+### Rebuilding native addons
+
+After updating Electron or `node-pty`, rebuild native addons:
+
+```bash
+cd apps/desktop && npx electron-rebuild
+```
+
+CI does this automatically in `.github/workflows/ci.yml`.
 
 ## Branching Strategy (Trunk-Based Development)
 
@@ -142,15 +238,19 @@ Use [Conventional Commits](https://www.conventionalcommits.org/) format:
 | `chore` | Build, config, tooling changes |
 | `perf` | Performance improvements |
 | `style` | Formatting, whitespace (no code change) |
+| `ci` | CI/CD changes |
+
+Scopes: `frontend`, `electron`, `desktop`, `site`, `docs`, `mobile`, `shared`, `config`, `settings`, `terminal`, `telemetry`, `workflows`.
 
 Examples:
 
 ```
 feat(terminal): add split pane support
-fix(file-tree): lazy-load children on directory expand
-refactor(stores): extract keyboard shortcuts hook
-test(pty): add spawn error handling tests
+fix(frontend): lazy-load children on directory expand
+refactor(electron): extract keyboard shortcuts hook
+test(electron): add spawn error handling tests
 chore(config): update electron-builder targets
+ci(workflows): fix electron-rebuild working directory for monorepo
 ```
 
 ## Code Style
@@ -166,31 +266,7 @@ chore(config): update electron-builder targets
 - **State**: Zustand only (no React Context for state management)
 - **Styling**: Tailwind CSS 4 with `cn()` utility for conditional classes
 - **Icons**: Lucide React with `strokeWidth={1.5}`
-
-## Project Structure
-
-```
-forja/
-  electron/               # Electron main process
-    main.ts               # Entry point, IPC handlers
-    preload.ts            # contextBridge (window.electronAPI)
-    pty.ts                # PTY management (node-pty)
-    config.ts             # electron-store config
-    user-settings.ts      # User settings manager
-    git-info.ts           # Git status reader
-    context/              # Context synchronization system
-    __tests__/            # Electron tests (node env)
-  frontend/               # React + TypeScript frontend
-    components/           # React components (43)
-    stores/               # Zustand stores (18)
-    hooks/                # Custom hooks (7)
-    lib/                  # Utility modules (21)
-    themes/               # Theme definitions (14+)
-    styles/               # CSS (Tailwind + globals)
-  docs/                   # Documentation
-  site/                   # Landing page (static HTML)
-  public/                 # Static assets (icons, images)
-```
+- **Electron imports**: Use `.js` extensions for relative imports in the main process
 
 ## License
 

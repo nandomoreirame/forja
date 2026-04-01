@@ -1,0 +1,34 @@
+---
+title: Getting Started
+description: Everything you need to install Forja, add your first project, and start your first AI coding session.
+---
+
+# Getting Started
+
+Forja is a desktop GUI client that wraps AI coding CLIs — Claude Code, Gemini CLI, Codex CLI, and Cursor Agent — in a purpose-built interface. Instead of a raw terminal window, you get rich markdown rendering, multi-session tabs, an embedded file tree with git status, and an in-app browser, all without changing how the CLI itself works.
+
+This section walks you through the full setup in three steps:
+
+<Cards>
+  <Card
+    title="Prerequisites"
+    href="/docs/getting-started/prerequisites"
+    description="Check which OS and AI CLIs are supported before downloading."
+  />
+  <Card
+    title="Installation"
+    href="/docs/getting-started/installation"
+    description="Download the right package for your platform and get Forja running."
+  />
+  <Card
+    title="First Session"
+    href="/docs/getting-started/first-session"
+    description="Add a project and start your first AI coding session in under a minute."
+  />
+</Cards>
+
+## How it works
+
+Forja acts as a graphical shell around your existing AI CLI installation. When you start a session, Forja spawns the CLI process via a PTY (pseudo-terminal), streams its output back to the renderer, and displays it as formatted markdown with syntax-highlighted code blocks. The CLI communicates with its own cloud API directly — Forja never sees or stores your API keys.
+
+If you already have Claude Code (or another supported CLI) installed and configured, you are ready to go.

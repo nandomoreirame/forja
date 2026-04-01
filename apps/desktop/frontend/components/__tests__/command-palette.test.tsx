@@ -133,7 +133,19 @@ const mockProjectsState = {
 vi.mock("@/stores/projects", () => ({
   useProjectsStore: Object.assign(
     () => mockProjectsState,
-    { getState: () => mockProjectsState }
+    {
+      getState: () => mockProjectsState,
+      subscribe: vi.fn(() => () => {}),
+    }
+  ),
+}));
+
+vi.mock("@/stores/saved-sessions", () => ({
+  useSavedSessionsStore: Object.assign(
+    () => ({ sessions: [], loading: false }),
+    {
+      getState: () => ({ sessions: [], loading: false, loadSessions: vi.fn(), restoreSession: vi.fn(), restoreLastSaved: vi.fn() }),
+    },
   ),
 }));
 
@@ -269,7 +281,7 @@ describe("CommandPalette", () => {
 
     const newSessionItem = screen.getByText("New Session").closest("[cmdk-item]") as HTMLElement;
     expect(newSessionItem).toBeInTheDocument();
-    expect(within(newSessionItem).getByText(/T$/)).toBeInTheDocument();
+    // New Session no longer has a keyboard shortcut badge
 
     const addProjectItem = screen.getByText("Add Project").closest("[cmdk-item]") as HTMLElement;
     expect(addProjectItem).toBeInTheDocument();

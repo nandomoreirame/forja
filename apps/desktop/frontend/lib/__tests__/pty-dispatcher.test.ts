@@ -95,4 +95,46 @@ describe("PtyDispatcher", () => {
     expect(globalHandler).toHaveBeenCalledWith("tab-1", "hello");
     expect(tabHandler).toHaveBeenCalledWith("hello");
   });
+
+  describe("registerPermanentExitHandler", () => {
+    it("calls permanent handler when no tab-specific handler exists", () => {
+      const dispatcher = createPtyDispatcher();
+      const permanent = vi.fn();
+      dispatcher.registerPermanentExitHandler(permanent);
+      dispatcher.handleExit({ tab_id: "tab-orphan", code: 1 });
+      expect(permanent).toHaveBeenCalledWith("tab-orphan", 1);
+    });
+
+    it("does NOT call permanent handler when tab-specific handler exists", () => {
+      const dispatcher = createPtyDispatcher();
+      const permanent = vi.fn();
+      const tabHandler = vi.fn();
+      dispatcher.registerPermanentExitHandler(permanent);
+      dispatcher.registerExit("tab-1", tabHandler);
+      dispatcher.handleExit({ tab_id: "tab-1", code: 0 });
+      expect(tabHandler).toHaveBeenCalledWith(0);
+      expect(permanent).not.toHaveBeenCalled();
+    });
+
+    it("calls permanent handler after tab handler is unregistered", () => {
+      const dispatcher = createPtyDispatcher();
+      const permanent = vi.fn();
+      const tabHandler = vi.fn();
+      dispatcher.registerPermanentExitHandler(permanent);
+      dispatcher.registerExit("tab-1", tabHandler);
+      dispatcher.unregisterExit("tab-1");
+      dispatcher.handleExit({ tab_id: "tab-1", code: 0 });
+      expect(tabHandler).not.toHaveBeenCalled();
+      expect(permanent).toHaveBeenCalledWith("tab-1", 0);
+    });
+
+    it("destroy clears permanent handler", () => {
+      const dispatcher = createPtyDispatcher();
+      const permanent = vi.fn();
+      dispatcher.registerPermanentExitHandler(permanent);
+      dispatcher.destroy();
+      dispatcher.handleExit({ tab_id: "tab-1", code: 0 });
+      expect(permanent).not.toHaveBeenCalled();
+    });
+  });
 });

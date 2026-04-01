@@ -218,7 +218,6 @@ const TECHNOLOGIES: Technology[] = [
   { name: "React", url: "https://react.dev" },
   { name: "TypeScript", url: "https://www.typescriptlang.org" },
   { name: "xterm.js", url: "https://xtermjs.org" },
-  { name: "tmux", url: "https://github.com/tmux/tmux" },
 ];
 
 interface ContributorRowProps {

@@ -77,6 +77,14 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install python-setuptools
 
+      - name: Install Python setuptools (needed by node-gyp)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-setuptools
+
+      - name: Install Python setuptools (needed by node-gyp)
+        if: runner.os == 'Windows'
+        run: pip install setuptools
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

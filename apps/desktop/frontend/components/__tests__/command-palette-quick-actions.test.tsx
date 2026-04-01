@@ -139,6 +139,16 @@ vi.mock("@/stores/projects", () => ({
         getProjectInitial: (nameOrPath: string) => nameOrPath[0]?.toUpperCase() ?? "?",
         getProjectColor: () => "#cba6f7",
       }),
+      subscribe: vi.fn(() => () => {}),
+    },
+  ),
+}));
+
+vi.mock("@/stores/saved-sessions", () => ({
+  useSavedSessionsStore: Object.assign(
+    () => ({ sessions: [], loading: false }),
+    {
+      getState: () => ({ sessions: [], loading: false, loadSessions: vi.fn(), restoreSession: vi.fn(), restoreLastSaved: vi.fn() }),
     },
   ),
 }));

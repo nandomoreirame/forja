@@ -1,0 +1,64 @@
+---
+title: File Tree
+description: Collapsible file tree sidebar with lazy loading, git status badges, keyboard navigation, and live auto-refresh via chokidar.
+---
+
+# File Tree
+
+The file tree sidebar gives you a live view of your project's directory structure, annotated with git status badges. It sits on the left side of the project window and can be toggled at any time without interrupting your sessions.
+
+## Toggling the Sidebar
+
+| Action | Shortcut |
+|--------|----------|
+| Toggle file tree | `Ctrl+Shift+B` |
+| Collapse all folders | Click the **Collapse All** button in the sidebar header |
+
+## Lazy Loading
+
+Forja uses **on-demand subdirectory loading** for performance. When you open a project, only the root level is loaded. Subdirectories are fetched from the main process when you expand a folder. This keeps the UI responsive even in large monorepos with thousands of files.
+
+The virtualized list renderer (via `@tanstack/react-virtual`) ensures that only visible rows are in the DOM, regardless of how many files are in the tree.
+
+## Git Status Badges
+
+Each file and directory in the tree shows a badge reflecting its current git status. Badges update automatically whenever you save a file or the working tree changes.
+
+| Badge | Status | Description |
+|-------|--------|-------------|
+| `M` | Modified | File has unstaged or staged changes |
+| `A` | Added | File is newly staged |
+| `D` | Deleted | File has been deleted |
+| `R` | Renamed | File has been moved or renamed |
+| `?` | Untracked | File is not tracked by git |
+
+Directories show a badge if any file inside them has a non-clean status.
+
+<Callout type="info">
+  If git is not installed or the project is not a git repository, badges are hidden and the tree functions as a plain file browser.
+</Callout>
+
+## File Type Icons
+
+Forja displays an icon for each file based on its extension. Common examples include language icons for `.ts`, `.tsx`, `.py`, `.rs`, `.go`, and `.md`, as well as config icons for files like `package.json`, `.env`, and `Dockerfile`.
+
+## Keyboard Navigation
+
+You can navigate the file tree without a mouse:
+
+| Key | Action |
+|-----|--------|
+| `↑` / `↓` | Move focus up or down |
+| `→` | Expand folder / open file |
+| `←` | Collapse folder / go to parent |
+| `Enter` | Open focused file in preview pane |
+| `Home` | Jump to first item |
+| `End` | Jump to last item |
+
+## Opening Files
+
+Clicking a file in the tree opens it in the **File Preview Pane** on the right side of the layout. The preview renders the file using Shiki for source code, react-markdown for Markdown files, Monaco Diff for diffs, and a native image viewer for images.
+
+## Auto-Refresh
+
+The file tree stays in sync with the filesystem via **chokidar**, which watches the project directory at a depth of 3 with a 1-second debounce. Any file creation, deletion, or rename triggers a partial tree update — you do not need to manually refresh.

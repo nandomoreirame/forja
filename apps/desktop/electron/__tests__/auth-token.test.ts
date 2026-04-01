@@ -29,16 +29,19 @@ describe("auth-token", () => {
     expect(getAuthToken()).toBe(token);
   });
 
-  it("token is a UUID-like string (at least 32 chars, contains hex chars or dashes)", () => {
+  it("token is a 4-digit numeric string", () => {
     const token = generateToken();
-    expect(token.length).toBeGreaterThanOrEqual(32);
-    expect(token).toMatch(/^[0-9a-f-]+$/);
+    expect(token).toHaveLength(4);
+    expect(token).toMatch(/^\d{4}$/);
   });
 
-  it("generated tokens are unique (two tokens differ)", () => {
-    const token1 = generateToken();
-    const token2 = generateToken();
-    expect(token1).not.toBe(token2);
+  it("token is zero-padded (e.g. 0042)", () => {
+    // Generate many tokens and verify they are all 4 digits
+    for (let i = 0; i < 20; i++) {
+      const token = generateToken();
+      expect(token).toHaveLength(4);
+      expect(token).toMatch(/^\d{4}$/);
+    }
   });
 
   it("validateToken(token) returns true for the current valid token", () => {

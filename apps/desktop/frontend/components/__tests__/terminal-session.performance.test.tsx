@@ -134,8 +134,8 @@ describe("TerminalSession performance guardrails", () => {
     );
   });
 
-  it("does not send resize updates while hidden even if ResizeObserver fires", async () => {
-    render(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
+  it("does not send resize updates when container has zero dimensions (ResizeObserver fires)", async () => {
+    render(<TerminalSession tabId="tab-1" path="/test" />);
 
     await vi.advanceTimersByTimeAsync(16);
     mockResize.mockClear();
@@ -146,15 +146,15 @@ describe("TerminalSession performance guardrails", () => {
     expect(mockResize).not.toHaveBeenCalled();
   });
 
-  it("does not recreate the terminal instance on visibility-only rerenders", async () => {
+  it("does not recreate the terminal instance on rerenders", async () => {
     const { rerender } = render(
-      <TerminalSession tabId="tab-1" path="/test" isVisible={true} />,
+      <TerminalSession tabId="tab-1" path="/test" />,
     );
 
     await vi.advanceTimersByTimeAsync(32);
 
-    rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={false} />);
-    rerender(<TerminalSession tabId="tab-1" path="/test" isVisible={true} />);
+    rerender(<TerminalSession tabId="tab-1" path="/test" />);
+    rerender(<TerminalSession tabId="tab-1" path="/test" />);
 
     expect(mockTerminalCtor).toHaveBeenCalledTimes(1);
   });

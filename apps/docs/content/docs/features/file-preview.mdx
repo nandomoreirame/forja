@@ -1,0 +1,58 @@
+---
+title: File Preview
+description: Syntax-highlighted file preview with Shiki for source code, react-markdown for Markdown, Monaco Editor for editable files, and a side-by-side git diff viewer.
+---
+
+# File Preview
+
+Clicking a file in the file tree opens it in the **File Preview Pane**, which renders the content using the most appropriate viewer for the file type. The pane occupies the right side of the layout and can be resized by dragging the divider.
+
+## Content Types
+
+| Content Type | Renderer | Details |
+|-------------|----------|---------|
+| **Source code** | Shiki | Syntax highlighting matching the active app theme |
+| **Markdown** | react-markdown + remark-gfm | Full GitHub Flavored Markdown, rendered as HTML |
+| **Images** | Built-in viewer | PNG, JPEG, GIF, SVG, WebP |
+| **JSON / YAML** | Monaco Editor | Folding, formatting, schema validation where available |
+| **Diffs** | Monaco Diff Editor | Side-by-side view — HEAD on left, working tree on right |
+| **Binary / unknown** | Hex preview | Raw hex dump for unrecognized file types |
+
+## Syntax Highlighting with Shiki
+
+Source code files are highlighted by **Shiki**, which uses the same grammar-based tokenization as VS Code. The active Shiki theme is always synchronized with the selected app theme — switching to Dracula in settings, for example, immediately re-renders the preview in Dracula colors.
+
+Shiki runs in the main process and caches rendered HTML to avoid re-highlighting unchanged files on tab switch.
+
+## Monaco Editor
+
+For editable structured files (JSON, YAML, TOML, and plain text), Forja renders the file in a **Monaco Editor** instance. This gives you:
+
+- Code folding for nested structures
+- Bracket matching and auto-indent
+- Multi-cursor editing (`Alt+Click`)
+- Read-only mode for files outside the project root (enforced by `assertPathWithinScope()`)
+
+Changes made in Monaco are saved with `Ctrl+S`. Forja does not auto-save — unsaved changes are indicated by a dot in the tab title.
+
+## Git Diff Viewer
+
+When you open a modified file from the **Git Changes** panel (or click the diff icon on a file with an `M` badge), the preview switches to a **Monaco Diff Editor** showing the side-by-side diff:
+
+- **Left panel** — file content at HEAD
+- **Right panel** — current working tree content
+- Added lines are highlighted in green, removed lines in red
+- Inline change markers indicate character-level differences within a line
+
+The diff viewer is read-only. To stage or discard changes, use the Git Changes panel.
+
+## Markdown Rendering
+
+Markdown files are rendered as formatted HTML using **react-markdown** with the `remark-gfm` plugin, which adds support for:
+
+- Tables
+- Task lists (`- [x]`)
+- Strikethrough (`~~text~~`)
+- Autolinks
+
+Code blocks inside Markdown are syntax-highlighted using Shiki, respecting the active theme.

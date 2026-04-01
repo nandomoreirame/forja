@@ -62,7 +62,7 @@ export const terminalCache = {
   },
 
   /**
-   * Parks a terminal instance for later reattach.
+   * Parks a terminal instance for later retrieval.
    * Detaches hostElement from DOM and registers temporary
    * ptyDispatcher handlers via queueMicrotask (runs AFTER
    * use-pty's cleanup unregisters its handlers).
@@ -84,23 +84,45 @@ export const terminalCache = {
     hostElement.remove();
     cache.set(tabId, { terminal, fitAddon, hostElement });
 
-    // Start TTL timer for auto-eviction
+    // Start TTL timer for auto-eviction.
+    // If the tab still exists in the store when TTL fires, the user intends
+    // to return — reschedule instead of evicting so AI CLI sessions survive
+    // indefinitely across project switches.
     clearTtlTimer(tabId);
-    ttlTimers.set(
-      tabId,
-      setTimeout(() => {
-        const entry = cache.get(tabId);
-        if (entry) {
-          // Only dispose frontend resources — backend PTY stays alive
-          // so the session can reconnect via pty:has-session + ring buffer.
-          ptyDispatcher.unregisterData(tabId);
-          ptyDispatcher.unregisterExit(tabId);
-          entry.terminal.dispose();
-          cache.delete(tabId);
-        }
-        ttlTimers.delete(tabId);
-      }, CACHE_TTL_MS),
-    );
+    const scheduleTtl = () => {
+      ttlTimers.set(
+        tabId,
+        setTimeout(() => {
+          ttlTimers.delete(tabId);
+          import("@/stores/terminal-tabs").then(({ useTerminalTabsStore }) => {
+            const tabExists = useTerminalTabsStore.getState().hasTab(tabId);
+            if (tabExists && cache.has(tabId)) {
+              // Tab still in store — user may return. Reschedule check.
+              scheduleTtl();
+              return;
+            }
+            // Tab gone — safe to evict
+            const entry = cache.get(tabId);
+            if (entry) {
+              ptyDispatcher.unregisterData(tabId);
+              ptyDispatcher.unregisterExit(tabId);
+              entry.terminal.dispose();
+              cache.delete(tabId);
+            }
+          }).catch(() => {
+            // Fallback: evict on import failure
+            const entry = cache.get(tabId);
+            if (entry) {
+              ptyDispatcher.unregisterData(tabId);
+              ptyDispatcher.unregisterExit(tabId);
+              entry.terminal.dispose();
+              cache.delete(tabId);
+            }
+          });
+        }, CACHE_TTL_MS),
+      );
+    };
+    scheduleTtl();
 
     // Re-register data/exit handlers AFTER use-pty's cleanup runs.
     // Use RAF-coalesced writes (same pattern as TerminalSession) so that

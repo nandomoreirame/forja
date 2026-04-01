@@ -1,4 +1,12 @@
 {
-  "title": "Documentation",
-  "pages": ["---Getting Started---", "index"]
+  "title": "Forja Docs",
+  "pages": [
+    "index",
+    "getting-started",
+    "features",
+    "architecture",
+    "external-api",
+    "configuration",
+    "contributing"
+  ]
 }

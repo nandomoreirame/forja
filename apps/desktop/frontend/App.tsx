@@ -1,5 +1,6 @@
 import { getAllCliIds } from "@/lib/cli-registry";
 import { invoke, listen } from "@/lib/ipc";
+import { parseLayoutJson } from "@/lib/layout-migration";
 import {
   AlertCircle,
   Plus,
@@ -42,7 +43,12 @@ import { useQuickActionsStore } from "./stores/quick-actions";
 import { useThemeStore } from "./stores/theme";
 import type { ThemeDefinition } from "@/themes";
 import { usePerformanceStore } from "./stores/performance";
-import { useProjectsStore, saveCurrentProjectToDisk } from "./stores/projects";
+import {
+  restorePersistedProjectTab,
+  useProjectsStore,
+  saveCurrentProjectToDisk,
+  type PersistedProjectTab,
+} from "./stores/projects";
 import { useWorkspaceStore } from "./stores/workspace";
 
 import { usePluginsStore } from "./stores/plugins";
@@ -56,6 +62,8 @@ import { useWebviewShortcutBridge } from "./hooks/use-webview-shortcut-bridge";
 import {
   usePanelPreferences,
 } from "./hooks/use-panel-preferences";
+import { useAppDialogsStore } from "./stores/app-dialogs";
+import { useSavedSessionsStore } from "./stores/saved-sessions";
 
 // Root error boundary to prevent blank screen on any React crash
 interface AppErrorBoundaryState {
@@ -120,6 +128,11 @@ const BetaDisclaimerDialog = lazy(() =>
     default: m.BetaDisclaimerDialog,
   }))
 );
+const SaveSessionDialog = lazy(() =>
+  import("./components/save-session-dialog").then((m) => ({
+    default: m.SaveSessionDialog,
+  }))
+);
 
 // Mirror of ExternalCommand from electron/external-api.ts
 // Keep in sync when adding new command types
@@ -141,6 +154,67 @@ interface FilesChangedPayload {
 }
 
 const BETA_DISCLAIMER_VERSION = "1.0";
+
+export interface PersistedRestorableState {
+  tabs?: PersistedProjectTab[];
+  activeTabIndex?: number;
+  layoutJson?: Record<string, unknown>;
+}
+
+export async function restorePersistedTabsAndLayoutFromState(
+  projectPath: string,
+  uiState: PersistedRestorableState | null | undefined,
+): Promise<void> {
+  const savedTabs = uiState?.tabs ?? [];
+  const tabsStore = useTerminalTabsStore.getState();
+
+  if (uiState?.layoutJson) {
+    const {
+      stripFilePreviewBlocksFromJson,
+      stripOrphanTerminalBlocksFromJson,
+    } = await import("./stores/tiling-layout");
+
+    const validIds = new Set(
+      savedTabs
+        .map((tab) => tab.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    );
+    const layout = stripOrphanTerminalBlocksFromJson(
+      stripFilePreviewBlocksFromJson(parseLayoutJson(uiState.layoutJson)),
+      validIds,
+    );
+    useTilingLayoutStore.getState().loadFromJson(layout);
+  } else {
+    useTilingLayoutStore.getState().resetToDefault();
+  }
+
+  useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
+
+  const restoredIds: string[] = [];
+  for (const tab of savedTabs) {
+    const tabPath = tab.path || projectPath;
+    if (!tabPath) continue;
+
+    const tabId = tab.id && useTilingLayoutStore.getState().hasBlock(tab.id)
+      ? tab.id
+      : tabsStore.nextTabId();
+    const restoredId = restorePersistedProjectTab({
+      addToLayout: true,
+      projectPath: tabPath,
+      tab,
+      tabId,
+    });
+    restoredIds.push(restoredId);
+  }
+
+  if (restoredIds.length > 0) {
+    const activeIdx = uiState?.activeTabIndex ?? 0;
+    const activeId = restoredIds[activeIdx] ?? restoredIds[0];
+    if (activeId) {
+      useTerminalTabsStore.getState().setActiveTab(activeId);
+    }
+  }
+}
 
 function EmptyState() {
   const openProject = useFileTreeStore((s) => s.openProject);
@@ -303,7 +377,7 @@ function App({
           return;
         }
         // One-time migration from localStorage
-        await restoreFromSnapshot(snapshot, cancelled);
+        await restoreFromSnapshot(snapshot);
         // Clear localStorage after successful migration
         try { window.localStorage.removeItem("forja:session:v1"); } catch { /* ignore */ }
         if (!cancelled) setSessionRestoreDone(true);
@@ -311,32 +385,13 @@ function App({
       }
 
       const uiState = await invoke<{
-        tabs?: Array<{ id?: string; path?: string; sessionType: string; cliSessionId?: string; customName?: string; tmuxSessionName?: string }>;
+        tabs?: PersistedProjectTab[];
         activeTabIndex?: number;
         previewFile?: string | null;
         layoutJson?: Record<string, unknown>;
       } | null>("get_project_ui_state", { workspaceId: wsId, path: projectPath });
 
-      // Restore tiling layout from saved state BEFORE restoring tabs,
-      // so terminal block IDs in the layout match the tab IDs.
-      if (uiState?.layoutJson) {
-        const { parseLayoutJson } = await import("@/lib/layout-migration");
-        const layout = parseLayoutJson(uiState.layoutJson);
-        useTilingLayoutStore.getState().loadFromJson(layout);
-      }
-
-      if (!uiState || !uiState.tabs || uiState.tabs.length === 0) {
-        // Still open the project so the file tree loads and UI is usable,
-        // even when there are no terminal sessions to restore.
-        await useFileTreeStore.getState().openProjectPath(projectPath);
-        await useProjectsStore.getState().addProject(projectPath);
-
-        if (!cancelled) setSessionRestoreDone(true);
-        return;
-      }
-
       const previewStore = useFilePreviewStore.getState();
-      const tabsStore = useTerminalTabsStore.getState();
 
       // 1) Restore project
       await useFileTreeStore.getState().openProjectPath(projectPath);
@@ -344,70 +399,21 @@ function App({
 
       const effectiveProjectPath = useFileTreeStore.getState().currentPath;
 
+      if (!uiState) {
+        if (!cancelled) setSessionRestoreDone(true);
+        return;
+      }
+
       // 2) Restore preview file
       if (uiState.previewFile && effectiveProjectPath) {
         await previewStore.loadFile(uiState.previewFile);
       }
 
-      // 3) Restore terminal tabs from config.json
-      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
-
-      const layoutStore = useTilingLayoutStore.getState();
-      const activeProjectTabIds: string[] = [];
-      for (const tab of uiState.tabs) {
-        const tabPath = tab.path || effectiveProjectPath || projectPath;
-        if (!tabPath) continue;
-
-        const isActiveProject = tabPath === effectiveProjectPath;
-
-        if (isActiveProject) {
-          const id = tab.id && layoutStore.hasBlock(tab.id)
-            ? tab.id
-            : tabsStore.nextTabId();
-          tabsStore.addTab(id, tabPath, tab.sessionType as import("@/lib/cli-registry").SessionType, tab.customName);
-          if (tab.cliSessionId) {
-            tabsStore.setCliSessionId(id, tab.cliSessionId);
-          }
-          if (tab.tmuxSessionName) {
-            tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
-          }
-          activeProjectTabIds.push(id);
-        } else {
-          const id = tab.id || tabsStore.nextTabId();
-          tabsStore.registerTab(id, tabPath, tab.sessionType as import("@/lib/cli-registry").SessionType, tab.customName);
-          if (tab.cliSessionId) {
-            tabsStore.setCliSessionId(id, tab.cliSessionId);
-          }
-          if (tab.tmuxSessionName) {
-            tabsStore.setTmuxSessionName(id, tab.tmuxSessionName);
-          }
-        }
-      }
-
-      // Clean up orphaned terminal blocks
-      const activeIds = new Set(activeProjectTabIds);
-      const orphanIds: string[] = [];
-      layoutStore.model.visitNodes((node) => {
-        if (
-          node.getType() === "tab" &&
-          (node as any).getComponent?.() === "terminal" &&
-          !activeIds.has(node.getId())
-        ) {
-          orphanIds.push(node.getId());
-        }
-      });
-      for (const orphanId of orphanIds) {
-        layoutStore.removeBlock(orphanId);
-      }
-
-      if (activeProjectTabIds.length > 0) {
-        const activeTabIndex = uiState.activeTabIndex ?? 0;
-        const snapshotActiveTab = uiState.tabs[activeTabIndex];
-        const matchingId = snapshotActiveTab?.id && activeProjectTabIds.includes(snapshotActiveTab.id)
-          ? snapshotActiveTab.id
-          : activeProjectTabIds[0];
-        tabsStore.setActiveTab(matchingId);
-      }
+      // 3) Restore layout + terminal tabs from the same persisted contract
+      await restorePersistedTabsAndLayoutFromState(
+        effectiveProjectPath || projectPath,
+        uiState,
+      );
 
       // Clean stale persisted buffers (buffers for tabs that no longer exist)
       if (effectiveProjectPath) {
@@ -424,9 +430,8 @@ function App({
     };
 
     // Helper: restore from legacy localStorage snapshot (migration path)
-    async function restoreFromSnapshot(snapshot: NonNullable<ReturnType<typeof loadPersistedSessionState>>, cancelled: boolean) {
+    async function restoreFromSnapshot(snapshot: NonNullable<ReturnType<typeof loadPersistedSessionState>>) {
       const previewStore = useFilePreviewStore.getState();
-      const tabsStore = useTerminalTabsStore.getState();
 
       if (snapshot.activeProjectPath) {
         await useFileTreeStore.getState().openProjectPath(snapshot.activeProjectPath);
@@ -439,39 +444,13 @@ function App({
         await previewStore.loadFile(snapshot.preview.currentFile);
       }
 
-      useTerminalTabsStore.setState({ tabs: [], activeTabId: null });
-      const layoutStore = useTilingLayoutStore.getState();
-      const activeProjectTabIds: string[] = [];
-
-      for (const tab of snapshot.terminal.tabs) {
-        const tabPath = tab.path || effectiveProjectPath || snapshot.activeProjectPath || "";
-        if (!tabPath) continue;
-        const isActiveProject = tabPath === effectiveProjectPath;
-        if (isActiveProject) {
-          const id = tab.id && layoutStore.hasBlock(tab.id) ? tab.id : tabsStore.nextTabId();
-          tabsStore.addTab(id, tabPath, tab.sessionType);
-          activeProjectTabIds.push(id);
-        } else {
-          const id = tab.id || tabsStore.nextTabId();
-          tabsStore.registerTab(id, tabPath, tab.sessionType);
-        }
-      }
-
-      const activeIds = new Set(activeProjectTabIds);
-      const orphanIds: string[] = [];
-      layoutStore.model.visitNodes((node) => {
-        if (node.getType() === "tab" && (node as any).getComponent?.() === "terminal" && !activeIds.has(node.getId())) {
-          orphanIds.push(node.getId());
-        }
-      });
-      for (const orphanId of orphanIds) layoutStore.removeBlock(orphanId);
-
-      if (activeProjectTabIds.length > 0) {
-        const snapshotActiveTab = snapshot.terminal.tabs[snapshot.terminal.activeTabIndex];
-        const matchingId = snapshotActiveTab?.id && activeProjectTabIds.includes(snapshotActiveTab.id)
-          ? snapshotActiveTab.id : activeProjectTabIds[0];
-        tabsStore.setActiveTab(matchingId);
-      }
+      await restorePersistedTabsAndLayoutFromState(
+        effectiveProjectPath || snapshot.activeProjectPath || "",
+        {
+          tabs: snapshot.terminal.tabs,
+          activeTabIndex: snapshot.terminal.activeTabIndex,
+        },
+      );
     }
 
     restore().catch((err) => {
@@ -664,6 +643,18 @@ function App({
 
   const closeTab = useCallback(
     async (tabId: string) => {
+      const tab = useTerminalTabsStore.getState().tabs.find((currentTab) => currentTab.id === tabId);
+
+      if (tab && tab.sessionType !== "terminal") {
+        const action = await useAppDialogsStore.getState().openSaveSessionDialog(tabId);
+        if (action === "cancel") {
+          return;
+        }
+        if (action === "save") {
+          await useSavedSessionsStore.getState().saveSession(tab);
+        }
+      }
+
       try {
         await invoke("close_pty", { tabId });
       } catch {
@@ -681,6 +672,16 @@ function App({
       const tab = useTerminalTabsStore.getState().tabs.find((t) => t.id === tabId);
       const meta = tab ? { projectPath: tab.path, sessionType: tab.sessionType } : undefined;
       useSessionStateStore.getState().onData(tabId, meta);
+    });
+
+    // Permanent exit handler for PTY exits that happen when no terminal
+    // component is mounted (e.g., cache TTL expired during project switch).
+    // This ensures the tab store correctly reflects the PTY lifecycle.
+    ptyDispatcher.registerPermanentExitHandler((tabId, _code) => {
+      const tabsStore = useTerminalTabsStore.getState();
+      if (tabsStore.hasTab(tabId)) {
+        tabsStore.markTabExited(tabId);
+      }
     });
 
     // Single IPC listener for pty:data
@@ -773,8 +774,13 @@ function App({
     if (initialWorkspaceId) return;
 
     const handler = () => {
-      const activeProjectPath = useProjectsStore.getState().activeProjectPath;
+      const projectsState = useProjectsStore.getState();
+      const activeProjectPath = projectsState.activeProjectPath;
       if (!activeProjectPath) return;
+
+      // Skip save if a project switch is in-flight — the layout may contain
+      // blocks from the outgoing project that would contaminate the new one.
+      if (projectsState.isSwitchingProject) return;
 
       const wsId = useWorkspaceStore.getState().activeWorkspaceId;
       if (!wsId) return;
@@ -835,6 +841,24 @@ function App({
       }
     });
     return () => { cleanup.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup external:command unlisten failed:", err)); };
+  }, []);
+
+  // Handle remote close-session from WS bridge (mobile remote control)
+  useEffect(() => {
+    const cleanup = listen<string>("ws-bridge:close-session", (event) => {
+      const tabId = event.payload;
+      closeTab(tabId);
+    });
+    return () => { cleanup.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup ws-bridge:close-session unlisten failed:", err)); };
+  }, [closeTab]);
+
+  // Handle remote rename-session from WS bridge (mobile remote control)
+  useEffect(() => {
+    const cleanup = listen<{ tabId: string; name: string }>("ws-bridge:rename-session", (event) => {
+      const { tabId, name } = event.payload;
+      useTerminalTabsStore.getState().renameTab(tabId, name);
+    });
+    return () => { cleanup.then((fn) => fn()).catch((err) => console.warn("[App] Cleanup ws-bridge:rename-session unlisten failed:", err)); };
   }, []);
 
   // Expose project list getter for the external API `list-projects` command
@@ -904,6 +928,9 @@ function App({
               }}
             />
           )}
+        </Suspense>
+        <Suspense fallback={null}>
+          <SaveSessionDialog />
         </Suspense>
         <PluginPermissionDialog />
       </div>
