@@ -1,7 +1,7 @@
 {
   "name": "@forja/mobile",
   "private": true,
-  "version": "1.9.2",
+  "version": "1.9.3",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
