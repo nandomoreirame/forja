@@ -11,6 +11,9 @@ describe("useAppDialogsStore", () => {
       createWorkspacePendingPath: null,
       createWorkspaceEditId: null,
       createWorkspaceInitialName: null,
+      saveSessionOpen: false,
+      saveSessionTabId: null,
+      saveSessionResolve: null,
     });
   });
 
@@ -23,6 +26,9 @@ describe("useAppDialogsStore", () => {
     expect(state.createWorkspacePendingPath).toBeNull();
     expect(state.createWorkspaceEditId).toBeNull();
     expect(state.createWorkspaceInitialName).toBeNull();
+    expect(state.saveSessionOpen).toBe(false);
+    expect(state.saveSessionTabId).toBeNull();
+    expect(state.saveSessionResolve).toBeNull();
   });
 
   it("sets shortcutsOpen to true", () => {
@@ -87,5 +93,19 @@ describe("useAppDialogsStore", () => {
     expect(useAppDialogsStore.getState().createWorkspaceOpen).toBe(true);
     expect(useAppDialogsStore.getState().createWorkspaceEditId).toBe("ws-1");
     expect(useAppDialogsStore.getState().createWorkspaceInitialName).toBe("My WS");
+  });
+
+  it("opens save session dialog and resolves with selected action", async () => {
+    const promise = useAppDialogsStore.getState().openSaveSessionDialog("tab-1");
+
+    expect(useAppDialogsStore.getState().saveSessionOpen).toBe(true);
+    expect(useAppDialogsStore.getState().saveSessionTabId).toBe("tab-1");
+
+    useAppDialogsStore.getState().closeSaveSessionDialog("save");
+
+    await expect(promise).resolves.toBe("save");
+    expect(useAppDialogsStore.getState().saveSessionOpen).toBe(false);
+    expect(useAppDialogsStore.getState().saveSessionTabId).toBeNull();
+    expect(useAppDialogsStore.getState().saveSessionResolve).toBeNull();
   });
 });

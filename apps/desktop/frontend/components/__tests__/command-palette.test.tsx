@@ -133,7 +133,19 @@ const mockProjectsState = {
 vi.mock("@/stores/projects", () => ({
   useProjectsStore: Object.assign(
     () => mockProjectsState,
-    { getState: () => mockProjectsState }
+    {
+      getState: () => mockProjectsState,
+      subscribe: vi.fn(() => () => {}),
+    }
+  ),
+}));
+
+vi.mock("@/stores/saved-sessions", () => ({
+  useSavedSessionsStore: Object.assign(
+    () => ({ sessions: [], loading: false }),
+    {
+      getState: () => ({ sessions: [], loading: false, loadSessions: vi.fn(), restoreSession: vi.fn(), restoreLastSaved: vi.fn() }),
+    },
   ),
 }));
 

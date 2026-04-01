@@ -1,4 +1,4 @@
-import { renderHook } from "@testing-library/react";
+import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useKeyboardShortcuts } from "../use-keyboard-shortcuts";
 
@@ -34,6 +34,10 @@ const tabStoreActions = {
   restoreLastClosedTab: vi.fn(() => false),
 };
 
+const savedSessionsActions = {
+  restoreLastSaved: vi.fn(async () => false),
+};
+
 const rightPanelActions = {
   togglePanel: vi.fn(),
 };
@@ -49,6 +53,12 @@ const fileTreeActions = {
 vi.mock("@/stores/terminal-tabs", () => ({
   useTerminalTabsStore: {
     getState: () => tabStoreActions,
+  },
+}));
+
+vi.mock("@/stores/saved-sessions", () => ({
+  useSavedSessionsStore: {
+    getState: () => savedSessionsActions,
   },
 }));
 
@@ -278,12 +288,14 @@ describe("useKeyboardShortcuts tab management", () => {
     tabStoreActions.nextTabId.mockReset().mockReturnValue("new-tab-1");
     tabStoreActions.addTab.mockReset();
     tabStoreActions.getTabsForProject.mockReset().mockReturnValue([]);
+    tabStoreActions.restoreLastClosedTab.mockReset().mockReturnValue(false);
+    savedSessionsActions.restoreLastSaved.mockReset().mockResolvedValue(false);
     filePreviewActions.closePreview.mockReset();
     filePreviewActions.isOpen = false;
   });
 
-  it("Ctrl+Shift+T restores last closed tab", () => {
-    tabStoreActions.restoreLastClosedTab.mockReset();
+  it("Ctrl+Shift+T restores saved sessions first", async () => {
+    savedSessionsActions.restoreLastSaved.mockResolvedValue(true);
     setupHook();
 
     window.dispatchEvent(
@@ -294,8 +306,30 @@ describe("useKeyboardShortcuts tab management", () => {
       }),
     );
 
-    expect(tabStoreActions.restoreLastClosedTab).toHaveBeenCalled();
-    expect(commandPaletteActions.open).not.toHaveBeenCalledWith("sessions");
+    await waitFor(() => {
+      expect(savedSessionsActions.restoreLastSaved).toHaveBeenCalledTimes(1);
+      expect(tabStoreActions.restoreLastClosedTab).not.toHaveBeenCalled();
+      expect(commandPaletteActions.open).not.toHaveBeenCalledWith("sessions");
+    });
+  });
+
+  it("Ctrl+Shift+T falls back to last closed tab when no saved session exists", async () => {
+    savedSessionsActions.restoreLastSaved.mockResolvedValue(false);
+    tabStoreActions.restoreLastClosedTab.mockReturnValue(true);
+    setupHook();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "T",
+        ctrlKey: true,
+        shiftKey: true,
+      }),
+    );
+
+    await waitFor(() => {
+      expect(savedSessionsActions.restoreLastSaved).toHaveBeenCalledTimes(1);
+      expect(tabStoreActions.restoreLastClosedTab).toHaveBeenCalledTimes(1);
+    });
   });
 
   it("Ctrl+Shift+L opens command palette in projects mode", () => {

@@ -93,6 +93,7 @@ const mockHasTab = vi.fn().mockReturnValue(true);
 const mockRemoveTab = vi.fn();
 const mockSetCliSessionId = vi.fn();
 const mockMarkTabRunning = vi.fn();
+const mockMarkTabResumed = vi.fn();
 const mockStoreTabs: Array<{ id: string; sessionType: string; cliSessionId?: string; isRunning?: boolean }> = [];
 vi.mock("@/stores/terminal-tabs", () => ({
   useTerminalTabsStore: Object.assign(vi.fn(), {
@@ -101,6 +102,7 @@ vi.mock("@/stores/terminal-tabs", () => ({
       removeTab: mockRemoveTab,
       setCliSessionId: mockSetCliSessionId,
       markTabRunning: mockMarkTabRunning,
+      markTabResumed: mockMarkTabResumed,
       tabs: mockStoreTabs,
     }),
   }),
@@ -1076,6 +1078,12 @@ describe("TerminalSession", () => {
     it("does NOT generate session ID for restored tabs with existing cliSessionId", async () => {
       mockStoreTabs.push({ id: "tab-restored", sessionType: "claude", cliSessionId: "existing-uuid-1234", isRunning: true });
 
+      // validate_cli_session must return true so resolveResumeArgs treats the stored ID as valid
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "validate_cli_session") return Promise.resolve(true);
+        return Promise.resolve(undefined);
+      });
+
       render(<TerminalSession tabId="tab-restored" path="/test" sessionType="claude" />);
 
       await vi.runAllTimersAsync();
@@ -1136,6 +1144,12 @@ describe("TerminalSession", () => {
         sessionType: "codex",
         cliSessionId: "codex-session-123",
         isRunning: true,
+      });
+
+      // validate_cli_session must return true so resolveResumeArgs uses the stored ID
+      mockInvoke.mockImplementation((channel: string) => {
+        if (channel === "validate_cli_session") return Promise.resolve(true);
+        return Promise.resolve(undefined);
       });
 
       render(<TerminalSession tabId="tab-codex-resume" path="/test" sessionType="codex" />);
