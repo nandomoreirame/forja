@@ -54,4 +54,16 @@ contextBridge.exposeInMainWorld("electronAPI", {
     openDevTools: (webContentsId: number) =>
       ipcRenderer.invoke("browser:open-devtools", { webContentsId }),
   },
+
+  validateCliSession: (cliId: string, projectPath: string, sessionId: string) =>
+    ipcRenderer.invoke("validate_cli_session", { cliId, projectPath, sessionId }),
+
+  savedSessions: {
+    save: (projectPath: string, entry: unknown) =>
+      ipcRenderer.invoke("saved_sessions:save", { projectPath, entry }),
+    load: (projectPath: string) =>
+      ipcRenderer.invoke("saved_sessions:load", { projectPath }),
+    remove: (projectPath: string, id: string) =>
+      ipcRenderer.invoke("saved_sessions:delete", { projectPath, id }),
+  },
 });

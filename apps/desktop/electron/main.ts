@@ -36,6 +36,12 @@ import { detectEditor } from "./editor-detector.js";
 import { getForjaConfigDir } from "./paths.js";
 import { startExternalApiServer } from "./external-api.js";
 import type { ExternalCommand } from "./external-api.js";
+import {
+  addSavedSession,
+  readSavedSessions,
+  removeSavedSession,
+  type SavedSessionEntry,
+} from "./project-config.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -815,6 +821,14 @@ ipcMain.handle("get_cli_sessions", (_event, args: { cliId: string; projectPath: 
   return getCliSessions(args.cliId, args.projectPath, args.limit);
 });
 
+ipcMain.handle(
+  "validate_cli_session",
+  (_event, args: { cliId: string; projectPath: string; sessionId: string }) => {
+    const sessions = getCliSessions(args.cliId, args.projectPath, 50);
+    return sessions.some((s) => s.sessionId === args.sessionId);
+  },
+);
+
 ipcMain.handle("get_session_model", (_event, args: { cliId: string; projectPath: string; sessionId?: string }) => {
   return getActiveSessionModel(args.cliId, args.projectPath, args.sessionId);
 });
@@ -995,6 +1009,27 @@ ipcMain.handle("close_pty", (_event, args: { tabId: string }) => {
   tabsWithUserInput.delete(args.tabId);
   closePty(args.tabId);
 });
+
+ipcMain.handle(
+  "saved_sessions:save",
+  (_event, args: { projectPath: string; entry: SavedSessionEntry }) => {
+    addSavedSession(args.projectPath, args.entry);
+  },
+);
+
+ipcMain.handle(
+  "saved_sessions:load",
+  (_event, args: { projectPath: string }) => {
+    return readSavedSessions(args.projectPath);
+  },
+);
+
+ipcMain.handle(
+  "saved_sessions:delete",
+  (_event, args: { projectPath: string; id: string }) => {
+    removeSavedSession(args.projectPath, args.id);
+  },
+);
 
 ipcMain.handle("pty:get-buffer", (_event, args: { tabId: string }) => {
   return getSessionBuffer(args.tabId);
