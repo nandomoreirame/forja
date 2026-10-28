@@ -7,7 +7,20 @@
 ╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚════╝ ╚═╝  ╚═╝
 ```
 
-A dedicated GUI client for Vibe Coders (and other AI coding CLIs), built with Electron + React. Not just another terminal: it's the forge where code is shaped with artificial intelligence.
+A desktop app for people who run AI coding agents (Claude Code, Codex, Gemini CLI, Cursor Agent) all day, across several projects at once.
+
+## Why Forja exists
+
+If you run AI coding CLIs in a plain terminal, you know the routine: five tabs or tmux panes with no way to tell which agent finished and which is waiting for your answer, markdown answers printed as raw text, a second window open just to read the files and diffs the agent touched, and no idea what the session is costing until the bill arrives.
+
+A terminal is the right place to *run* the agent, so Forja keeps a real PTY. What it adds is the layer around it that a terminal does not have:
+
+- **Sessions grouped by project and workspace**, with a visible state per tab (thinking or ready for you) and a notification when an agent stops.
+- **The files, diffs and git status of the project next to the session**, so reviewing what the agent changed does not mean switching windows.
+- **Token usage and cost per session**, live in the status bar.
+- **One interface for every CLI**, instead of learning a different TUI per vendor.
+
+If you run one agent in one project at a time, your terminal is probably enough. Forja is for the moment you have several running.
 
 > **Warning**
 > Forja is under active development (beta stage). Expect incomplete features and tools, potential instability, crashes, or unexpected behavior, and breaking changes between updates without prior notice. Your settings and session data are stored locally and may need to be reset after major updates. We recommend keeping backups of important project configurations. Please [report issues](https://github.com/nandomoreirame/forja/issues) to help us improve.
@@ -15,10 +28,6 @@ A dedicated GUI client for Vibe Coders (and other AI coding CLIs), built with El
 ## Screenshot
 
 ![Forja - Workspaces with Projects](screenshots/0.workspaces-with-projects.png)
-
-## Concept
-
-Forja opens directly into Claude Code. The user picks a project directory and the session starts. The main experience is Claude Code with enhanced visual rendering (rich markdown, syntax-highlighted code blocks, visual diffs). Git context is always visible in the header.
 
 ## Features
 
@@ -48,7 +57,22 @@ Forja opens directly into Claude Code. The user picks a project directory and th
 
 ## Monorepo
 
-Forja is organized as a pnpm monorepo with multiple applications and shared packages:
+The desktop app is the product. The other apps live in this repo for a concrete reason, and their maturity is not the same:
+
+| Package | Path | Status | Why it lives here |
+|---------|------|--------|-------------------|
+| **@forja/desktop** | `apps/desktop/` | Beta (the product) | |
+| **@forja/mobile** | `apps/mobile/` | Experimental | Speaks the WebSocket bridge protocol, whose types come from `packages/shared`; a protocol change and its client ship in the same commit |
+| **@forja/docs** | `apps/docs/` | Maintained | Documents the desktop release it sits next to; docs change in the same PR as the feature |
+| **@forja/site** | `apps/site/` | Maintained | Marketing page; versioned with the release it announces |
+| **@forja/shared** | `packages/shared/` | Internal | Types and constants shared by desktop and mobile |
+| **@forja/tsconfig** | `packages/tsconfig/` | Internal | Shared TypeScript configurations |
+
+`AGENTS.md` holds the instructions for AI coding agents working on this repo; `CLAUDE.md` and `CODEX.md` are symlinks to it, so there is one source. Humans start at [CONTRIBUTING.md](CONTRIBUTING.md).
+
+<details>
+<summary>Package summary</summary>
+
 
 | Package | Path | Description |
 |---------|------|-------------|
@@ -58,6 +82,8 @@ Forja is organized as a pnpm monorepo with multiple applications and shared pack
 | **@forja/mobile** | `apps/mobile/` | Expo remote control app (React Native) |
 | **@forja/tsconfig** | `packages/tsconfig/` | Shared TypeScript configurations |
 | **@forja/shared** | `packages/shared/` | Shared types and constants |
+
+</details>
 
 ## Stack
 
@@ -147,14 +173,37 @@ Home Screen (Project Selector)
 - **Zed** - Minimal, performance-focused, dev tool aesthetic
 - **Linear** - Consistency, spacing, typography
 
-## What Makes Forja Different
+## Security
 
-- **AI CLI-first** - Not a generic terminal with AI; it's a dedicated GUI for Vibe Coders and other AI coding CLIs
-- **Multi-CLI** - Supports Claude Code, Gemini CLI, Codex CLI, Cursor Agent, and plain terminal in a unified interface
-- **Enhanced Rendering** - Markdown rendered as HTML, code blocks with syntax highlight via Shiki
-- **Project-based** - Each session is isolated per project with automatic context
-- **Theme System** - 14+ built-in editor themes with live switching
-- **Open Source** - Open source from day 1
+Forja runs AI agents that can read and write your files and execute commands. Two features send data off the desktop process; both are **off by default**.
+
+### Mobile remote control (WebSocket bridge)
+
+Turning on the bridge lets a phone read and type into your terminal sessions. Treat it as remote shell access.
+
+| | Current behavior |
+|---|---|
+| Enabled | Only when you toggle it on; it stops when you toggle it off or quit Forja |
+| Listens on | `ws://0.0.0.0:9400`, reachable from any device on the same network |
+| Authentication | A 4-digit PIN generated each time the bridge starts, sent by the client in its first message; a wrong PIN closes the connection |
+| Encryption | None (plain `ws://`, no TLS) |
+| An authenticated client can | List sessions, read their output, type into them, and open or close sessions, including a plain shell |
+| Limits | 5 concurrent clients, 10 messages per second per connection |
+
+Known limitations, to be fixed before the bridge leaves beta:
+
+- A 4-digit PIN has 10,000 values and there is no lockout across reconnects, so anyone on the same network can guess it in minutes.
+- Without TLS, the PIN and all terminal output travel in clear text on the network.
+
+Until then, enable the bridge only on a network you trust (not café or office Wi-Fi), and turn it off when you are done.
+
+### Discord notifications
+
+When you configure a webhook, Forja posts a summary of the session output to that Discord channel. Agent output may contain code, file paths or secrets printed in the terminal; point the webhook at a private channel.
+
+### Reporting a vulnerability
+
+Please do not open a public issue. Use GitHub's private reporting: **Security** tab > **Report a vulnerability**.
 
 ## Design
 

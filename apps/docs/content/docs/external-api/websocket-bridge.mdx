@@ -12,7 +12,7 @@ The WebSocket bridge is an optional local server embedded in the Forja desktop a
 ```mermaid
 sequenceDiagram
     participant M as Mobile App
-    participant WS as WebSocket Bridge<br/>(127.0.0.1:9400)
+    participant WS as WebSocket Bridge<br/>(0.0.0.0:9400)
     participant D as Forja Desktop
     participant P as PTY Manager
     participant C as AI CLI
@@ -32,12 +32,12 @@ sequenceDiagram
 
 ## Connection details
 
-The bridge is disabled by default and must be enabled in Forja's settings. Once enabled, it binds to localhost only and is not accessible from outside the machine without port forwarding.
+The bridge is disabled by default and must be enabled in Forja's settings. Once enabled, it binds to all interfaces (`0.0.0.0`) so the mobile app can connect over the local network; see [Security](#security).
 
 | Constant | Value | Description |
 |----------|-------|-------------|
 | `WS_BRIDGE_PORT` | `9400` | Default port the bridge listens on |
-| `WS_BRIDGE_HOST` | `127.0.0.1` | Bind address (loopback only) |
+| `WS_BRIDGE_HOST` | `127.0.0.1` | Default host for clients; the desktop bridge does not read it and binds to `0.0.0.0` |
 | `WS_MAX_MESSAGES_PER_SECOND` | `10` | Rate limit per connected client |
 | `WS_MAX_CLIENTS` | `5` | Maximum concurrent WebSocket connections |
 
@@ -129,18 +129,20 @@ type ExternalCommand =
 
 ## Security
 
-The bridge includes several layers of protection:
+Enabling the bridge gives any authenticated client the ability to read and type into your terminal sessions, including a plain shell. Treat it as remote shell access.
 
-**Rate limiting** — Each connected client is limited to `WS_MAX_MESSAGES_PER_SECOND` (10) messages per second. Clients that exceed this limit are disconnected automatically.
+**Off by default**: The bridge only starts when you toggle it on, and stops when you toggle it off or quit Forja.
 
-**Client cap** — A maximum of `WS_MAX_CLIENTS` (5) concurrent connections are allowed. New connections are rejected with an error when the cap is reached.
+**Network exposure**: The bridge binds to `0.0.0.0:9400` so the mobile app can reach it, which makes it reachable from every device on the same network.
 
-**Localhost only** — The bridge binds to `127.0.0.1` and never listens on a public interface. Accessing it from another machine requires explicit port forwarding.
+**PIN authentication**: A 4-digit PIN is generated each time the bridge starts and shown in Forja. The client sends it in its first message; a wrong PIN closes the connection. Comparison is timing-safe.
 
-**Token authentication** — A one-time token is generated when the bridge starts. Clients must present this token during the WebSocket handshake. The token is displayed in Forja's settings panel and can be shared with the mobile app via QR code.
+**Rate limiting**: Each connection is limited to 10 messages per second; messages above the limit get a `Rate limited` error.
+
+**Client cap**: A maximum of 5 concurrent connections are allowed. New connections are rejected with an error when the cap is reached.
 
 <Callout type="warning">
-  Do not expose port 9400 to untrusted networks. The bridge assumes a trusted local environment — it does not use TLS.
+  Known limitations: a 4-digit PIN has 10,000 values and there is no lockout across reconnects, so it can be guessed by anyone on the same network; the bridge does not use TLS, so the PIN and terminal output travel in clear text. Enable it only on a network you trust and turn it off when you are done.
 </Callout>
 
 ## Enabling the bridge
@@ -148,6 +150,6 @@ The bridge includes several layers of protection:
 1. Open Forja settings (`Ctrl+,`).
 2. Navigate to **Sessions > WebSocket Bridge**.
 3. Toggle **Enable WebSocket Bridge** on.
-4. Scan the QR code with the Forja mobile app, or copy the connection URL manually.
+4. Scan the QR code with the Forja mobile app, or enter the address and PIN manually.
 
 The bridge starts immediately and stops when you toggle it off or quit Forja.
