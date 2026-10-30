@@ -6,3 +6,8 @@ coverage/
 .env.*
 !.env.example
 artifacts/
+
+site/dist/
+site/.ssr/
+test-results/
+playwright-report/

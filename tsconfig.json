@@ -16,11 +16,19 @@
     "types": [
       "node",
       "vitest/globals"
-    ]
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "ignoreDeprecations": "6.0"
   },
   "include": [
     "src",
     "test",
-    "*.ts"
+    "*.ts",
+    "site"
   ]
 }
