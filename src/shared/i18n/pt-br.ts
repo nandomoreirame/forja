@@ -3,6 +3,8 @@ export const ptBr = {
     why: 'Por que o Forja',
     workflow: 'Fluxo',
     planned: 'O que vem no MVP',
+    skip: 'Pular para o conteúdo',
+    localeSwitch: 'English',
     follow: 'Acompanhar desenvolvimento',
     gallery: 'Styleguide',
   },

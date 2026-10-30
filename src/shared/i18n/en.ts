@@ -3,6 +3,8 @@ export const en = {
     why: 'Why Forja',
     workflow: 'Workflow',
     planned: "What's planned",
+    skip: 'Skip to content',
+    localeSwitch: 'Português (Brasil)',
     follow: 'Follow development',
     gallery: 'Styleguide',
   },

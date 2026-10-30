@@ -1,9 +1,12 @@
-import { Button } from '../../src/shared/ui'
+import { resolvePage } from '@/shared/i18n'
+import { Landing } from './pages/landing'
+
 export function App() {
+  const route = resolvePage(window.location.pathname)
+  if (route?.page === 'landing') return <Landing locale={route.locale} />
   return (
-    <main>
-      <h1>Forja 2.0</h1>
-      <Button disabled>Preview</Button>
+    <main className="grid min-h-screen place-items-center text-[13px] text-muted-foreground">
+      <p>Page not found · Página não encontrada</p>
     </main>
   )
 }
