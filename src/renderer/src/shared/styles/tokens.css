@@ -1,0 +1,28 @@
+:root {
+  color-scheme: dark;
+  --color-canvas: #0e0e0e;
+  --color-chrome: #1c1c1c;
+  --color-border: #2a2a2a;
+  --color-input: #101010;
+  --color-text: #e6e6e6;
+  --color-muted: #979797;
+  --color-faint: #686868;
+  --color-accent: #f5a623;
+  --color-hover: #1b1b1b;
+  --color-input-hover: #171717;
+  --color-border-hover: #444444;
+  --color-key: #1b1b1b;
+  --font-mono: 'JetBrains Mono', monospace;
+  --text-body: 12px;
+  --text-small: 10px;
+  --radius-small: 3px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --titlebar-height: 40px;
+  --statusbar-height: 32px;
+  --text-status: 13px;
+}
