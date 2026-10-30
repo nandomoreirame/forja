@@ -1,4 +1,0 @@
-{
-  "title": "Architecture",
-  "pages": ["overview", "ipc", "pty-system", "context-system", "plugin-system"]
-}

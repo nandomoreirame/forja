@@ -1,4 +1,0 @@
-{
-  "title": "External API",
-  "pages": ["overview", "cli-client", "websocket-bridge", "discord-bot"]
-}
