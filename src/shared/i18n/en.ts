@@ -1,0 +1,128 @@
+export const en = {
+  nav: {
+    why: 'Why Forja',
+    workflow: 'Workflow',
+    planned: "What's planned",
+    follow: 'Follow development',
+    gallery: 'Styleguide',
+  },
+  hero: {
+    status: 'FORJA 2.0 · IN DEVELOPMENT',
+    title: 'Keep your AI work moving. Know what happens next.',
+    objective:
+      'An opinionated AI agent development environment built around the RPI workflow, from specification to review, with you in control of every stage.',
+    note: 'The 2.0 MVP is in development. Preview the direction below.',
+    preview: 'Design preview · planned MVP',
+  },
+  why: {
+    eyebrow: 'WHY FORJA',
+    title: 'The work spans more than a conversation.',
+    body: 'Research produces decisions. Planning turns them into tasks. Implementation changes code. Tests and reviews send work back for correction. Keeping those steps connected across terminals and documents takes attention away from the feature.',
+    close:
+      'Forja 2.0 is being built around an opinionated RPI workflow, connecting the spec, plan, agents and execution history with your explicit approval before the next stage.',
+  },
+  workflow: {
+    eyebrow: 'THE GUIDED WORKFLOW',
+    title: 'Five roles. Explicit handoffs.',
+    roles: [
+      ['Research', 'Clarify the problem and write the spec.'],
+      ['Planner', 'Turn the approved spec into a plan.'],
+      ['Implementer', 'Build from the approved plan.'],
+      ['Tester', 'Run checks and report failures.'],
+      ['Reviewer', 'Review the changes and record findings.'],
+    ],
+    close:
+      'Corrections return to the Implementer with links to the request and its execution. Automatic handoffs remain bounded; approvals stay explicit.',
+  },
+  features: {
+    eyebrow: 'PLANNED FOR THE MVP',
+    title: 'Stay close to the work.',
+    items: [
+      [
+        'One tab per feature',
+        'Keep each feature’s conversations, target repository and worktree together. Work on multiple features without mixing their context.',
+      ],
+      [
+        'Documents you can discuss',
+        'Read specs, plans and reviews as formatted Markdown with Mermaid. Select a passage to prepare a revision request for its author.',
+      ],
+      [
+        'Execution you can follow',
+        'Watch agent commands and output through the Forja MCP runner. Use your own shell in a separate tab, and keep background processes visible in the footer.',
+      ],
+      [
+        'Your tools, configured per role',
+        'Choose the CLI, model, instructions and local skills for each of the five agents. Skills stay read-only; your existing tools keep their authentication.',
+      ],
+    ],
+    integrations: 'Target integrations: Claude Code · Codex · OpenCode · agy · Grok',
+    qualification: 'Availability depends on validated adapter capabilities.',
+  },
+  scope: {
+    title: 'A focused first release.',
+    body: 'The first MVP focuses on the Guided workflow and a Linux acceptance environment. Full autonomous approvals, onboarding and cross-platform release packaging are outside this initial scope.',
+    faq: [
+      [
+        'Can I download Forja 2.0 now?',
+        'The 2.0 MVP is still in development. Follow the repository for progress and release information.',
+      ],
+      [
+        'Does Forja replace my AI CLI?',
+        'Forja defines the RPI workflow and your approval points. Installed coding CLIs provide execution, with per-role configuration and validated controlled-execution capabilities.',
+      ],
+      [
+        'Who decides when work moves forward?',
+        'You approve the spec, plan and key transitions. Agent handoffs can be enabled, but do not bypass required approvals or permission to integrate changes.',
+      ],
+    ],
+  },
+  footer: {
+    title: 'Follow Forja 2.0 as it takes shape.',
+    objective:
+      'An opinionated AI agent development environment built around the RPI workflow, from specification to review, with you in control of every stage.',
+    status: 'Opinionated RPI development · In development',
+    source: 'Source',
+    issues: 'Issues',
+  },
+  product: {
+    feature: 'Feature',
+    target: 'Target',
+    destination: 'Destination',
+    branch: 'Branch',
+    approved: 'Approved',
+    draft: 'Draft',
+    running: 'Running',
+    done: 'Completed',
+    research: 'Research',
+    planner: 'Planner',
+    implementer: 'Implementer',
+    tester: 'Tester',
+    reviewer: 'Reviewer',
+    spec: 'SPEC.md',
+    plan: 'PLAN.md',
+    review: 'REVIEW.md',
+    composer: 'Send an instruction, @ to select an agent',
+    send: 'Send',
+    reviewSelection: 'Review with agent',
+    agentTest: 'Implementer · tests',
+    agentDev: 'Implementer · dev',
+    manual: 'zsh',
+    command: 'Command',
+    cwd: 'Working directory',
+    stop: 'Stop process',
+    terminal: 'Process started. Waiting for output...',
+    collapsed: 'Background terminals',
+    empty: 'No conversation in this feature.',
+  },
+  gallery: {
+    title: 'Styleguide',
+    subtitle: 'MVP components · Terminal Noir',
+    tokens: 'Tokens',
+    primitives: 'Primitives',
+    shell: 'App structure',
+    conversation: 'Conversation and composer',
+    documents: 'Documents and approvals',
+    terminals: 'Terminals',
+    notes: 'Fidelity notes',
+  },
+} as const

@@ -1,0 +1,128 @@
+export const ptBr = {
+  nav: {
+    why: 'Por que o Forja',
+    workflow: 'Fluxo',
+    planned: 'O que vem no MVP',
+    follow: 'Acompanhar desenvolvimento',
+    gallery: 'Styleguide',
+  },
+  hero: {
+    status: 'FORJA 2.0 · EM DESENVOLVIMENTO',
+    title: 'Avance com seus agentes de IA. Saiba qual é o próximo passo.',
+    objective:
+      'Um ambiente de desenvolvimento com agentes de IA, opinativo sobre o fluxo RPI, da especificação à revisão, com você no controle de cada etapa.',
+    note: 'O MVP do 2.0 está em desenvolvimento. Veja a proposta abaixo.',
+    preview: 'Preview do design · MVP planejado',
+  },
+  why: {
+    eyebrow: 'POR QUE O FORJA',
+    title: 'O trabalho vai além de uma conversa.',
+    body: 'A pesquisa produz decisões. O planejamento transforma essas decisões em tarefas. A implementação altera o código. Testes e revisões devolvem o trabalho para correção. Manter essas etapas conectadas entre terminais e documentos disputa sua atenção com a própria feature.',
+    close:
+      'O Forja 2.0 está sendo construído em torno de um fluxo RPI opinativo, conectando spec, plano, agentes e histórico de execução com sua aprovação explícita antes da próxima etapa.',
+  },
+  workflow: {
+    eyebrow: 'O FLUXO GUIADO',
+    title: 'Cinco papéis. Passagens explícitas.',
+    roles: [
+      ['Pesquisador', 'Entende o problema e escreve a spec.'],
+      ['Planejador', 'Transforma a spec aprovada em um plano.'],
+      ['Implementador', 'Implementa a partir do plano aprovado.'],
+      ['Testador', 'Executa as verificações e relata falhas.'],
+      ['Revisor', 'Revisa as mudanças e registra os achados.'],
+    ],
+    close:
+      'As correções voltam ao Implementador com links para a solicitação e sua execução. As invocações automáticas têm limites; as aprovações continuam explícitas.',
+  },
+  features: {
+    eyebrow: 'PLANEJADO PARA O MVP',
+    title: 'Acompanhe o trabalho de perto.',
+    items: [
+      [
+        'Uma aba por feature',
+        'Reúna conversas, repositório de destino e worktree de cada feature. Trabalhe em várias features sem misturar seus contextos.',
+      ],
+      [
+        'Documentos que viram conversa',
+        'Leia specs, planos e revisões em Markdown formatado com Mermaid. Selecione um trecho para preparar uma solicitação de revisão ao autor.',
+      ],
+      [
+        'Execução que você acompanha',
+        'Veja os comandos e as saídas dos agentes pelo executor MCP do Forja. Use seu próprio shell em outra aba e acompanhe processos em segundo plano pelo footer.',
+      ],
+      [
+        'Suas ferramentas, por papel',
+        'Escolha a CLI, o modelo, as instruções e as skills locais dos cinco agentes. As skills ficam em modo somente leitura; suas ferramentas mantêm a autenticação.',
+      ],
+    ],
+    integrations: 'Integrações previstas: Claude Code · Codex · OpenCode · agy · Grok',
+    qualification: 'A disponibilidade depende da validação das capacidades de cada adaptador.',
+  },
+  scope: {
+    title: 'Uma primeira entrega com foco.',
+    body: 'O primeiro MVP prioriza o fluxo Guiado e a validação em Linux. Aprovações totalmente autônomas, onboarding e empacotamento para outros sistemas ficam fora deste escopo inicial.',
+    faq: [
+      [
+        'Já posso baixar o Forja 2.0?',
+        'O MVP do 2.0 ainda está em desenvolvimento. Acompanhe o repositório para ver o progresso e as informações de lançamento.',
+      ],
+      [
+        'O Forja substitui minha CLI de IA?',
+        'O Forja define o fluxo RPI e seus pontos de aprovação. As CLIs de programação instaladas executam o trabalho, com configuração por papel e capacidades de execução controlada validadas.',
+      ],
+      [
+        'Quem decide quando o trabalho avança?',
+        'Você aprova a spec, o plano e as transições principais. As invocações entre agentes podem ser habilitadas, mas não dispensam as aprovações obrigatórias nem a autorização para integrar mudanças.',
+      ],
+    ],
+  },
+  footer: {
+    title: 'Acompanhe a construção do Forja 2.0.',
+    objective:
+      'Um ambiente de desenvolvimento com agentes de IA, opinativo sobre o fluxo RPI, da especificação à revisão, com você no controle de cada etapa.',
+    status: 'Desenvolvimento RPI opinativo · Em desenvolvimento',
+    source: 'Código-fonte',
+    issues: 'Issues',
+  },
+  product: {
+    feature: 'Feature',
+    target: 'Destino',
+    destination: 'Destino',
+    branch: 'Branch',
+    approved: 'Aprovada',
+    draft: 'Rascunho',
+    running: 'Em execução',
+    done: 'Concluído',
+    research: 'Pesquisador',
+    planner: 'Planejador',
+    implementer: 'Implementador',
+    tester: 'Testador',
+    reviewer: 'Revisor',
+    spec: 'SPEC.md',
+    plan: 'PLAN.md',
+    review: 'REVIEW.md',
+    composer: 'Envie uma instrução, @ para selecionar um agente',
+    send: 'Enviar',
+    reviewSelection: 'Revisar com o agente',
+    agentTest: 'Implementador · testes',
+    agentDev: 'Implementador · dev',
+    manual: 'zsh',
+    command: 'Comando',
+    cwd: 'Diretório de trabalho',
+    stop: 'Parar processo',
+    terminal: 'Processo iniciado. Aguardando saída...',
+    collapsed: 'Terminais em segundo plano',
+    empty: 'Nenhuma conversa nesta feature.',
+  },
+  gallery: {
+    title: 'Styleguide',
+    subtitle: 'Componentes do MVP · Terminal Noir',
+    tokens: 'Tokens',
+    primitives: 'Primitivas',
+    shell: 'Estrutura do app',
+    conversation: 'Conversa e compositor',
+    documents: 'Documentos e aprovações',
+    terminals: 'Terminais',
+    notes: 'Notas de fidelidade',
+  },
+} as const
