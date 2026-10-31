@@ -41,11 +41,13 @@
 **Requirement:** REQ-002, REQ-004, REQ-005, REQ-007
 **Depends on:** none within this plan
 **Files:**
+
 - Create: `src/renderer/src/entities/feature/model/store.ts`
 - Create: `test/ui/feature-context.test.ts`
 - Test: `test/ui/feature-context.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -103,6 +105,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-001, REQ-002, REQ-003, REQ-043, REQ-054
 **Depends on:** Task 1
 **Files:**
+
 - Create: `src/renderer/src/pages/workbench/index.ts`
 - Create: `src/renderer/src/pages/workbench/workbench-page.tsx`
 - Create: `src/renderer/src/features/feature-tabs/rename.tsx`
@@ -117,6 +120,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/ui/workbench.test.tsx`
 
 **Team:**
+
 - Track: frontend
 - Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
 - Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
@@ -171,12 +175,14 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-004, REQ-005, REQ-006, REQ-036, REQ-047
 **Depends on:** Task 2
 **Files:**
+
 - Create: `src/renderer/src/features/composer/recipient.ts`
 - Create: `src/renderer/src/features/composer/controller.tsx`
 - Create: `test/ui/recipient.test.ts`
 - Test: `test/ui/recipient.test.ts`
 
 **Team:**
+
 - Track: frontend
 - Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
 - Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
@@ -234,6 +240,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-004, REQ-020, REQ-043, REQ-045
 **Depends on:** Task 3
 **Files:**
+
 - Create: `src/renderer/src/features/conversation/history.tsx`
 - Create: `src/renderer/src/features/conversation/handoff-link.tsx`
 - Create: `src/renderer/src/features/approvals/request-card.tsx`
@@ -241,6 +248,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/ui/conversation.test.tsx`
 
 **Team:**
+
 - Track: frontend
 - Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
 - Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
@@ -293,15 +301,17 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 
 ### Task 5: Bind a feature target repository and destination branch explicitly
 
-**Requirement:** REQ-003, REQ-024, REQ-026, REQ-043, REQ-050
+**Requirement:** REQ-003, REQ-024, REQ-026, REQ-043, REQ-050, REQ-055
 **Depends on:** Task 4
 **Files:**
+
 - Create: `src/renderer/src/features/git-target/target-dialog.tsx`
 - Create: `src/renderer/src/features/git-target/index.ts`
 - Create: `test/ui/git-target.test.tsx`
 - Test: `test/ui/git-target.test.tsx`
 
 **Team:**
+
 - Track: frontend
 - Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
 - Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
@@ -314,13 +324,16 @@ Write this acceptance-focused test before implementing behavior. If the public m
 import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { GitTargetDialog } from '../../src/renderer/src/features/git-target'
-it('requires an explicit branch before binding a repository', () => {
+it('requires an explicit branch and confirmed gates before binding a repository', () => {
   const saved: unknown[] = []
-  render(<GitTargetDialog featureId="f1" repository="/tmp/repo" branches={['release/2.0', 'main']} onSave={value => saved.push(value)} />)
+  const gates = [{ argv: ['npm', 'run', 'typecheck'] }, { argv: ['npm', 'test'] }]
+  render(<GitTargetDialog featureId="f1" repository="/tmp/repo" branches={['release/2.0', 'main']} detectedGates={gates} onSave={value => saved.push(value)} />)
   expect(screen.getByRole('button', { name: 'Use repository' })).toBeDisabled()
   fireEvent.change(screen.getByLabelText('Destination branch'), { target: { value: 'release/2.0' } })
+  expect(screen.getByRole('button', { name: 'Use repository' })).toBeDisabled()
+  fireEvent.click(screen.getByRole('checkbox', { name: 'I confirm these validation commands' }))
   fireEvent.click(screen.getByRole('button', { name: 'Use repository' }))
-  expect(saved).toEqual([{ featureId: 'f1', repository: '/tmp/repo', branch: 'release/2.0' }])
+  expect(saved).toEqual([{ featureId: 'f1', repository: '/tmp/repo', branch: 'release/2.0', gates }])
 })
 ```
 
@@ -332,10 +345,10 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Add the minimum feature-target control using existing gallery Dialog/Input/Select/Button primitives, opened from the feature context's target path action. Use trusted folder picker and a core-returned branch list, not arbitrary inferred child projects. Binding records repository canonical identity, destination branch and base commit; before implementation a non-Git opened folder may choose any explicit target. Block rebinding an active/implemented feature without explicit stop and re-evaluation of all dependent approvals.
+Add the minimum feature-target control using existing gallery Dialog/Input/Select/Button primitives, opened from the feature context's target path action. Use trusted folder picker and a core-returned branch list, not arbitrary inferred child projects. Offer the binding in the new-feature flow, defaulting to the opened folder when it is itself a Git repository, so the worktree exists before Research publishes; it stays available later for features created without a target. The dialog lists the core-detected gates (feature-git-worktrees Task 5) as editable argv rows and requires an explicit confirmation before saving; a repository with an existing confirmed set shows it read-only with an edit action. Binding records repository canonical identity, destination branch, base commit and confirmed gates. Block rebinding a feature whose worktree exists without explicit stop and re-evaluation of all dependent approvals.
 
 ```typescript
-export interface GitTargetSelection { featureId: string; repository: string; branch: string }
+export interface GitTargetSelection { featureId: string; repository: string; branch: string; gates: { argv: string[] }[] }
 ```
 
 Use user-level keyboard/selection interactions against the shared shadcn Select. The seed change event may target a native backing select only if one exists; otherwise use the actual accessible combobox/listbox, preserving the same assertion rather than adding a test-only hidden select. Do not add a workspace abstraction, global project switcher in the composer or new project-wide settings screen.
@@ -347,6 +360,7 @@ Run: `rtk npm test -- test/ui/git-target.test.tsx`. Expected: PASS. Add and run 
 - Opening ~/dev and selecting two different targets works in one window by feature tab.
 - Dirty/invalid target errors come from core and preserve prior bindings.
 - Target/base changes cannot silently reuse old worktree or code approvals.
+- An empty gate list keeps the save disabled with an explanation.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 

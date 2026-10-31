@@ -34,9 +34,10 @@
 
 ### Task 1: Add transactional migrations and versioned feature JSON
 
-**Requirement:** REQ-002, REQ-008, REQ-012
+**Requirement:** REQ-002, REQ-008, REQ-012, REQ-058
 **Depends on:** none within this plan
 **Files:**
+
 - Create: `src/core/storage/migrations.ts`
 - Create: `src/core/storage/feature-store.ts`
 - Create: `src/shared/domain/feature.ts`
@@ -45,6 +46,7 @@
 - Test: `test/storage/features.test.ts`
 
 **Team:**
+
 - Track: data
 - Implementer: backend-engineer (skills: security-guardrails, test-driven-development)
 - Reviewers: consequences-reviewer, security-reviewer, business-logic-reviewer
@@ -64,7 +66,8 @@ it('reopens a named feature without conflating its slug and label', () => {
   const store = new FeatureStore(db)
   const feature = store.create({ projectId: 'project-a', slug: 'login', name: 'Login' })
   store.rename(feature.id, 'OAuth login')
-  expect(store.get(feature.id)).toMatchObject({ slug: 'login', name: 'OAuth login', stateVersion: 1 })
+  expect(store.get(feature.id)).toMatchObject({ slug: 'login', name: 'OAuth login', stateVersion: 1, artifactRoot: '/tmp/project-a' })
+  expect(store.get(feature.id)?.workflow.status).toBe('active')
   db.close()
 })
 ```
@@ -83,16 +86,17 @@ Extend migrations without dropping the existing settings table; add canonical pr
 export interface WorkflowState {
   schemaVersion: 1
   revision: number
-  phase: 'research' | 'plan' | 'implement' | 'test' | 'review' | 'done'
+  status: 'active' | 'integrated' | 'abandoned'
+  phase: 'research' | 'plan' | 'implement' | 'test' | 'review' | 'final'
   correctionRounds: number
   paused: boolean
 }
 export function initialWorkflow(): WorkflowState {
-  return { schemaVersion: 1, revision: 0, phase: 'research', correctionRounds: 0, paused: false }
+  return { schemaVersion: 1, revision: 0, status: 'active', phase: 'research', correctionRounds: 0, paused: false }
 }
 ```
 
-Keep JSON parsing/schema validation in core. Unknown optional JSON fields survive compatible updates. Split schema upgrades into named immutable migrations and apply atomically; reopen a temporary on-disk DB twice.
+Each feature row records its artifact root, defaulting to the project root; feature-git-worktrees switches it to the feature worktree when a Git target is bound. `status` separates the workflow phase from the terminal states: integrated and abandoned features reject every workflow update except cleanup metadata. Keep JSON parsing/schema validation in core. Unknown optional JSON fields survive compatible updates. Split schema upgrades into named immutable migrations and apply atomically; reopen a temporary on-disk DB twice.
 
 **Step 4: Run test to verify it passes**
 
@@ -101,6 +105,7 @@ Run: `rtk npm test -- test/storage/features.test.ts`. Expected: PASS. Add and ru
 - Migration rerun is idempotent; rollback leaves previous user_version intact.
 - Stale revision update fails without lost writes; two feature slugs cannot collide in one project.
 - Preserve preexisting settings and reject malformed JSON with recoverable diagnostics.
+- A workflow update on an integrated or abandoned feature fails without changing its revision.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
@@ -113,6 +118,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-001, REQ-003, REQ-050
 **Depends on:** Task 1
 **Files:**
+
 - Create: `src/core/projects/project-store.ts`
 - Create: `src/main/project-windows.ts`
 - Create: `test/projects/identity.test.ts`
@@ -120,6 +126,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/projects/identity.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -184,6 +191,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-002, REQ-007, REQ-012, REQ-048
 **Depends on:** Task 2
 **Files:**
+
 - Create: `src/shared/ipc/schema.ts`
 - Create: `src/core/ipc/dispatch.ts`
 - Create: `src/preload/bridge.ts`
@@ -195,6 +203,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/ipc/dispatch.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -251,11 +260,13 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-007, REQ-008, REQ-012, REQ-054
 **Depends on:** Task 3
 **Files:**
+
 - Create: `src/core/execution/feature-lease.ts`
 - Create: `test/execution/lease.test.ts`
 - Test: `test/execution/lease.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer

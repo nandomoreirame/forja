@@ -7,8 +7,8 @@ Date: 2026-10-30.
 | Check | Result |
 | --- | --- |
 | Umbrella spec and derived slice specs | 14 files saved |
-| Ordered implementation plans | 13 plans, 62 tasks |
-| Requirement-to-task coverage | 54 of 54 requirements mapped |
+| Ordered implementation plans | 13 plans, 65 tasks (revised 2026-10-31) |
+| Requirement-to-task coverage | 60 of 60 requirements mapped (revised 2026-10-31) |
 | Dependency ordering | Every declared prerequisite precedes its dependent plan |
 | Existing Modify targets | 38 of 38 references exist at the planning baseline |
 | Future Create targets | 235 distinct paths; none already exists at the planning baseline |
@@ -20,6 +20,10 @@ Date: 2026-10-30.
 | Bilingual roadmap parity | Both locales contain the same 13 ordered slices and 62 unstarted tasks |
 
 The snippet check verifies syntax only. Future modules and contracts do not exist yet, so this is not a full typecheck or executed test result for planned code. No authenticated model requests, native CLI compatibility proof, application E2E, independent code review, commits, push or deployment occurred during planning.
+
+## Revision 2026-10-31
+
+A business-rule review changed the parent spec (Grilling Log rows 15 to 25), added REQ-055 to REQ-060, synchronized every derived spec with the parent requirement text and added feature-git-worktrees Tasks 5 and 6 and cli-agent-sessions Task 8. Rechecked after the revision: 60 of 60 requirements mapped, 38 of 38 Modify targets exist, no Create target already exists outside the delivered web slice, relative links resolve, and 128 TypeScript/TSX fences parse without syntax diagnostics. The new seed snippets were also executed against their seed assertions in isolation. The delivered web slice is unaffected.
 
 ## Interpretation
 

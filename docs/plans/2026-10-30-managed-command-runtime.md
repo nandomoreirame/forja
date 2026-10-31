@@ -36,15 +36,17 @@
 
 ### Task 1: Validate run capabilities, working directories and command requests
 
-**Requirement:** REQ-019, REQ-022, REQ-028, REQ-048
+**Requirement:** REQ-019, REQ-022, REQ-028, REQ-048, REQ-055
 **Depends on:** none within this plan
 **Files:**
+
 - Create: `src/core/commands/schema.ts`
 - Create: `src/core/commands/authority.ts`
 - Create: `test/commands/authority.test.ts`
 - Test: `test/commands/authority.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -73,7 +75,7 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Resolve feature, role, cwd and granted execution scope exclusively from the run capability. Accept a bounded command and explicit foreground/background mode, optional bounded timeout; never trust model cwd/featureId/environment as authorization. Only human-authorized implementation/test/review commands reach the supervisor. Research/Planner do not receive unrestricted production-code execution grants.
+Resolve feature, role, cwd and granted execution scope exclusively from the run capability. Accept a bounded command and explicit foreground/background mode, optional bounded timeout; never trust model cwd/featureId/environment as authorization. Only human-authorized implementation/test/review commands reach the supervisor. Research/Planner do not receive unrestricted production-code execution grants. Confirmed repository gates run through the same supervisor under a core-owned capability that no agent can obtain; their results are the only validation evidence, while agent-run commands are recorded as diagnostics.
 
 ```typescript
 import { z } from 'zod'
@@ -105,12 +107,14 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-028, REQ-029, REQ-034, REQ-052
 **Depends on:** Task 1
 **Files:**
+
 - Create: `src/core/commands/supervisor.ts`
 - Create: `src/core/commands/log-store.ts`
 - Create: `test/commands/supervisor.test.ts`
 - Test: `test/commands/supervisor.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -166,11 +170,13 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-028, REQ-030, REQ-034
 **Depends on:** Task 2
 **Files:**
+
 - Create: `src/core/commands/background.ts`
 - Create: `test/commands/background.test.ts`
 - Test: `test/commands/background.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -230,12 +236,14 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-019, REQ-028, REQ-029, REQ-030, REQ-048
 **Depends on:** Task 3
 **Files:**
+
 - Create: `src/core/mcp/command-tools.ts`
 - Create: `test/mcp/command-tools.test.ts`
 - Modify: `src/core/index.ts`
 - Test: `test/mcp/command-tools.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer

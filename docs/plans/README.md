@@ -17,9 +17,9 @@ The CLIs are the execution layer; the opinionated RPI workflow and human control
 | 03 | [project-feature-state](2026-10-30-project-feature-state.md) | 4 | cli-capability-contracts |
 | 04 | [agent-settings-skills](2026-10-30-agent-settings-skills.md) | 4 | web-foundation-landing-styleguide, project-feature-state |
 | 05 | [artifact-approval-gates](2026-10-30-artifact-approval-gates.md) | 5 | project-feature-state, agent-settings-skills |
-| 06 | [feature-git-worktrees](2026-10-30-feature-git-worktrees.md) | 4 | project-feature-state, artifact-approval-gates |
+| 06 | [feature-git-worktrees](2026-10-30-feature-git-worktrees.md) | 6 | project-feature-state, artifact-approval-gates |
 | 07 | [managed-command-runtime](2026-10-30-managed-command-runtime.md) | 4 | cli-capability-contracts, artifact-approval-gates, feature-git-worktrees |
-| 08 | [cli-agent-sessions](2026-10-30-cli-agent-sessions.md) | 7 | cli-capability-contracts, agent-settings-skills, artifact-approval-gates, managed-command-runtime |
+| 08 | [cli-agent-sessions](2026-10-30-cli-agent-sessions.md) | 8 | cli-capability-contracts, agent-settings-skills, artifact-approval-gates, managed-command-runtime |
 | 09 | [feature-workbench-composer](2026-10-30-feature-workbench-composer.md) | 5 | web-foundation-landing-styleguide, project-feature-state, agent-settings-skills, artifact-approval-gates, cli-agent-sessions |
 | 10 | [document-review-reader](2026-10-30-document-review-reader.md) | 4 | artifact-approval-gates, feature-workbench-composer |
 | 11 | [terminal-panel-footer](2026-10-30-terminal-panel-footer.md) | 5 | web-foundation-landing-styleguide, managed-command-runtime, feature-workbench-composer |

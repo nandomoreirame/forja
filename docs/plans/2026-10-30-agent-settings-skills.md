@@ -38,12 +38,14 @@
 **Requirement:** REQ-014, REQ-016, REQ-053
 **Depends on:** none within this plan
 **Files:**
+
 - Create: `src/shared/domain/agents.ts`
 - Create: `src/core/agents/profile-store.ts`
 - Create: `test/agents/profiles.test.ts`
 - Test: `test/agents/profiles.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -105,12 +107,14 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-017, REQ-051, REQ-052
 **Depends on:** Task 1
 **Files:**
+
 - Create: `src/core/skills/catalog.ts`
 - Create: `src/core/skills/parse-skill.ts`
 - Create: `test/skills/catalog.test.ts`
 - Test: `test/skills/catalog.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -175,12 +179,14 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-015, REQ-017, REQ-022, REQ-051
 **Depends on:** Task 2
 **Files:**
+
 - Create: `src/core/agents/context.ts`
 - Create: `src/core/agents/role-policy.ts`
 - Create: `test/agents/context.test.ts`
 - Test: `test/agents/context.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -240,9 +246,10 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 
 ### Task 4: Connect the approved settings view with manual-only saves
 
-**Requirement:** REQ-014, REQ-016, REQ-017, REQ-047, REQ-053
+**Requirement:** REQ-014, REQ-016, REQ-017, REQ-047, REQ-053, REQ-059
 **Depends on:** Task 3
 **Files:**
+
 - Create: `src/renderer/src/pages/settings/index.ts`
 - Create: `src/renderer/src/pages/settings/settings-page.tsx`
 - Create: `src/renderer/src/features/agent-settings/model.ts`
@@ -252,6 +259,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/ui/settings.test.tsx`
 
 **Team:**
+
 - Track: frontend
 - Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
 - Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
@@ -282,7 +290,7 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Use gallery-validated controls to render Agents/General sections. Wire typed IPC profile/catalog reads/saves, validation feedback and loading/errors. Fields are exactly approved: role selector, engine, optional model/effort, instructions, selected skills, autoInvoke; General has skills root/refresh, interrupt policy, read-only Guided mode and three rounds. Composer is supplied by the global shell, never duplicated in SettingsPage.
+Use gallery-validated controls to render Agents/General sections. Wire typed IPC profile/catalog reads/saves, validation feedback and loading/errors. Fields are exactly approved: role selector, engine, optional model/effort, instructions, selected skills, autoInvoke; General has skills root/refresh, interrupt policy (default interrupt), turn inactivity window in minutes (default 10, bounded 1 to 120), read-only Guided mode and three rounds. Composer is supplied by the global shell, never duplicated in SettingsPage.
 
 ```typescript
 export const settingsSections = ['agents', 'general'] as const

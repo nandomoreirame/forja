@@ -33,7 +33,8 @@
 
 - Guided transitions are core-enforced and human approvals remain authoritative.
 - Corrections are bidirectionally linked and automatic attempts bounded.
-- Final integration uses current code/tests/review and explicit consent.
+- Final approval and integration are one human action bound to current code, confirmed gates on the merge result and review.
+- Human gates are only spec, plan, final approval and push; the correction loop runs on machine gates.
 
 ## Tasks
 
@@ -42,11 +43,13 @@
 **Requirement:** REQ-009, REQ-010, REQ-011, REQ-045
 **Depends on:** none within this plan
 **Files:**
+
 - Create: `src/core/workflow/transitions.ts`
 - Create: `test/workflow/transitions.test.ts`
 - Test: `test/workflow/transitions.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -62,8 +65,9 @@ import { requiredGate } from '../../src/core/workflow/transitions'
 it('requires approved predecessor artifacts for plan and implementation', () => {
   expect(requiredGate('planner')).toBe('spec-approved')
   expect(requiredGate('implementer')).toBe('plan-approved')
-  expect(requiredGate('tester')).toBe('implementation-approved')
+  expect(requiredGate('tester')).toBe('implementation-validated')
   expect(requiredGate('reviewer')).toBe('tests-current')
+  expect(requiredGate('final')).toBe('review-current')
 })
 ```
 
@@ -75,17 +79,17 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Model phase/status/approval requests explicitly and persist compare-and-swap transitions with the feature lease. Derive start permission from current content-bound evidence, not only a phase label. Research creates draft spec; human approves it; Planner creates draft plan; human approves it; Implementer produces validated code; human approves implementation; Tester validates; Reviewer reviews current code/tests; human grants final completion and then separate integration approval.
+Model phase/status/approval requests explicitly and persist compare-and-swap transitions with the feature lease. Derive start permission from current content-bound evidence, not only a phase label. Research creates draft spec; human approves it; Planner creates draft plan; human approves it; Implementer produces code that core validates with the confirmed repository gates and commits (`implementation-validated`, a machine gate with no human approval); Tester extends tests and core re-runs the gates (`tests-current`); Reviewer reviews current code/tests (`review-current`, no open unwaived Critical/High findings); the human grants one final approval that also authorizes integration; push is a separate approval.
 
 ```typescript
 export function requiredGate(role: string): string {
-  const gates: Record<string, string> = { research: 'none', planner: 'spec-approved', implementer: 'plan-approved', tester: 'implementation-approved', reviewer: 'tests-current' }
+  const gates: Record<string, string> = { research: 'none', planner: 'spec-approved', implementer: 'plan-approved', tester: 'implementation-validated', reviewer: 'tests-current', final: 'review-current' }
   if (!(role in gates)) throw new Error('Unknown role')
   return gates[role]
 }
 ```
 
-A disabled toggle means a ready next role awaits user start. AutoInvoke may request its start but never grants a missing approval. Corrections that stale mandatory implementation approval pause at that gate; do not promise an unattended full loop under Guided mode.
+A disabled toggle means a ready next role awaits user start. AutoInvoke may request its start but never grants a missing approval. Corrections inside the Tester/Reviewer loop need no human approval: each correction re-enters at `implementation-validated` through the machine gate. Only spec, plan and final approval are human gates, and a correction that stales the spec or plan pauses there.
 
 **Step 4: Run test to verify it passes**
 
@@ -94,6 +98,8 @@ Run: `rtk npm test -- test/workflow/transitions.test.ts`. Expected: PASS. Add an
 - Every direct IPC/MCP start path uses the same core gate.
 - Draft/missing/stale spec/plan/current-code proof blocks before CLI spawn.
 - A model text message saying approved changes no approval state.
+- Red, skipped or missing repository gates keep `implementation-validated` false; agent-run commands never satisfy it.
+- An RPI artifact write does not stale `implementation-validated` or `tests-current`.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
@@ -103,14 +109,16 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 
 ### Task 2: Persist bidirectional handoff and correction links
 
-**Requirement:** REQ-020, REQ-022, REQ-027, REQ-048
+**Requirement:** REQ-020, REQ-022, REQ-027, REQ-048, REQ-056
 **Depends on:** Task 1
 **Files:**
+
 - Create: `src/core/workflow/handoffs.ts`
 - Create: `test/workflow/handoffs.test.ts`
 - Test: `test/workflow/handoffs.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -122,12 +130,21 @@ Write this acceptance-focused test before implementing behavior. If the public m
 ```typescript
 // @vitest-environment node
 import { expect, it } from 'vitest'
-import { handoffAnchors } from '../../src/core/workflow/handoffs'
+import { handoffAllowed, handoffAnchors } from '../../src/core/workflow/handoffs'
 it('keeps both ends in the same feature with stable conversation IDs', () => {
   const link = handoffAnchors('f1', { conversationId: 'tester', messageId: 'request' }, { conversationId: 'implementer', messageId: 'result' })
   expect(link.from.featureId).toBe('f1')
   expect(link.to.featureId).toBe('f1')
   expect(link.to.messageId).toBe('result')
+})
+it('allows only the approved handoff matrix', () => {
+  expect(handoffAllowed('tester', 'implementer')).toBe(true)
+  expect(handoffAllowed('reviewer', 'implementer')).toBe(true)
+  expect(handoffAllowed('implementer', 'planner')).toBe(true)
+  expect(handoffAllowed('planner', 'research')).toBe(true)
+  expect(handoffAllowed('reviewer', 'planner')).toBe(false)
+  expect(handoffAllowed('tester', 'research')).toBe(false)
+  expect(handoffAllowed('implementer', 'reviewer')).toBe(false)
 })
 ```
 
@@ -139,10 +156,14 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Record source role/conversation/message, target role/conversation/message, feature, artifact and code fingerprints, finding/request IDs, reason and correction round. Create outgoing request and destination event atomically and idempotently by request ID. A role may request a handoff, not forge a completed correction or approve its own review. Reviewer maintains finding state; Implementer links changed commit/results to the request.
+Record source role/conversation/message, target role/conversation/message, feature, artifact and code fingerprints, finding/request IDs, reason and correction round. Create outgoing request and destination event atomically and idempotently by request ID. A role may request a handoff, not forge a completed correction or approve its own review. Reviewer maintains finding state; Implementer links changed commit/results to the request. Only the matrix above is accepted. Implementer to Planner and Planner to Research invalidate the plan (and the spec, for Research) plus every downstream approval and evidence in the same transaction, and work resumes only after new human approval. A human rejection of the spec, plan or final approval records its reason and opens a request to Research, Planner or Implementer respectively.
 
 ```typescript
 type Anchor = { conversationId: string; messageId: string }
+const matrix: Record<string, readonly string[]> = { tester: ['implementer'], reviewer: ['implementer'], implementer: ['planner'], planner: ['research'] }
+export function handoffAllowed(from: string, to: string): boolean {
+  return matrix[from]?.includes(to) ?? false
+}
 export function handoffAnchors(featureId: string, from: Anchor, to: Anchor) {
   return { from: { featureId, ...from }, to: { featureId, ...to } }
 }
@@ -157,6 +178,7 @@ Run: `rtk npm test -- test/workflow/handoffs.test.ts`. Expected: PASS. Add and r
 - Duplicate tool calls cannot create two correction rounds or histories.
 - Reject another feature message/artifact/finding link.
 - Only Reviewer resolves/removes findings after inspecting updated work.
+- A backward handoff invalidates downstream approvals atomically; a rejected matrix pair creates no request or event.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
@@ -169,11 +191,13 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-009, REQ-020, REQ-021, REQ-045
 **Depends on:** Task 2
 **Files:**
+
 - Create: `src/core/workflow/automation.ts`
 - Create: `test/workflow/automation.test.ts`
 - Test: `test/workflow/automation.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -202,7 +226,7 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Count a correction attempt only when a new Implementer correction run is actually started from a recorded Tester/Reviewer request; declined/blocked starts do not consume a round. Share the counter across requesters in one feature, with idempotent request IDs. At three, pause and offer explicit human continuation; record a new bounded budget window without erasing total history. Gate checks and current fingerprints run before every automatic start.
+Count a correction attempt only when a new Implementer correction run is actually started from a recorded Tester/Reviewer request; declined/blocked starts do not consume a round. Share the counter across requesters in one feature, with idempotent request IDs. At three, pause and offer explicit human continuation; record a new bounded budget window without erasing total history. Gate checks and current fingerprints run before every automatic start. Within the budget the loop runs unattended: Implementer correction, core gates and commit, Tester, core gates, Reviewer, with no human approval between them.
 
 ```typescript
 export function automaticCorrectionAllowed(input: { enabled: boolean; rounds: number; gateReady: boolean }): boolean {
@@ -218,7 +242,8 @@ Run: `rtk npm test -- test/workflow/automation.test.ts`. Expected: PASS. Add and
 
 - Mixed Tester/Reviewer failures consume the same feature budget.
 - One failure forwarded twice starts one correction; stale plan pauses regardless of toggle.
-- Human continuation is auditable and no auto-approved implementation/final/integration state appears.
+- Human continuation is auditable and no auto-approved spec/plan/final/integration state appears.
+- A full correction round (Reviewer finding to re-review) completes without a human click while the budget lasts.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
@@ -228,9 +253,10 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 
 ### Task 4: Bind testing and review evidence to code and expose final integration readiness
 
-**Requirement:** REQ-011, REQ-022, REQ-025, REQ-026, REQ-027, REQ-050
+**Requirement:** REQ-011, REQ-022, REQ-025, REQ-026, REQ-027, REQ-050, REQ-055, REQ-057
 **Depends on:** Task 3
 **Files:**
+
 - Create: `src/core/workflow/validation.ts`
 - Create: `src/core/workflow/review.ts`
 - Create: `src/renderer/src/features/approvals/integration-card.tsx`
@@ -238,6 +264,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/workflow/validation.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -265,7 +292,7 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Tester records actual commands/execution IDs/results and code fingerprint. Reviewer reads approved plan, current diff and test evidence and publishes compatible review findings/rounds. Missing tools/skipped gates are not pass. If user shell or background tooling changes code, invalidate those checks and review; do not rely on static branch commit alone. Final approval card links current artifacts/results and prepares a separate integration request with exact source/target IDs.
+Validation evidence comes only from core running the confirmed repository gates (feature-git-worktrees Task 5) through the managed command runtime on the current fingerprint; wire this runner into the commit service (feature-git-worktrees Task 3) and into `validateMergeResult` (feature-git-worktrees Task 4); agent-run commands are recorded as diagnostics. The Tester edits only files matching the confirmed test patterns; a write outside them is rejected. Reviewer reads approved plan, current diff and gate evidence and publishes compatible review findings/rounds. Missing tools/skipped gates are not pass. If user shell or background tooling changes code, invalidate those checks and review; do not rely on static branch commit alone. The final approval card links current artifacts/results, shows open and waived findings, and its single "Approve and integrate" action prepares and executes the integration request with exact source/target IDs. Waiving a blocking finding is a human-only IPC command with a mandatory reason and an extra confirmation for Critical; it records actor, time and finding revision and keeps the finding visible as waived.
 
 ```typescript
 export function validationCurrent(result: { fingerprint: string; passed: boolean }, current: string): boolean {
@@ -280,7 +307,9 @@ The reviewer is a distinct role/session from Implementer even if the user select
 Run: `rtk npm test -- test/workflow/validation.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
 
 - Untracked/manual code edit invalidates validation and review before integration.
-- Open Critical/High findings or failed gates block final/integration readiness.
+- Open unwaived Critical/High findings or failed gates block final approval.
+- A waiver without a reason, or a Critical waiver without the second confirmation, is rejected; no MCP tool can waive.
+- A Tester write to a non-test path is rejected and recorded.
 - Human rejection returns actionable context to the correct feature/role.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
@@ -294,6 +323,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-009, REQ-010, REQ-020, REQ-021, REQ-026, REQ-043, REQ-045, REQ-049
 **Depends on:** Task 4
 **Files:**
+
 - Create: `test/e2e/playwright.config.ts`
 - Create: `test/e2e/electron-fixture.ts`
 - Create: `test/e2e/guided-flow.spec.ts`
@@ -303,6 +333,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/e2e/guided-flow.spec.ts`
 
 **Team:**
+
 - Track: frontend
 - Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
 - Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
@@ -333,7 +364,7 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 Create test/e2e/playwright.config.ts and electron-fixture.ts for Electron tests using _electron.launch, isolated data/temp repos and a fixture API exposing window plus feature navigation/start helpers. Exclude site.spec.ts. Implement a deterministic E2E CLI fixture behind the normal adapter contract and capability checks, only enabled by a dedicated isolated test-mode flag with temporary data directory. The test harness must launch Electron and provide the first-window page fixture; no nonexistent generic browser page test pretending to exercise Electron. Seed an unapproved spec/feature before this scenario and assert no process spawned before the approval.
 
-Add the accompanying fake-adapter unit test to validate fixture ordering/events against the real EngineEvent schema. Extend the Electron scenario through plan approval, worktree code change, implementation approval, failing test request, correction link, review findings, bounded auto-invoke pause, final approval and approved merge in a disposable repository. Use runtime events to assert absence of unauthorized starts, not only a disabled button.
+Add the accompanying fake-adapter unit test to validate fixture ordering/events against the real EngineEvent schema. Extend the Electron scenario through repository gate confirmation, plan approval, worktree code change with machine validation and commit (no implementation approval click), failing Tester request, unattended correction link, review findings, bounded auto-invoke pause, a finding waiver, single final approval with merge-result gates and merge in a disposable repository. Use runtime events to assert absence of unauthorized starts, not only a disabled button.
 
 **Step 4: Run test to verify it passes**
 

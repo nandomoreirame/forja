@@ -38,12 +38,14 @@
 **Requirement:** REQ-013, REQ-022, REQ-037, REQ-048
 **Depends on:** none within this plan
 **Files:**
+
 - Create: `src/core/artifacts/paths.ts`
 - Create: `src/core/artifacts/policy.ts`
 - Create: `test/artifacts/paths.test.ts`
 - Test: `test/artifacts/paths.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -72,7 +74,7 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Resolve optional specs_dir/plans_dir/spec_filename from the opened folder's rpi-paths.json, with per-key defaults and explicit diagnostics for malformed values. Default reviews remain docs/reviews/<slug>.md plus the compatible review-round history. Do not silently derive paths from the target Git repo. Validate slug, canonical ancestor/root and symlink boundaries at write time; configured roots outside the folder need explicit user authorization.
+Resolve every path against the feature artifact root recorded by project-feature-state: the opened folder while the feature has no Git target, and the feature worktree once feature-git-worktrees binds one. Read optional specs_dir/plans_dir/spec_filename from that root's rpi-paths.json, with per-key defaults and explicit diagnostics for malformed values. Default reviews remain docs/reviews/<slug>.md plus the compatible review-round history. Never derive the root from a model argument or from the destination worktree of the target repo. Validate slug, canonical ancestor/root and symlink boundaries at write time; configured roots outside the folder need explicit user authorization.
 
 ```typescript
 export type ArtifactKind = 'spec' | 'plan' | 'review'
@@ -95,6 +97,7 @@ Run: `rtk npm test -- test/artifacts/paths.test.ts`. Expected: PASS. Add and run
 
 - Reject traversal, slug collisions, unauthorized external roots and symlink escape.
 - Two target repos under one opened folder cannot overwrite the same feature artifact.
+- After the artifact root switches to a worktree, a publish never writes into the opened folder or the destination worktree.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
@@ -107,12 +110,14 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-011, REQ-013, REQ-037, REQ-050
 **Depends on:** Task 1
 **Files:**
+
 - Create: `src/core/artifacts/publisher.ts`
 - Create: `src/core/artifacts/versions.ts`
 - Create: `test/artifacts/publish.test.ts`
 - Test: `test/artifacts/publish.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -170,6 +175,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-009, REQ-010, REQ-011, REQ-045
 **Depends on:** Task 2
 **Files:**
+
 - Create: `src/core/workflow/approvals.ts`
 - Create: `src/core/workflow/gates.ts`
 - Create: `src/core/workflow/invalidation.ts`
@@ -177,6 +183,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/workflow/approvals.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -212,7 +219,7 @@ export function canUseApproval(approval: { hash: string; dependencyHash: string;
 }
 ```
 
-The persisted graph supports multiple dependencies, not only the one-dependency seed. Model role-specific start gates for Planner and Implementer and later transitions. No MCP method grants approvals.
+The persisted graph supports multiple dependencies, not only the one-dependency seed. Model role-specific start gates for Planner and Implementer and later transitions. Human approval kinds are exactly spec, plan, final (which also authorizes integration), finding waiver and push; there is no implementation approval, because implementation is gated by the confirmed repository gates. No MCP method grants approvals.
 
 **Step 4: Run test to verify it passes**
 
@@ -221,6 +228,7 @@ Run: `rtk npm test -- test/workflow/approvals.test.ts`. Expected: PASS. Add and 
 - Change a file between watcher events and start; gate still blocks.
 - Double approval clicks and simultaneous windows cannot approve different revisions.
 - Draft/missing/malformed prerequisites block before CLI launch.
+- An approval request with an unknown kind, including `implementation`, fails schema validation.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
@@ -230,9 +238,10 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 
 ### Task 4: Expose scoped state/artifact MCP tools and bridge approvals separately
 
-**Requirement:** REQ-012, REQ-013, REQ-022, REQ-027, REQ-045, REQ-048, REQ-051
+**Requirement:** REQ-012, REQ-013, REQ-022, REQ-027, REQ-045, REQ-048, REQ-051, REQ-056
 **Depends on:** Task 3
 **Files:**
+
 - Create: `src/core/mcp/gateway.ts`
 - Create: `src/core/mcp/artifact-tools.ts`
 - Create: `src/core/mcp/capability.ts`
@@ -242,6 +251,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/mcp/artifact-tools.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -281,7 +291,7 @@ export function toolNamesForRole(role: string): string[] {
 }
 ```
 
-Persist review history in the approved format with idempotent run/request IDs; only Reviewer changes findings. Strip/reject caller-controlled approval flags. Define tool contracts now; command tools are added by the managed runtime plan without changing authority.
+Persist review history in the approved format with idempotent run/request IDs; only Reviewer changes findings. Strip/reject caller-controlled approval flags. Define tool contracts now; command tools are added by the managed runtime plan without changing authority. `forja.handoff.request` accepts only the REQ-056 matrix for the caller's server-bound role; guided-rpi-orchestration Task 2 owns that matrix and its persistence, so until that slice lands the tool returns a structured "not available" error instead of recording unchecked requests.
 
 **Step 4: Run test to verify it passes**
 
@@ -302,12 +312,14 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-011, REQ-022, REQ-037, REQ-048, REQ-050, REQ-051
 **Depends on:** Task 4
 **Files:**
+
 - Create: `src/core/mcp/file-tools.ts`
 - Create: `src/core/files/scoped-files.ts`
 - Create: `test/mcp/file-tools.test.ts`
 - Test: `test/mcp/file-tools.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer

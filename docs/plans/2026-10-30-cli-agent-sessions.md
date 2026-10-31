@@ -7,7 +7,7 @@
 **Architecture:** Follow the parent spec and public module contracts. All backend authority stays in core; browser compositions stay shared and side-effect free. Never depend on site internals from Electron.
 **Tech Stack:** Electron, React, TypeScript, SQLite, Zod; shadcn/ui and Tailwind for UI; Vitest/RTL and Playwright for tests.
 **Order:** 08 of 13
-**Total Tasks:** 7
+**Total Tasks:** 8
 **Estimated Complexity:** medium
 **Status:** Approved scope, planned; not implemented.
 
@@ -40,6 +40,7 @@
 **Requirement:** REQ-007, REQ-018, REQ-019, REQ-034, REQ-048
 **Depends on:** none within this plan
 **Files:**
+
 - Create: `src/core/engines/transport.ts`
 - Create: `src/core/engines/registry.ts`
 - Create: `test/engines/transport.test.ts`
@@ -47,6 +48,7 @@
 - Test: `test/engines/transport.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -100,6 +102,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-015, REQ-018, REQ-019, REQ-023, REQ-046, REQ-048, REQ-051, REQ-052
 **Depends on:** shared session transport task for this plan
 **Files:**
+
 - Create: `src/core/engines/claude/index.ts`
 - Create: `src/core/engines/claude/launch.ts`
 - Create: `src/core/engines/claude/parser.ts`
@@ -107,6 +110,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/engines/claude.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -171,6 +175,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-015, REQ-018, REQ-019, REQ-023, REQ-046, REQ-048, REQ-051, REQ-052
 **Depends on:** shared session transport task for this plan
 **Files:**
+
 - Create: `src/core/engines/codex/index.ts`
 - Create: `src/core/engines/codex/launch.ts`
 - Create: `src/core/engines/codex/parser.ts`
@@ -178,6 +183,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/engines/codex.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -242,6 +248,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-015, REQ-018, REQ-019, REQ-023, REQ-046, REQ-048, REQ-051, REQ-052
 **Depends on:** shared session transport task for this plan
 **Files:**
+
 - Create: `src/core/engines/opencode/index.ts`
 - Create: `src/core/engines/opencode/launch.ts`
 - Create: `src/core/engines/opencode/parser.ts`
@@ -249,6 +256,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/engines/opencode.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -313,6 +321,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-015, REQ-018, REQ-019, REQ-023, REQ-046, REQ-048, REQ-051, REQ-052
 **Depends on:** shared session transport task for this plan
 **Files:**
+
 - Create: `src/core/engines/agy/index.ts`
 - Create: `src/core/engines/agy/launch.ts`
 - Create: `src/core/engines/agy/parser.ts`
@@ -320,6 +329,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/engines/agy.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -384,6 +394,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-015, REQ-018, REQ-019, REQ-023, REQ-046, REQ-048, REQ-051, REQ-052
 **Depends on:** shared session transport task for this plan
 **Files:**
+
 - Create: `src/core/engines/grok/index.ts`
 - Create: `src/core/engines/grok/launch.ts`
 - Create: `src/core/engines/grok/parser.ts`
@@ -391,6 +402,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/engines/grok.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -455,6 +467,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-006, REQ-007, REQ-018, REQ-019, REQ-023, REQ-034, REQ-053
 **Depends on:** Task 6
 **Files:**
+
 - Create: `src/core/sessions/service.ts`
 - Create: `src/core/sessions/queue.ts`
 - Create: `src/core/sessions/permissions.ts`
@@ -464,6 +477,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 - Test: `test/sessions/queue.test.ts`
 
 **Team:**
+
 - Track: backend
 - Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
 - Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
@@ -515,6 +529,91 @@ Run: `rtk npm test -- test/sessions/queue.test.ts`. Expected: PASS. Add and run 
 - Two sends during stop cannot create duplicate turns; wrong feature never receives the instruction.
 - Native resume unsupported/failed produces a consent state with preserved history.
 - Permission rejection and app shutdown leave truthful interrupted state and no orphan foreground process.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 8: Flag stalled turns, force stop and record CLI-reported usage
+
+**Requirement:** REQ-007, REQ-034, REQ-052, REQ-059, REQ-060
+**Depends on:** Task 7
+**Files:**
+
+- Create: `src/core/sessions/watchdog.ts`
+- Create: `src/core/sessions/usage.ts`
+- Create: `test/sessions/watchdog.test.ts`
+- Test: `test/sessions/watchdog.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it } from 'vitest'
+import { turnHealth } from '../../src/core/sessions/watchdog'
+import { aggregateUsage } from '../../src/core/sessions/usage'
+it('flags inactivity without killing and keeps unreported usage unavailable', () => {
+  const minute = 60_000
+  expect(turnHealth({ lastEventAt: 0, now: 9 * minute, windowMinutes: 10 })).toBe('running')
+  expect(turnHealth({ lastEventAt: 0, now: 10 * minute, windowMinutes: 10 })).toBe('unresponsive')
+  expect(aggregateUsage([{ inputTokens: 10, outputTokens: 5 }, { inputTokens: 1, outputTokens: 2 }])).toEqual({ inputTokens: 11, outputTokens: 7 })
+  expect(aggregateUsage([null, { inputTokens: 1, outputTokens: 2 }])).toEqual({ inputTokens: 1, outputTokens: 2, partial: true })
+  expect(aggregateUsage([{ inputTokens: 1, outputTokens: 1, costUsd: 0.5 }, { inputTokens: 1, outputTokens: 1 }])).toEqual({ inputTokens: 2, outputTokens: 2, partial: true })
+  expect(aggregateUsage([null, null])).toBeNull()
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/sessions/watchdog.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+Track the last normalized event per running turn. When no event arrives within the snapshot inactivity window, persist the turn as `unresponsive` and surface "keep waiting" and "stop" actions; any later event returns it to `running`. The watchdog never signals a process. A forced stop is always available for a running or unresponsive turn: it terminates the owned process group with the same escalation as interruption and releases the feature lease only after termination is confirmed. Usage comes only from normalized adapter events that report it; aggregate per turn and per feature, mark totals as partial when some turns did not report, and show "unavailable" when none did. Never estimate tokens or cost.
+
+```typescript
+export function turnHealth(input: { lastEventAt: number; now: number; windowMinutes: number }): 'running' | 'unresponsive' {
+  return input.now - input.lastEventAt >= input.windowMinutes * 60_000 ? 'unresponsive' : 'running'
+}
+```
+
+```typescript
+export type Usage = { inputTokens: number; outputTokens: number; costUsd?: number; partial?: true }
+export function aggregateUsage(turns: (Usage | null)[]): Usage | null {
+  const reported = turns.filter((t): t is Usage => t !== null)
+  if (reported.length === 0) return null
+  const out: Usage = {
+    inputTokens: reported.reduce((n, t) => n + t.inputTokens, 0),
+    outputTokens: reported.reduce((n, t) => n + t.outputTokens, 0),
+  }
+  const allCost = reported.every(t => t.costUsd !== undefined)
+  if (allCost) out.costUsd = reported.reduce((n, t) => n + (t.costUsd ?? 0), 0)
+  if (reported.length < turns.length || !allCost && reported.some(t => t.costUsd !== undefined)) out.partial = true
+  return out
+}
+```
+
+Extend EngineEvent with an optional usage payload per adapter only where the probe matrix records it. Cost fields stay absent when a CLI reports tokens only.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/sessions/watchdog.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- A fake CLI that stops emitting is flagged, keeps its lease, and a forced stop releases the lease only after the process group exits.
+- A late event after the flag returns the turn to running without a duplicate turn.
+- Cost from turns with and without cost fields never sums into a fabricated total.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
