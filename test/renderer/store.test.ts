@@ -11,7 +11,7 @@ it('starts on home', () => {
 it('loads projects, navigates history and toggles panels without duplicating views', async () => {
   const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
   await store.getState().openProject('nandomoreira.dev')
-  expect(store.getState().projects).toHaveLength(2)
+  expect(store.getState().projects).toHaveLength(6)
   store.getState().back()
   expect(store.getState().historyIndex).toBe(0)
   store.getState().navigate({ kind: 'compose', role: 'research' })

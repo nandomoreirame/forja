@@ -6,17 +6,24 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
     locale === 'en'
       ? ['Login with OAuth', 'Catalog search']
       : ['Login com OAuth', 'Busca no catálogo']
-  return ['nandomoreira.dev', 'dev'].map((id, index) => {
-    const path = id === 'dev' ? '~/dev' : '~/dev/projects/nandomoreira.dev'
+  const projects = [
+    { id: 'nandomoreira.dev', path: '~/dev/projects/nandomoreira.dev', openedAt: '2026-10-31' },
+    { id: 'dev', path: '~/dev', openedAt: '2026-10-30' },
+    { id: 'contrateum.dev', path: '~/dev/projects/contrateum.dev', openedAt: '2026-10-27' },
+    { id: 'mousai.gallery', path: '~/dev/projects/mousai.gallery', openedAt: '2026-10-22' },
+    { id: 'terminalnoir', path: '~/dev/projects/terminalnoir', openedAt: '2026-10-14' },
+    { id: 'tumodori', path: '~/dev/projects/tumodori', openedAt: '2026-09-30' },
+  ]
+  return projects.map(({ id, path, openedAt }) => {
     return {
-      project: { id, name: id, path, lastOpenedAt: `2026-10-${31 - index}T12:00:00Z` },
+      project: { id, name: id, path, lastOpenedAt: `${openedAt}T12:00:00Z` },
       agents: roleIds.map((id) => ({ id, state: 'draft' })),
       artifacts: [],
       skills: [],
       branches: ['main'],
       changes: [],
       features:
-        index === 0
+        id !== 'dev'
           ? []
           : names.map((name, i) => ({
               id: `feature-${i + 1}`,

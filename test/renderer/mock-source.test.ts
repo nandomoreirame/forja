@@ -5,7 +5,14 @@ import { expect, it } from 'vitest'
 import { createMockSource, type ChatMessage } from '../../src/renderer/src/shared/api'
 it('serves isolated localized snapshots for both projects', async () => {
   const source = createMockSource({ locale: 'pt-br' })
-  expect((await source.listProjects()).map((p) => p.name)).toEqual(['nandomoreira.dev', 'dev'])
+  expect((await source.listProjects()).map((p) => p.name)).toEqual([
+    'nandomoreira.dev',
+    'dev',
+    'contrateum.dev',
+    'mousai.gallery',
+    'terminalnoir',
+    'tumodori',
+  ])
   const fresh = await source.loadProject('nandomoreira.dev')
   expect(fresh.features).toHaveLength(0)
   expect(fresh.agents.map((a) => a.id)).toEqual([
