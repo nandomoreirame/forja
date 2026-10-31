@@ -222,3 +222,14 @@ it('names a shell tab after the shell that actually started', async () => {
     .map((t) => t.label)
   expect(labels).toEqual(['fish', 'bash 2'])
 })
+it('numbers shells correctly when the feature slug itself contains "shell"', async () => {
+  const store = await setup()
+  const id = store.getState().createFeatureFromPrompt('Check the shell', 'research')
+  store.getState().addShell(id)
+  store.getState().addShell(id)
+  store.getState().setTerminalShell(id, `${id}-shell-2`, 'zsh')
+  const shells = store.getState().snapshot!.features.find((f) => f.id === id)!.terminals
+  expect(shells.map((t) => t.id)).toEqual([`${id}-shell-1`, `${id}-shell-2`])
+  expect(shells.map((t) => t.label)).toEqual(['zsh', 'zsh 2'])
+  expect(store.getState().terminalTabs[id]).toBe(`${id}-shell-2`)
+})

@@ -61,6 +61,8 @@ export interface WorkbenchState {
   markTerminalExited(featureId: string, terminalId: string, exitCode: number): void
   setTerminalShell(featureId: string, terminalId: string, shell: string): void
 }
+const shellNumber = (id: string) => Number(/-shell-(\d+)$/.exec(id)?.[1] ?? 0)
+
 export function createWorkbenchStore(source: WorkbenchSource) {
   const replies = new Map<string, { cancel: () => void }>()
   let request = 0
@@ -423,7 +425,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           Math.max(
             0,
             ...feature.terminals.map((terminal) =>
-              terminal.kind === 'shell' ? Number(terminal.id.split('-shell-')[1]) || 0 : 0,
+              terminal.kind === 'shell' ? shellNumber(terminal.id) || 0 : 0,
             ),
           ) + 1
         const cwd = feature.worktree ?? feature.destination
@@ -462,7 +464,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           ...item,
           terminals: item.terminals.map((terminal) => {
             if (terminal.id !== terminalId || terminal.kind !== 'shell') return terminal
-            const number = Number(terminal.id.split('-shell-')[1]) || 1
+            const number = shellNumber(terminal.id) || 1
             return { ...terminal, label: number > 1 ? `${name} ${number}` : name }
           }),
         }))
