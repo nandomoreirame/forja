@@ -1,8 +1,30 @@
 import { registerProjectDirectoryPicker } from './project-directory'
+import { registerTerminals } from './terminals'
+import { createPtyService, resolveDefaultShell } from '../core/terminals/pty-service'
+import { spawn as spawnPty } from 'node-pty'
+import { accessSync, constants } from 'node:fs'
+import { userInfo } from 'node:os'
 import { app, BrowserWindow, utilityProcess, type UtilityProcess } from 'electron'
 import { join } from 'node:path'
 
 let core: UtilityProcess | undefined
+let terminals: ReturnType<typeof registerTerminals> | undefined
+
+const executable = (path: string) => {
+  try {
+    accessSync(path, constants.X_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+const accountShell = () => {
+  try {
+    return userInfo().shell ?? undefined
+  } catch {
+    return undefined
+  }
+}
 
 function createWindow(): void {
   const window = new BrowserWindow({
@@ -30,6 +52,18 @@ function createWindow(): void {
 
 void app.whenReady().then(() => {
   registerProjectDirectoryPicker()
+  terminals = registerTerminals((callbacks) =>
+    createPtyService({
+      ...callbacks,
+      spawn: spawnPty,
+      shell: () =>
+        resolveDefaultShell({
+          accountShell: accountShell(),
+          envShell: process.env.SHELL,
+          executable,
+        }),
+    }),
+  )
   if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'Forja Dev'))
   core = utilityProcess.fork(join(import.meta.dirname, 'core.js'), [], {
     env: { ...process.env, FORJA_DATA_DIR: app.getPath('userData') },
@@ -42,4 +76,7 @@ void app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
 })
-app.on('before-quit', () => core?.kill())
+app.on('before-quit', () => {
+  terminals?.closeAll()
+  core?.kill()
+})
