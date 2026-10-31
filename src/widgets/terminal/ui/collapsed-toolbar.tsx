@@ -70,12 +70,12 @@ export function CollapsedToolbar({
       <div
         role="toolbar"
         aria-label={label}
-        className={`flex min-w-0 items-center gap-3 whitespace-nowrap border-border bg-secondary px-3 py-2 text-[12px] ${className}`}
+        className={`@container flex min-w-0 items-center gap-3 whitespace-nowrap border-border bg-secondary px-3 py-2 text-[12px] ${className}`}
       >
-        <span className="hidden shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground lg:inline">
+        <span className="hidden shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground @4xl:inline">
           {label}:
         </span>
-        <div className="flex min-w-0 flex-1 items-center gap-4 overflow-x-auto">
+        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden @xl:gap-4">
           {items.map((item) => (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>
@@ -85,7 +85,7 @@ export function CollapsedToolbar({
                   className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded px-1.5 py-0.5 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
                 >
                   <SquareTerminal className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                  <span>{item.label}</span>
+                  <span className="sr-only @xl:not-sr-only">{item.label}</span>
                   <span
                     className={
                       item.state === 'done'
@@ -98,7 +98,7 @@ export function CollapsedToolbar({
                     <span aria-hidden="true">
                       {item.state === 'done' ? '✓' : item.state === 'running' ? '◌' : '○'}{' '}
                     </span>
-                    <span className="sr-only xl:not-sr-only">{item.stateLabel}</span>
+                    <span className="sr-only @3xl:not-sr-only">{item.stateLabel}</span>
                   </span>
                 </button>
               </TooltipTrigger>
@@ -118,7 +118,7 @@ export function CollapsedToolbar({
               onClick={() => onExpand?.()}
             >
               <ChevronUp />
-              <span className="hidden xl:inline">{expandLabel}</span>
+              <span className="hidden @3xl:inline">{expandLabel}</span>
             </Button>
           </TooltipTrigger>
           <TooltipContent>{expandLabel}</TooltipContent>
