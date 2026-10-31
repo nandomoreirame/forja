@@ -24,7 +24,7 @@ export interface WorkbenchState {
   view: View
   history: View[]
   historyIndex: number
-  panels: { left: boolean; right: boolean; terminal: boolean }
+  panels: { left: boolean; right: boolean; terminal: boolean; terminalMaximized: boolean }
   palette: { open: boolean; scope: 'all' | 'recent' }
   openPalette(scope: 'all' | 'recent'): void
   closePalette(): void
@@ -50,8 +50,8 @@ export interface WorkbenchState {
   navigate(view: View): void
   back(): void
   forward(): void
-  togglePanel(panel: 'left' | 'right' | 'terminal'): void
-  setPanel(panel: 'left' | 'right' | 'terminal', open: boolean): void
+  togglePanel(panel: 'left' | 'right' | 'terminal' | 'terminalMaximized'): void
+  setPanel(panel: 'left' | 'right' | 'terminal' | 'terminalMaximized', open: boolean): void
   terminalTabs: Record<string, string>
   selectTerminal(featureId: string, terminalId: string): void
   openTerminal(featureId: string, terminalId?: string): void
@@ -325,7 +325,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       view: { kind: 'home' },
       history: [{ kind: 'home' }],
       historyIndex: 0,
-      panels: { left: true, right: true, terminal: false },
+      panels: { left: true, right: true, terminal: false, terminalMaximized: false },
       palette: { open: false, scope: 'all' },
       openPalette(scope) {
         set({ palette: { open: true, scope } })

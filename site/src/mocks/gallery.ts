@@ -101,7 +101,7 @@ const copy = {
       tabDev: 'Implementer · dev',
       tabShell: 'zsh',
       newTerminal: 'New terminal',
-      collapseTerminals: 'Collapse terminals',
+      collapseTerminals: 'Close panel',
       notesTitle: 'Fidelity notes',
       notes: [
         'Reuse these components in the screens.',
@@ -212,7 +212,7 @@ const copy = {
       tabDev: 'Implementador · dev',
       tabShell: 'zsh',
       newTerminal: 'Novo terminal',
-      collapseTerminals: 'Recolher terminais',
+      collapseTerminals: 'Fechar painel',
       notesTitle: 'Notas de fidelidade',
       notes: [
         'Reutilizar estes componentes nas telas.',

@@ -1,3 +1,4 @@
+import { cn } from '@/shared/ui/utils'
 import { Square } from 'lucide-react'
 import { TerminalPreview } from '@/widgets/terminal'
 import { Button } from '@/shared/ui'
@@ -42,9 +43,16 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
       </div>
     ) : null
   return (
-    <section aria-label={a.terminalPanel}>
+    <section
+      aria-label={a.terminalPanel}
+      data-maximized={state.panels.terminalMaximized ? 'true' : undefined}
+      className={state.panels.terminalMaximized ? 'flex min-h-0 flex-1 flex-col' : undefined}
+    >
       <TerminalPreview
-        className="rounded-none border-0"
+        className={cn(
+          'rounded-none border-0',
+          state.panels.terminalMaximized && 'flex min-h-0 flex-1 flex-col',
+        )}
         tabs={(feature?.terminals ?? []).map((terminal) => ({
           id: terminal.id,
           label: terminal.label,
@@ -64,7 +72,14 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
         cwd={active?.cwd}
         cwdLabel={a.workingDirectory}
         onAdd={feature ? () => state.addShell(feature.id) : undefined}
-        onCollapse={() => state.setPanel('terminal', false)}
+        onCollapse={() => {
+          state.setPanel('terminalMaximized', false)
+          state.setPanel('terminal', false)
+        }}
+        onMaximize={() => state.togglePanel('terminalMaximized')}
+        maximized={state.panels.terminalMaximized}
+        maximizeLabel={a.maximizePanel}
+        restoreLabel={a.restorePanel}
         onClose={(id) => feature && state.closeTerminal(feature.id, id)}
         closeLabel={a.close}
       />

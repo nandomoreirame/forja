@@ -113,7 +113,8 @@ function WorkbenchShell() {
               </button>
             </div>
           ) : null}
-          {s.view.kind === 'home' ? (
+          {s.snapshot && s.panels.terminal && s.panels.terminalMaximized ? null : s.view.kind ===
+            'home' ? (
             <HomePage />
           ) : s.view.kind === 'compose' ? (
             <ComposePage />

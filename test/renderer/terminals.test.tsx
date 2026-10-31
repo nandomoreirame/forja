@@ -7,7 +7,7 @@ it('collapses to the toolbar, reopens the exact tab and adds a manual shell', as
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
   fireEvent.click(screen.getByRole('tab', { name: /Implementer · tests/ }))
-  fireEvent.click(screen.getByRole('button', { name: 'Collapse terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close panel' }))
   fireEvent.click(screen.getByRole('button', { name: /tests/ }))
   expect(screen.getByRole('tab', { name: /Implementer · tests/ })).toHaveAttribute(
     'aria-selected',
@@ -26,7 +26,7 @@ it('keeps running state when collapsed, stops without losing output and follows 
     'true',
   )
   expect(panel).toHaveTextContent('npm run dev')
-  fireEvent.click(screen.getByRole('button', { name: 'Collapse terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close panel' }))
   const toolbar = screen.getByRole('toolbar', { name: 'Background terminals' })
   expect(within(toolbar).getByRole('button', { name: /Implementer · dev/ })).toHaveTextContent(
     'Running',
@@ -81,4 +81,19 @@ it('keeps footer terminals while the panel is open and closes only idle or finis
   fireEvent.click(screen.getByRole('button', { name: 'Close Implementer · tests' }))
   expect(screen.queryByRole('tab', { name: /Implementer · tests/ })).toBeNull()
   expect(within(toolbar).queryByRole('button', { name: /Implementer · tests/ })).toBeNull()
+})
+
+it('maximizes the terminal panel over the conversation and closes it with the close icon', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Maximize panel' }))
+  expect(screen.queryByRole('list', { name: 'Conversation' })).toBeNull()
+  expect(screen.getByRole('region', { name: 'Terminals' })).toHaveAttribute(
+    'data-maximized',
+    'true',
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Restore panel' }))
+  expect(screen.getByRole('list', { name: 'Conversation' })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Close panel' }))
+  expect(screen.queryByRole('region', { name: 'Terminals' })).toBeNull()
 })

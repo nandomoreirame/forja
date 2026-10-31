@@ -1,4 +1,4 @@
-import { ChevronDown, Plus, SquareTerminal, X } from 'lucide-react'
+import { Maximize2, Minimize2, Plus, SquareTerminal, X } from 'lucide-react'
 import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui'
 import { cn } from '@/shared/ui/utils'
 
@@ -30,6 +30,10 @@ export interface TerminalPreviewProps {
   onClose?: (id: string) => void
   closeLabel?: string
   className?: string
+  onMaximize?: () => void
+  maximized?: boolean
+  maximizeLabel?: string
+  restoreLabel?: string
 }
 
 const stateClass: Record<TerminalTab['state'], string> = {
@@ -45,7 +49,7 @@ export function TerminalPreview({
   output,
   emptyOutputLabel = 'Waiting for output...',
   addLabel = 'New terminal',
-  collapseLabel = 'Collapse terminals',
+  collapseLabel = 'Close panel',
   tabsLabel = 'Terminals',
   header,
   cwd,
@@ -55,6 +59,10 @@ export function TerminalPreview({
   onClose,
   closeLabel = 'Close',
   className,
+  onMaximize,
+  maximized = false,
+  maximizeLabel = 'Maximize panel',
+  restoreLabel = 'Restore panel',
 }: TerminalPreviewProps) {
   return (
     <TooltipProvider delayDuration={300}>
@@ -148,6 +156,24 @@ export function TerminalPreview({
               </TooltipTrigger>
               <TooltipContent side="bottom">{addLabel}</TooltipContent>
             </Tooltip>
+            {onMaximize ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label={maximized ? restoreLabel : maximizeLabel}
+                    aria-pressed={maximized}
+                    onClick={onMaximize}
+                  >
+                    {maximized ? <Minimize2 /> : <Maximize2 />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  {maximized ? restoreLabel : maximizeLabel}
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -156,7 +182,7 @@ export function TerminalPreview({
                   aria-label={collapseLabel}
                   onClick={onCollapse}
                 >
-                  <ChevronDown />
+                  <X />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">{collapseLabel}</TooltipContent>

@@ -27,7 +27,7 @@ test('terminals collapse to the footer toolbar and reopen the chosen tab', async
   await page.getByRole('option', { name: /^dev/ }).click()
   await page.getByRole('button', { name: 'Toggle terminals' }).click()
   await page.getByRole('tab', { name: /Implementer · tests/ }).click()
-  await page.getByRole('button', { name: 'Collapse terminals' }).click()
+  await page.getByRole('button', { name: 'Close panel' }).click()
   const toolbar = page.getByRole('toolbar', { name: 'Background terminals' })
   await toolbar.getByRole('button', { name: /Implementer · tests/ }).click()
   await expect(page.getByRole('tab', { name: /Implementer · tests/ })).toHaveAttribute(
