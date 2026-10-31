@@ -21,7 +21,10 @@
     "format:check": "prettier --check 'site/**/*.{ts,tsx,css,html}' 'src/shared/{ui,styles,i18n}/**/*.{ts,tsx,css}' 'src/widgets/**/*.{ts,tsx}' 'test/web/**/*.{ts,tsx}' --no-error-on-unmatched-pattern",
     "test:coverage": "vitest run --coverage",
     "test:e2e:app": "playwright test --config test/app-e2e/playwright.config.ts",
-    "test:desktop:picker": "npm run build && node test/desktop/project-directory.smoke.ts"
+    "test:desktop:picker": "npm run build && node test/desktop/project-directory.smoke.ts",
+    "test:desktop:pty": "npm run build && node test/desktop/pty.smoke.ts",
+    "rebuild:native": "electron-rebuild -f -w node-pty",
+    "postinstall": "electron-rebuild -f -w node-pty"
   },
   "build": {
     "appId": "dev.forja.app",
@@ -54,12 +57,15 @@
   "dependencies": {
     "@fontsource/jetbrains-mono": "^5.3.0",
     "@tailwindcss/vite": "^4.3.3",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "cn": "^0.5.1",
     "lucide-react": "^1.65.0",
     "mermaid": "^12.2.0",
+    "node-pty": "^1.1.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
@@ -72,6 +78,7 @@
     "zustand": "^5.0.16"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.1",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.64.1",
     "@testing-library/jest-dom": "^7.0.1",
@@ -94,5 +101,8 @@
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
+  },
+  "allowScripts": {
+    "node-pty@1.1.0": true
   }
 }
