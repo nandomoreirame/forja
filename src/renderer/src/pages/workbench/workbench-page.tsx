@@ -18,6 +18,7 @@ import {
   ResizablePanelGroup,
   TooltipProvider,
   useDefaultLayout,
+  useGroupRef,
 } from '@/shared/ui'
 import { getDictionary } from '@/shared/i18n'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
@@ -25,6 +26,19 @@ import { ProjectSidebar } from '@/renderer/src/widgets/project-sidebar'
 import { GitContext } from '@/renderer/src/widgets/git-context'
 import { IconButton } from '@/renderer/src/shared/ui/icon-button'
 import { TerminalFooterToolbar, TerminalPanel } from '@/renderer/src/features/terminal'
+const mainLayoutKey = 'react-resizable-panels:forja-main:content:terminal'
+
+const collapsedTerminal = (value: string) => {
+  try {
+    const layout: unknown = JSON.parse(value)
+    return Boolean(
+      layout && typeof layout === 'object' && (layout as Record<string, unknown>).terminal === 0,
+    )
+  } catch {
+    return false
+  }
+}
+
 // Layout sizes are a per-viewer convenience; storage can be unavailable (private mode, tests).
 const layoutStorage = {
   getItem(key: string) {
@@ -35,6 +49,8 @@ const layoutStorage = {
     }
   },
   setItem(key: string, value: string) {
+    // A terminal panel dragged closed must reopen at its last real size, as in VS Code.
+    if (collapsedTerminal(value)) return
     try {
       localStorage.setItem(key, value)
     } catch {
@@ -75,6 +91,7 @@ function WorkbenchShell() {
     storage: layoutStorage,
     panelIds: s.snapshot && s.panels.left ? ['sidebar', 'main'] : ['main'],
   })
+  const mainGroup = useGroupRef()
   const mainLayout = useDefaultLayout({
     id: 'forja-main',
     storage: layoutStorage,
@@ -174,6 +191,7 @@ function WorkbenchShell() {
               ) : null}
               <ResizablePanelGroup
                 orientation="vertical"
+                groupRef={mainGroup}
                 className="min-h-0 flex-1"
                 {...mainLayout}
               >
@@ -202,6 +220,21 @@ function WorkbenchShell() {
                     id="terminal"
                     minSize={77}
                     defaultSize={300}
+                    collapsible
+                    collapsedSize={0}
+                    onResize={(size, _id, previous) => {
+                      if (size.inPixels === 0 && previous && previous.inPixels > 0) {
+                        // Restore the last saved size in memory so reopening is not collapsed.
+                        const saved = layoutStorage.getItem(mainLayoutKey)
+                        try {
+                          if (saved) mainGroup.current?.setLayout(JSON.parse(saved))
+                        } catch {
+                          // A corrupt saved layout just falls back to the default size.
+                        }
+                        s.setPanel('terminalMaximized', false)
+                        s.setPanel('terminal', false)
+                      }
+                    }}
                     groupResizeBehavior={terminalMaximized ? undefined : 'preserve-pixel-size'}
                   >
                     <TerminalPanel feature={terminalScope} />
