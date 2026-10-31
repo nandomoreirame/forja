@@ -59,9 +59,17 @@ try {
   await expect(active).toHaveText(/sleep.*(Running|Em execução)/, { timeout: 5_000 })
   await expect(active).toHaveText(/sh\s*(Idle|Ocioso)/, { timeout: 8_000 })
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await page.getByRole('button', { name: /^(Close|Fechar) [a-z]*sh$/ }).first().click()
+  await page
+    .getByRole('button', { name: /^(Close|Fechar) [a-z]*sh$/ })
+    .first()
+    .click()
   await expect(panel.getByRole('tab')).toHaveCount(1)
-  console.log('PASS: Electron PTY shell starts in the project, runs input, keeps Ctrl+R and closes')
+  await page.locator('.xterm-helper-textarea').focus()
+  await page.keyboard.press('Control+d')
+  await expect(panel.getByRole('tab')).toHaveCount(0, { timeout: 5_000 })
+  console.log(
+    'PASS: Electron PTY shell starts in the project, runs input, keeps Ctrl+R, titles commands and closes on Ctrl+D',
+  )
 } finally {
   if (app) await app.close()
   rmSync(root, { recursive: true, force: true })

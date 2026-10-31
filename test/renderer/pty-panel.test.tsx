@@ -98,13 +98,28 @@ it('starts a real shell in the feature directory for a new terminal and closes i
   expect(api.close).toHaveBeenCalledWith('pty-1')
 })
 
-it('marks the shell tab finished when the process exits', async () => {
+it('closes the shell tab when the shell exits, for example after Ctrl+D', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
   fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
   await waitFor(() => expect(api.create).toHaveBeenCalled())
+  act(() => xterm.input?.('\x04'))
+  expect(api.write).toHaveBeenCalledWith('pty-1', '\x04')
   act(() => emitExit({ id: 'pty-1', exitCode: 0 }))
-  expect(screen.getByRole('tab', { name: /zsh/ })).toHaveTextContent('Completed')
+  expect(screen.queryByRole('tab', { name: /zsh/ })).toBeNull()
+  expect(screen.getByRole('tab', { name: /Implementer · tests/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  expect(api.close).not.toHaveBeenCalled()
+})
+
+it('keeps a shell that failed to start visible as failed', async () => {
+  api.create.mockResolvedValueOnce({ status: 'error' } as never)
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
+  await waitFor(() => expect(screen.getByRole('tab', { name: /zsh/ })).toHaveTextContent('Failed'))
 })
 
 it('does not send the terminal replies produced while replaying a tab back to the shell', async () => {

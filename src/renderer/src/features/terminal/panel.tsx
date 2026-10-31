@@ -19,17 +19,25 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
   const markExited = state.markTerminalExited
   const setShell = state.setTerminalShell
   const setProcess = state.setTerminalProcess
+  const closeTerminal = state.closeTerminal
   useEffect(() => {
     if (!runtime) return
-    runtime.listeners.add(markExited)
+    // A shell that exits on its own (exit, Ctrl+D) closes its tab like VS Code;
+    // a shell that never started stays visible as failed.
+    const onExit = (featureId: string, terminalId: string, exitCode: number) => {
+      if (exitCode === -1) return markExited(featureId, terminalId, exitCode)
+      runtime.sessions.close(terminalId)
+      closeTerminal(featureId, terminalId)
+    }
+    runtime.listeners.add(onExit)
     runtime.startListeners.add(setShell)
     runtime.processListeners.add(setProcess)
     return () => {
-      runtime.listeners.delete(markExited)
+      runtime.listeners.delete(onExit)
       runtime.startListeners.delete(setShell)
       runtime.processListeners.delete(setProcess)
     }
-  }, [runtime, markExited, setShell, setProcess])
+  }, [runtime, markExited, closeTerminal, setShell, setProcess])
   const liveShell =
     runtime && feature && active?.kind === 'shell' ? (
       <XtermView
