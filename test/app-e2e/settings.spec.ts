@@ -4,7 +4,7 @@ test('opens Settings as its own tab and saving clears the dirty state', async ({
   await page.goto('/')
   await page.keyboard.press('Control+R')
   await page.getByRole('option', { name: /^dev / }).click()
-  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.getByRole('navigation', { name: 'Workspace' }).getByRole('button', { name: 'Settings' }).click()
   await expect(page.getByRole('tab', { name: /Settings/ })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByRole('tab', { name: /Login with OAuth/ })).toBeVisible()
   const save = page.getByRole('button', { name: 'Save changes' })

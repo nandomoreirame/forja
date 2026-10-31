@@ -293,7 +293,7 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
               <span>topbar.fragment.tsx</span>
             </div>
             <div className="overflow-hidden rounded-[3px] border border-border">
-              <AppTopbar brand="FORJA" commandText="dev" settingsLabel={c.buttonLabels.secondary} />
+              <AppTopbar brand="FORJA" commandText="dev" />
             </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">

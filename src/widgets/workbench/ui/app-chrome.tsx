@@ -7,14 +7,12 @@ import {
   TooltipTrigger,
   TooltipProvider,
 } from '@/shared/ui'
-import { Search, Settings, Terminal, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Terminal, ChevronLeft, ChevronRight } from 'lucide-react'
 export interface AppTopbarProps {
   brand: string
   /** Project switcher shown next to the brand. */
   project?: ReactNode
   commandText: string
-  settingsLabel: string
-  onSettings?: () => void
   onBack?: () => void
   onForward?: () => void
   canBack?: boolean
@@ -30,8 +28,6 @@ export function AppTopbar({
   brand,
   project,
   commandText,
-  settingsLabel,
-  onSettings,
   onBack,
   onForward,
   canBack,
@@ -106,7 +102,6 @@ export function AppTopbar({
                 terminalOpen,
               )
             : null}
-          {icon(settingsLabel, <Settings className="size-4" />, onSettings)}
         </div>
       </header>
     </TooltipProvider>

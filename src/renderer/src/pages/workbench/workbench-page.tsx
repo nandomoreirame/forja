@@ -145,8 +145,6 @@ function WorkbenchShell() {
         project={s.snapshot ? <ProjectSwitcher /> : undefined}
         commandText={s.snapshot?.project.name ?? 'Forja'}
         onCommand={() => s.openPalette('all')}
-        settingsLabel={a.settings}
-        onSettings={() => s.navigate({ kind: 'settings' })}
         onBack={s.back}
         onForward={s.forward}
         canBack={s.historyIndex > 0}
