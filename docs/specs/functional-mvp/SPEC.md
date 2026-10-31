@@ -54,11 +54,11 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 6. **[REQ-006]** WHEN a message targets a busy feature agent THEN the system SHALL interrupt and await foreground termination by default, or enqueue in order when interruption is disabled, without concurrent duplicate turns.
 7. **[REQ-007]** WHEN multiple features run THEN the system SHALL allow execution across features while enforcing one agent turn per feature and separate session, process and Git ownership.
 8. **[REQ-008]** WHEN the application restarts THEN the system SHALL restore windows, tabs, conversations, artifact links and valid approvals, and mark prior active executions interrupted without automatic restart.
-9. **[REQ-009]** WHEN a feature advances THEN the system SHALL follow Research, approved spec, Planner, approved plan, Implementer, approved implementation, Tester, Reviewer and final human approval.
+9. **[REQ-009]** WHEN a feature advances THEN the system SHALL follow Research, human-approved spec, Planner, human-approved plan, Implementer, machine-validated implementation (confirmed repository gates green on the committed fingerprint), Tester, Reviewer and one human final approval that also authorizes integration.
 10. **[REQ-010]** WHEN an agent start is requested THEN the system SHALL check required approved artifacts and dependencies in the core before spawning a CLI; disabled UI or prompt text alone SHALL NOT implement the gate.
-11. **[REQ-011]** WHEN an artifact or reviewed code changes THEN the system SHALL bind approvals to exact content hashes and dependency revisions, invalidate affected approvals/results and preserve history; recheck at dispatch and approval time.
+11. **[REQ-011]** WHEN an artifact or reviewed code changes THEN the system SHALL bind approvals and evidence to exact content hashes and dependency revisions, invalidate affected approvals/results and preserve history; recheck at dispatch and approval time. RPI artifact paths SHALL be excluded from the code fingerprint and invalidate only through the artifact dependency graph.
 12. **[REQ-012]** WHEN workflow state changes THEN the system SHALL persist versioned JSON and event history in SQLite and expose scoped state through Forja MCP without creating runtime STATE.md in the user project.
-13. **[REQ-013]** WHEN an agent publishes a spec, plan or review THEN the system SHALL write only the scoped approved artifact type under the opened folder layout, honoring optional .claude/rpi-paths.json and default docs/specs, docs/plans and docs/reviews paths.
+13. **[REQ-013]** WHEN an agent publishes a spec, plan or review THEN the system SHALL write only the scoped artifact type under the feature artifact root (the feature worktree when the target is a Git repository, otherwise the opened folder), honoring that root's optional .claude/rpi-paths.json and default docs/specs, docs/plans and docs/reviews paths.
 14. **[REQ-014]** WHEN agent settings are opened THEN the system SHALL offer exactly Research, Planner, Implementer, Tester and Reviewer, without creating, renaming or deleting roles.
 15. **[REQ-015]** WHEN an agent is configured THEN the system SHALL target claude, codex, opencode, agy and grok with verified version/capability records, native authentication reuse and no credential copying or persistent user configuration edits.
 16. **[REQ-016]** WHEN the user saves a profile THEN the system SHALL persist CLI, optional model, supported effort, additional instructions, selected skills and the default-off next-agent auto-invocation switch.
@@ -66,13 +66,13 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 18. **[REQ-018]** WHEN a CLI produces output THEN the system SHALL normalize versioned structured events for session identity, text, tool activity, permissions, completion and errors while retaining bounded diagnostic context.
 19. **[REQ-019]** WHEN a CLI enters controlled mode THEN the system SHALL verify Forja MCP attachment and effective native-shell restrictions; unsupported tools SHALL remain unavailable for controlled execution instead of silently bypassing permissions.
 20. **[REQ-020]** WHEN an agent requests work from another role THEN the system SHALL record source and destination agent conversations, feature, artifact revision, reason and round, with bidirectional navigable links.
-21. **[REQ-021]** WHEN automatic handoffs are enabled THEN the system SHALL preserve human approval gates and stop after three automatic correction attempts per feature shared across Tester and Reviewer until explicit human continuation.
-22. **[REQ-022]** WHEN a role performs work THEN the system SHALL let Research and Planner publish their artifacts, Implementer modify authorized feature code, Tester validate and Reviewer publish findings; corrections SHALL return to Implementer.
+21. **[REQ-021]** WHEN automatic handoffs are enabled THEN the system SHALL run Tester/Reviewer to Implementer corrections and the following machine-validated re-test and re-review without human approval, stopping after three automatic correction attempts per feature shared across Tester and Reviewer until explicit human continuation; spec, plan and final approvals SHALL never be automated.
+22. **[REQ-022]** WHEN a role performs work THEN the system SHALL let Research and Planner publish their artifacts, Implementer modify authorized feature code, Tester add or edit only files matching the confirmed test patterns and report coverage gaps, and Reviewer publish findings; corrections SHALL return to Implementer.
 23. **[REQ-023]** WHEN an interrupted conversation resumes THEN the system SHALL use the matching feature/agent/CLI native session when supported; ask before reconstructing context in a new session when native resume is unavailable.
-24. **[REQ-024]** WHEN approved implementation starts THEN the system SHALL create or reuse one owned branch and worktree per feature in the selected Git repository and share it sequentially among Implementer, Tester and Reviewer.
-25. **[REQ-025]** WHEN an implementation batch passes validation THEN the system SHALL commit only its owned delta on the feature branch, preserving unrelated user changes and index entries; failed checks SHALL NOT be recorded as successful.
-26. **[REQ-026]** WHEN the user approves Git integration THEN the system SHALL bind authorization to the exact feature commit and destination HEAD, require valid tests/review, pause on divergence/conflicts and treat push as a separate explicit approval.
-27. **[REQ-027]** WHEN review findings are produced or revisited THEN the system SHALL preserve the RPI review format and round trail; only Reviewer updates findings, and implementation does not declare its own independent review approved.
+24. **[REQ-024]** WHEN a feature is bound to a Git target repository THEN the system SHALL create or reuse one owned branch and worktree for it from the explicitly selected base before any role publishes, and share it sequentially among all five roles.
+25. **[REQ-025]** WHEN an Implementer or Tester turn ends with the confirmed repository gates passing THEN the system SHALL commit only the owned delta on the feature branch with an agent-proposed Conventional Commits message validated by core, preserving unrelated user changes and index entries; failed or skipped gates SHALL NOT be recorded as successful or advance the workflow. Approved spec/plan versions and published reviews are committed by core.
+26. **[REQ-026]** WHEN the user grants final approval THEN the system SHALL bind it to the exact feature commit, destination branch and HEAD, perform a no-fast-forward merge in an owned integration worktree, run the confirmed gates on the merge result and update the destination only if they pass and its HEAD is unchanged since approval; otherwise pause with diagnostics. Push SHALL be a separate explicit approval.
+27. **[REQ-027]** WHEN review findings are produced or revisited THEN the system SHALL preserve the RPI review format and round trail; only Reviewer resolves findings, implementation does not declare its own independent review approved, and open Critical/High findings without a human waiver block final approval.
 28. **[REQ-028]** WHEN an agent invokes development commands THEN the system SHALL run them exclusively through the scoped Forja MCP executor and expose command, authorized cwd, live stdout/stderr, state and eventual exit code.
 29. **[REQ-029]** WHEN command output grows THEN the system SHALL stream and persist ordered bounded chunks with backpressure, configurable internal limits and explicit truncation notices rather than growing renderer memory without bounds.
 30. **[REQ-030]** WHEN a server is explicitly launched in background mode THEN the system SHALL return an owned execution identifier and allow scoped log reads and stop requests independently from the agent turn.
@@ -90,7 +90,7 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 42. **[REQ-042]** WHEN a locale link is followed or a route is refreshed THEN the system SHALL preserve the corresponding landing/styleguide page, default to English without automatic browser-language redirects and provide correct lang/title/description per route.
 43. **[REQ-043]** WHEN a functional screen is implemented THEN the system SHALL reuse approved component anatomy and recorded user exceptions, compare deterministic captures at matching viewports and fix drift before accepting the screen.
 44. **[REQ-044]** WHEN site/gallery components render THEN the system SHALL use no Electron, native filesystem, PTY, Git, MCP or AI side effects and expose meaningful default, hover, keyboard focus, disabled, loading, empty and error states.
-45. **[REQ-045]** WHEN a tool or agent requests approval mutation THEN the system SHALL reject it; human-authorized core commands alone approve artifacts, implementation, final completion and Git integration.
+45. **[REQ-045]** WHEN a tool or agent requests approval mutation THEN the system SHALL reject it; human-authorized core commands alone approve specs, plans, final approval/integration, finding waivers and push.
 46. **[REQ-046]** WHEN settings are opened or refreshed THEN the system SHALL detect executable/version/capabilities with bounded local probes, distinguish installation from authentication and defer model-network calls to explicit smoke tests.
 47. **[REQ-047]** WHEN the user views settings THEN the system SHALL keep the global composer available but separate from manual form saves; agents SHALL NOT read or alter settings merely because the screen is visible.
 48. **[REQ-048]** WHEN IPC or MCP receives input THEN the system SHALL validate schemas, project/feature ownership, canonical paths and tool grants; never rely on connector annotations or model-supplied IDs as authorization.
@@ -100,6 +100,12 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 52. **[REQ-052]** WHEN a dependency, permission, port, process or file operation fails THEN the system SHALL show an actionable non-secret error and a truthful stopped/failed state without fabricating completion or automatically weakening controls.
 53. **[REQ-053]** WHEN agent configuration changes while work is active THEN the system SHALL apply it to future turns; preserve the current turn settings snapshot and explicit recipient context.
 54. **[REQ-054]** WHEN an output view or feature tab is closed THEN the system SHALL distinguish hiding a tab from stopping an execution, preserve feature history and require explicit confirmation before abandoning active owned work.
+55. **[REQ-055]** WHEN a Git target is bound THEN the system SHALL detect candidate validation commands and test-file patterns from repository manifests, require human confirmation, store them per target repository and run them itself through the managed executor as the only authoritative validation evidence.
+56. **[REQ-056]** WHEN a role requests a handoff or a human rejects an approval THEN the system SHALL allow only Tester/Reviewer to Implementer (correction), Implementer to Planner (infeasible plan) and Planner to Research (ambiguous spec); returning to Planner or Research SHALL invalidate downstream approvals and evidence, and a human rejection SHALL return its reason to the owning role.
+57. **[REQ-057]** WHEN the user waives a blocking review finding THEN the system SHALL require a reason, an extra confirmation for Critical, record actor, time and finding revision, and keep the finding visible as waived; agents SHALL NOT waive findings.
+58. **[REQ-058]** WHEN a feature is integrated or abandoned THEN the system SHALL move it to a read-only terminal state preserving history; after integration it SHALL offer explicit worktree/branch removal, and abandoning SHALL require confirmation, stop owned processes and keep branch/worktree until explicit cleanup.
+59. **[REQ-059]** WHEN an agent turn emits no events for the configurable inactivity window (default 10 minutes) THEN the system SHALL mark it unresponsive and let the user keep waiting or stop it; a forced stop SHALL always be available and release the feature lease only after the owned process group terminates.
+60. **[REQ-060]** WHEN a CLI reports token or cost usage THEN the system SHALL record and display it per turn and per feature; when a CLI does not report usage the system SHALL show it as unavailable instead of estimating.
 
 ### P2 (Should Have)
 
@@ -111,7 +117,7 @@ None in this delivery; deferred items are explicit below.
 
 ## Edge Cases
 
-- Missing Git: Research/Planner and artifacts work in any opened folder. Implementation waits for an explicit valid target and base branch. A feature targets one repository in this MVP.
+- Missing Git: Research/Planner and artifacts work in any opened folder when the feature has no Git target; artifacts then live in the opened folder. Implementation waits for an explicit valid target, base branch and confirmed repository gates. A feature targets one repository in this MVP. Binding a Git target to a feature that already has artifacts moves them into the new worktree as its first owned commit, verifies identical bytes and keeps only approvals whose hashes still match.
 - External edits: missing, malformed, moved or modified documents invalidate dependent work and produce actionable reconciliation, never silent approval/import. Unknown sections and comments survive updates. Repeating a publish with identical bytes is idempotent.
 - Races: stale approval, second window, concurrent click, manual shell edit or changed destination HEAD must be detected before spawning or integrating. Use feature leases and transactional compare-and-swap state revisions.
 - CLI uncertainty: availability, auth, resume and shell/MCP control are external assumptions until the capability spike and live tests. No accepted CLI may silently downgrade to uncontrolled execution. A failed adapter does not prevent independent web/core work, but the five-adapter MVP is incomplete until resolved.
@@ -119,8 +125,13 @@ None in this delivery; deferred items are explicit below.
 - Output: bound line/chunk size and retained memory, preserve ordering and stderr identity, show truncation, clean invalid UTF-8/ANSI safely; never interpret terminal output as HTML or permit clipboard escape writes silently.
 - Foreground stop: wait for the process group; escalate after a timeout; do not start a replacement while termination is unconfirmed. Background servers are explicitly independent, not accidental orphaned foreground commands.
 - Exit/restart: stop owned children on normal app exit. On crash/restart do not signal a saved PID without validating identity; show interrupted records and investigate stale ownership safely. Live shell contents/processes cannot be reconstructed from a database record.
-- Approval vs handoff: three automatic rounds share one feature budget; toggles do not authorize spec/plan/implementation/final approval or integration. Manual continuation is recorded and does not erase history.
-- Settings are global agent defaults for the MVP, with each turn storing a snapshot. Changing target repo/base after implementation begins is blocked until the feature is explicitly stopped and rebound; never silently repoint a live worktree.
+- Approval vs handoff: three automatic rounds share one feature budget; toggles do not authorize spec/plan/final approval, integration or push. Manual continuation is recorded and does not erase history. A Tester-added failing test is not committed on its own; it stays in the worktree and is committed with the Implementer's validated correction.
+- Agent-chosen commands are diagnostics, never validation evidence. Only the confirmed repository gates, executed by core on the current fingerprint, count as pass/fail. Missing or skipped gates are failures, not passes.
+- Review artifacts are written after testing; excluding RPI artifact paths from the code fingerprint keeps that write from staling the evidence it describes.
+- Integration: a moved destination since the feature base is normal for a merge; only a destination HEAD that moved after final approval pauses. The merge result must pass the confirmed gates before the destination ref changes.
+- Settings are global agent defaults for the MVP, with each turn storing a snapshot. Changing target repo/base after the feature worktree exists is blocked until the feature is explicitly stopped and rebound; never silently repoint a live worktree.
+- Stalled CLI: an unresponsive turn keeps its lease until the user stops it and termination is confirmed; the inactivity window never kills a process by itself.
+- Terminal states: integrated and abandoned features are read-only. Cleanup removes only resources recorded as owned by that feature, never a branch with commits that are not contained in the destination unless the user confirms that exact loss.
 - Reopening a folder uses canonical identity. Closing a terminal view is not stopping it; closing a project with live work asks before ending owned work. Session restoration has no automatic paid CLI calls.
 - Document rendering: block active HTML, unsafe URL schemes and remote/local resource leakage. Mermaid uses strict mode, no callbacks and bounded complexity. A malformed diagram is a visible fallback, not a page crash.
 - Site: preview/Git/PTY behavior is mock-only; both locales preserve meaning without translating commands, paths or tool names. Refreshing all four routes must work from built files, not only SPA navigation.
@@ -135,9 +146,9 @@ None in this delivery; deferred items are explicit below.
 6. Execute arbitrary development commands only through a core supervisor bound to a feature capability and authorized cwd. This is an audited local development tool, not a complete hostile-code OS sandbox. A denylist of command strings is not proof of filesystem/Git isolation. Controlled mode must actually restrict native shell routes; privileged Git integration is a separate human operation. Discover any remaining native-tool bypass before claiming an adapter is controlled.
 7. Use owned process groups for managed commands, node-pty for user shells, xterm for terminal presentation, bounded chunk logs and explicit background-server ownership. A durable process record is not a restored live process.
 8. Preserve native CLI auth and compatible user configuration. Apply role/tool restrictions and RPI state adaptation per invocation, without globally editing configs/skills or disabling all permissions. Different CLI transports are allowed behind one normalized engine interface.
-9. File watchers improve responsiveness; hash/revision validation in core dispatch and approval transactions is authoritative. Bind implementation/test/review to an exact commit plus tracked and relevant untracked worktree content, not a weak `git status` string. Manual mutations during review invalidate its result.
-10. Git branches/worktrees are created only in a user-selected repository. Default to a collision-safe `feature/<slug>` branch and a managed worktree outside the destination working tree; inspect existing worktree conventions before selecting the actual location. Record the selected base branch/commit explicitly. Never assume main from its spelling. Integration preserves the destination worktree and stops on dirty state or conflicts.
-11. Use a prepared integration request bound to source commit, target branch and HEAD. Integration is a two-parent merge in an owned integration worktree after approval; recheck destination identity and cleanliness before updating it. Push and worktree removal are separate explicit operations. No auto-rebase, reset, stash or conflict resolution.
+9. File watchers improve responsiveness; hash/revision validation in core dispatch and approval transactions is authoritative. Bind implementation/test/review to an exact commit plus tracked and relevant untracked worktree content, not a weak `git status` string, excluding the RPI artifact paths. Manual mutations during review invalidate its result. The implementation stage has no human approval: its gate is the confirmed repository gates passing on a committed fingerprint.
+10. Git branches/worktrees are created only in a user-selected repository, when the feature is bound to it, so every artifact and code change lands on the feature branch. Default to a collision-safe `feature/<slug>` branch and a managed worktree outside the destination working tree; inspect existing worktree conventions before selecting the actual location. Record the selected base branch/commit explicitly. Never assume main from its spelling. Integration preserves the destination worktree and stops on dirty state or conflicts.
+11. Use a prepared integration request bound to source commit, target branch and HEAD. Final approval and integration are one human action. Integration is a two-parent merge in an owned integration worktree after approval; run the confirmed gates on the merge result, then recheck destination identity and cleanliness before updating it. The merge strategy is fixed to `--no-ff` in the MVP. Push and worktree removal are separate explicit operations. No auto-rebase, reset, stash or conflict resolution.
 12. Reuse approved design anatomy with shadcn behavior and Tailwind tokens; remove temporary disabled scaffold controls as functional handlers are implemented. Keep the global composer above the terminal; selecting a background feature never changes the foreground recipient. Route web locales explicitly; localize preview data too.
 
 ## Grilling Log
@@ -158,6 +169,17 @@ None in this delivery; deferred items are explicit below.
 | 12 | Locales | English /, Portuguese /pt-br, including all product mocks | User requested both locales with localized previews. |
 | 13 | UI stack | Customized shadcn/ui and Tailwind; no duplicated site components | Prevents implementation visual surprises. |
 | 14 | Closure | Operational defaults approved with final request to generate plans | Plans now derive from the consolidated approved scope. |
+| 15 | Implementation gate (2026-10-31) | Remove the human implementation approval; the gate is confirmed repository gates green on a committed fingerprint | A human gate before testing made every correction stale it, so the REQ-021 loop could never run unattended. |
+| 16 | Artifact location (2026-10-31) | Feature worktree when the target is Git, created at binding; opened folder otherwise | Artifacts in the destination tree made it dirty and blocked integration, and specs never reached repository history. |
+| 17 | Validation authority (2026-10-31) | Core detects gates and test patterns, the human confirms them per repository, core runs them | Agent-chosen commands could report success without testing anything. |
+| 18 | Integration validation (2026-10-31) | Merge in the integration worktree, run gates on the result, pause only if destination HEAD moved after approval | Feature-branch tests do not cover the merged code when the destination advanced. |
+| 19 | Human gates (2026-10-31) | Spec, plan, final approval with integration, push | Final completion and integration were redundant clicks. |
+| 20 | Tester role (2026-10-31) | Adds or edits test files only and reports gaps; core runs the gates | Keeps production code with Implementer while giving the Tester a role a script cannot do. |
+| 21 | Findings (2026-10-31) | Human may waive a blocking finding with a reason; Critical needs extra confirmation | A wrong Reviewer finding would otherwise block a feature forever. |
+| 22 | Handoffs (2026-10-31) | Tester/Reviewer to Implementer, Implementer to Planner, Planner to Research | Backward moves are explicit and invalidate downstream approvals. |
+| 23 | Feature end (2026-10-31) | Integrated and abandoned read-only states; cleanup offered, never implicit | Avoids orphaned features and accidental branch loss. |
+| 24 | Stalled turns and usage (2026-10-31) | 10-minute inactivity flag with forced stop; show CLI-reported usage without caps | A hung CLI held the feature lease forever; paid CLIs had no visibility. |
+| 25 | Defaults (2026-10-31) | Interrupt stays the busy-agent default; agent proposes Conventional Commits messages validated by core; `--no-ff` merge fixed | Confirmed during the business-rule review. |
 
 ## Constraints
 
@@ -202,7 +224,7 @@ None in this delivery; deferred items are explicit below.
 | REQ-006 | Interrupt or queue | P1 | Approved; not implemented |
 | REQ-007 | Feature concurrency | P1 | Approved; not implemented |
 | REQ-008 | Session restoration | P1 | Approved; not implemented |
-| REQ-009 | Guided RPI | P1 | Approved; not implemented |
+| REQ-009 | Guided RPI with machine-validated implementation | P1 | Approved; not implemented |
 | REQ-010 | Authoritative gates | P1 | Approved; not implemented |
 | REQ-011 | Approval invalidation | P1 | Approved; not implemented |
 | REQ-012 | JSON workflow state | P1 | Approved; not implemented |
@@ -214,12 +236,12 @@ None in this delivery; deferred items are explicit below.
 | REQ-018 | Normalized CLI events | P1 | Approved; not implemented |
 | REQ-019 | Controlled execution compatibility | P1 | Approved; not implemented |
 | REQ-020 | Linked handoffs | P1 | Approved; not implemented |
-| REQ-021 | Bounded correction loop | P1 | Approved; not implemented |
+| REQ-021 | Bounded automatic correction loop | P1 | Approved; not implemented |
 | REQ-022 | Role boundaries | P1 | Approved; not implemented |
 | REQ-023 | Resume capability | P1 | Approved; not implemented |
-| REQ-024 | Feature worktrees | P1 | Approved; not implemented |
+| REQ-024 | Feature worktrees from binding | P1 | Approved; not implemented |
 | REQ-025 | Feature commits | P1 | Approved; not implemented |
-| REQ-026 | Approved integration | P1 | Approved; not implemented |
+| REQ-026 | Final approval with tested merge | P1 | Approved; not implemented |
 | REQ-027 | Review ownership | P1 | Approved; not implemented |
 | REQ-028 | MCP command runner | P1 | Approved; not implemented |
 | REQ-029 | Bounded output | P1 | Approved; not implemented |
@@ -248,6 +270,12 @@ None in this delivery; deferred items are explicit below.
 | REQ-052 | Operational errors | P1 | Approved; not implemented |
 | REQ-053 | Settings snapshots | P1 | Approved; not implemented |
 | REQ-054 | Feature archive and sessions | P1 | Approved; not implemented |
+| REQ-055 | Repository gates | P1 | Approved 2026-10-31; not implemented |
+| REQ-056 | Handoff matrix | P1 | Approved 2026-10-31; not implemented |
+| REQ-057 | Finding waivers | P1 | Approved 2026-10-31; not implemented |
+| REQ-058 | Feature end states | P1 | Approved 2026-10-31; not implemented |
+| REQ-059 | Stalled turns | P1 | Approved 2026-10-31; not implemented |
+| REQ-060 | Usage visibility | P1 | Approved 2026-10-31; not implemented |
 
 ## Implementation Sequence
 

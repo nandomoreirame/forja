@@ -31,8 +31,8 @@ The user approved the consolidated scope and requested generation of implementat
 
 ## Delivery
 
-- 54 approved MVP requirements.
-- 13 ordered child specs and implementation plans, totaling 62 tasks.
+- 60 approved MVP requirements (REQ-055 to REQ-060 added in the 2026-10-31 business-rule review).
+- 13 ordered child specs and implementation plans, totaling 65 tasks.
 - First delivery: site/ landing and styleguide, English default and /pt-br, using the same customized shadcn components and Tailwind tokens as Electron.
 - Use the plan index queue or the individual child slug for later rpi-implement, not this umbrella slug.
 - Dependencies, public source paths, tests, role/tool boundaries and design exceptions are recorded in each plan.
@@ -56,3 +56,7 @@ The user explicitly approved the objective now used in README.md, README.pt-BR.m
 ## Progress Accounting
 
 The user requested including SPEC and PLAN documentation in each feature progress bar. Both README locales now use an explicit 10% approved-spec, 10% ready-plan, 80% validated-implementation-task model. All slices and the task-weighted overall MVP currently show 20%, while implementation remains 0/62 tasks and deliveries remain 0/13. Both roadmap locales distinguish this combined progress from implementation task completion and independent review.
+
+## 2026-10-31 Business-rule review
+
+The user reviewed the approved specs and plans before production implementation of the desktop slices. Decisions are recorded as Grilling Log rows 15 to 25 in SPEC.md. Summary: the human implementation approval was removed in favor of confirmed repository gates; artifacts live in the feature worktree created at Git binding; core runs human-confirmed gates as the only validation evidence and also on the merge result; final approval and integration are one action; the Tester edits test files only; blocking findings can be waived with a reason; a handoff matrix, feature end states, stalled-turn handling and usage visibility were added (REQ-055 to REQ-060). feature-git-worktrees gained Tasks 5 and 6 and cli-agent-sessions gained Task 8, for 65 tasks in total. The delivered web slice is unaffected.
