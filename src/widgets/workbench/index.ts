@@ -1,4 +1,5 @@
 export { AppStatusbar, AppTopbar, FeatureContext } from './ui/app-chrome'
+export type { FeatureContextProps, FeatureCycleStage } from './ui/app-chrome'
 export { FeatureTabs } from './ui/feature-tabs'
 export type { FeatureTabItem, FeatureTabsProps } from './ui/feature-tabs'
 export { SidebarRow } from './ui/sidebar-row'

@@ -1,7 +1,9 @@
+import { TriangleAlert } from 'lucide-react'
+
 export interface ConversationMessage {
   id: string
   author: string
-  role: 'user' | 'agent'
+  role: 'user' | 'agent' | 'event'
   text: string
   status?: string
   action?: string
@@ -30,7 +32,26 @@ export function Messages({
   return (
     <ol aria-label={label} className="space-y-3">
       {items.map((item) =>
-        item.role === 'user' ? (
+        item.role === 'event' ? (
+          <li
+            key={item.id}
+            className="flex items-center justify-between gap-3 rounded-[3px] border border-border bg-background p-2.5 text-[12px]"
+          >
+            <span className="flex items-center gap-2 text-muted-foreground">
+              <TriangleAlert className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
+              {item.text}
+            </span>
+            {item.action ? (
+              <button
+                type="button"
+                onClick={item.onAction}
+                className="shrink-0 text-[12px] font-medium text-primary hover:underline"
+              >
+                {item.action}
+              </button>
+            ) : null}
+          </li>
+        ) : item.role === 'user' ? (
           <li
             key={item.id}
             className="space-y-1 rounded-[3px] border border-border bg-secondary p-3"

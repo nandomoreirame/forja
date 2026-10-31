@@ -4,6 +4,7 @@ export interface MermaidPreviewProps {
   source: string
   maxLength?: number
   errorLabel?: string
+  loadingLabel?: string
 }
 
 const defaultMaxLength = 4_000
@@ -12,6 +13,7 @@ export function MermaidPreview({
   source,
   maxLength = defaultMaxLength,
   errorLabel = 'Diagram could not be rendered.',
+  loadingLabel = 'Rendering diagram',
 }: MermaidPreviewProps) {
   const id = useId().replace(/:/g, '-')
   const [svg, setSvg] = useState<string | null>(null)
@@ -62,8 +64,8 @@ export function MermaidPreview({
     )
   if (!svg)
     return (
-      <p className="text-[12px] text-muted-foreground" aria-live="polite">
-        …
+      <p role="status" className="text-center text-[12px] text-muted-foreground">
+        {loadingLabel}…
       </p>
     )
   return (

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Badge, statusTone, type UiState } from '@/shared/ui'
+import { statusTone, type UiState } from '@/shared/ui'
 import { cn } from '@/shared/ui/utils'
 
 export interface SidebarRowProps {
@@ -25,21 +25,35 @@ export function SidebarRow({
     <div
       data-selected={selected || undefined}
       className={cn(
-        'flex h-8 items-center gap-2 rounded-md px-2 text-[13px] text-foreground/80',
-        selected && 'bg-muted text-foreground',
+        'flex h-8 items-center gap-2 rounded-[3px] border border-border bg-background px-2.5 text-[12px] text-foreground',
+        selected && 'bg-secondary font-medium text-primary',
       )}
     >
-      <span aria-hidden="true" className="shrink-0 text-muted-foreground [&_svg]:size-4">
+      <span
+        aria-hidden="true"
+        className={cn(
+          'shrink-0 [&_svg]:size-3.5',
+          selected ? 'text-primary' : 'text-muted-foreground',
+        )}
+      >
         {icon}
       </span>
       <span className="min-w-0 flex-1 truncate">
         {title}
         {detail ? <span className="ml-1.5 text-[11px] text-muted-foreground">{detail}</span> : null}
       </span>
-      {state && stateLabel ? (
-        <Badge variant={tone === 'danger' ? 'destructive' : 'outline'} className="text-[11px]">
+      {stateLabel ? (
+        <span
+          className={cn(
+            'shrink-0 text-[11px]',
+            tone === 'accent' && 'text-primary',
+            tone === 'danger' && 'text-destructive',
+            tone === 'muted' && 'text-muted-foreground',
+            !state && 'font-mono text-[10px] text-muted-foreground/60',
+          )}
+        >
           {stateLabel}
-        </Badge>
+        </span>
       ) : null}
     </div>
   )

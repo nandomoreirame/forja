@@ -1,4 +1,4 @@
-import { ArrowRight, ChevronDown } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -7,6 +7,8 @@ import {
   SelectValue,
   Textarea,
 } from '@/shared/ui'
+
+const sendShortcut = 'Ctrl+Enter'
 
 export interface ComposerRecipient {
   id: string
@@ -19,6 +21,7 @@ export interface ComposerProps {
   onRecipientChange: (id: string) => void
   featureLabel: string
   targetLabel: string
+  targetPrefix?: string
   value: string
   onChange: (value: string) => void
   onSend: () => void
@@ -35,6 +38,7 @@ export function Composer({
   onRecipientChange,
   featureLabel,
   targetLabel,
+  targetPrefix,
   value,
   onChange,
   onSend,
@@ -42,29 +46,31 @@ export function Composer({
   recipientLabel = 'Recipient',
   contextLabel = 'Context',
   sendLabel = 'Send',
-  shortcutHint = 'Ctrl+Enter to send',
+  shortcutHint = 'Press Ctrl+Enter to send',
 }: ComposerProps) {
   const selected = recipients.find((item) => item.id === recipientId)
+  const [hintBefore, hintAfter] = shortcutHint.includes(sendShortcut)
+    ? shortcutHint.split(sendShortcut, 2)
+    : [shortcutHint, null]
 
   return (
     <form
-      className="space-y-3 rounded-[4px] border border-border bg-background p-3"
+      className="space-y-2.5 rounded-xl border border-border bg-card p-3.5 shadow-2xl shadow-black/40 transition-colors focus-within:border-primary/70 motion-reduce:transition-none"
       onSubmit={(event) => {
         event.preventDefault()
         if (value.trim()) onSend()
       }}
     >
-      <div className="flex items-center justify-between border-b border-border pb-2 text-[11px]">
+      <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-2 text-[11px]">
         <div className="flex items-center gap-3">
           <Select value={recipientId} onValueChange={onRecipientChange}>
             <SelectTrigger
               size="sm"
               aria-label={recipientLabel}
-              className="h-6 gap-1.5 rounded-[2px] border-border bg-secondary px-2 text-[12px] text-foreground"
+              className="h-6 gap-1.5 rounded-[3px] border-transparent bg-transparent px-1.5 text-[12px] font-medium text-foreground hover:border-border hover:bg-secondary dark:bg-transparent dark:hover:bg-secondary data-[state=open]:border-border data-[state=open]:bg-secondary [&_svg:not([class*='size-'])]:size-3.5"
             >
               <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
               <SelectValue>{selected?.label}</SelectValue>
-              <ChevronDown className="size-3.5 text-muted-foreground" aria-hidden="true" />
             </SelectTrigger>
             <SelectContent>
               {recipients.map((item) => (
@@ -74,18 +80,22 @@ export function Composer({
               ))}
             </SelectContent>
           </Select>
-          <span className="text-muted-foreground">
-            {contextLabel}: <strong className="font-normal text-foreground">{featureLabel}</strong>
+          <span className="truncate text-muted-foreground/80">
+            {contextLabel}:{' '}
+            <strong className="font-normal text-foreground/90">{featureLabel}</strong>
           </span>
         </div>
-        <span className="text-muted-foreground">{targetLabel}</span>
+        <span className="truncate text-muted-foreground/70" title={targetLabel}>
+          {targetPrefix ? `${targetPrefix}: ` : null}
+          <span className="font-mono text-muted-foreground">{targetLabel}</span>
+        </span>
       </div>
       <Textarea
         aria-label={placeholder}
         value={value}
         placeholder={placeholder}
-        rows={2}
-        className="min-h-[44px] resize-none border-0 bg-transparent p-0 text-[13px] text-foreground shadow-none placeholder:text-muted-foreground/60 focus-visible:ring-0"
+        rows={3}
+        className="min-h-[72px] resize-none border-0 bg-transparent p-0 text-[13px] leading-5 text-foreground shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0 dark:bg-transparent"
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && value.trim()) {
@@ -94,12 +104,22 @@ export function Composer({
           }
         }}
       />
-      <div className="flex items-center justify-between border-t border-border/50 pt-2">
-        <span className="text-[11px] text-muted-foreground">{shortcutHint}</span>
+      <div className="flex items-center justify-between border-t border-border/60 pt-2">
+        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
+          {hintBefore}
+          {hintAfter !== null ? (
+            <>
+              <kbd className="rounded-[3px] border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                {sendShortcut}
+              </kbd>
+              {hintAfter}
+            </>
+          ) : null}
+        </span>
         <button
           type="submit"
           disabled={!value.trim()}
-          className="flex h-7 items-center gap-1.5 rounded-[3px] bg-primary px-3 text-[12px] font-semibold text-primary-foreground disabled:opacity-50"
+          className="flex h-6 items-center gap-1.5 rounded-[3px] bg-primary px-3 text-[12px] font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 disabled:opacity-50 motion-reduce:transition-none"
         >
           {sendLabel}
           <ArrowRight className="size-3.5" aria-hidden="true" />

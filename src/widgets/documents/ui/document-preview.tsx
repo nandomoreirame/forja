@@ -26,7 +26,7 @@ export function DocumentPreview({
     <div className="grid gap-3">
       <div className="flex items-center gap-3 rounded-md border border-border bg-background px-4 py-3">
         <h3 className="font-mono text-[13px] text-foreground">{name}</h3>
-        <Badge variant="outline" className="rounded-md text-[11px] text-muted-foreground">
+        <Badge variant="outline" className="text-[11px] text-muted-foreground">
           {stateLabel}
         </Badge>
         {actionLabel ? (
