@@ -238,6 +238,10 @@ export function createWorkbenchStore(source: WorkbenchSource) {
                         ? {
                             ...message,
                             text: event.type === 'text' ? message.text + event.chunk : message.text,
+                            parts:
+                              event.type === 'part'
+                                ? [...(message.parts ?? []), event.part]
+                                : message.parts,
                             status: finalStatus ?? message.status,
                           }
                         : message,

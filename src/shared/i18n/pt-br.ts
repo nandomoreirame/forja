@@ -5,6 +5,12 @@ export const ptBr = {
     closeFeatureDescription:
       'O agente está em execução. Fechar esta aba interrompe a resposta e preserva a conversa.',
     viewRequest: 'Ver solicitação',
+    copyCode: 'Copiar código',
+    copied: 'Copiado',
+    showAll: 'Mostrar tudo',
+    showLess: 'Mostrar menos',
+    openImage: 'Abrir',
+    exitCode: 'saída',
     guided: 'Guiado',
     cycle: 'Ciclo',
     worktree: 'Worktree',

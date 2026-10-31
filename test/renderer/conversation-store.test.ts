@@ -171,3 +171,30 @@ it('creates manual shells as idle tabs in the feature directory', async () => {
   expect(shell).toMatchObject({ kind: 'shell', label: 'zsh', state: 'draft', cwd: '~/dev' })
   expect(store.getState().terminalTabs['feature-1']).toBe(shell.id)
 })
+it('streams a code block from the Implementer and a command run from the Tester', async () => {
+  const store = await setup()
+  store.getState().setRecipient('feature-1', 'implementer')
+  store.getState().sendMessage('feature-1', 'Implement')
+  store.getState().setRecipient('feature-2', 'tester')
+  store.getState().sendMessage('feature-2', 'Test')
+  vi.runAllTimers()
+  const [first, second] = store.getState().snapshot!.features
+  expect(first.messages.at(-1)?.text).toMatch(/```ts\n[\s\S]+```/)
+  expect(second.messages.at(-1)?.parts).toEqual([
+    expect.objectContaining({ kind: 'command', command: 'npm test', exitCode: 0 }),
+  ])
+})
+it('seeds the first feature with markdown, code, a command run, a log and a screenshot', async () => {
+  for (const locale of ['en', 'pt-br'] as const) {
+    const snapshot = await createMockSource({ locale }).loadProject('dev')
+    const messages = snapshot.features[0].messages
+    expect(messages.some((m) => m.attachments?.some((a) => a.kind === 'image' && a.alt))).toBe(true)
+    expect(messages.some((m) => /\|.+\|/.test(m.text))).toBe(true)
+    expect(messages.some((m) => /- \[[ x]\]/.test(m.text))).toBe(true)
+    expect(messages.some((m) => /^- (?!\[)/m.test(m.text))).toBe(true)
+    expect(messages.some((m) => m.text.includes('```ts'))).toBe(true)
+    const parts = messages.flatMap((m) => m.parts ?? [])
+    expect(parts.map((p) => p.kind)).toEqual(expect.arrayContaining(['command', 'log']))
+    expect(parts.some((p) => p.kind === 'command' && p.exitCode !== 0)).toBe(true)
+  }
+})

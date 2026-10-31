@@ -393,6 +393,49 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
             ]}
           />
         </Card>
+        <Card label={sc.richLabel} code="message-parts.tsx">
+          <Messages
+            label={sc.richLabel}
+            labels={sc.richCopy}
+            items={[
+              {
+                id: 'ru',
+                author: x.you,
+                role: 'user',
+                text: sc.richUser,
+                attachments: [
+                  {
+                    kind: 'image',
+                    name: 'login-error.png',
+                    alt: sc.richAlt,
+                    src: `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="240" height="135"><rect width="240" height="135" fill="#111113"/><rect x="70" y="25" width="100" height="75" rx="4" fill="#1b1b1f" stroke="#2b2b31"/><rect x="120" y="105" width="110" height="22" rx="3" fill="#2a1214" stroke="#ff4d4f"/></svg>')}`,
+                  },
+                ],
+              },
+              {
+                id: 'ra',
+                author: roles[2],
+                role: 'agent',
+                text: sc.richAgent,
+                parts: [
+                  {
+                    kind: 'command',
+                    command: 'npm test -- oauth-callback',
+                    exitCode: 1,
+                    output: 'FAIL test/oauth-callback.test.ts',
+                  },
+                  {
+                    kind: 'command',
+                    command: 'npm test -- oauth-callback',
+                    exitCode: 0,
+                    output: 'Tests  3 passed (3)',
+                  },
+                  { kind: 'log', title: sc.richLog, level: 'warn', lines: [...sc.richLogLines] },
+                ],
+              },
+            ]}
+          />
+        </Card>
         <Card label={sc.composerLabel} code="composer.tsx">
           <Composer
             recipients={mock.recipients}

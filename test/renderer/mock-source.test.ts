@@ -2,7 +2,7 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { expect, it } from 'vitest'
-import { createMockSource } from '../../src/renderer/src/shared/api'
+import { createMockSource, type ChatMessage } from '../../src/renderer/src/shared/api'
 it('serves isolated localized snapshots for both projects', async () => {
   const source = createMockSource({ locale: 'pt-br' })
   expect((await source.listProjects()).map((p) => p.name)).toEqual(['acme-api', 'dev'])
@@ -22,6 +22,12 @@ it('serves isolated localized snapshots for both projects', async () => {
   await expect(source.loadProject('missing')).rejects.toThrow('Unknown project')
 })
 
+const neutral = (m: ChatMessage) => ({
+  ...m,
+  text: '',
+  attachments: m.attachments?.map((a) => ({ ...a, src: '', alt: '' })),
+  parts: m.parts?.map((p) => (p.kind === 'command' ? { ...p, output: '' } : { ...p, lines: [] })),
+})
 it('preserves fixture structure and identifiers across locales', async () => {
   const en = await createMockSource({ locale: 'en' }).loadProject('dev')
   const pt = await createMockSource({ locale: 'pt-br' }).loadProject('dev')
@@ -31,14 +37,14 @@ it('preserves fixture structure and identifiers across locales', async () => {
     en.features.map((f) => ({
       ...f,
       name: '',
-      messages: f.messages.map((m) => ({ ...m, text: '' })),
+      messages: f.messages.map(neutral),
       terminals: f.terminals.map((t) => ({ ...t, label: '', output: '' })),
     })),
   ).toEqual(
     pt.features.map((f) => ({
       ...f,
       name: '',
-      messages: f.messages.map((m) => ({ ...m, text: '' })),
+      messages: f.messages.map(neutral),
       terminals: f.terminals.map((t) => ({ ...t, label: '', output: '' })),
     })),
   )

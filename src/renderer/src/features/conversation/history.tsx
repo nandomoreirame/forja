@@ -55,10 +55,20 @@ export function History({
       <Messages
         label={d.app.conversation}
         emptyLabel={d.product.empty}
+        labels={{
+          copyCode: d.app.copyCode,
+          copied: d.app.copied,
+          showAll: d.app.showAll,
+          showLess: d.app.showLess,
+          openImage: d.app.openImage,
+          exit: d.app.exitCode,
+        }}
         items={messages.map((m) => ({
           id: m.id,
           role: m.role,
           text: m.text,
+          parts: m.parts,
+          attachments: m.attachments,
           highlighted: m.id === highlightedId,
           author: m.role === 'user' ? d.app.you : d.product[m.author ?? stage],
           action:

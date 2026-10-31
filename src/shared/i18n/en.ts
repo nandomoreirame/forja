@@ -5,6 +5,12 @@ export const en = {
     closeFeatureDescription:
       'The agent is running. Closing this tab interrupts its reply and preserves the conversation.',
     viewRequest: 'View request',
+    copyCode: 'Copy code',
+    copied: 'Copied',
+    showAll: 'Show all',
+    showLess: 'Show less',
+    openImage: 'Open',
+    exitCode: 'exit',
     guided: 'Guided',
     cycle: 'Cycle',
     worktree: 'Worktree',

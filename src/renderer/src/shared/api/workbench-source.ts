@@ -8,6 +8,15 @@ export interface ProjectSummary {
   path: string
   lastOpenedAt: string
 }
+export interface ImageAttachment {
+  kind: 'image'
+  name: string
+  src: string
+  alt: string
+}
+export type MessagePart =
+  | { kind: 'command'; command: string; exitCode: number; output: string; cwd?: string }
+  | { kind: 'log'; title: string; lines: string[]; level?: 'info' | 'warn' | 'error' }
 export interface ChatMessage {
   id: string
   role: 'user' | 'agent' | 'event'
@@ -15,6 +24,8 @@ export interface ChatMessage {
   status?: 'running' | 'completed' | 'interrupted'
   linkTo?: string
   author?: RoleId
+  parts?: MessagePart[]
+  attachments?: ImageAttachment[]
 }
 export interface MockTerminal {
   id: string
@@ -57,6 +68,7 @@ export type ReplyEvent =
   | { type: 'start' }
   | { type: 'text'; chunk: string }
   | { type: 'terminal'; terminalId: string; line: string }
+  | { type: 'part'; part: MessagePart }
   | { type: 'completed' }
   | { type: 'interrupted' }
 export type ReplyTimer = number | ReturnType<typeof setTimeout>

@@ -50,6 +50,7 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
           line,
         })
       })
+      if (script.part) events.push({ type: 'part', part: script.part })
       events.push({ type: 'completed' })
       const schedule = options.setTimeout ?? setTimeout
       const unschedule = options.clearTimeout ?? clearTimeout

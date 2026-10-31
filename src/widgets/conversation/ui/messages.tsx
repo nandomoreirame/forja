@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/ui/utils'
+import {
+  defaultMessageLabels,
+  MessageBody,
+  type ImageAttachment,
+  type MessageLabels,
+  type MessagePart,
+} from './message-parts'
 import { TriangleAlert } from 'lucide-react'
 
 export interface ConversationMessage {
@@ -11,12 +18,15 @@ export interface ConversationMessage {
   action?: ReactNode
   onAction?: () => void
   highlighted?: boolean
+  parts?: MessagePart[]
+  attachments?: ImageAttachment[]
 }
 
 export interface MessagesProps {
   items: ConversationMessage[]
   emptyLabel?: string
   label?: string
+  labels?: Partial<MessageLabels>
 }
 
 const rowProps = (item: ConversationMessage) => ({
@@ -30,7 +40,9 @@ export function Messages({
   items,
   emptyLabel = 'No conversation in this feature.',
   label = 'Conversation',
+  labels,
 }: MessagesProps) {
+  const messageLabels = { ...defaultMessageLabels, ...labels }
   if (items.length === 0) {
     return (
       <p className="rounded-[3px] border border-border bg-card p-3 text-[12px] text-muted-foreground">
@@ -81,7 +93,12 @@ export function Messages({
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="font-medium text-foreground">{item.author}</span>
             </div>
-            <p className="text-[13px] text-foreground">{item.text}</p>
+            <MessageBody
+              text={item.text}
+              parts={item.parts}
+              attachments={item.attachments}
+              labels={messageLabels}
+            />
           </li>
         ) : (
           <li
@@ -115,7 +132,12 @@ export function Messages({
                 )
               ) : null}
             </div>
-            <p className="text-[13px] text-foreground">{item.text}</p>
+            <MessageBody
+              text={item.text}
+              parts={item.parts}
+              attachments={item.attachments}
+              labels={messageLabels}
+            />
           </li>
         ),
       )}
