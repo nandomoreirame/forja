@@ -1,5 +1,6 @@
 import { ComposePage } from '@/renderer/src/pages/compose'
 import { ConversationPage } from '@/renderer/src/pages/conversation'
+import { SettingsPage } from '@/renderer/src/pages/settings'
 import { CommandPalette, type CommandId } from '@/renderer/src/features/command-palette'
 import { HomePage } from '@/renderer/src/pages/home'
 import { useShortcuts } from '@/renderer/src/shared/lib/shortcuts'
@@ -206,11 +207,7 @@ function WorkbenchShell() {
                         <ComposePage />
                       ) : s.view.kind === 'conversation' ? (
                         <ConversationPage />
-                      ) : (
-                        <section className="flex-1 p-6 text-muted-foreground">
-                          {s.view.kind === 'settings' ? a.settings : ''}
-                        </section>
-                      )}
+                      ) : s.view.kind === 'settings' ? <SettingsPage /> : null}
                     </div>
                   </ResizablePanel>
                 )}

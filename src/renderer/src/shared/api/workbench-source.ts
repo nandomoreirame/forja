@@ -71,7 +71,7 @@ export interface SettingsSnapshot {
     model?: string
     effort: string
     instructions: string
-    skills: string[]
+    skills: readonly string[]
     autoInvoke: boolean
   }[]
   general?: {

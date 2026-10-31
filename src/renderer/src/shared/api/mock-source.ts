@@ -17,7 +17,7 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
       model: undefined,
       effort: 'default',
       instructions: '',
-      skills: index === 2 ? ['rpi-implement', 'git-commit'] : ['rpi-implement'],
+      skills: index === 0 || index === 2 ? ['rpi-implement', 'git-flow'] : ['rpi-implement'],
       autoInvoke: false,
     })),
     general: {

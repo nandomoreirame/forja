@@ -2,7 +2,8 @@ import type { RoleId } from '@/renderer/src/shared/api'
 import type { ToolId } from '@/shared/ui'
 
 export interface AgentProfile {
-  role: RoleId
+  role?: RoleId
+  id?: RoleId
   tool: ToolId
   model?: string
   effort: string
