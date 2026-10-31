@@ -64,7 +64,7 @@ it('keeps commands and recent history in separate shortcut scopes', async () => 
 
 it('navigates to Settings even before opening a project', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} />)
-  fireEvent.click(screen.getByRole('button', { name: /^Settings/ }))
+  fireEvent.keyDown(window, { key: ',', ctrlKey: true })
   expect(screen.getByRole('main')).toHaveTextContent('Settings')
   expect(screen.queryByRole('heading', { name: 'FORJA' })).toBeNull()
 })

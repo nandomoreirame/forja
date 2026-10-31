@@ -53,7 +53,7 @@ function UsageCard({ window }: { window: UsageWindowView }) {
   const danger = used >= dangerAt
   const labelId = `usage-${window.id}-label`
   return (
-    <section className="grid gap-2 rounded-md border border-border bg-card p-3">
+    <section className="grid gap-2 rounded-xl border border-border bg-card p-3 shadow-sm">
       <div className="flex items-center justify-between text-[12px]">
         <span id={labelId} className="font-medium text-foreground">
           {window.label}

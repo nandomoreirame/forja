@@ -146,5 +146,5 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
 }
 
 function WorkspaceButton({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
-  return <button type="button" className="flex h-7 w-full items-center gap-2 rounded-sm px-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" onClick={onClick}>{icon}<span>{label}</span></button>
+  return <button type="button" className="flex h-7 w-full items-center gap-2 rounded-sm px-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring [&_svg]:size-3.5 [&_svg]:shrink-0" onClick={onClick}>{icon}<span>{label}</span></button>
 }
