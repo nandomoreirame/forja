@@ -32,6 +32,7 @@ export interface WorkbenchState {
   createFeatureFromPrompt(prompt: string, role: RoleId): string
   selectFeature(id: string): void
   closeFeature(id: string): void
+  appendPrompt(id: string, prompt: string, role: RoleId): void
   openProject(id: string): Promise<void>
   navigate(view: View): void
   back(): void
@@ -79,6 +80,31 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     },
     selectFeature(id) {
       if (get().openFeatureIds.includes(id)) get().navigate({ kind: 'conversation', featureId: id })
+    },
+    appendPrompt(id, prompt, role) {
+      const snapshot = get().snapshot
+      if (!snapshot || !prompt.trim() || !snapshot.features.some((f) => f.id === id)) return
+      set((state) => ({
+        snapshot: {
+          ...snapshot,
+          features: snapshot.features.map((feature) =>
+            feature.id === id
+              ? {
+                  ...feature,
+                  messages: [
+                    ...feature.messages,
+                    {
+                      id: `${id}:user-${feature.messages.length + 1}`,
+                      role: 'user',
+                      text: prompt.trim(),
+                    },
+                  ],
+                }
+              : feature,
+          ),
+        },
+        recipients: { ...state.recipients, [id]: role },
+      }))
     },
     closeFeature(id) {
       const state = get()

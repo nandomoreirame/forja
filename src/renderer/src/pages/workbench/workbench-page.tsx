@@ -1,3 +1,5 @@
+import { ComposePage } from '@/renderer/src/pages/compose'
+import { ConversationPage } from '@/renderer/src/pages/conversation'
 import { CommandPalette, type CommandId } from '@/renderer/src/features/command-palette'
 import { HomePage } from '@/renderer/src/pages/home'
 import { useShortcuts } from '@/renderer/src/shared/lib/shortcuts'
@@ -37,11 +39,12 @@ export function WorkbenchPage({
 }
 function WorkbenchShell() {
   const s = useWorkbench((s) => s)
+  const focusComposer = useRef(false)
   const opener = useRef<HTMLElement | null>(null)
   const a = getDictionary(s.source.locale).app
   useShortcuts({
     'ctrl+n': () => {
-      if (s.snapshot) s.navigate({ kind: 'compose', role: 'research' })
+      if (s.snapshot) s.startCompose()
     },
     'ctrl+o': () => s.openPalette('recent'),
     'ctrl+r': () => s.openPalette('recent'),
@@ -50,7 +53,10 @@ function WorkbenchShell() {
     'alt+arrowright': s.forward,
   })
   const runCommand = (id: CommandId) => {
-    if (id === 'new-conversation' && s.snapshot) s.navigate({ kind: 'compose', role: 'research' })
+    if (id === 'new-conversation' && s.snapshot) {
+      focusComposer.current = true
+      s.startCompose()
+    }
     if (id === 'recent-projects') s.openPalette('recent')
     if (id === 'settings') s.navigate({ kind: 'settings' })
     if (id === 'toggle-terminals' && s.snapshot) s.togglePanel('terminal')
@@ -98,17 +104,13 @@ function WorkbenchShell() {
           ) : null}
           {!s.snapshot || s.view.kind === 'home' ? (
             <HomePage />
+          ) : s.view.kind === 'compose' ? (
+            <ComposePage />
+          ) : s.view.kind === 'conversation' ? (
+            <ConversationPage />
           ) : (
             <section className="flex-1 p-6 text-muted-foreground">
-              {s.view.kind === 'compose'
-                ? a.newConversation
-                : s.view.kind === 'settings'
-                  ? a.settings
-                  : s.view.kind === 'conversation'
-                    ? s.snapshot?.features.find(
-                        (f) => s.view.kind === 'conversation' && f.id === s.view.featureId,
-                      )?.name
-                    : ''}
+              {s.view.kind === 'settings' ? a.settings : ''}
             </section>
           )}
           {s.snapshot && s.panels.terminal ? (
@@ -149,7 +151,10 @@ function WorkbenchShell() {
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault()
-          if (opener.current?.isConnected) opener.current.focus()
+          if (focusComposer.current) {
+            focusComposer.current = false
+            document.querySelector<HTMLTextAreaElement>('textarea')?.focus()
+          } else if (opener.current?.isConnected) opener.current.focus()
         }}
       />
       <AppStatusbar items={[s.snapshot?.project.path ?? a.noProject, 'UTF-8']} />

@@ -8,10 +8,7 @@ export function HomePage() {
     {
       label: state.snapshot ? a.newConversation : a.openProject,
       keys: state.snapshot ? ['Ctrl', 'N'] : ['Ctrl', 'O'],
-      run: () =>
-        state.snapshot
-          ? state.navigate({ kind: 'compose', role: 'research' })
-          : state.openPalette('recent'),
+      run: () => (state.snapshot ? state.startCompose() : state.openPalette('recent')),
     },
     { label: a.recent, keys: ['Ctrl', 'R'], run: () => state.openPalette('recent') },
     { label: a.allCommands, keys: ['Ctrl', 'Shift', 'P'], run: () => state.openPalette('all') },

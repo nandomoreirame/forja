@@ -50,3 +50,17 @@ it('requires an open project and defaults new conversations to Research', async 
   store.getState().selectFeature('missing')
   expect(store.getState().view).toEqual({ kind: 'compose', role: 'research' })
 })
+
+it('appends follow-up prompts to the selected mock feature without changing fixtures', async () => {
+  const source = createMockSource({ locale: 'en' })
+  const store = createWorkbenchStore(source)
+  await store.getState().openProject('acme-api')
+  const id = store.getState().createFeatureFromPrompt('Login', 'research')
+  store.getState().appendPrompt(id, 'Handle expiration', 'planner')
+  expect(store.getState().snapshot?.features[0].messages).toHaveLength(2)
+  expect(store.getState().recipients[id]).toBe('planner')
+  store.getState().appendPrompt(id, '   ', 'planner')
+  store.getState().appendPrompt('missing', 'Ignored', 'research')
+  expect(store.getState().snapshot?.features[0].messages).toHaveLength(2)
+  expect((await source.loadProject('acme-api')).features).toHaveLength(0)
+})

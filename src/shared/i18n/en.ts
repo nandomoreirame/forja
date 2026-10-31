@@ -1,5 +1,8 @@
 export const en = {
   app: {
+    features: 'Features',
+    conversation: 'Conversation',
+    you: 'You',
     states: {
       draft: 'Ready',
       approved: 'Approved',

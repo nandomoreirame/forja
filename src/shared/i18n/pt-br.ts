@@ -1,5 +1,8 @@
 export const ptBr = {
   app: {
+    features: 'Features',
+    conversation: 'Conversa',
+    you: 'Você',
     states: {
       draft: 'Pronto',
       approved: 'Aprovado',

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { ArrowRight } from 'lucide-react'
 import {
   Select,
@@ -16,6 +17,7 @@ export interface ComposerRecipient {
 }
 
 export interface ComposerProps {
+  autoFocus?: boolean
   recipients: ComposerRecipient[]
   recipientId: string
   onRecipientChange: (id: string) => void
@@ -33,6 +35,7 @@ export interface ComposerProps {
 }
 
 export function Composer({
+  autoFocus = false,
   recipients,
   recipientId,
   onRecipientChange,
@@ -48,6 +51,10 @@ export function Composer({
   sendLabel = 'Send',
   shortcutHint = 'Press Ctrl+Enter to send',
 }: ComposerProps) {
+  const field = useRef<HTMLTextAreaElement>(null)
+  useEffect(() => {
+    if (autoFocus) field.current?.focus()
+  }, [autoFocus])
   const selected = recipients.find((item) => item.id === recipientId)
   const [hintBefore, hintAfter] = shortcutHint.includes(sendShortcut)
     ? shortcutHint.split(sendShortcut, 2)
@@ -91,6 +98,7 @@ export function Composer({
         </span>
       </div>
       <Textarea
+        ref={field}
         aria-label={placeholder}
         value={value}
         placeholder={placeholder}

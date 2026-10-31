@@ -60,7 +60,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                 type="button"
                 key={agent.id}
                 className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
-                onClick={() => state.navigate({ kind: 'compose', role: agent.id })}
+                onClick={() => state.startCompose(agent.id)}
               >
                 <SidebarRow
                   className="h-6 rounded-none border-0 bg-transparent px-3 hover:bg-accent"
@@ -120,10 +120,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                 onClick={() =>
                   kind === 'skill'
                     ? state.navigate({ kind: 'settings' })
-                    : state.navigate({
-                        kind: 'compose',
-                        role: kind === 'plan' ? 'planner' : 'research',
-                      })
+                    : state.startCompose(kind === 'plan' ? 'planner' : 'research')
                 }
               >
                 {kind === 'spec' ? a.addSpec : kind === 'plan' ? a.addPlan : a.addSkill}
