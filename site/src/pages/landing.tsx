@@ -23,23 +23,13 @@ function ProductMock({ locale }: { locale: Locale }) {
   const mock = productMock(locale)
   return (
     <figure data-testid="product-preview" className="mt-14 w-full text-left">
-      <div className="flex items-center justify-between rounded-t-sm border border-b-0 border-border bg-background px-3 py-1.5 text-[11px] text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <span className="size-2 rounded-full bg-primary" aria-hidden="true" />
-          <span className="font-semibold text-foreground">forja-app-preview</span>
-          <span className="text-muted-foreground/70">/dev/projects/forja</span>
-        </div>
-        <span className="rounded-sm border border-primary/20 bg-primary/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-primary">
-          {t.hero.preview}
-        </span>
-      </div>
       <img
         src="/stitch/execution-terminals.jpg"
         alt={`${t.hero.preview}: ${mock.features[0]} · ${mock.roles[2]}`}
         width={1280}
         height={1024}
         loading="lazy"
-        className="block h-auto w-full rounded-b-sm border border-border shadow-2xl"
+        className="block h-auto w-full rounded-sm border border-border shadow-2xl"
       />
       <p className="sr-only">
         {mock.features[0]} · {mock.roles[2]} · {mock.statusLabels.running} · {mock.prompt} ·{' '}
