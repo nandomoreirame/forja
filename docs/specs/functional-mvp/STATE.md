@@ -31,8 +31,8 @@ The user approved the consolidated scope and requested generation of implementat
 
 ## Delivery
 
-- 60 approved MVP requirements (REQ-055 to REQ-060 added in the 2026-10-31 business-rule review).
-- 13 ordered child specs and implementation plans, totaling 65 tasks.
+- 79 approved MVP requirements (REQ-055 to REQ-060 from the 2026-10-31 business-rule review; REQ-061 to REQ-079 for the mock screens).
+- 19 ordered child specs and implementation plans, totaling 93 tasks.
 - First delivery: site/ landing and styleguide, English default and /pt-br, using the same customized shadcn components and Tailwind tokens as Electron.
 - Use the plan index queue or the individual child slug for later rpi-implement, not this umbrella slug.
 - Dependencies, public source paths, tests, role/tool boundaries and design exceptions are recorded in each plan.
@@ -60,3 +60,7 @@ The user requested including SPEC and PLAN documentation in each feature progres
 ## 2026-10-31 Business-rule review
 
 The user reviewed the approved specs and plans before production implementation of the desktop slices. Decisions are recorded as Grilling Log rows 15 to 25 in SPEC.md. Summary: the human implementation approval was removed in favor of confirmed repository gates; artifacts live in the feature worktree created at Git binding; core runs human-confirmed gates as the only validation evidence and also on the merge result; final approval and integration are one action; the Tester edits test files only; blocking findings can be waived with a reason; a handoff matrix, feature end states, stalled-turn handling and usage visibility were added (REQ-055 to REQ-060). feature-git-worktrees gained Tasks 5 and 6 and cli-agent-sessions gained Task 8, for 65 tasks in total. The delivered web slice is unaffected.
+
+## 2026-10-31 Mock screens
+
+Six frontend-only navigable screens were specified and planned as slices 01a to 01f (28 tasks), recorded as Grilling Log rows 26 to 29. Slices 04, 09, 10 and 11 now modify the renderer files these slices create instead of creating them.

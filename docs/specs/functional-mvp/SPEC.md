@@ -106,6 +106,25 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 58. **[REQ-058]** WHEN a feature is integrated or abandoned THEN the system SHALL move it to a read-only terminal state preserving history; after integration it SHALL offer explicit worktree/branch removal, and abandoning SHALL require confirmation, stop owned processes and keep branch/worktree until explicit cleanup.
 59. **[REQ-059]** WHEN an agent turn emits no events for the configurable inactivity window (default 10 minutes) THEN the system SHALL mark it unresponsive and let the user keep waiting or stop it; a forced stop SHALL always be available and release the feature lease only after the owned process group terminates.
 60. **[REQ-060]** WHEN a CLI reports token or cost usage THEN the system SHALL record and display it per turn and per feature; when a CLI does not report usage the system SHALL show it as unavailable instead of estimating.
+61. **[REQ-061]** WHEN the renderer starts THEN the system SHALL load projects, features, conversations and terminals through a `WorkbenchSource` interface, using a deterministic mock implementation until core IPC replaces it, without importing mock modules in screens.
+62. **[REQ-062]** WHEN a project is open THEN the system SHALL render the workbench shell (40 px topbar with back/forward, command bar trigger, terminal and settings icons; project sidebar with agents, specs, plans and skills; right project/Git/branches panel; 32 px statusbar with the project path and encoding) using shared shadcn/Tailwind components in the system language.
+63. **[REQ-063]** WHEN an open project has no feature tabs THEN the system SHALL show the project home with the Forja mark and the actions New conversation (Ctrl+N), Recent projects (Ctrl+R) and Show all commands (Ctrl+Shift+P), each clickable, focusable and triggered by its shortcut.
+64. **[REQ-064]** WHEN the user activates the topbar search, presses Ctrl+Shift+P or activates the sidebar project header THEN the system SHALL open a centered shadcn Command dialog listing recent projects and commands with type-to-filter, arrow-key navigation, Enter to run, Escape to close and focus restored to the opener.
+65. **[REQ-065]** WHEN the user presses Ctrl+R or chooses Recent projects THEN the system SHALL open the same command bar scoped to recent projects, each showing name, path and relative time with the current one marked, and selecting another project SHALL switch the window to that mock project; project history SHALL NOT open as a sidebar dropdown.
+66. **[REQ-066]** WHEN the user chooses New conversation (home action, Ctrl+N or sidebar Add spec) or closes the last feature tab THEN the system SHALL show the centered composer without a tab bar label, with the Research agent preselected and the text field focused.
+67. **[REQ-067]** WHEN the user sends a non-empty prompt from the centered composer THEN the system SHALL create a mock feature named from the prompt with a unique slug, open its tab and show the conversation screen with the Research mock reply streaming.
+68. **[REQ-068]** WHEN a feature tab is selected THEN the system SHALL show its feature context (mode badge, destination, branch and RPI cycle), its conversation, the docked composer and the Git panel for that feature, with background features never stealing the selected recipient.
+69. **[REQ-069]** WHEN the user sends a prompt in a feature THEN the system SHALL append the message and stream a scripted mock reply from the selected recipient (running to completed, with Interrupt available), adding mock terminal output for Implementer and Tester replies, with no CLI, network or filesystem access.
+70. **[REQ-070]** WHEN the user opens or collapses the terminal panel or switches terminal tabs THEN the system SHALL keep each mock terminal's output and state, collapse to the footer toolbar without stopping mocks, and reopen the exact tab from the toolbar.
+71. **[REQ-071]** WHEN the user closes a feature tab THEN the system SHALL remove only that tab (confirming first when its mock agent is running), select a neighbor tab, and show the centered composer after the last tab closes.
+72. **[REQ-072]** WHEN the user activates the topbar terminal icon, the back/forward arrows or a side panel chevron THEN the system SHALL toggle the terminal panel, move through the window's view history (home, new conversation, conversation, settings, document) or collapse and expand that side panel, keeping the choice for the session.
+73. **[REQ-073]** WHEN the user activates "+ Add plan" or an agent row while no feature tab is open THEN the system SHALL show the centered composer with the Planner or that agent preselected; "+ Add spec" SHALL preselect Research.
+74. **[REQ-074]** WHEN the user activates an agent row in the sidebar or types a valid @mention (token boundary, English or localized role alias, ignored inside code fences) THEN the system SHALL make that agent the composer recipient for the selected feature, with the latest explicit choice winning.
+75. **[REQ-075]** WHEN the user activates "View request", the terminal "+" or "Stop process" THEN the system SHALL scroll to and highlight the source message, add a mock manual shell tab labeled with the shell name, or mark that mock execution stopped with its output preserved.
+76. **[REQ-076]** WHEN the user activates the topbar gear, "Configure agents"/"Edit agents" or "+ Add skill" THEN the system SHALL open Settings in the center area with the Agents tab (and the clicked agent selected) or the General tab, keeping feature tabs, feature context and the global composer visible.
+77. **[REQ-077]** WHEN Settings is shown THEN the system SHALL offer, in Agents, the fixed role selector, AI tool (claude, codex, opencode, agy, grok) with a mock detection indicator, optional model (empty means the tool default), reasoning level with an availability hint, additional instructions, a skills checklist with an active count and the auto-invoke switch; in General, the skills folder with refresh, interrupt policy, read-only guided mode with three rounds and the inactivity window; changes SHALL persist only through Save, which is enabled when the form is dirty, and leaving with unsaved changes SHALL ask for confirmation.
+78. **[REQ-078]** WHEN the user activates a spec, plan or review in the sidebar THEN the system SHALL open (or focus) a closable document tab showing the document header with its state and, for a draft spec or plan, a mock approve action, followed by the rendered Markdown and Mermaid content from the mock source.
+79. **[REQ-079]** WHEN the user selects text in a document and chooses "Review with agent" THEN the system SHALL prefill the global composer with the artifact name, the quoted excerpt and the artifact's author agent as recipient, without sending.
 
 ### P2 (Should Have)
 
@@ -180,6 +199,10 @@ None in this delivery; deferred items are explicit below.
 | 23 | Feature end (2026-10-31) | Integrated and abandoned read-only states; cleanup offered, never implicit | Avoids orphaned features and accidental branch loss. |
 | 24 | Stalled turns and usage (2026-10-31) | 10-minute inactivity flag with forced stop; show CLI-reported usage without caps | A hung CLI held the feature lease forever; paid CLIs had no visibility. |
 | 25 | Defaults (2026-10-31) | Interrupt stays the busy-agent default; agent proposes Conventional Commits messages validated by core; `--no-ff` merge fixed | Confirmed during the business-rule review. |
+| 26 | Mock screens first (2026-10-31) | Six frontend-only navigable screens (01a to 01f) run in the renderer on a swappable `WorkbenchSource` mock and become the base of slices 04, 09, 10 and 11 | Validates the real UI flow before core wiring without throwaway prototypes. |
+| 27 | Mock behavior (2026-10-31) | Scripted streamed replies with interrupt; two mock projects (`acme-api` fresh, `dev` with two features); system language | Exercises states that static samples cannot show. |
+| 28 | Navigation (2026-10-31) | Project history opens in the centered command bar (topbar search, Ctrl+Shift+P, Ctrl+R, sidebar header), never as a sidebar dropdown; the home offers only New conversation, not New spec | User decision on the Stitch project menu and home actions. |
+| 29 | Extra mock actions (2026-10-31) | Settings screen, document tabs with excerpt review, shell shortcuts (terminal toggle, back/forward, panel collapse), recipient by sidebar or @mention, View request highlight, terminal add/stop | Selected by the user from the actions available in the approved screens. |
 
 ## Constraints
 
@@ -276,6 +299,25 @@ None in this delivery; deferred items are explicit below.
 | REQ-058 | Feature end states | P1 | Approved 2026-10-31; not implemented |
 | REQ-059 | Stalled turns | P1 | Approved 2026-10-31; not implemented |
 | REQ-060 | Usage visibility | P1 | Approved 2026-10-31; not implemented |
+| REQ-061 | Swappable mock source | P1 | Approved 2026-10-31; not implemented |
+| REQ-062 | Workbench shell | P1 | Approved 2026-10-31; not implemented |
+| REQ-063 | Project home | P1 | Approved 2026-10-31; not implemented |
+| REQ-064 | Command bar | P1 | Approved 2026-10-31; not implemented |
+| REQ-065 | Recent projects in command bar | P1 | Approved 2026-10-31; not implemented |
+| REQ-066 | Centered composer | P1 | Approved 2026-10-31; not implemented |
+| REQ-067 | First prompt creates feature | P1 | Approved 2026-10-31; not implemented |
+| REQ-068 | Feature conversation layout | P1 | Approved 2026-10-31; not implemented |
+| REQ-069 | Scripted mock replies | P1 | Approved 2026-10-31; not implemented |
+| REQ-070 | Mock terminals | P1 | Approved 2026-10-31; not implemented |
+| REQ-071 | Closable feature tabs | P1 | Approved 2026-10-31; not implemented |
+| REQ-072 | Shell navigation and panels | P1 | Approved 2026-10-31; not implemented |
+| REQ-073 | Sidebar entry points | P1 | Approved 2026-10-31; not implemented |
+| REQ-074 | Recipient by sidebar or mention | P1 | Approved 2026-10-31; not implemented |
+| REQ-075 | Conversation and terminal extras | P1 | Approved 2026-10-31; not implemented |
+| REQ-076 | Settings entry points | P1 | Approved 2026-10-31; not implemented |
+| REQ-077 | Settings form with manual save | P1 | Approved 2026-10-31; not implemented |
+| REQ-078 | Document tabs | P1 | Approved 2026-10-31; not implemented |
+| REQ-079 | Excerpt review | P1 | Approved 2026-10-31; not implemented |
 
 ## Implementation Sequence
 
