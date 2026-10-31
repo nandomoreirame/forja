@@ -43,7 +43,7 @@ function Section({
   return (
     <section aria-labelledby={id} className="grid gap-5 border-t border-border pt-10">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 id={id} className="text-[13px] font-semibold uppercase tracking-wider">
+        <h2 id={id} className="text-[14px] font-semibold uppercase tracking-wider">
           {title}
         </h2>
         {description ? (

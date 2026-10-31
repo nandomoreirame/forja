@@ -14,3 +14,6 @@ playwright-report/
 
 # Stitch exports (local design cache, large binaries)
 docs/design/forja-2.0/stitch-cache/
+
+# Visual comparison output (stitch-fidelity skill)
+.stitch-diff/
