@@ -1,53 +1,54 @@
 import type { ReactNode } from 'react'
-import { Badge, Button, statusTone, type UiState } from '@/shared/ui'
+import { CircleCheck, Lock } from 'lucide-react'
+import { Badge, Button, type UiState } from '@/shared/ui'
 
 export interface DocumentPreviewProps {
   name: string
-  state: UiState
   stateLabel: string
+  state?: UiState
   actionLabel?: string
   onAction?: () => void
   notice?: string
-  children: ReactNode
+  noticeStatus?: string
+  children?: ReactNode
 }
 
 export function DocumentPreview({
   name,
-  state,
   stateLabel,
   actionLabel,
   onAction,
   notice,
+  noticeStatus,
   children,
 }: DocumentPreviewProps) {
   return (
-    <article
-      aria-label={name}
-      className="grid gap-3 rounded-md border border-border bg-background p-3"
-    >
-      <header className="flex items-center gap-2">
+    <div className="grid gap-3">
+      <div className="flex items-center gap-3 rounded-md border border-border bg-background px-4 py-3">
         <h3 className="font-mono text-[13px] text-foreground">{name}</h3>
-        <Badge
-          variant={statusTone(state) === 'danger' ? 'destructive' : 'outline'}
-          className="text-[11px]"
-        >
+        <Badge variant="outline" className="rounded-md text-[11px] text-muted-foreground">
           {stateLabel}
         </Badge>
         {actionLabel ? (
-          <Button size="sm" variant="outline" className="ml-auto" onClick={onAction}>
+          <Button size="sm" className="ml-auto gap-1.5 rounded-md" onClick={onAction}>
+            <CircleCheck />
             {actionLabel}
           </Button>
         ) : null}
-      </header>
-      <div className="text-[13px] leading-6 text-foreground/90">{children}</div>
+      </div>
       {notice ? (
-        <p
+        <div
           role="status"
-          className="rounded-md border border-border bg-muted px-3 py-2 text-[12px] text-muted-foreground"
+          className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/10 px-4 py-2.5 text-[12px] text-primary"
         >
-          {notice}
-        </p>
+          <Lock className="size-3.5 shrink-0" aria-hidden="true" />
+          <span className="flex-1">{notice}</span>
+          {noticeStatus ? (
+            <span className="text-[11px] text-muted-foreground">{noticeStatus}</span>
+          ) : null}
+        </div>
       ) : null}
-    </article>
+      {children ? <div className="grid gap-3">{children}</div> : null}
+    </div>
   )
 }

@@ -11,3 +11,6 @@ site/dist/
 site/.ssr/
 test-results/
 playwright-report/
+
+# Stitch exports (local design cache, large binaries)
+docs/design/forja-2.0/stitch-cache/

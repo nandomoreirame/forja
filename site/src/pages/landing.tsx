@@ -12,6 +12,7 @@ import { Composer, Messages } from '@/widgets/conversation'
 import { TerminalPreview } from '@/widgets/terminal'
 import { productMock } from '../mocks/product'
 import { LocaleLink } from '../components/locale-link'
+import { StyleguideSections } from './styleguide'
 
 export const developmentUrl = 'https://github.com/nandomoreirame/forja'
 export const issuesUrl = `${developmentUrl}/issues`
@@ -286,6 +287,16 @@ export function Landing({ locale }: { locale: Locale }) {
               </a>
             </Button>
           </div>
+        </section>
+
+        <section
+          aria-label="Revisão de componentes do styleguide"
+          className="grid gap-4 border-t border-border pt-16"
+        >
+          <p className="text-[12px] text-muted-foreground">
+            REVISÃO TEMPORÁRIA · styleguide (será removido da landing)
+          </p>
+          <StyleguideSections locale={locale} />
         </section>
       </main>
 
