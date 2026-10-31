@@ -30,10 +30,14 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       className="w-[240px] shrink-0 overflow-y-auto border-r border-border bg-sidebar text-xs"
     >
       <div className="flex h-9 items-center justify-between border-b border-border px-3">
-        <span className="flex min-w-0 items-center gap-2">
+        <button
+          aria-label={`${snapshot.project.name}, ${a.switchProject}`}
+          onClick={() => state.openPalette('recent')}
+          className="flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+        >
           <Folder className="size-3.5 text-primary" />
           <span className="truncate font-semibold">{snapshot.project.name}</span>
-        </span>
+        </button>
         <IconButton label={a.collapseLeft} onClick={() => state.togglePanel('left')}>
           <ChevronLeft className="size-3" />
         </IconButton>

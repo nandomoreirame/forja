@@ -1,5 +1,7 @@
 export const ptBr = {
   app: {
+    openProject: 'Abrir projeto',
+    noProject: 'Sem projeto',
     agents: 'Agentes',
     specs: 'Especificações',
     plans: 'Planos',

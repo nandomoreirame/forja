@@ -1,5 +1,7 @@
 export const en = {
   app: {
+    openProject: 'Open project',
+    noProject: 'No project',
     agents: 'Agents',
     specs: 'Specs',
     plans: 'Plans',

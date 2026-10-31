@@ -24,6 +24,7 @@ export interface WorkbenchState {
   palette: { open: boolean; scope: 'all' | 'recent' }
   openPalette(scope: 'all' | 'recent'): void
   closePalette(): void
+  loadProjects(): Promise<void>
   openProject(id: string): Promise<void>
   navigate(view: View): void
   back(): void
@@ -48,6 +49,13 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     },
     closePalette() {
       set((state) => ({ palette: { ...state.palette, open: false } }))
+    },
+    async loadProjects() {
+      try {
+        set({ projects: await source.listProjects() })
+      } catch {
+        set({ error: 'Unable to load project' })
+      }
     },
     async openProject(id) {
       const token = ++request

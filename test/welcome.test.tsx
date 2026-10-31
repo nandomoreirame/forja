@@ -1,17 +1,28 @@
-import { act, fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { App } from '../src/renderer/src/app/App'
-it('opens project home and routes actions and keyboard history', async () => {
+it('starts without a project and only shows sidebars after Open project selection', async () => {
   render(<App locale="en" />)
   expect(await screen.findByRole('heading', { name: 'FORJA' })).toBeInTheDocument()
-  expect(screen.queryByText('New spec')).toBeNull()
-  const reload = new KeyboardEvent('keydown', { key: 'r', ctrlKey: true, cancelable: true })
-  act(() => window.dispatchEvent(reload))
-  expect(reload.defaultPrevented).toBe(true)
+  expect(screen.queryAllByRole('complementary')).toHaveLength(0)
+  expect(screen.getByRole('contentinfo')).toHaveTextContent('No project')
+  expect(screen.queryByRole('button', { name: /New conversation/ })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: /Open project/ }))
+  fireEvent.click(await screen.findByRole('option', { name: /acme-api/ }))
+  expect(await screen.findByRole('complementary', { name: 'acme-api' })).toBeInTheDocument()
+  await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   fireEvent.click(screen.getByRole('button', { name: /New conversation/ }))
   expect(screen.queryByRole('heading', { name: 'FORJA' })).toBeNull()
   fireEvent.keyDown(window, { key: 'ArrowLeft', altKey: true })
   expect(screen.getByRole('heading', { name: 'FORJA' })).toBeInTheDocument()
   fireEvent.keyDown(window, { key: 'ArrowRight', altKey: true })
   expect(screen.queryByRole('heading', { name: 'FORJA' })).toBeNull()
+})
+it('prevents reload when opening recent projects', async () => {
+  render(<App locale="en" />)
+  await screen.findByRole('heading', { name: 'FORJA' })
+  const event = new KeyboardEvent('keydown', { key: 'r', ctrlKey: true, cancelable: true })
+  act(() => window.dispatchEvent(event))
+  expect(event.defaultPrevented).toBe(true)
+  expect(screen.getByRole('dialog', { name: 'Command bar' })).toBeInTheDocument()
 })

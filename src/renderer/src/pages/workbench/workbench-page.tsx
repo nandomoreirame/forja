@@ -1,6 +1,7 @@
+import { CommandPalette, type CommandId } from '@/renderer/src/features/command-palette'
 import { HomePage } from '@/renderer/src/pages/home'
 import { useShortcuts } from '@/renderer/src/shared/lib/shortcuts'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import type { WorkbenchSource } from '@/renderer/src/shared/api'
 import {
   createWorkbenchStore,
@@ -19,11 +20,12 @@ export function WorkbenchPage({
   initialProjectId,
 }: {
   source: WorkbenchSource
-  initialProjectId: string
+  initialProjectId?: string
 }) {
   const [store] = useState(() => createWorkbenchStore(source))
   useEffect(() => {
-    void store.getState().openProject(initialProjectId)
+    if (initialProjectId) void store.getState().openProject(initialProjectId)
+    else void store.getState().loadProjects()
   }, [store, initialProjectId])
   return (
     <WorkbenchProvider store={store}>
@@ -35,27 +37,24 @@ export function WorkbenchPage({
 }
 function WorkbenchShell() {
   const s = useWorkbench((s) => s)
+  const opener = useRef<HTMLElement | null>(null)
   const a = getDictionary(s.source.locale).app
   useShortcuts({
-    'ctrl+n': () => s.navigate({ kind: 'compose', role: 'research' }),
+    'ctrl+n': () => {
+      if (s.snapshot) s.navigate({ kind: 'compose', role: 'research' })
+    },
+    'ctrl+o': () => s.openPalette('recent'),
     'ctrl+r': () => s.openPalette('recent'),
     'ctrl+shift+p': () => s.openPalette('all'),
     'alt+arrowleft': s.back,
     'alt+arrowright': s.forward,
   })
-  if (!s.snapshot)
-    return (
-      <main aria-busy={s.loading}>
-        {s.error ? (
-          <div role="alert">
-            {a.error}
-            <button onClick={() => void s.openProject('acme-api')}>{a.retry}</button>
-          </div>
-        ) : (
-          <p role="status">{a.loading}</p>
-        )}
-      </main>
-    )
+  const runCommand = (id: CommandId) => {
+    if (id === 'new-conversation' && s.snapshot) s.navigate({ kind: 'compose', role: 'research' })
+    if (id === 'recent-projects') s.openPalette('recent')
+    if (id === 'settings') s.navigate({ kind: 'settings' })
+    if (id === 'toggle-terminals' && s.snapshot) s.togglePanel('terminal')
+  }
   return (
     <div
       className="flex h-full min-h-0 flex-col bg-background text-foreground"
@@ -63,7 +62,7 @@ function WorkbenchShell() {
     >
       <AppTopbar
         brand="FORJA"
-        commandText={s.snapshot.project.name}
+        commandText={s.snapshot?.project.name ?? 'Forja'}
         onCommand={() => s.openPalette('all')}
         settingsLabel={a.settings}
         onSettings={() => s.navigate({ kind: 'settings' })}
@@ -71,24 +70,33 @@ function WorkbenchShell() {
         onForward={s.forward}
         canBack={s.historyIndex > 0}
         canForward={s.historyIndex < s.history.length - 1}
-        onTerminal={() => s.togglePanel('terminal')}
+        onTerminal={s.snapshot ? () => s.togglePanel('terminal') : undefined}
         terminalOpen={s.panels.terminal}
         terminalLabel={a.terminals}
         backLabel={a.back}
         forwardLabel={a.forward}
       />
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {s.panels.left ? (
-          <ProjectSidebar locale={s.source.locale} />
-        ) : (
-          <div className="border-r border-border bg-sidebar">
-            <IconButton label={a.expandLeft} onClick={() => s.togglePanel('left')}>
-              <ChevronRight />
-            </IconButton>
-          </div>
-        )}
+        {s.snapshot ? (
+          s.panels.left ? (
+            <ProjectSidebar locale={s.source.locale} />
+          ) : (
+            <div className="border-r border-border bg-sidebar">
+              <IconButton label={a.expandLeft} onClick={() => s.togglePanel('left')}>
+                <ChevronRight />
+              </IconButton>
+            </div>
+          )
+        ) : null}
         <main className="flex min-w-0 flex-1 flex-col overflow-auto">
-          {s.view.kind === 'home' ? (
+          {s.loading ? <p role="status">{a.loading}</p> : null}
+          {s.error ? (
+            <div role="alert">
+              {a.error}
+              <button onClick={() => s.openPalette('recent')}>{a.retry}</button>
+            </div>
+          ) : null}
+          {!s.snapshot || s.view.kind === 'home' ? (
             <HomePage />
           ) : (
             <section className="flex-1 p-6 text-muted-foreground">
@@ -97,13 +105,13 @@ function WorkbenchShell() {
                 : s.view.kind === 'settings'
                   ? a.settings
                   : s.view.kind === 'conversation'
-                    ? s.snapshot.features.find(
+                    ? s.snapshot?.features.find(
                         (f) => s.view.kind === 'conversation' && f.id === s.view.featureId,
                       )?.name
                     : ''}
             </section>
           )}
-          {s.panels.terminal ? (
+          {s.snapshot && s.panels.terminal ? (
             <section
               aria-label={a.terminals}
               className="border-t border-border p-3 text-xs text-muted-foreground"
@@ -112,17 +120,39 @@ function WorkbenchShell() {
             </section>
           ) : null}
         </main>
-        {s.panels.right ? (
-          <GitContext locale={s.source.locale} />
-        ) : (
-          <div className="border-l border-border bg-sidebar">
-            <IconButton label={a.expandRight} onClick={() => s.togglePanel('right')}>
-              <ChevronLeft />
-            </IconButton>
-          </div>
-        )}
+        {s.snapshot ? (
+          s.panels.right ? (
+            <GitContext locale={s.source.locale} />
+          ) : (
+            <div className="border-l border-border bg-sidebar">
+              <IconButton label={a.expandRight} onClick={() => s.togglePanel('right')}>
+                <ChevronLeft />
+              </IconButton>
+            </div>
+          )
+        ) : null}
       </div>
-      <AppStatusbar items={[s.snapshot.project.path, 'UTF-8']} />
+      <CommandPalette
+        open={s.palette.open}
+        scope={s.palette.scope}
+        locale={s.source.locale}
+        projects={s.projects}
+        currentProjectId={s.snapshot?.project.id ?? ''}
+        onOpenChange={(open) => {
+          if (!open) s.closePalette()
+        }}
+        onSelectProject={(id) => void s.openProject(id)}
+        onCommand={runCommand}
+        onOpenAutoFocus={() => {
+          opener.current =
+            document.activeElement instanceof HTMLElement ? document.activeElement : null
+        }}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault()
+          if (opener.current?.isConnected) opener.current.focus()
+        }}
+      />
+      <AppStatusbar items={[s.snapshot?.project.path ?? a.noProject, 'UTF-8']} />
     </div>
   )
 }

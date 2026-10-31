@@ -6,9 +6,12 @@ export function HomePage() {
   const a = getDictionary(state.source.locale).app
   const actions = [
     {
-      label: a.newConversation,
-      keys: ['Ctrl', 'N'],
-      run: () => state.navigate({ kind: 'compose', role: 'research' }),
+      label: state.snapshot ? a.newConversation : a.openProject,
+      keys: state.snapshot ? ['Ctrl', 'N'] : ['Ctrl', 'O'],
+      run: () =>
+        state.snapshot
+          ? state.navigate({ kind: 'compose', role: 'research' })
+          : state.openPalette('recent'),
     },
     { label: a.recent, keys: ['Ctrl', 'R'], run: () => state.openPalette('recent') },
     { label: a.allCommands, keys: ['Ctrl', 'Shift', 'P'], run: () => state.openPalette('all') },

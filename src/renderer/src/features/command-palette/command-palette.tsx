@@ -23,6 +23,7 @@ interface Props {
   onOpenChange: (open: boolean) => void
   onSelectProject: (id: string) => void
   onCommand: (id: CommandId) => void
+  onOpenAutoFocus?: CommandDialogProps['onOpenAutoFocus']
   onCloseAutoFocus?: CommandDialogProps['onCloseAutoFocus']
 }
 export function CommandPalette({
@@ -36,6 +37,7 @@ export function CommandPalette({
   onSelectProject,
   onCommand,
   onCloseAutoFocus,
+  onOpenAutoFocus,
 }: Props) {
   const a = getDictionary(locale).app
   const commands: { id: CommandId; label: string; shortcut?: string }[] = [
@@ -51,6 +53,7 @@ export function CommandPalette({
       title={a.commandBar}
       description={a.searchCommands}
       onCloseAutoFocus={onCloseAutoFocus}
+      onOpenAutoFocus={onOpenAutoFocus}
     >
       <CommandInput aria-label={a.searchCommands} placeholder={a.searchCommands} />
       <CommandList>

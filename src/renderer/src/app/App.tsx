@@ -5,5 +5,5 @@ import { detectLocale } from '@/renderer/src/shared/lib/locale'
 import { WorkbenchPage } from '@/renderer/src/pages/workbench'
 export function App({ locale }: { locale?: Locale } = {}) {
   const [source] = useState(() => createMockSource({ locale: locale ?? detectLocale() }))
-  return <WorkbenchPage source={source} initialProjectId="acme-api" />
+  return <WorkbenchPage source={source} />
 }

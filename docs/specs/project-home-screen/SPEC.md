@@ -4,6 +4,10 @@
 
 The renderer only shows a static welcome scaffold with disabled controls. A just-added project needs the approved workbench shell and a home screen with its first actions, backed by mock data that later slices replace with core state.
 
+## Updated entry behavior (user decision, 2026-10-31)
+
+The renderer starts without an open project. It shows the welcome screen, Open project, Recent projects and Show all commands, with no sidebars. Open project opens the mock project selector; selecting a project loads its shell. No project is opened automatically. This decision supersedes the initial acme-api startup assumption in the saved plan.
+
 ## Goals
 
 - Render the approved shell: topbar, project sidebar, right project/Git panel and statusbar.

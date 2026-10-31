@@ -149,6 +149,7 @@ export interface CommandDialogProps {
   title: string
   description: string
   children: React.ReactNode
+  onOpenAutoFocus?: React.ComponentProps<typeof DialogContent>['onOpenAutoFocus']
   onCloseAutoFocus?: React.ComponentProps<typeof DialogContent>['onCloseAutoFocus']
 }
 function CommandDialog({
@@ -158,6 +159,7 @@ function CommandDialog({
   description,
   children,
   onCloseAutoFocus,
+  onOpenAutoFocus,
 }: CommandDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -165,6 +167,7 @@ function CommandDialog({
         className="top-[18%] w-[560px] max-w-[calc(100%-2rem)] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[560px]"
         showCloseButton={false}
         onCloseAutoFocus={onCloseAutoFocus}
+        onOpenAutoFocus={onOpenAutoFocus}
       >
         <DialogTitle className="sr-only">{title}</DialogTitle>
         <DialogDescription className="sr-only">{description}</DialogDescription>
