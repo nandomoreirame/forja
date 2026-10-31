@@ -10,8 +10,9 @@ export interface ProjectSummary {
 }
 export interface ChatMessage {
   id: string
-  role: 'user' | 'assistant'
+  role: 'user' | 'agent'
   text: string
+  status?: 'running' | 'completed' | 'interrupted'
   author?: RoleId
 }
 export interface MockTerminal {

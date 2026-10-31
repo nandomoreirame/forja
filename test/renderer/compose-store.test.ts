@@ -19,7 +19,10 @@ it('creates immutable unique features with their selected recipient and first me
     stage: 'planner',
     destination: '~/projects/acme-api',
     branch: 'feature/rate-limit-public-endpoints',
-    messages: [{ role: 'user', text: 'Rate limit public endpoints' }],
+    messages: [
+      { role: 'user', text: 'Rate limit public endpoints' },
+      { role: 'agent', author: 'planner', status: 'running' },
+    ],
   })
   expect(before?.features).toHaveLength(0)
   expect((await source.loadProject('acme-api')).features).toHaveLength(0)
@@ -57,11 +60,15 @@ it('appends follow-up prompts to the selected mock feature without changing fixt
   await store.getState().openProject('acme-api')
   const id = store.getState().createFeatureFromPrompt('Login', 'research')
   store.getState().appendPrompt(id, 'Handle expiration', 'planner')
-  expect(store.getState().snapshot?.features[0].messages).toHaveLength(2)
+  expect(
+    store.getState().snapshot?.features[0].messages.filter((message) => message.role === 'user'),
+  ).toHaveLength(2)
   expect(store.getState().recipients[id]).toBe('planner')
   store.getState().appendPrompt(id, '   ', 'planner')
   store.getState().appendPrompt('missing', 'Ignored', 'research')
-  expect(store.getState().snapshot?.features[0].messages).toHaveLength(2)
+  expect(
+    store.getState().snapshot?.features[0].messages.filter((message) => message.role === 'user'),
+  ).toHaveLength(2)
   expect((await source.loadProject('acme-api')).features).toHaveLength(0)
 })
 

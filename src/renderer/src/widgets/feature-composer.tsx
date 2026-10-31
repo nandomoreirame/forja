@@ -41,7 +41,7 @@ export function FeatureComposer({
       value={prompt}
       onChange={setPrompt}
       onSend={() => {
-        if (featureId) state.appendPrompt(featureId, prompt, recipient)
+        if (featureId) state.sendMessage(featureId, prompt)
         else state.createFeatureFromPrompt(prompt, recipient)
         setPrompt('')
       }}

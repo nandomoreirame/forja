@@ -1,4 +1,5 @@
 import { selectProjectDirectory } from '@/renderer/src/shared/lib/directory-picker'
+import { getDictionary } from '@/shared/i18n'
 import { featureIdentity } from './feature-name'
 import { createStore } from 'zustand/vanilla'
 import type {
@@ -38,6 +39,8 @@ export interface WorkbenchState {
   createFeatureFromPrompt(prompt: string, role: RoleId): string
   selectFeature(id: string): void
   closeFeature(id: string): void
+  sendMessage(id: string, text: string): void
+  interrupt(id: string): void
   appendPrompt(id: string, prompt: string, role: RoleId): void
   openProject(id: string): Promise<void>
   navigate(view: View): void
@@ -46,6 +49,7 @@ export interface WorkbenchState {
   togglePanel(panel: 'left' | 'right' | 'terminal'): void
 }
 export function createWorkbenchStore(source: WorkbenchSource) {
+  const replies = new Map<string, { cancel: () => void }>()
   let request = 0
   let failedOperation:
     { kind: 'projects' } | { kind: 'project'; id: string } | { kind: 'directory' } | null = null
@@ -113,7 +117,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         worktree: null,
         target: snapshot.project.path,
         stage: role,
-        messages: [{ id: `${id}:user-1`, role: 'user' as const, text: prompt.trim() }],
+        messages: [],
         terminals: [],
       }
       set((state) => ({
@@ -122,35 +126,119 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         recipients: { ...state.recipients, [id]: role },
       }))
       get().navigate({ kind: 'conversation', featureId: id })
+      get().sendMessage(id, prompt)
       return id
     },
     selectFeature(id) {
       if (get().openFeatureIds.includes(id)) get().navigate({ kind: 'conversation', featureId: id })
     },
-    appendPrompt(id, prompt, role) {
-      const snapshot = get().snapshot
-      if (!snapshot || !prompt.trim() || !snapshot.features.some((f) => f.id === id)) return
+    sendMessage(id, text) {
+      const feature = get().snapshot?.features.find((item) => item.id === id)
+      const prompt = text.trim()
+      if (!feature || !prompt) return
+      get().interrupt(id)
+      const role = get().recipients[id] ?? feature.stage
+      const messageId = `${id}:agent-${feature.messages.length + 2}`
       set((state) => ({
         snapshot: {
-          ...snapshot,
-          features: snapshot.features.map((feature) =>
-            feature.id === id
+          ...state.snapshot!,
+          features: state.snapshot!.features.map((item) =>
+            item.id === id
               ? {
-                  ...feature,
+                  ...item,
+                  state: 'running',
                   messages: [
-                    ...feature.messages,
-                    {
-                      id: `${id}:user-${feature.messages.length + 1}`,
-                      role: 'user',
-                      text: prompt.trim(),
-                    },
+                    ...item.messages,
+                    { id: `${id}:user-${item.messages.length + 1}`, role: 'user', text: prompt },
+                    { id: messageId, role: 'agent', author: role, text: '', status: 'running' },
                   ],
                 }
-              : feature,
+              : item,
           ),
         },
-        recipients: { ...state.recipients, [id]: role },
       }))
+      const reply = { cancel: () => {} }
+      const terminalIds = new Set<string>()
+      replies.set(id, reply)
+      reply.cancel = source.streamReply(
+        { featureId: id, role, prompt },
+        (event) => {
+          if (replies.get(id) !== reply || event.type === 'start') return
+          const finalStatus =
+            event.type === 'completed' || event.type === 'interrupted' ? event.type : undefined
+          if (event.type === 'terminal') terminalIds.add(event.terminalId)
+          set((state) => ({
+            snapshot: {
+              ...state.snapshot!,
+              features: state.snapshot!.features.map((item) => {
+                if (item.id !== id) return item
+                let terminals = item.terminals
+                if (event.type === 'terminal') {
+                  const existing = terminals.find((terminal) => terminal.id === event.terminalId)
+                  terminals = existing
+                    ? terminals.map((terminal) =>
+                        terminal.id === event.terminalId
+                          ? {
+                              ...terminal,
+                              state: 'running',
+                              output: terminal.output
+                                ? `${terminal.output}\n${event.line}`
+                                : event.line,
+                            }
+                          : terminal,
+                      )
+                    : [
+                        ...terminals,
+                        {
+                          id: event.terminalId,
+                          label: `${getDictionary(source.locale).product[role]} · ${event.line.includes('npm test') ? 'tests' : 'dev'}`,
+                          state: 'running',
+                          output: event.line,
+                        },
+                      ]
+                }
+                return {
+                  ...item,
+                  state: finalStatus === 'completed' ? 'waiting' : (finalStatus ?? item.state),
+                  messages: item.messages.map((message) =>
+                    message.id === messageId
+                      ? {
+                          ...message,
+                          text: event.type === 'text' ? message.text + event.chunk : message.text,
+                          status: finalStatus ?? message.status,
+                        }
+                      : message,
+                  ),
+                  terminals: finalStatus
+                    ? terminals.map((terminal) =>
+                        terminalIds.has(terminal.id)
+                          ? {
+                              ...terminal,
+                              state: finalStatus,
+                            }
+                          : terminal,
+                      )
+                    : terminals,
+                }
+              }),
+            },
+          }))
+          if (finalStatus) replies.delete(id)
+        },
+        {
+          instant:
+            typeof matchMedia === 'function' &&
+            matchMedia('(prefers-reduced-motion: reduce)').matches,
+        },
+      )
+    },
+    interrupt(id) {
+      replies.get(id)?.cancel()
+    },
+    appendPrompt(id, prompt, role) {
+      if (!prompt.trim() || !get().snapshot?.features.some((feature) => feature.id === id)) return
+      get().setRecipient(id, role)
+      get().sendMessage(id, prompt)
     },
     closeFeature(id) {
       const state = get()
@@ -216,6 +304,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           source.loadProject(id),
         ])
         if (token !== request) return
+        for (const reply of replies.values()) reply.cancel()
+        replies.clear()
         failedOperation = null
         const view: View = snapshot.features[0]
           ? { kind: 'conversation', featureId: snapshot.features[0].id }
