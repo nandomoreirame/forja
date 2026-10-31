@@ -12,7 +12,9 @@ describe('Core boundaries', () => {
   it('initializes the versioned local schema and stores settings', () => {
     const db = createDatabase(':memory:')
     db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('theme', 'dark')
-    expect(db.prepare('SELECT value FROM settings WHERE key = ?').get('theme')).toEqual({ value: 'dark' })
+    expect(db.prepare('SELECT value FROM settings WHERE key = ?').get('theme')).toEqual({
+      value: 'dark',
+    })
     expect(db.prepare('PRAGMA user_version').get()).toEqual({ user_version: 1 })
     db.close()
   })

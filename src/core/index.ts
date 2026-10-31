@@ -11,7 +11,10 @@ const db = createDatabase(join(dataDir, 'forja.db'))
 process.parentPort.on('message', ({ data }: { data: unknown }) => {
   const request = coreRequestSchema.safeParse(data)
   if (!request.success) return
-  process.parentPort.postMessage({ id: request.data.id, result: { status: 'ready' } } satisfies CoreResponse)
+  process.parentPort.postMessage({
+    id: request.data.id,
+    result: { status: 'ready' },
+  } satisfies CoreResponse)
 })
 process.on('exit', () => db.close())
 process.on('SIGTERM', () => process.exit(0))
