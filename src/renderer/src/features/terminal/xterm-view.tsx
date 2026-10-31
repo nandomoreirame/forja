@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
+import { WebglAddon } from '@xterm/addon-webgl'
 import '@xterm/xterm/css/xterm.css'
 import type { PtySessions } from './pty-sessions'
 
@@ -18,6 +19,23 @@ const theme = {
   cursor: '#F5A623',
   cursorAccent: '#0e0e0e',
   selectionBackground: '#F5A62355',
+  // VS Code's default integrated terminal palette.
+  black: '#000000',
+  red: '#cd3131',
+  green: '#0dbc79',
+  yellow: '#e5e510',
+  blue: '#2472c8',
+  magenta: '#bc3fbc',
+  cyan: '#11a8cd',
+  white: '#e5e5e5',
+  brightBlack: '#666666',
+  brightRed: '#f14c4c',
+  brightGreen: '#23d18b',
+  brightYellow: '#f5f543',
+  brightBlue: '#3b8eea',
+  brightMagenta: '#d670d6',
+  brightCyan: '#29b8db',
+  brightWhite: '#e5e5e5',
 }
 
 export function XtermView({
@@ -39,6 +57,8 @@ export function XtermView({
     if (!node) return
     const terminal = new Terminal({
       ...terminalFont,
+      customGlyphs: true,
+      rescaleOverlappingGlyphs: true,
       cursorBlink: true,
       scrollback: 5000,
       theme,
@@ -46,6 +66,14 @@ export function XtermView({
     const fit = new FitAddon()
     terminal.loadAddon(fit)
     terminal.open(node)
+    // WebGL draws block and box characters as full cells (like VS Code); fall back to DOM.
+    try {
+      const webgl = new WebglAddon()
+      webgl.onContextLoss(() => webgl.dispose())
+      terminal.loadAddon(webgl)
+    } catch {
+      // Keep the DOM renderer when WebGL is unavailable.
+    }
     const refit = () => {
       try {
         fit.fit()
