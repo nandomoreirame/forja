@@ -22,6 +22,8 @@ export interface WorkbenchState {
   historyIndex: number
   panels: { left: boolean; right: boolean; terminal: boolean }
   palette: { open: boolean; scope: 'all' | 'recent' }
+  openPalette(scope: 'all' | 'recent'): void
+  closePalette(): void
   openProject(id: string): Promise<void>
   navigate(view: View): void
   back(): void
@@ -41,6 +43,12 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     historyIndex: 0,
     panels: { left: true, right: true, terminal: false },
     palette: { open: false, scope: 'all' },
+    openPalette(scope) {
+      set({ palette: { open: true, scope } })
+    },
+    closePalette() {
+      set((state) => ({ palette: { ...state.palette, open: false } }))
+    },
     async openProject(id) {
       const token = ++request
       set({ loading: true, error: null })

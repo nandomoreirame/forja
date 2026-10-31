@@ -1,3 +1,5 @@
+import { HomePage } from '@/renderer/src/pages/home'
+import { useShortcuts } from '@/renderer/src/shared/lib/shortcuts'
 import { useEffect, useState } from 'react'
 import type { WorkbenchSource } from '@/renderer/src/shared/api'
 import {
@@ -34,6 +36,13 @@ export function WorkbenchPage({
 function WorkbenchShell() {
   const s = useWorkbench((s) => s)
   const a = getDictionary(s.source.locale).app
+  useShortcuts({
+    'ctrl+n': () => s.navigate({ kind: 'compose', role: 'research' }),
+    'ctrl+r': () => s.openPalette('recent'),
+    'ctrl+shift+p': () => s.openPalette('all'),
+    'alt+arrowleft': s.back,
+    'alt+arrowright': s.forward,
+  })
   if (!s.snapshot)
     return (
       <main aria-busy={s.loading}>
@@ -55,6 +64,7 @@ function WorkbenchShell() {
       <AppTopbar
         brand="FORJA"
         commandText={s.snapshot.project.name}
+        onCommand={() => s.openPalette('all')}
         settingsLabel={a.settings}
         onSettings={() => s.navigate({ kind: 'settings' })}
         onBack={s.back}
@@ -78,7 +88,21 @@ function WorkbenchShell() {
           </div>
         )}
         <main className="flex min-w-0 flex-1 flex-col overflow-auto">
-          <div className="flex-1" />
+          {s.view.kind === 'home' ? (
+            <HomePage />
+          ) : (
+            <section className="flex-1 p-6 text-muted-foreground">
+              {s.view.kind === 'compose'
+                ? a.newConversation
+                : s.view.kind === 'settings'
+                  ? a.settings
+                  : s.view.kind === 'conversation'
+                    ? s.snapshot.features.find(
+                        (f) => s.view.kind === 'conversation' && f.id === s.view.featureId,
+                      )?.name
+                    : ''}
+            </section>
+          )}
           {s.panels.terminal ? (
             <section
               aria-label={a.terminals}
