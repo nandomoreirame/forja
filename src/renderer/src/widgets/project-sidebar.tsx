@@ -63,13 +63,11 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                 onClick={() => state.startCompose(agent.id)}
               >
                 <SidebarRow
-                  className="h-6 rounded-none border-0 bg-transparent px-3 hover:bg-accent"
+                  className="h-7 rounded-none border-0 bg-transparent px-3 hover:bg-accent"
                   icon={<Icon />}
                   title={d.product[agent.id]}
                   stateLabel={
-                    <StatusBadge className="border-0 bg-transparent p-0" state={agent.state}>
-                      {a.states[agent.state]}
-                    </StatusBadge>
+                    <StatusBadge state={agent.state}>{a.states[agent.state]}</StatusBadge>
                   }
                 />
               </button>
