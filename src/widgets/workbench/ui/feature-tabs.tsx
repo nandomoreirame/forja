@@ -19,6 +19,7 @@ export interface FeatureTabItem {
   label: string
   state: 'running' | 'waiting' | 'idle'
   tool?: ToolId
+  closable?: boolean
 }
 
 export interface FeatureTabsProps {
@@ -71,7 +72,7 @@ export function FeatureTabs({
                   '-mb-px h-7 flex-none gap-2 rounded-none rounded-t-[2px] border-t border-r border-b-0 border-l-0 border-border first:border-l px-2.5 text-[11px] font-normal shadow-none after:hidden focus-visible:ring-1 focus-visible:ring-inset',
                   'bg-card text-muted-foreground hover:text-foreground',
                   'data-active:border-r-border data-active:border-t-2 data-active:border-t-primary data-active:bg-background data-active:font-medium data-active:text-foreground dark:data-active:border-r-border dark:data-active:border-t-primary dark:data-active:bg-background',
-                  onClose && 'pr-8',
+                  onClose && item.closable !== false && 'pr-8',
                 )}
               >
                 {item.tool ? <ToolIcon tool={item.tool} /> : null}
@@ -92,27 +93,29 @@ export function FeatureTabs({
             ))}
           </TabsList>
           {onClose
-            ? items.map((item, index) => (
-                <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      style={{ gridColumn: index + 1, gridRow: 1 }}
-                      onMouseEnter={() => setHoveredId(item.id)}
-                      onMouseLeave={() => setHoveredId(null)}
-                      className={`z-10 mr-1 mb-1 size-5 self-end justify-self-end hover:opacity-100 focus-visible:opacity-100 ${item.id === selectedId || item.id === hoveredId ? 'opacity-100' : 'opacity-0'}`}
-                      aria-label={`${closeLabel} ${item.label}`}
-                      onClick={() => onClose(item.id)}
-                    >
-                      <X className="size-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {closeLabel} {item.label}
-                  </TooltipContent>
-                </Tooltip>
-              ))
+            ? items
+                .filter((item) => item.closable !== false)
+                .map((item, index) => (
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        style={{ gridColumn: index + 1, gridRow: 1 }}
+                        onMouseEnter={() => setHoveredId(item.id)}
+                        onMouseLeave={() => setHoveredId(null)}
+                        className={`z-10 mr-1 mb-1 size-5 self-end justify-self-end hover:opacity-100 focus-visible:opacity-100 ${item.id === selectedId || item.id === hoveredId ? 'opacity-100' : 'opacity-0'}`}
+                        aria-label={`${closeLabel} ${item.label}`}
+                        onClick={() => onClose(item.id)}
+                      >
+                        <X className="size-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {closeLabel} {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                ))
             : null}
         </div>
       </Tabs>

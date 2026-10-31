@@ -14,6 +14,8 @@ it('opens Memory, Connectors and Settings from the workspace menu', async () => 
   ])
   fireEvent.click(within(menu).getByRole('button', { name: 'Connectors' }))
   expect(await screen.findByRole('tab', { name: 'Connectors' })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: /Settings/ })).toHaveAttribute('aria-selected', 'true')
   fireEvent.click(within(menu).getByRole('button', { name: 'Memory' }))
   expect(await screen.findByRole('tab', { name: 'Memory' })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('tab', { name: /Settings/ })).toHaveAttribute('aria-selected', 'true')
 })
