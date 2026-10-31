@@ -31,8 +31,8 @@ try {
   await page.getByRole('button', { name: /New conversation|Nova conversa/ }).click()
   await page.keyboard.type('Check the shell')
   await page.keyboard.press('Control+Enter')
+  // Opening an empty panel starts the first shell on its own.
   await page.getByRole('button', { name: /Toggle terminals|Alternar terminais/ }).click()
-  await page.getByRole('button', { name: /New terminal|Novo terminal/ }).click()
   const screen = page.locator('.xterm-rows')
   await expect(screen).not.toBeEmpty({ timeout: 10_000 })
   await page.locator('.xterm-helper-textarea').focus()
