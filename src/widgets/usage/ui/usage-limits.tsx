@@ -116,7 +116,9 @@ export function UsageLimits({
     ) : null
   return (
     <TooltipProvider delayDuration={300}>
-      <div className={cn('grid w-[340px] gap-3 p-3 text-foreground', className)}>
+      <div
+        className={cn('grid w-full min-w-0 gap-3 overflow-hidden p-3 text-foreground', className)}
+      >
         <header className="flex items-center gap-2">
           <BarChart3 className="size-4 text-primary" aria-hidden="true" />
           <h2 className="flex-1 text-sm font-semibold">{title}</h2>
@@ -126,7 +128,7 @@ export function UsageLimits({
         <Tabs value={current?.tool ?? ''} onValueChange={(value) => setSelected(value as ToolId)}>
           <TabsList
             aria-label={title}
-            className="flex h-auto w-full flex-wrap gap-1 bg-transparent p-0"
+            className="flex h-auto w-full flex-wrap gap-1 overflow-hidden bg-transparent p-0"
           >
             {usage.map((item) => (
               <TabsTrigger
