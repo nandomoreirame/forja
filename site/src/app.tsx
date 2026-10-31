@@ -2,8 +2,8 @@ import { resolvePage } from '@/shared/i18n'
 import { Landing } from './pages/landing'
 import { Styleguide } from './pages/styleguide'
 
-export function App() {
-  const route = resolvePage(window.location.pathname)
+export function App({ pathname }: { pathname?: string }) {
+  const route = resolvePage(pathname ?? window.location.pathname)
   if (route?.page === 'landing') return <Landing locale={route.locale} />
   if (route?.page === 'styleguide') return <Styleguide locale={route.locale} />
   return (
