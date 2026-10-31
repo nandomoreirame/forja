@@ -136,7 +136,7 @@ export function SettingsPage() {
               .map((id) => state.snapshot?.features.find((item) => item.id === id))
               .filter(Boolean)
               .map((item) => ({ id: item!.id, label: item!.name, tool: item!.tool, state: 'idle' as const })),
-              { id: 'settings', label: a.settings, state: 'idle' as const, closable: false },
+              { id: 'settings', label: a.settings, state: 'idle' as const },
             ]}
             onSelect={(id) =>
               id === 'settings'
