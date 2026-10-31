@@ -4,7 +4,7 @@ export const ptBr = {
     workflow: 'Fluxo',
     planned: 'O que vem no MVP',
     skip: 'Pular para o conteúdo',
-    localeSwitch: 'English',
+    localeSwitch: 'en/pt-br',
     follow: 'Acompanhar desenvolvimento',
     gallery: 'Styleguide',
   },

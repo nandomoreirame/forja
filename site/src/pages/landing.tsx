@@ -51,7 +51,7 @@ export function Landing({ locale }: { locale: Locale }) {
       </a>
 
       <header className="sticky top-0 z-50 w-full border-b border-border bg-[#131314]/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-between px-6">
+        <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-3 px-6 py-3 md:h-14 md:flex-row md:justify-between md:py-0">
           <a href="/" className="flex items-center gap-2.5 text-foreground hover:text-primary">
             <AnvilMark />
             <span className="text-sm font-bold tracking-wide">
@@ -72,7 +72,7 @@ export function Landing({ locale }: { locale: Locale }) {
               {t.nav.planned}
             </a>
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <LocaleLink
               page="landing"
               target={otherLocale}
@@ -83,7 +83,7 @@ export function Landing({ locale }: { locale: Locale }) {
               href={followUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-sm bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/80 focus:outline-none focus:ring-1 focus:ring-primary"
+              className="inline-flex items-center gap-2 whitespace-nowrap rounded-sm bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/80 focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <span>{t.nav.follow}</span>
               <ExternalLink className="size-3.5" aria-hidden="true" />
@@ -334,11 +334,11 @@ export function Landing({ locale }: { locale: Locale }) {
         </section>
       </main>
 
-      <footer className="w-full border-t border-border bg-background py-8 text-xs">
-        <div className="mx-auto flex max-w-[1120px] flex-wrap items-center gap-4 px-6 text-muted-foreground">
+      <footer className="w-full border-t border-border bg-background py-8 text-center text-xs">
+        <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-4 px-6 text-muted-foreground md:flex-row md:justify-between md:text-left">
           <span className="font-bold text-foreground">Forja 2.0</span>
           <span>{t.footer.status}</span>
-          <div className="ml-auto flex gap-4">
+          <div className="flex gap-4">
             <a
               href={developmentUrl}
               target="_blank"
