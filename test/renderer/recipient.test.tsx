@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
@@ -31,4 +31,17 @@ it('switches recipients from sidebar agents and focuses the composer on every ac
     expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Reviewer')
     expect(field).toHaveFocus()
   }
+})
+
+it('focuses the docked composer when a sidebar agent is chosen from another view', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  await screen.findByRole('tab', { name: /Login with OAuth/ })
+  act(() => {
+    fireEvent.keyDown(window, { key: ',', ctrlKey: true })
+  })
+  expect(screen.queryByRole('textbox', { name: /Send your prompt/ })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: /^Tester/ }))
+  const prompt = await screen.findByRole('textbox', { name: /Send your prompt/ })
+  await waitFor(() => expect(prompt).toHaveFocus())
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Tester')
 })

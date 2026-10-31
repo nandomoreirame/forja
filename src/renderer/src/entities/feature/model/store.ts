@@ -35,6 +35,8 @@ export interface WorkbenchState {
   openFeatureIds: string[]
   recipients: Record<string, RoleId>
   focusComposer(): void
+  composerFocusPending: boolean
+  consumeComposerFocus(): void
   composeActivation: number
   setRecipient(id: string, role: RoleId): void
   startCompose(role?: RoleId): void
@@ -113,7 +115,14 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       recipients: {},
       composeActivation: 0,
       focusComposer() {
-        set((state) => ({ composeActivation: state.composeActivation + 1 }))
+        set((state) => ({
+          composeActivation: state.composeActivation + 1,
+          composerFocusPending: true,
+        }))
+      },
+      composerFocusPending: false,
+      consumeComposerFocus() {
+        if (get().composerFocusPending) set({ composerFocusPending: false })
       },
       setRecipient(id, role) {
         if (get().snapshot?.features.some((f) => f.id === id))

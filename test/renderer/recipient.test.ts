@@ -34,3 +34,10 @@ it('ignores inline code and fenced code including unfinished fences', () => {
   expect(mentionedRole('```ts\n@tester')).toBeNull()
   expect(mentionedRole('x@tester @someone @testers')).toBeNull()
 })
+it('anchors code fences to line starts', () => {
+  const fence = '`'.repeat(3)
+  expect(mentionedRole(`run ${fence}npm test${fence} now\n@tester please`)).toBe('tester')
+  expect(mentionedRole(`${fence}md\nsee ${fence} inline\n@tester\n${fence}\n@planner`)).toBe(
+    'planner',
+  )
+})

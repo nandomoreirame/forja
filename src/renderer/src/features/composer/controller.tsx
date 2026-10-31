@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Composer } from '@/widgets/conversation'
 import { getDictionary } from '@/shared/i18n'
 import { roleIds, type RoleId } from '@/renderer/src/shared/api'
@@ -11,10 +11,16 @@ export function ComposerController({ featureId }: { featureId: string }) {
   const feature = state.snapshot?.features.find((item) => item.id === featureId)
   const d = getDictionary(state.source.locale)
   const a = d.app
+  const pendingFocus = state.composerFocusPending
+  const consumeFocus = state.consumeComposerFocus
+  useEffect(() => {
+    if (pendingFocus) consumeFocus()
+  }, [pendingFocus, consumeFocus])
   if (!feature) return null
   return (
     <Composer
       focusKey={state.composeActivation}
+      autoFocus={pendingFocus}
       recipients={roleIds.map((id) => ({ id, label: d.product[id] }))}
       recipientId={state.recipients[featureId] ?? feature.stage}
       onRecipientChange={(id) => {
