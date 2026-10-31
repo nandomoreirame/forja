@@ -84,6 +84,8 @@ export const en = {
     newTerminal: 'New terminal',
     collapseTerminals: 'Close panel',
     maximizePanel: 'Maximize panel',
+    resizeSidebar: 'Resize sidebar',
+    resizeTerminalPanel: 'Resize terminal panel',
     restorePanel: 'Restore panel',
     backgroundTerminals: 'Background terminals',
     expandTerminals: 'Expand panel',

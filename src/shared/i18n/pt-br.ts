@@ -84,6 +84,8 @@ export const ptBr = {
     newTerminal: 'Novo terminal',
     collapseTerminals: 'Fechar painel',
     maximizePanel: 'Maximizar painel',
+    resizeSidebar: 'Redimensionar barra lateral',
+    resizeTerminalPanel: 'Redimensionar painel de terminais',
     restorePanel: 'Restaurar painel',
     backgroundTerminals: 'Terminais em segundo plano',
     expandTerminals: 'Expandir painel',

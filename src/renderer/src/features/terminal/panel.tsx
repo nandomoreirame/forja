@@ -1,4 +1,3 @@
-import { cn } from '@/shared/ui/utils'
 import { Square } from 'lucide-react'
 import { TerminalPreview } from '@/widgets/terminal'
 import { Button } from '@/shared/ui'
@@ -83,13 +82,10 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
     <section
       aria-label={a.terminalPanel}
       data-maximized={state.panels.terminalMaximized ? 'true' : undefined}
-      className={state.panels.terminalMaximized ? 'flex min-h-0 flex-1 flex-col' : undefined}
+      className="flex h-full min-h-0 flex-col"
     >
       <TerminalPreview
-        className={cn(
-          'rounded-none border-0',
-          state.panels.terminalMaximized && 'flex min-h-0 flex-1 flex-col',
-        )}
+        className="flex min-h-0 flex-1 flex-col rounded-none border-0"
         tabs={(feature?.terminals ?? []).map((terminal) => ({
           id: terminal.id,
           label: terminal.label,

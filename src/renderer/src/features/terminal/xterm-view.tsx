@@ -118,7 +118,7 @@ export function XtermView({
       ref={host}
       role="group"
       aria-label={label}
-      className="min-h-40 flex-1 overflow-hidden bg-[#0e0e0e] px-2 py-1"
+      className="min-h-0 flex-1 overflow-hidden bg-[#0e0e0e] px-2 py-1"
     />
   )
 }

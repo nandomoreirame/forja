@@ -28,7 +28,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
   return (
     <aside
       aria-label={snapshot.project.name}
-      className="w-[240px] shrink-0 overflow-y-auto border-r border-border bg-sidebar text-xs"
+      className="h-full w-full overflow-y-auto border-r border-border bg-sidebar text-xs"
     >
       <div className="flex h-9 items-center justify-between border-b border-border px-3">
         <button

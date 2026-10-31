@@ -200,7 +200,7 @@ export function TerminalPreview({
           </p>
         ) : null}
         {body ?? (
-          <pre className="min-h-20 whitespace-pre-wrap px-3 py-3 font-mono text-[12px] leading-5 text-foreground">
+          <pre className="min-h-20 flex-1 overflow-auto whitespace-pre-wrap px-3 py-3 font-mono text-[12px] leading-5 text-foreground">
             {output.length > 0 ? output.join('\n') : emptyOutputLabel}
           </pre>
         )}
