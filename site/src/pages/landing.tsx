@@ -217,52 +217,60 @@ export function Landing({ locale }: { locale: Locale }) {
                     <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">{body}</p>
                   </div>
                   {index === 0 ? (
-                    <img
-                      src={`/stitch/cards/${locale}/tab-per-feature.png`}
-                      alt={
-                        locale === 'en'
-                          ? 'Feature tabs: Renew session, Quick search'
-                          : 'Abas de feature: Renovar sessão, Busca rápida'
-                      }
-                      loading="lazy"
-                      className="h-[180px] w-full rounded-sm object-contain"
-                    />
+                    <div className="flex h-[180px] items-center justify-center">
+                      <img
+                        src={`/stitch/cards/${locale}/tab-per-feature.png`}
+                        alt={
+                          locale === 'en'
+                            ? 'Feature tabs: Renew session, Quick search'
+                            : 'Abas de feature: Renovar sessão, Busca rápida'
+                        }
+                        loading="lazy"
+                        className="h-auto w-[459px] max-w-full rounded-sm"
+                      />
+                    </div>
                   ) : null}
                   {index === 1 ? (
-                    <img
-                      src={`/stitch/cards/${locale}/documents.png`}
-                      alt={
-                        locale === 'en'
-                          ? 'SPEC-042 document with the selected passage and the Review with agent action'
-                          : 'Documento SPEC-042 com o trecho selecionado e a ação Revisar com o agente'
-                      }
-                      loading="lazy"
-                      className="h-[180px] w-full rounded-sm object-contain"
-                    />
+                    <div className="flex h-[180px] items-center justify-center">
+                      <img
+                        src={`/stitch/cards/${locale}/documents.png`}
+                        alt={
+                          locale === 'en'
+                            ? 'SPEC-042 document with the selected passage and the Review with agent action'
+                            : 'Documento SPEC-042 com o trecho selecionado e a ação Revisar com o agente'
+                        }
+                        loading="lazy"
+                        className="h-auto w-[459px] max-w-full rounded-sm"
+                      />
+                    </div>
                   ) : null}
                   {index === 2 ? (
-                    <img
-                      src={`/stitch/cards/${locale}/execution.png`}
-                      alt={
-                        locale === 'en'
-                          ? 'Agent terminals: dev, tests and zsh with the collapsed footer'
-                          : 'Terminais do agente: dev, testes e zsh com o rodapé recolhido'
-                      }
-                      loading="lazy"
-                      className="h-[180px] w-full rounded-sm object-contain"
-                    />
+                    <div className="flex h-[180px] items-center justify-center">
+                      <img
+                        src={`/stitch/cards/${locale}/execution.png`}
+                        alt={
+                          locale === 'en'
+                            ? 'Agent terminals: dev, tests and zsh with the collapsed footer'
+                            : 'Terminais do agente: dev, testes e zsh com o rodapé recolhido'
+                        }
+                        loading="lazy"
+                        className="h-auto w-[459px] max-w-full rounded-sm"
+                      />
+                    </div>
                   ) : null}
                   {index === 3 ? (
-                    <img
-                      src={`/stitch/cards/${locale}/tools.png`}
-                      alt={
-                        locale === 'en'
-                          ? 'Roles and CLI configuration: Implementer (Codex) and Reviewer (agy)'
-                          : 'Papéis e CLIs configuradas: Implementador (Codex) e Revisor (agy)'
-                      }
-                      loading="lazy"
-                      className="h-[180px] w-full rounded-sm object-contain"
-                    />
+                    <div className="flex h-[180px] items-center justify-center">
+                      <img
+                        src={`/stitch/cards/${locale}/tools.png`}
+                        alt={
+                          locale === 'en'
+                            ? 'Roles and CLI configuration: Implementer (Codex) and Reviewer (agy)'
+                            : 'Papéis e CLIs configuradas: Implementador (Codex) e Revisor (agy)'
+                        }
+                        loading="lazy"
+                        className="h-auto w-[459px] max-w-full rounded-sm"
+                      />
+                    </div>
                   ) : null}
                 </article>
               ))}
