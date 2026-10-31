@@ -36,3 +36,4 @@ export {
   DialogFooter,
 } from './dialog'
 export { ToolIcon, toolIds, toolNames, type ToolId } from './tool-icon'
+export { ResizableHandle, ResizablePanel, ResizablePanelGroup, useDefaultLayout } from './resizable'
