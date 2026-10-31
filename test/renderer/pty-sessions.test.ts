@@ -6,6 +6,7 @@ import type { DesktopTerminalApi } from '../../src/shared/desktop'
 function fakeApi() {
   let data: (event: { id: string; data: string }) => void = () => {}
   let exit: (event: { id: string; exitCode: number }) => void = () => {}
+  let proc: (event: { id: string; name: string }) => void = () => {}
   let next = 0
   const api = {
     create: vi.fn(async () => ({
@@ -25,11 +26,16 @@ function fakeApi() {
       exit = listener
       return () => {}
     }),
+    onProcess: vi.fn((listener) => {
+      proc = listener
+      return () => {}
+    }),
   } satisfies DesktopTerminalApi
   return {
     api,
     emitData: (id: string, d: string) => data({ id, data: d }),
     emitExit: (id: string, c: number) => exit({ id, exitCode: c }),
+    emitProcess: (id: string, name: string) => proc({ id, name }),
   }
 }
 
@@ -105,4 +111,15 @@ it('flags the replayed transcript so terminal replies to it are not sent to the 
   const second = vi.fn()
   await sessions.attach('t1', { featureId: 'f1', cwd: '/w', cols: 80, rows: 24 }, second)
   expect(second).toHaveBeenCalledWith('\x1b[c prompt', true)
+})
+
+it('reports foreground process changes for the terminal that owns the PTY', async () => {
+  const { api, emitProcess } = fakeApi()
+  const onProcess = vi.fn()
+  const sessions = createPtySessions(api, { onExit: vi.fn(), onProcess })
+  await sessions.attach('t1', { featureId: 'f1', cwd: '/w', cols: 80, rows: 24 }, () => {})
+  emitProcess('pty-1', 'claude')
+  emitProcess('unknown', 'btop')
+  expect(onProcess).toHaveBeenCalledTimes(1)
+  expect(onProcess).toHaveBeenCalledWith('f1', 't1', 'claude')
 })

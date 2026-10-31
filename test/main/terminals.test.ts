@@ -15,6 +15,7 @@ import {
   terminalCreateChannel,
   terminalDataChannel,
   terminalExitChannel,
+  terminalProcessChannel,
   terminalResizeChannel,
   terminalWriteChannel,
 } from '../../src/shared/desktop'
@@ -90,6 +91,7 @@ it('sends output and exit to the owning window and closes its sessions when it g
     | {
         onData(owner: number, id: string, data: string): void
         onExit(owner: number, id: string, code: number): void
+        onProcess(owner: number, id: string, name: string): void
       }
     | undefined
   const service = fakeService()
@@ -99,7 +101,9 @@ it('sends output and exit to the owning window and closes its sessions when it g
   })
   await handler(terminalCreateChannel)(event, { cwd: '/tmp', cols: 80, rows: 24 })
   callbacks!.onData(3, 'p1', 'hello')
+  callbacks!.onProcess(3, 'p1', 'btop')
   callbacks!.onExit(3, 'p1', 0)
+  expect(sender.send).toHaveBeenCalledWith(terminalProcessChannel, { id: 'p1', name: 'btop' })
   expect(sender.send).toHaveBeenCalledWith(terminalDataChannel, { id: 'p1', data: 'hello' })
   expect(sender.send).toHaveBeenCalledWith(terminalExitChannel, { id: 'p1', exitCode: 0 })
   listeners.destroyed()

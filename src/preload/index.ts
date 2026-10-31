@@ -6,6 +6,7 @@ import {
   terminalCreateChannel,
   terminalDataChannel,
   terminalExitChannel,
+  terminalProcessChannel,
   terminalResizeChannel,
   terminalWriteChannel,
   type DesktopApi,
@@ -47,6 +48,7 @@ const api: DesktopApi = {
     close: (id) => ipcRenderer.send(terminalCloseChannel, { id }),
     onData: (listener) => subscribe(terminalDataChannel, listener),
     onExit: (listener) => subscribe(terminalExitChannel, listener),
+    onProcess: (listener) => subscribe(terminalProcessChannel, listener),
   },
 }
 contextBridge.exposeInMainWorld('forja', api)

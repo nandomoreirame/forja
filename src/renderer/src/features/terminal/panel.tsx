@@ -18,15 +18,18 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
   const runtime = getPtyRuntime()
   const markExited = state.markTerminalExited
   const setShell = state.setTerminalShell
+  const setProcess = state.setTerminalProcess
   useEffect(() => {
     if (!runtime) return
     runtime.listeners.add(markExited)
     runtime.startListeners.add(setShell)
+    runtime.processListeners.add(setProcess)
     return () => {
       runtime.listeners.delete(markExited)
       runtime.startListeners.delete(setShell)
+      runtime.processListeners.delete(setProcess)
     }
-  }, [runtime, markExited, setShell])
+  }, [runtime, markExited, setShell, setProcess])
   const liveShell =
     runtime && feature && active?.kind === 'shell' ? (
       <XtermView

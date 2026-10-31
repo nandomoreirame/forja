@@ -207,7 +207,6 @@ it('never reuses a shell id or name after closing a shell', async () => {
   store.getState().addShell('feature-1')
   const shells = store.getState().snapshot!.features[0].terminals.filter((t) => t.kind === 'shell')
   expect(new Set(shells.map((t) => t.id)).size).toBe(shells.length)
-  expect(new Set(shells.map((t) => t.label)).size).toBe(shells.length)
 })
 it('names a shell tab after the shell that actually started', async () => {
   const store = await setup()
@@ -220,7 +219,7 @@ it('names a shell tab after the shell that actually started', async () => {
     .getState()
     .snapshot!.features[0].terminals.slice(-2)
     .map((t) => t.label)
-  expect(labels).toEqual(['fish', 'bash 2'])
+  expect(labels).toEqual(['fish', 'bash'])
 })
 it('numbers shells correctly when the feature slug itself contains "shell"', async () => {
   const store = await setup()
@@ -230,6 +229,19 @@ it('numbers shells correctly when the feature slug itself contains "shell"', asy
   store.getState().setTerminalShell(id, `${id}-shell-2`, 'zsh')
   const shells = store.getState().snapshot!.features.find((f) => f.id === id)!.terminals
   expect(shells.map((t) => t.id)).toEqual([`${id}-shell-1`, `${id}-shell-2`])
-  expect(shells.map((t) => t.label)).toEqual(['zsh', 'zsh 2'])
+  expect(shells.map((t) => t.label)).toEqual(['zsh', 'zsh'])
   expect(store.getState().terminalTabs[id]).toBe(`${id}-shell-2`)
+})
+it('shows the running command as the tab title and returns to the idle shell', async () => {
+  const store = await setup()
+  store.getState().addShell('feature-1')
+  const shell = store.getState().snapshot!.features[0].terminals.at(-1)!
+  store.getState().setTerminalShell('feature-1', shell.id, 'zsh')
+  store.getState().setTerminalProcess('feature-1', shell.id, 'btop')
+  let tab = store.getState().snapshot!.features[0].terminals.at(-1)!
+  expect(tab).toMatchObject({ label: 'btop', state: 'running', command: 'btop' })
+  store.getState().setTerminalProcess('feature-1', shell.id, 'zsh')
+  tab = store.getState().snapshot!.features[0].terminals.at(-1)!
+  expect(tab).toMatchObject({ label: 'zsh', state: 'draft' })
+  expect(tab.command).toBeUndefined()
 })

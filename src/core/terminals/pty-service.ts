@@ -5,6 +5,7 @@ import { basename, isAbsolute, join } from 'node:path'
 
 export interface PtyProcess {
   pid: number
+  readonly process?: string
   onData(listener: (data: string) => void): { dispose(): void }
   onExit(listener: (event: { exitCode: number }) => void): { dispose(): void }
   write(data: string): void
@@ -29,6 +30,8 @@ export interface PtyServiceOptions {
   onData?(owner: number, id: string, data: string): void
   onExit?(owner: number, id: string, exitCode: number): void
   killGroup?(pid: number): void
+  onProcess?(owner: number, id: string, name: string): void
+  processPollMs?: number
 }
 
 const maxInput = 64 * 1024
@@ -72,8 +75,26 @@ export function createPtyService({
   onData,
   onExit,
   killGroup = (pid) => process.kill(-pid, 'SIGHUP'),
+  onProcess,
+  processPollMs = 1000,
 }: PtyServiceOptions) {
-  const sessions = new Map<string, { owner: number; process: PtyProcess }>()
+  const sessions = new Map<
+    string,
+    {
+      owner: number
+      process: PtyProcess
+      foreground?: string
+      poll?: ReturnType<typeof setInterval>
+    }
+  >()
+  const foregroundOf = (child: PtyProcess) => {
+    try {
+      const raw = child.process
+      return raw ? basename(raw).replace(/^-/, '') || undefined : undefined
+    } catch {
+      return undefined
+    }
+  }
   const owned = (owner: number, id: string) => {
     const session = sessions.get(id)
     return session && session.owner === owner ? session : undefined
@@ -82,6 +103,7 @@ export function createPtyService({
     const session = sessions.get(id)
     if (!session) return
     sessions.delete(id)
+    clearInterval(session.poll)
     try {
       killGroup(session.process.pid)
     } catch {
@@ -120,11 +142,25 @@ export function createPtyService({
       } catch {
         return { status: 'error' }
       }
-      sessions.set(id, { owner, process: child })
+      const session: {
+        owner: number
+        process: PtyProcess
+        foreground?: string
+        poll?: ReturnType<typeof setInterval>
+      } = { owner, process: child, foreground: foregroundOf(child) }
+      sessions.set(id, session)
+      if (onProcess)
+        session.poll = setInterval(() => {
+          const name = foregroundOf(child)
+          if (!name || name === session.foreground) return
+          session.foreground = name
+          onProcess(owner, id, name)
+        }, processPollMs)
       child.onData((data) => onData?.(owner, id, data))
       child.onExit(({ exitCode }) => {
         if (!sessions.has(id)) return
         sessions.delete(id)
+        clearInterval(session.poll)
         onExit?.(owner, id, exitCode)
       })
       return { status: 'started', id, shell: basename(file), cwd }

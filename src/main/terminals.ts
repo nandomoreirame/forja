@@ -12,11 +12,12 @@ import {
   terminalCreateChannel,
   terminalDataChannel,
   terminalExitChannel,
+  terminalProcessChannel,
   terminalResizeChannel,
   terminalWriteChannel,
 } from '../shared/desktop'
 
-type Callbacks = Required<Pick<PtyServiceOptions, 'onData' | 'onExit'>>
+type Callbacks = Required<Pick<PtyServiceOptions, 'onData' | 'onExit' | 'onProcess'>>
 
 const record = (value: unknown): Record<string, unknown> | undefined =>
   value && typeof value === 'object' && !Array.isArray(value)
@@ -32,6 +33,8 @@ export function registerTerminals(create: (callbacks: Callbacks) => PtyService) 
   const service = create({
     onData: (owner, id, data) => send(owner, terminalDataChannel, { id, data }),
     onExit: (owner, id, exitCode) => send(owner, terminalExitChannel, { id, exitCode }),
+    onProcess: (owner, id, name) =>
+      send(owner, terminalProcessChannel, { id, name: name.slice(0, 64) }),
   })
   const trusted = (event: IpcMainEvent | IpcMainInvokeEvent) => {
     const window = BrowserWindow.fromWebContents(event.sender)

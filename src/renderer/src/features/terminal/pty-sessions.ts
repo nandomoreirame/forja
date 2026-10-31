@@ -17,10 +17,12 @@ export function createPtySessions(
   {
     onExit,
     onStart,
+    onProcess,
     maxBuffer = defaultMaxBuffer,
   }: {
     onExit(featureId: string, terminalId: string, exitCode: number): void
     onStart?(featureId: string, terminalId: string, shell: string): void
+    onProcess?(featureId: string, terminalId: string, name: string): void
     maxBuffer?: number
   },
 ) {
@@ -33,6 +35,11 @@ export function createPtySessions(
     if (!session) return
     session.buffer = (session.buffer + data).slice(-maxBuffer)
     session.view?.(data, false)
+  })
+  api.onProcess(({ id, name }) => {
+    const terminalId = byPty.get(id)
+    const session = terminalId ? sessions.get(terminalId) : undefined
+    if (terminalId && session) onProcess?.(session.featureId, terminalId, name)
   })
   api.onExit(({ id, exitCode }) => {
     const terminalId = byPty.get(id)

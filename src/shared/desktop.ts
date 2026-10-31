@@ -33,6 +33,7 @@ export const terminalResizeChannel = 'forja:terminal:resize'
 export const terminalCloseChannel = 'forja:terminal:close'
 export const terminalDataChannel = 'forja:terminal:data'
 export const terminalExitChannel = 'forja:terminal:exit'
+export const terminalProcessChannel = 'forja:terminal:process'
 
 export interface TerminalCreateRequest {
   cwd: string
@@ -63,4 +64,5 @@ export interface DesktopTerminalApi {
   close(id: string): void
   onData(listener: (event: { id: string; data: string }) => void): () => void
   onExit(listener: (event: { id: string; exitCode: number }) => void): () => void
+  onProcess(listener: (event: { id: string; name: string }) => void): () => void
 }

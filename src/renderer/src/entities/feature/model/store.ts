@@ -60,6 +60,7 @@ export interface WorkbenchState {
   closeTerminal(featureId: string, terminalId: string): void
   markTerminalExited(featureId: string, terminalId: string, exitCode: number): void
   setTerminalShell(featureId: string, terminalId: string, shell: string): void
+  setTerminalProcess(featureId: string, terminalId: string, name: string): void
 }
 const shellNumber = (id: string) => Number(/-shell-(\d+)$/.exec(id)?.[1] ?? 0)
 
@@ -431,7 +432,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         const cwd = feature.worktree ?? feature.destination
         const terminal = {
           id: `${featureId}-shell-${next}`,
-          label: next > 1 ? `zsh ${next}` : 'zsh',
+          label: 'zsh',
           state: 'draft' as const,
           kind: 'shell' as const,
           cwd,
@@ -464,8 +465,33 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           ...item,
           terminals: item.terminals.map((terminal) => {
             if (terminal.id !== terminalId || terminal.kind !== 'shell') return terminal
-            const number = shellNumber(terminal.id) || 1
-            return { ...terminal, label: number > 1 ? `${name} ${number}` : name }
+            return { ...terminal, label: name, shell: name }
+          }),
+        }))
+      },
+      setTerminalProcess(featureId, terminalId, name) {
+        const process = name.trim().slice(0, 64)
+        if (!process) return
+        updateFeature(featureId, (item) => ({
+          ...item,
+          terminals: item.terminals.map((terminal) => {
+            if (terminal.id !== terminalId || terminal.kind !== 'shell') return terminal
+            if (terminal.state !== 'draft' && terminal.state !== 'running') return terminal
+            const idle = process === (terminal.shell ?? terminal.label)
+            return idle
+              ? {
+                  ...terminal,
+                  label: terminal.shell ?? process,
+                  state: 'draft',
+                  command: undefined,
+                }
+              : {
+                  ...terminal,
+                  shell: terminal.shell ?? terminal.label,
+                  label: process,
+                  state: 'running',
+                  command: process,
+                }
           }),
         }))
       },

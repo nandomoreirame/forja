@@ -30,6 +30,12 @@ vi.mock('@xterm/xterm', () => ({
     }
   },
 }))
+vi.mock('@xterm/addon-webgl', () => ({
+  WebglAddon: class {
+    onContextLoss() {}
+    dispose() {}
+  },
+}))
 vi.mock('@xterm/addon-fit', () => ({
   FitAddon: class {
     fit() {}
@@ -38,6 +44,7 @@ vi.mock('@xterm/addon-fit', () => ({
 
 let emitData: (event: { id: string; data: string }) => void = () => {}
 let emitExit: (event: { id: string; exitCode: number }) => void = () => {}
+let emitProcess: (event: { id: string; name: string }) => void = () => {}
 const api = {
   create: vi.fn(async () => ({
     status: 'started' as const,
@@ -54,6 +61,10 @@ const api = {
   }),
   onExit: vi.fn((listener: typeof emitExit) => {
     emitExit = listener
+    return () => {}
+  }),
+  onProcess: vi.fn((listener: typeof emitProcess) => {
+    emitProcess = listener
     return () => {}
   }),
 }
@@ -110,4 +121,18 @@ it('does not send the terminal replies produced while replaying a tab back to th
   act(() => xterm.pending.splice(0).forEach((done) => done()))
   act(() => xterm.input?.('ls\r'))
   expect(api.write).toHaveBeenCalledWith('pty-1', 'ls\r')
+})
+
+it('titles the tab with the running command and shows Idle only at the prompt', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
+  await waitFor(() => expect(api.create).toHaveBeenCalled())
+  expect(screen.getByRole('tab', { name: /zsh/ })).toHaveTextContent('Idle')
+  act(() => emitProcess({ id: 'pty-1', name: 'btop' }))
+  const running = screen.getByRole('tab', { name: /btop/ })
+  expect(running).toHaveTextContent('Running')
+  expect(running).not.toHaveTextContent('Idle')
+  act(() => emitProcess({ id: 'pty-1', name: 'zsh' }))
+  expect(screen.getByRole('tab', { name: /zsh/ })).toHaveTextContent('Idle')
 })

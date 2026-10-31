@@ -32,6 +32,7 @@ function fakeSpawn() {
       written: string[]
       sizes: Array<[number, number]>
       killed: boolean
+      process: string
     }
   > = []
   const spawn: PtySpawn = (file, args, options) => {
@@ -45,6 +46,7 @@ function fakeSpawn() {
       written: [] as string[],
       sizes: [] as Array<[number, number]>,
       killed: false,
+      process: file.split('/').pop() ?? file,
       onData(listener: (data: string) => void) {
         onData = listener
         return { dispose() {} }
@@ -171,4 +173,54 @@ describe('createPtyService', () => {
     service.closeAll()
     expect(processes.every((p) => p.killed)).toBe(true)
   })
+})
+
+it('reports the foreground process when it changes and stops polling closed sessions', async () => {
+  vi.useFakeTimers()
+  try {
+    const { spawn, processes } = fakeSpawn()
+    const onProcess = vi.fn()
+    const service = createPtyService({ killGroup, spawn, shell: () => '/bin/zsh', onProcess })
+    const started = await service.create(4, { cwd: tempDir(), cols: 80, rows: 24 })
+    if (started.status !== 'started') throw new Error('not started')
+    vi.advanceTimersByTime(1000)
+    expect(onProcess).not.toHaveBeenCalled()
+    processes[0].process = 'btop'
+    vi.advanceTimersByTime(1000)
+    expect(onProcess).toHaveBeenLastCalledWith(4, started.id, 'btop')
+    vi.advanceTimersByTime(3000)
+    expect(onProcess).toHaveBeenCalledTimes(1)
+    processes[0].process = 'zsh'
+    vi.advanceTimersByTime(1000)
+    expect(onProcess).toHaveBeenLastCalledWith(4, started.id, 'zsh')
+    service.close(4, started.id)
+    processes[0].process = 'claude'
+    vi.advanceTimersByTime(5000)
+    expect(onProcess).toHaveBeenCalledTimes(2)
+    expect(vi.getTimerCount()).toBe(0)
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+it('reports process names without paths or the login-shell dash', async () => {
+  vi.useFakeTimers()
+  try {
+    const { spawn, processes } = fakeSpawn()
+    const onProcess = vi.fn()
+    const service = createPtyService({ killGroup, spawn, shell: () => '/usr/bin/zsh', onProcess })
+    const started = await service.create(4, { cwd: tempDir(), cols: 80, rows: 24 })
+    if (started.status !== 'started') throw new Error('not started')
+    processes[0].process = '/usr/bin/zsh'
+    vi.advanceTimersByTime(1000)
+    processes[0].process = '-zsh'
+    vi.advanceTimersByTime(1000)
+    expect(onProcess).not.toHaveBeenCalled()
+    processes[0].process = '/usr/bin/btop'
+    vi.advanceTimersByTime(1000)
+    expect(onProcess).toHaveBeenLastCalledWith(4, started.id, 'btop')
+    service.closeAll()
+  } finally {
+    vi.useRealTimers()
+  }
 })

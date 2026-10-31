@@ -36,6 +36,7 @@ export interface MockTerminal {
   agent?: RoleId
   command?: string
   cwd?: string
+  shell?: string
 }
 export interface FeatureSnapshot {
   id: string
