@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { Command as CommandPrimitive } from 'cmdk'
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './dialog'
 import { cn } from '@/shared/ui/utils'
 
 import { SearchIcon, CheckIcon } from 'lucide-react'
@@ -141,3 +142,35 @@ export {
   CommandShortcut,
   CommandSeparator,
 }
+
+export interface CommandDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+  children: React.ReactNode
+  onCloseAutoFocus?: React.ComponentProps<typeof DialogContent>['onCloseAutoFocus']
+}
+function CommandDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  children,
+  onCloseAutoFocus,
+}: CommandDialogProps) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        className="top-[18%] w-[560px] max-w-[calc(100%-2rem)] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-[560px]"
+        showCloseButton={false}
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
+        <DialogTitle className="sr-only">{title}</DialogTitle>
+        <DialogDescription className="sr-only">{description}</DialogDescription>
+        <Command>{children}</Command>
+      </DialogContent>
+    </Dialog>
+  )
+}
+export { CommandDialog }

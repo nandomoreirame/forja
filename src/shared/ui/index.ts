@@ -3,6 +3,8 @@ export { Button } from './button'
 export { Checkbox } from './checkbox'
 export {
   Command,
+  CommandDialog,
+  CommandShortcut,
   CommandEmpty,
   CommandGroup,
   CommandInput,
@@ -22,3 +24,14 @@ export { StatusBadge } from './status-badge'
 export { statusTone } from './status'
 export type { UiState } from './status'
 export { ForjaMark } from './forja-mark'
+
+export {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+  DialogHeader,
+  DialogFooter,
+} from './dialog'
