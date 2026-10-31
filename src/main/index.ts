@@ -1,3 +1,4 @@
+import { registerProjectDirectoryPicker } from './project-directory'
 import { app, BrowserWindow, utilityProcess, type UtilityProcess } from 'electron'
 import { join } from 'node:path'
 
@@ -28,6 +29,7 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  registerProjectDirectoryPicker()
   if (!app.isPackaged) app.setPath('userData', join(app.getPath('appData'), 'Forja Dev'))
   core = utilityProcess.fork(join(import.meta.dirname, 'core.js'), [], {
     env: { ...process.env, FORJA_DATA_DIR: app.getPath('userData') },
