@@ -4,7 +4,7 @@ export const en = {
     workflow: 'Workflow',
     planned: "What's planned",
     skip: 'Skip to content',
-    localeSwitch: 'en/pt-br',
+    localeSwitch: 'pt-br',
     follow: 'Follow development',
     gallery: 'Styleguide',
   },
