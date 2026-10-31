@@ -8,7 +8,7 @@ Atualizado em: 30/10/2026.
 
 ## Status atual
 
-A [spec principal do MVP, em inglês](docs/specs/functional-mvp/SPEC.md), está aprovada. A fila contém **13 specs e planos aprovados, 62 tarefas e 54 requisitos**. A implementação dessa fila começou: **0/13 entregas concluídas; a primeira entrega está totalmente implementada (8/8 tarefas, 8/62 no total) e validada, com revisão independente pendente**.
+A [spec principal do MVP, em inglês](docs/specs/functional-mvp/SPEC.md), está aprovada. A fila contém **13 specs e planos aprovados, 65 tarefas e 60 requisitos**. A implementação dessa fila começou: **0/13 entregas concluídas; a primeira entrega está totalmente implementada (8/8 tarefas, 8/65 no total) e validada, com revisão independente pendente**.
 
 O scaffold Electron com a tela inicial já está implementado. Ele é o ponto de partida; o fluxo RPI, os componentes shadcn compartilhados e as integrações com as CLIs continuam planejados.
 
@@ -27,9 +27,9 @@ As specs e os planos técnicos vinculados abaixo permanecem em inglês, conforme
 | 03    | [project-feature-state](docs/specs/project-feature-state/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 04    | [agent-settings-skills](docs/specs/agent-settings-skills/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 05    | [artifact-approval-gates](docs/specs/artifact-approval-gates/SPEC.md)                     | [Plano de implementação](docs/plans/2026-10-30-artifact-approval-gates.md)           | 0/5                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 06    | [feature-git-worktrees](docs/specs/feature-git-worktrees/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| 06    | [feature-git-worktrees](docs/specs/feature-git-worktrees/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/6                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 07    | [managed-command-runtime](docs/specs/managed-command-runtime/SPEC.md)                     | [Plano de implementação](docs/plans/2026-10-30-managed-command-runtime.md)           | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 08    | [cli-agent-sessions](docs/specs/cli-agent-sessions/SPEC.md)                               | [Plano de implementação](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/7                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| 08    | [cli-agent-sessions](docs/specs/cli-agent-sessions/SPEC.md)                               | [Plano de implementação](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/8                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 09    | [feature-workbench-composer](docs/specs/feature-workbench-composer/SPEC.md)               | [Plano de implementação](docs/plans/2026-10-30-feature-workbench-composer.md)        | 0/5                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 10    | [document-review-reader](docs/specs/document-review-reader/SPEC.md)                       | [Plano de implementação](docs/plans/2026-10-30-document-review-reader.md)            | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 11    | [terminal-panel-footer](docs/specs/terminal-panel-footer/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-terminal-panel-footer.md)             | 0/5                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |

@@ -19,7 +19,7 @@ As CLIs de programação instaladas são ferramentas de execução desse fluxo. 
 
 O progresso inclui a documentação e a implementação: **SPEC 10% + PLAN 10% + tarefas de implementação validadas 80%** por feature.
 
-**MVP completo:** `██████░░░░░░░░░░░░░░` **30%**. As 13 specs estão aprovadas e os 13 planos estão prontos. A implementação tem **8/62 tarefas** concluídas: a primeira entrega (landing e styleguide) está totalmente implementada e validada (revisão independente pendente), com **0/13 entregas concluídas**.
+**MVP completo:** `██████░░░░░░░░░░░░░░` **30%**. As 13 specs estão aprovadas e os 13 planos estão prontos. A implementação tem **8/65 tarefas** concluídas: a primeira entrega (landing e styleguide) está totalmente implementada e validada (revisão independente pendente), com **0/13 entregas concluídas**.
 
 | Ordem | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                           | Implementação (80%) | Progresso                       |
 | ----- | ----------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------- | ------------------------------- |
@@ -28,9 +28,9 @@ O progresso inclui a documentação e a implementação: **SPEC 10% + PLAN 10% +
 | 03    | `project-feature-state`             | [Aprovada](docs/specs/project-feature-state/SPEC.md)             | [Pronto](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 04    | `agent-settings-skills`             | [Aprovada](docs/specs/agent-settings-skills/SPEC.md)             | [Pronto](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 05    | `artifact-approval-gates`           | [Aprovada](docs/specs/artifact-approval-gates/SPEC.md)           | [Pronto](docs/plans/2026-10-30-artifact-approval-gates.md)           | 0/5                 | `████░░░░░░░░░░░░░░░░` **20%**  |
-| 06    | `feature-git-worktrees`             | [Aprovada](docs/specs/feature-git-worktrees/SPEC.md)             | [Pronto](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 06    | `feature-git-worktrees`             | [Aprovada](docs/specs/feature-git-worktrees/SPEC.md)             | [Pronto](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/6                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 07    | `managed-command-runtime`           | [Aprovada](docs/specs/managed-command-runtime/SPEC.md)           | [Pronto](docs/plans/2026-10-30-managed-command-runtime.md)           | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
-| 08    | `cli-agent-sessions`                | [Aprovada](docs/specs/cli-agent-sessions/SPEC.md)                | [Pronto](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/7                 | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 08    | `cli-agent-sessions`                | [Aprovada](docs/specs/cli-agent-sessions/SPEC.md)                | [Pronto](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/8                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 09    | `feature-workbench-composer`        | [Aprovada](docs/specs/feature-workbench-composer/SPEC.md)        | [Pronto](docs/plans/2026-10-30-feature-workbench-composer.md)        | 0/5                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 10    | `document-review-reader`            | [Aprovada](docs/specs/document-review-reader/SPEC.md)            | [Pronto](docs/plans/2026-10-30-document-review-reader.md)            | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 11    | `terminal-panel-footer`             | [Aprovada](docs/specs/terminal-panel-footer/SPEC.md)             | [Pronto](docs/plans/2026-10-30-terminal-panel-footer.md)             | 0/5                 | `████░░░░░░░░░░░░░░░░` **20%**  |

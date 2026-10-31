@@ -19,7 +19,7 @@ Installed coding CLIs are execution tools within that workflow. The current repo
 
 Progress includes specification and planning as well as implementation: **SPEC 10% + PLAN 10% + validated implementation tasks 80%** per feature.
 
-**Overall MVP:** `██████░░░░░░░░░░░░░░` **30%**. All 13 specs are approved and all 13 plans are ready. Implementation has **8/62 tasks** done: the first slice (landing and styleguide) is fully implemented and validated (independent review pending), with **0/13 slices delivered**.
+**Overall MVP:** `██████░░░░░░░░░░░░░░` **30%**. All 13 specs are approved and all 13 plans are ready. Implementation has **8/65 tasks** done: the first slice (landing and styleguide) is fully implemented and validated (independent review pending), with **0/13 slices delivered**.
 
 | Order | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                          | Implementation (80%) | Progress                        |
 | ----- | ----------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------- | ------------------------------- |
@@ -28,9 +28,9 @@ Progress includes specification and planning as well as implementation: **SPEC 1
 | 03    | `project-feature-state`             | [Approved](docs/specs/project-feature-state/SPEC.md)             | [Ready](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 04    | `agent-settings-skills`             | [Approved](docs/specs/agent-settings-skills/SPEC.md)             | [Ready](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 05    | `artifact-approval-gates`           | [Approved](docs/specs/artifact-approval-gates/SPEC.md)           | [Ready](docs/plans/2026-10-30-artifact-approval-gates.md)           | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%**  |
-| 06    | `feature-git-worktrees`             | [Approved](docs/specs/feature-git-worktrees/SPEC.md)             | [Ready](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 06    | `feature-git-worktrees`             | [Approved](docs/specs/feature-git-worktrees/SPEC.md)             | [Ready](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/6                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 07    | `managed-command-runtime`           | [Approved](docs/specs/managed-command-runtime/SPEC.md)           | [Ready](docs/plans/2026-10-30-managed-command-runtime.md)           | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
-| 08    | `cli-agent-sessions`                | [Approved](docs/specs/cli-agent-sessions/SPEC.md)                | [Ready](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/7                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 08    | `cli-agent-sessions`                | [Approved](docs/specs/cli-agent-sessions/SPEC.md)                | [Ready](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/8                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 09    | `feature-workbench-composer`        | [Approved](docs/specs/feature-workbench-composer/SPEC.md)        | [Ready](docs/plans/2026-10-30-feature-workbench-composer.md)        | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 10    | `document-review-reader`            | [Approved](docs/specs/document-review-reader/SPEC.md)            | [Ready](docs/plans/2026-10-30-document-review-reader.md)            | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 11    | `terminal-panel-footer`             | [Approved](docs/specs/terminal-panel-footer/SPEC.md)             | [Ready](docs/plans/2026-10-30-terminal-panel-footer.md)             | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%**  |

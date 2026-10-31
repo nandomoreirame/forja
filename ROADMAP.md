@@ -8,7 +8,7 @@ Updated: 2026-10-30.
 
 ## Current Status
 
-The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The implementation queue contains **13 approved specs and plans, 62 tasks, and 54 requirements**. Implementation of this queue has started: **0/13 slices delivered; the first slice is fully implemented (8/8 tasks, 8/62 overall) and validated, with independent review pending**.
+The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The implementation queue contains **13 approved specs and plans, 65 tasks, and 60 requirements**. Implementation of this queue has started: **0/13 slices delivered; the first slice is fully implemented (8/8 tasks, 8/65 overall) and validated, with independent review pending**.
 
 The existing Electron welcome-screen scaffold is already implemented. It is the starting point, not evidence that the planned RPI workflow, shared shadcn components or CLI integrations are complete.
 
@@ -25,9 +25,9 @@ The order below is the recommended sequential queue. Dependencies are explicit i
 | 03    | [project-feature-state](docs/specs/project-feature-state/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-project-feature-state.md)             | 0/4             | Approved / ready | Planned        | Not run / not started           |
 | 04    | [agent-settings-skills](docs/specs/agent-settings-skills/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4             | Approved / ready | Planned        | Not run / not started           |
 | 05    | [artifact-approval-gates](docs/specs/artifact-approval-gates/SPEC.md)                     | [Implementation plan](docs/plans/2026-10-30-artifact-approval-gates.md)           | 0/5             | Approved / ready | Planned        | Not run / not started           |
-| 06    | [feature-git-worktrees](docs/specs/feature-git-worktrees/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/4             | Approved / ready | Planned        | Not run / not started           |
+| 06    | [feature-git-worktrees](docs/specs/feature-git-worktrees/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/6             | Approved / ready | Planned        | Not run / not started           |
 | 07    | [managed-command-runtime](docs/specs/managed-command-runtime/SPEC.md)                     | [Implementation plan](docs/plans/2026-10-30-managed-command-runtime.md)           | 0/4             | Approved / ready | Planned        | Not run / not started           |
-| 08    | [cli-agent-sessions](docs/specs/cli-agent-sessions/SPEC.md)                               | [Implementation plan](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/7             | Approved / ready | Planned        | Not run / not started           |
+| 08    | [cli-agent-sessions](docs/specs/cli-agent-sessions/SPEC.md)                               | [Implementation plan](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/8             | Approved / ready | Planned        | Not run / not started           |
 | 09    | [feature-workbench-composer](docs/specs/feature-workbench-composer/SPEC.md)               | [Implementation plan](docs/plans/2026-10-30-feature-workbench-composer.md)        | 0/5             | Approved / ready | Planned        | Not run / not started           |
 | 10    | [document-review-reader](docs/specs/document-review-reader/SPEC.md)                       | [Implementation plan](docs/plans/2026-10-30-document-review-reader.md)            | 0/4             | Approved / ready | Planned        | Not run / not started           |
 | 11    | [terminal-panel-footer](docs/specs/terminal-panel-footer/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-terminal-panel-footer.md)             | 0/5             | Approved / ready | Planned        | Not run / not started           |
