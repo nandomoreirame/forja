@@ -12,7 +12,7 @@ for (const [path, lang, agent] of landings) {
     await expect(page.getByTestId('product-preview')).toContainText(agent)
     await expect(
       page.getByRole('link', { name: /Follow development|Acompanhar desenvolvimento/ }).first(),
-    ).toHaveAttribute('href', 'https://github.com/nandomoreirame/forja')
+    ).toHaveAttribute('href', 'https://github.com/nandomoreirame/forja/tree/release/2.0')
   })
 }
 

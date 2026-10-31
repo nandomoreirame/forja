@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { expect, it } from 'vitest'
-import { Landing, developmentUrl } from '../../site/src/pages/landing'
+import { Landing, followUrl } from '../../site/src/pages/landing'
 
 it('localizes the proposition, CTA and preview labels together', () => {
   render(<Landing locale="pt-br" />)
@@ -14,7 +14,7 @@ it('localizes the proposition, CTA and preview labels together', () => {
   ).toBeInTheDocument()
   expect(screen.getAllByRole('link', { name: /Acompanhar desenvolvimento/ })[0]).toHaveAttribute(
     'href',
-    developmentUrl,
+    followUrl,
   )
   expect(screen.getByTestId('product-preview')).toHaveTextContent('Implementador')
   expect(screen.getByTestId('product-preview')).not.toHaveTextContent('Implementer')

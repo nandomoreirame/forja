@@ -22,6 +22,7 @@ import { productMock } from '../mocks/product'
 import { LocaleLink } from '../components/locale-link'
 
 export const developmentUrl = 'https://github.com/nandomoreirame/forja'
+export const followUrl = `${developmentUrl}/tree/release/2.0`
 export const issuesUrl = `${developmentUrl}/issues`
 export const previewCommands = { dev: 'npm run dev', shell: 'zsh' } as const
 
@@ -441,7 +442,7 @@ export function Landing({ locale }: { locale: Locale }) {
               className="text-xs text-muted-foreground hover:text-foreground"
             />
             <a
-              href={developmentUrl}
+              href={followUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-sm bg-primary px-3.5 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/80 focus:outline-none focus:ring-1 focus:ring-primary"
@@ -468,7 +469,7 @@ export function Landing({ locale }: { locale: Locale }) {
             </p>
             <div className="mt-8 flex flex-col items-center gap-3">
               <a
-                href={developmentUrl}
+                href={followUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-sm bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/80"
@@ -706,7 +707,7 @@ export function Landing({ locale }: { locale: Locale }) {
             </p>
             <div className="mt-8">
               <a
-                href={developmentUrl}
+                href={followUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-sm bg-primary px-6 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary/80"
