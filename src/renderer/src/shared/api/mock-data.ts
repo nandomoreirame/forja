@@ -69,7 +69,42 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
                       },
                     ]
                   : [],
-              terminals: [],
+              terminals:
+                i === 0
+                  ? [
+                      {
+                        id: 'feature-1-implementer-dev',
+                        label: `${locale === 'en' ? 'Implementer' : 'Implementador'} · dev`,
+                        state: 'running',
+                        kind: 'agent',
+                        agent: 'implementer',
+                        command: 'npm run dev',
+                        cwd: path,
+                        output: [
+                          '$ npm run dev',
+                          '> forja@2.0.0 dev',
+                          '> electron-vite dev',
+                          locale === 'en'
+                            ? 'Mock dev server ready on http://127.0.0.1:5173'
+                            : 'Servidor simulado pronto em http://127.0.0.1:5173',
+                        ].join('\n'),
+                      },
+                      {
+                        id: 'feature-1-implementer-tests',
+                        label: `${locale === 'en' ? 'Implementer' : 'Implementador'} · tests`,
+                        state: 'completed',
+                        kind: 'agent',
+                        agent: 'implementer',
+                        command: 'npm test',
+                        cwd: path,
+                        output: [
+                          '$ npm test',
+                          ' ✓ test/oauth-callback.test.ts (3 tests)',
+                          locale === 'en' ? 'Tests  3 passed (3)' : 'Testes  3 passaram (3)',
+                        ].join('\n'),
+                      },
+                    ]
+                  : [],
             })),
     }
   })

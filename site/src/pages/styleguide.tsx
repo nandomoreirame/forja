@@ -1,17 +1,8 @@
-import {
-  ChevronUp,
-  Code,
-  FileText,
-  MessageCircle,
-  Pencil,
-  SquareTerminal,
-  TriangleAlert,
-  Zap,
-} from 'lucide-react'
+import { Code, FileText, MessageCircle, Pencil, TriangleAlert, Zap } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { cn } from '@/shared/ui/utils'
 import { ForjaMark } from '@/shared/ui'
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui'
+import { Button } from '@/shared/ui'
 import {
   AppStatusbar,
   AppTopbar,
@@ -20,7 +11,12 @@ import {
   SidebarRow,
 } from '@/widgets/workbench'
 import { Composer, Messages } from '@/widgets/conversation'
-import { TerminalPreview } from '@/widgets/terminal'
+import {
+  CollapsedToolbar,
+  TerminalPreview,
+  ToolbarDetail,
+  type ToolbarItem,
+} from '@/widgets/terminal'
 import { DocumentPreview, MarkdownPreview, MermaidPreview } from '@/widgets/documents'
 import { PrimitivesShowcase } from '../components/primitives-showcase'
 import { galleryCopy } from '../mocks/gallery'
@@ -112,98 +108,6 @@ function InlineNotice({
       <Icon className="size-4 shrink-0" aria-hidden="true" />
       <span>{children}</span>
     </div>
-  )
-}
-
-interface ToolbarItem {
-  id: string
-  label: string
-  detail: { agent?: string; command?: string; dir: string }
-  state: 'done' | 'running' | 'idle'
-  stateLabel: string
-}
-
-function ToolbarDetail({
-  item,
-  labels,
-}: {
-  item: ToolbarItem
-  labels: { agent: string; command: string; directory: string; hint: string }
-}) {
-  return (
-    <div className="grid gap-1 text-[11px]">
-      {item.detail.agent ? (
-        <div className="flex items-center justify-between gap-6">
-          <span className="text-muted-foreground">
-            {labels.agent}: <span className="text-foreground">{item.detail.agent}</span>
-          </span>
-          <span className={item.state === 'running' ? 'text-primary' : 'text-muted-foreground'}>
-            ● {item.stateLabel}
-          </span>
-        </div>
-      ) : null}
-      {item.detail.command ? (
-        <span className="text-muted-foreground">
-          {labels.command}: <span className="font-mono text-primary">{item.detail.command}</span>
-        </span>
-      ) : null}
-      <span className="font-mono text-muted-foreground">
-        {labels.directory}: {item.detail.dir}
-      </span>
-      <span className="text-[10px] text-muted-foreground/70">{labels.hint}</span>
-    </div>
-  )
-}
-
-function CollapsedToolbar({
-  items,
-  label,
-  expandLabel,
-  detailLabels,
-}: {
-  items: ToolbarItem[]
-  label: string
-  expandLabel: string
-  detailLabels: { agent: string; command: string; directory: string; hint: string }
-}) {
-  return (
-    <TooltipProvider>
-      <div className="flex items-center gap-4 rounded-[3px] border border-border bg-secondary px-3 py-2 text-[12px]">
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}:</span>
-        {items.map((item) => (
-          <Tooltip key={item.id}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                className="flex items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-muted"
-              >
-                <SquareTerminal className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                <span>{item.label}</span>
-                <span
-                  className={
-                    item.state === 'done'
-                      ? 'text-emerald-400'
-                      : item.state === 'running'
-                        ? 'text-primary'
-                        : 'text-muted-foreground'
-                  }
-                >
-                  {item.state === 'done' ? '✓' : item.state === 'running' ? '◌' : '○'}{' '}
-                  {item.stateLabel}
-                </span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <ToolbarDetail item={item} labels={detailLabels} />
-            </TooltipContent>
-          </Tooltip>
-        ))}
-        <Button variant="ghost" size="sm" className="ml-auto gap-1">
-          <ChevronUp />
-          {expandLabel}
-        </Button>
-      </div>
-    </TooltipProvider>
   )
 }
 

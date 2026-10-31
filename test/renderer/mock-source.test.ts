@@ -32,12 +32,14 @@ it('preserves fixture structure and identifiers across locales', async () => {
       ...f,
       name: '',
       messages: f.messages.map((m) => ({ ...m, text: '' })),
+      terminals: f.terminals.map((t) => ({ ...t, label: '', output: '' })),
     })),
   ).toEqual(
     pt.features.map((f) => ({
       ...f,
       name: '',
       messages: f.messages.map((m) => ({ ...m, text: '' })),
+      terminals: f.terminals.map((t) => ({ ...t, label: '', output: '' })),
     })),
   )
   expect(en.features[0].name).toBe('Login with OAuth')

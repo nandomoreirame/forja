@@ -3,6 +3,7 @@ import { getDictionary } from '@/shared/i18n'
 import { featureIdentity } from './feature-name'
 import { createStore } from 'zustand/vanilla'
 import type {
+  FeatureSnapshot,
   ProjectSnapshot,
   ProjectSummary,
   RoleId,
@@ -48,314 +49,383 @@ export interface WorkbenchState {
   back(): void
   forward(): void
   togglePanel(panel: 'left' | 'right' | 'terminal'): void
+  setPanel(panel: 'left' | 'right' | 'terminal', open: boolean): void
+  terminalTabs: Record<string, string>
+  selectTerminal(featureId: string, terminalId: string): void
+  openTerminal(featureId: string, terminalId?: string): void
+  addShell(featureId: string): void
+  stopTerminal(featureId: string, terminalId: string): void
 }
 export function createWorkbenchStore(source: WorkbenchSource) {
   const replies = new Map<string, { cancel: () => void }>()
   let request = 0
   let failedOperation:
     { kind: 'projects' } | { kind: 'project'; id: string } | { kind: 'directory' } | null = null
-  return createStore<WorkbenchState>((set, get) => ({
-    source,
-    pickingDirectory: false,
-    async openDirectory() {
-      if (get().pickingDirectory) return
-      set({ pickingDirectory: true, error: null })
-      try {
-        const selected = await selectProjectDirectory()
-        if (selected.status === 'cancelled') return
-        if (selected.status !== 'selected') {
-          failedOperation = { kind: 'directory' }
-          set({
-            error:
-              selected.status === 'unavailable'
-                ? 'Directory picker unavailable'
-                : 'Unable to load project',
+  return createStore<WorkbenchState>((set, get) => {
+    const updateFeature = (id: string, update: (feature: FeatureSnapshot) => FeatureSnapshot) =>
+      set((state) =>
+        state.snapshot
+          ? {
+              snapshot: {
+                ...state.snapshot,
+                features: state.snapshot.features.map((feature) =>
+                  feature.id === id ? update(feature) : feature,
+                ),
+              },
+            }
+          : {},
+      )
+    return {
+      source,
+      pickingDirectory: false,
+      async openDirectory() {
+        if (get().pickingDirectory) return
+        set({ pickingDirectory: true, error: null })
+        try {
+          const selected = await selectProjectDirectory()
+          if (selected.status === 'cancelled') return
+          if (selected.status !== 'selected') {
+            failedOperation = { kind: 'directory' }
+            set({
+              error:
+                selected.status === 'unavailable'
+                  ? 'Directory picker unavailable'
+                  : 'Unable to load project',
+            })
+            return
+          }
+          await source.addProject({
+            id: selected.id,
+            name: selected.name,
+            path: selected.path,
+            lastOpenedAt: new Date().toISOString(),
           })
-          return
+          await get().openProject(selected.id)
+        } catch {
+          failedOperation = { kind: 'directory' }
+          set({ error: 'Unable to load project' })
+        } finally {
+          set({ pickingDirectory: false })
         }
-        await source.addProject({
-          id: selected.id,
-          name: selected.name,
-          path: selected.path,
-          lastOpenedAt: new Date().toISOString(),
-        })
-        await get().openProject(selected.id)
-      } catch {
-        failedOperation = { kind: 'directory' }
-        set({ error: 'Unable to load project' })
-      } finally {
-        set({ pickingDirectory: false })
-      }
-    },
-    openFeatureIds: [],
-    recipients: {},
-    composeActivation: 0,
-    focusComposer() {
-      set((state) => ({ composeActivation: state.composeActivation + 1 }))
-    },
-    setRecipient(id, role) {
-      if (get().snapshot?.features.some((f) => f.id === id))
-        set((state) => ({ recipients: { ...state.recipients, [id]: role } }))
-    },
-    startCompose(role = 'research') {
-      if (!get().snapshot) return
-      get().navigate({ kind: 'compose', role })
-      set((state) => ({ composeActivation: state.composeActivation + 1 }))
-    },
-    createFeatureFromPrompt(prompt, role) {
-      const snapshot = get().snapshot
-      if (!snapshot) throw new Error('No open project')
-      const { name, slug } = featureIdentity(
-        prompt,
-        snapshot.features.map((f) => f.slug),
-      )
-      const id = `mock:${snapshot.project.id}:${slug}`
-      const feature = {
-        id,
-        slug,
-        name,
-        state: 'running' as const,
-        mode: 'guided' as const,
-        destination: snapshot.project.path,
-        branch: `feature/${slug}`,
-        worktree: null,
-        target: snapshot.project.path,
-        stage: role,
-        messages: [],
-        terminals: [],
-      }
-      set((state) => ({
-        snapshot: { ...snapshot, features: [...snapshot.features, feature] },
-        openFeatureIds: [...state.openFeatureIds, id],
-        recipients: { ...state.recipients, [id]: role },
-      }))
-      get().navigate({ kind: 'conversation', featureId: id })
-      get().sendMessage(id, prompt)
-      return id
-    },
-    selectFeature(id) {
-      if (get().openFeatureIds.includes(id)) get().navigate({ kind: 'conversation', featureId: id })
-    },
-    sendMessage(id, text) {
-      const feature = get().snapshot?.features.find((item) => item.id === id)
-      const prompt = text.trim()
-      if (!feature || !prompt) return
-      get().interrupt(id)
-      const role = get().recipients[id] ?? feature.stage
-      const messageId = `${id}:agent-${feature.messages.length + 2}`
-      set((state) => ({
-        snapshot: {
-          ...state.snapshot!,
-          features: state.snapshot!.features.map((item) =>
-            item.id === id
+      },
+      openFeatureIds: [],
+      recipients: {},
+      composeActivation: 0,
+      focusComposer() {
+        set((state) => ({ composeActivation: state.composeActivation + 1 }))
+      },
+      setRecipient(id, role) {
+        if (get().snapshot?.features.some((f) => f.id === id))
+          set((state) => ({ recipients: { ...state.recipients, [id]: role } }))
+      },
+      startCompose(role = 'research') {
+        if (!get().snapshot) return
+        get().navigate({ kind: 'compose', role })
+        set((state) => ({ composeActivation: state.composeActivation + 1 }))
+      },
+      createFeatureFromPrompt(prompt, role) {
+        const snapshot = get().snapshot
+        if (!snapshot) throw new Error('No open project')
+        const { name, slug } = featureIdentity(
+          prompt,
+          snapshot.features.map((f) => f.slug),
+        )
+        const id = `mock:${snapshot.project.id}:${slug}`
+        const feature = {
+          id,
+          slug,
+          name,
+          state: 'running' as const,
+          mode: 'guided' as const,
+          destination: snapshot.project.path,
+          branch: `feature/${slug}`,
+          worktree: null,
+          target: snapshot.project.path,
+          stage: role,
+          messages: [],
+          terminals: [],
+        }
+        set((state) => ({
+          snapshot: { ...snapshot, features: [...snapshot.features, feature] },
+          openFeatureIds: [...state.openFeatureIds, id],
+          recipients: { ...state.recipients, [id]: role },
+        }))
+        get().navigate({ kind: 'conversation', featureId: id })
+        get().sendMessage(id, prompt)
+        return id
+      },
+      selectFeature(id) {
+        if (get().openFeatureIds.includes(id))
+          get().navigate({ kind: 'conversation', featureId: id })
+      },
+      sendMessage(id, text) {
+        const feature = get().snapshot?.features.find((item) => item.id === id)
+        const prompt = text.trim()
+        if (!feature || !prompt) return
+        get().interrupt(id)
+        const role = get().recipients[id] ?? feature.stage
+        const messageId = `${id}:agent-${feature.messages.length + 2}`
+        set((state) => ({
+          snapshot: {
+            ...state.snapshot!,
+            features: state.snapshot!.features.map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    state: 'running',
+                    messages: [
+                      ...item.messages,
+                      { id: `${id}:user-${item.messages.length + 1}`, role: 'user', text: prompt },
+                      { id: messageId, role: 'agent', author: role, text: '', status: 'running' },
+                    ],
+                  }
+                : item,
+            ),
+          },
+        }))
+        const reply = { cancel: () => {} }
+        const terminalIds = new Set<string>()
+        replies.set(id, reply)
+        reply.cancel = source.streamReply(
+          { featureId: id, role, prompt },
+          (event) => {
+            if (replies.get(id) !== reply || event.type === 'start') return
+            const finalStatus =
+              event.type === 'completed' || event.type === 'interrupted' ? event.type : undefined
+            const resumed = event.type === 'terminal' && !terminalIds.has(event.terminalId)
+            if (event.type === 'terminal') terminalIds.add(event.terminalId)
+            set((state) => ({
+              snapshot: {
+                ...state.snapshot!,
+                features: state.snapshot!.features.map((item) => {
+                  if (item.id !== id) return item
+                  let terminals = item.terminals
+                  if (event.type === 'terminal') {
+                    const existing = terminals.find((terminal) => terminal.id === event.terminalId)
+                    terminals = existing
+                      ? terminals.map((terminal) =>
+                          terminal.id === event.terminalId &&
+                          (resumed || terminal.state !== 'interrupted')
+                            ? {
+                                ...terminal,
+                                state: 'running',
+                                output: terminal.output
+                                  ? `${terminal.output}\n${event.line}`
+                                  : event.line,
+                              }
+                            : terminal,
+                        )
+                      : [
+                          ...terminals,
+                          {
+                            id: event.terminalId,
+                            label: `${getDictionary(source.locale).product[role]} · ${event.line.includes('npm test') ? 'tests' : 'dev'}`,
+                            state: 'running',
+                            output: event.line,
+                            kind: 'agent',
+                            agent: role,
+                            command: event.line.replace(/^\$\s*/, ''),
+                            cwd: item.worktree ?? item.destination,
+                          },
+                        ]
+                  }
+                  return {
+                    ...item,
+                    state: finalStatus === 'completed' ? 'waiting' : (finalStatus ?? item.state),
+                    messages: item.messages.map((message) =>
+                      message.id === messageId
+                        ? {
+                            ...message,
+                            text: event.type === 'text' ? message.text + event.chunk : message.text,
+                            status: finalStatus ?? message.status,
+                          }
+                        : message,
+                    ),
+                    terminals: finalStatus
+                      ? terminals.map((terminal) =>
+                          terminalIds.has(terminal.id) && terminal.state === 'running'
+                            ? {
+                                ...terminal,
+                                state: finalStatus,
+                              }
+                            : terminal,
+                        )
+                      : terminals,
+                  }
+                }),
+              },
+            }))
+            if (finalStatus) replies.delete(id)
+          },
+          {
+            instant:
+              typeof matchMedia === 'function' &&
+              matchMedia('(prefers-reduced-motion: reduce)').matches,
+          },
+        )
+      },
+      interrupt(id) {
+        replies.get(id)?.cancel()
+      },
+      appendPrompt(id, prompt, role) {
+        if (!prompt.trim() || !get().snapshot?.features.some((feature) => feature.id === id)) return
+        get().setRecipient(id, role)
+        get().sendMessage(id, prompt)
+      },
+      closeFeature(id) {
+        if (!get().openFeatureIds.includes(id)) return
+        get().interrupt(id)
+        const state = get()
+        const openFeatureIds = state.openFeatureIds.filter((item) => item !== id)
+        const view: View =
+          state.view.kind === 'conversation' && state.view.featureId === id
+            ? openFeatureIds.length
               ? {
-                  ...item,
-                  state: 'running',
-                  messages: [
-                    ...item.messages,
-                    { id: `${id}:user-${item.messages.length + 1}`, role: 'user', text: prompt },
-                    { id: messageId, role: 'agent', author: role, text: '', status: 'running' },
-                  ],
+                  kind: 'conversation',
+                  featureId:
+                    openFeatureIds[
+                      Math.min(state.openFeatureIds.indexOf(id), openFeatureIds.length - 1)
+                    ],
                 }
-              : item,
-          ),
-        },
-      }))
-      const reply = { cancel: () => {} }
-      const terminalIds = new Set<string>()
-      replies.set(id, reply)
-      reply.cancel = source.streamReply(
-        { featureId: id, role, prompt },
-        (event) => {
-          if (replies.get(id) !== reply || event.type === 'start') return
-          const finalStatus =
-            event.type === 'completed' || event.type === 'interrupted' ? event.type : undefined
-          if (event.type === 'terminal') terminalIds.add(event.terminalId)
-          set((state) => ({
-            snapshot: {
-              ...state.snapshot!,
-              features: state.snapshot!.features.map((item) => {
-                if (item.id !== id) return item
-                let terminals = item.terminals
-                if (event.type === 'terminal') {
-                  const existing = terminals.find((terminal) => terminal.id === event.terminalId)
-                  terminals = existing
-                    ? terminals.map((terminal) =>
-                        terminal.id === event.terminalId
-                          ? {
-                              ...terminal,
-                              state: 'running',
-                              output: terminal.output
-                                ? `${terminal.output}\n${event.line}`
-                                : event.line,
-                            }
-                          : terminal,
-                      )
-                    : [
-                        ...terminals,
-                        {
-                          id: event.terminalId,
-                          label: `${getDictionary(source.locale).product[role]} · ${event.line.includes('npm test') ? 'tests' : 'dev'}`,
-                          state: 'running',
-                          output: event.line,
-                        },
-                      ]
-                }
-                return {
-                  ...item,
-                  state: finalStatus === 'completed' ? 'waiting' : (finalStatus ?? item.state),
-                  messages: item.messages.map((message) =>
-                    message.id === messageId
-                      ? {
-                          ...message,
-                          text: event.type === 'text' ? message.text + event.chunk : message.text,
-                          status: finalStatus ?? message.status,
-                        }
-                      : message,
-                  ),
-                  terminals: finalStatus
-                    ? terminals.map((terminal) =>
-                        terminalIds.has(terminal.id)
-                          ? {
-                              ...terminal,
-                              state: finalStatus,
-                            }
-                          : terminal,
-                      )
-                    : terminals,
-                }
-              }),
-            },
-          }))
-          if (finalStatus) replies.delete(id)
-        },
-        {
-          instant:
-            typeof matchMedia === 'function' &&
-            matchMedia('(prefers-reduced-motion: reduce)').matches,
-        },
-      )
-    },
-    interrupt(id) {
-      replies.get(id)?.cancel()
-    },
-    appendPrompt(id, prompt, role) {
-      if (!prompt.trim() || !get().snapshot?.features.some((feature) => feature.id === id)) return
-      get().setRecipient(id, role)
-      get().sendMessage(id, prompt)
-    },
-    closeFeature(id) {
-      if (!get().openFeatureIds.includes(id)) return
-      get().interrupt(id)
-      const state = get()
-      const openFeatureIds = state.openFeatureIds.filter((item) => item !== id)
-      const view: View =
-        state.view.kind === 'conversation' && state.view.featureId === id
-          ? openFeatureIds.length
-            ? {
-                kind: 'conversation',
-                featureId:
-                  openFeatureIds[
-                    Math.min(state.openFeatureIds.indexOf(id), openFeatureIds.length - 1)
-                  ],
-              }
-            : { kind: 'compose', role: 'research' }
-          : state.view
-      let historyIndex = -1
-      let history: View[] = []
-      state.history.forEach((entry, index) => {
-        if (entry.kind === 'conversation' && entry.featureId === id) return
-        history.push(entry)
-        if (index <= state.historyIndex) historyIndex = history.length - 1
-      })
-      if (state.view.kind === 'conversation' && state.view.featureId === id) {
-        history = history.slice(0, historyIndex + 1)
-        if (JSON.stringify(history.at(-1)) !== JSON.stringify(view)) history.push(view)
-        historyIndex = history.length - 1
-      }
-      set({ openFeatureIds, view, history, historyIndex })
-    },
-    projects: [],
-    snapshot: null,
-    loading: false,
-    error: null,
-    view: { kind: 'home' },
-    history: [{ kind: 'home' }],
-    historyIndex: 0,
-    panels: { left: true, right: true, terminal: false },
-    palette: { open: false, scope: 'all' },
-    openPalette(scope) {
-      set({ palette: { open: true, scope } })
-    },
-    closePalette() {
-      set((state) => ({ palette: { ...state.palette, open: false } }))
-    },
-    async retryLoad() {
-      const operation = failedOperation
-      if (operation?.kind === 'directory') await get().openDirectory()
-      else if (operation?.kind === 'project') await get().openProject(operation.id)
-      else if (operation?.kind === 'projects') await get().loadProjects()
-    },
-    async loadProjects() {
-      set({ error: null })
-      try {
-        set({ projects: await source.listProjects() })
-        failedOperation = null
-      } catch {
-        failedOperation = { kind: 'projects' }
-        set({ error: 'Unable to load project' })
-      }
-    },
-    async openProject(id) {
-      const token = ++request
-      set({ loading: true, error: null })
-      try {
-        const [projects, snapshot] = await Promise.all([
-          source.listProjects(),
-          source.loadProject(id),
-        ])
-        if (token !== request) return
-        for (const reply of replies.values()) reply.cancel()
-        replies.clear()
-        failedOperation = null
-        const view: View = snapshot.features[0]
-          ? { kind: 'conversation', featureId: snapshot.features[0].id }
-          : { kind: 'home' }
-        set({
-          projects,
-          snapshot,
-          view,
-          history: [view],
-          historyIndex: 0,
-          loading: false,
-          openFeatureIds: snapshot.features.map((f) => f.id),
-          recipients: Object.fromEntries(snapshot.features.map((f) => [f.id, f.stage])),
+              : { kind: 'compose', role: 'research' }
+            : state.view
+        let historyIndex = -1
+        let history: View[] = []
+        state.history.forEach((entry, index) => {
+          if (entry.kind === 'conversation' && entry.featureId === id) return
+          history.push(entry)
+          if (index <= state.historyIndex) historyIndex = history.length - 1
         })
-      } catch {
-        if (token === request) {
-          failedOperation = { kind: 'project', id }
-          set({ loading: false, error: 'Unable to load project' })
+        if (state.view.kind === 'conversation' && state.view.featureId === id) {
+          history = history.slice(0, historyIndex + 1)
+          if (JSON.stringify(history.at(-1)) !== JSON.stringify(view)) history.push(view)
+          historyIndex = history.length - 1
         }
-      }
-    },
-    navigate(view) {
-      const state = get()
-      if (JSON.stringify(state.view) === JSON.stringify(view)) return
-      const history = [...state.history.slice(0, state.historyIndex + 1), view]
-      set({ view, history, historyIndex: history.length - 1 })
-    },
-    back() {
-      const { history, historyIndex } = get()
-      if (historyIndex > 0) set({ view: history[historyIndex - 1], historyIndex: historyIndex - 1 })
-    },
-    forward() {
-      const { history, historyIndex } = get()
-      if (historyIndex < history.length - 1)
-        set({ view: history[historyIndex + 1], historyIndex: historyIndex + 1 })
-    },
-    togglePanel(panel) {
-      set((state) => ({ panels: { ...state.panels, [panel]: !state.panels[panel] } }))
-    },
-  }))
+        set({ openFeatureIds, view, history, historyIndex })
+      },
+      projects: [],
+      snapshot: null,
+      loading: false,
+      error: null,
+      view: { kind: 'home' },
+      history: [{ kind: 'home' }],
+      historyIndex: 0,
+      panels: { left: true, right: true, terminal: false },
+      palette: { open: false, scope: 'all' },
+      openPalette(scope) {
+        set({ palette: { open: true, scope } })
+      },
+      closePalette() {
+        set((state) => ({ palette: { ...state.palette, open: false } }))
+      },
+      async retryLoad() {
+        const operation = failedOperation
+        if (operation?.kind === 'directory') await get().openDirectory()
+        else if (operation?.kind === 'project') await get().openProject(operation.id)
+        else if (operation?.kind === 'projects') await get().loadProjects()
+      },
+      async loadProjects() {
+        set({ error: null })
+        try {
+          set({ projects: await source.listProjects() })
+          failedOperation = null
+        } catch {
+          failedOperation = { kind: 'projects' }
+          set({ error: 'Unable to load project' })
+        }
+      },
+      async openProject(id) {
+        const token = ++request
+        set({ loading: true, error: null })
+        try {
+          const [projects, snapshot] = await Promise.all([
+            source.listProjects(),
+            source.loadProject(id),
+          ])
+          if (token !== request) return
+          for (const reply of replies.values()) reply.cancel()
+          replies.clear()
+          failedOperation = null
+          const view: View = snapshot.features[0]
+            ? { kind: 'conversation', featureId: snapshot.features[0].id }
+            : { kind: 'home' }
+          set({
+            projects,
+            snapshot,
+            view,
+            history: [view],
+            historyIndex: 0,
+            loading: false,
+            openFeatureIds: snapshot.features.map((f) => f.id),
+            recipients: Object.fromEntries(snapshot.features.map((f) => [f.id, f.stage])),
+            terminalTabs: {},
+          })
+        } catch {
+          if (token === request) {
+            failedOperation = { kind: 'project', id }
+            set({ loading: false, error: 'Unable to load project' })
+          }
+        }
+      },
+      navigate(view) {
+        const state = get()
+        if (JSON.stringify(state.view) === JSON.stringify(view)) return
+        const history = [...state.history.slice(0, state.historyIndex + 1), view]
+        set({ view, history, historyIndex: history.length - 1 })
+      },
+      back() {
+        const { history, historyIndex } = get()
+        if (historyIndex > 0)
+          set({ view: history[historyIndex - 1], historyIndex: historyIndex - 1 })
+      },
+      forward() {
+        const { history, historyIndex } = get()
+        if (historyIndex < history.length - 1)
+          set({ view: history[historyIndex + 1], historyIndex: historyIndex + 1 })
+      },
+      togglePanel(panel) {
+        set((state) => ({ panels: { ...state.panels, [panel]: !state.panels[panel] } }))
+      },
+      setPanel(panel, open) {
+        set((state) => ({ panels: { ...state.panels, [panel]: open } }))
+      },
+      terminalTabs: {},
+      selectTerminal(featureId, terminalId) {
+        const feature = get().snapshot?.features.find((f) => f.id === featureId)
+        if (!feature?.terminals.some((terminal) => terminal.id === terminalId)) return
+        set((state) => ({ terminalTabs: { ...state.terminalTabs, [featureId]: terminalId } }))
+      },
+      openTerminal(featureId, terminalId) {
+        if (terminalId) get().selectTerminal(featureId, terminalId)
+        get().setPanel('terminal', true)
+      },
+      addShell(featureId) {
+        const feature = get().snapshot?.features.find((f) => f.id === featureId)
+        if (!feature) return
+        const shells = feature.terminals.filter((terminal) => terminal.kind === 'shell').length
+        const cwd = feature.worktree ?? feature.destination
+        const terminal = {
+          id: `${featureId}-shell-${shells + 1}`,
+          label: shells ? `zsh ${shells + 1}` : 'zsh',
+          state: 'draft' as const,
+          kind: 'shell' as const,
+          cwd,
+          output: `${cwd} $ `,
+        }
+        updateFeature(featureId, (item) => ({ ...item, terminals: [...item.terminals, terminal] }))
+        get().selectTerminal(featureId, terminal.id)
+      },
+      stopTerminal(featureId, terminalId) {
+        updateFeature(featureId, (item) => ({
+          ...item,
+          terminals: item.terminals.map((terminal) =>
+            terminal.id === terminalId && terminal.state === 'running'
+              ? { ...terminal, state: 'interrupted' }
+              : terminal,
+          ),
+        }))
+      },
+    }
+  })
 }
 export type WorkbenchStore = ReturnType<typeof createWorkbenchStore>

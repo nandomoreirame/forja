@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, expect, it, vi } from 'vitest'
-import { createMockSource } from '../../src/renderer/src/shared/api'
+import { createMockSource, type FeatureSnapshot } from '../../src/renderer/src/shared/api'
 import { createWorkbenchStore } from '../../src/renderer/src/entities/feature'
 afterEach(() => {
   vi.useRealTimers()
@@ -23,6 +23,8 @@ it('interrupts a running reply before starting the next one', async () => {
   expect(messages.filter((m) => m.role !== 'user').at(-2)).toMatchObject({ status: 'interrupted' })
   expect(messages.at(-1)).toMatchObject({ status: 'completed' })
 })
+const streamed = (feature: FeatureSnapshot) =>
+  feature.terminals.filter((terminal) => terminal.id === `${feature.id}-${terminal.agent}`)
 it('streams independent features without changing selection or recipients', async () => {
   const store = await setup()
   store.getState().setRecipient('feature-1', 'implementer')
@@ -35,7 +37,7 @@ it('streams independent features without changing selection or recipients', asyn
   for (const feature of store.getState().snapshot!.features) {
     expect(feature.state).toBe('running')
     expect(feature.messages.at(-1)?.text).not.toBe('')
-    expect(feature.terminals[0]?.state).toBe('running')
+    expect(streamed(feature)[0]?.state).toBe('running')
   }
   vi.runAllTimers()
   const [first, second] = store.getState().snapshot!.features
@@ -49,15 +51,18 @@ it('streams independent features without changing selection or recipients', asyn
     author: 'tester',
     status: 'completed',
   })
-  expect(first.terminals).toEqual([
+  expect(streamed(first)).toMatchObject([
     {
       id: 'feature-1-implementer',
       label: 'Implementer · dev',
       state: 'completed',
       output: '$ npm run dev\nMock development server ready.',
+      kind: 'agent',
+      agent: 'implementer',
+      command: 'npm run dev',
     },
   ])
-  expect(second.terminals).toEqual([
+  expect(streamed(second)).toMatchObject([
     {
       id: 'feature-2-tester',
       label: 'Tester · tests',
@@ -65,6 +70,7 @@ it('streams independent features without changing selection or recipients', asyn
       output: '$ npm test\nMock check: 1 test passed.',
     },
   ])
+  expect(first.terminals.find((t) => t.id === 'feature-1-implementer-dev')?.state).toBe('running')
   expect(first.state).toBe('waiting')
   expect(second.state).toBe('waiting')
   expect(store.getState().view).toEqual(view)
@@ -87,8 +93,8 @@ it('preserves partial output when explicitly interrupted and does nothing when i
     text: partial.messages.at(-1)!.text,
     status: 'interrupted',
   })
-  expect(feature.terminals[0]).toMatchObject({
-    output: partial.terminals[0].output,
+  expect(streamed(feature)[0]).toMatchObject({
+    output: streamed(partial)[0].output,
     state: 'interrupted',
   })
 })
@@ -125,10 +131,10 @@ it('reuses a localized terminal while preserving previous output', async () => {
   store.getState().setRecipient('feature-1', 'tester')
   store.getState().sendMessage('feature-1', 'Test')
   vi.runAllTimers()
-  const first = store.getState().snapshot!.features[0].terminals[0]
+  const first = streamed(store.getState().snapshot!.features[0])[0]
   store.getState().sendMessage('feature-1', 'Again')
   vi.runAllTimers()
-  const terminals = store.getState().snapshot!.features[0].terminals
+  const terminals = streamed(store.getState().snapshot!.features[0])
   expect(terminals).toHaveLength(1)
   expect(terminals[0].label).toBe('Testador · tests')
   expect(terminals[0].output).toBe(`${first.output}\n${first.output}`)
@@ -145,4 +151,23 @@ it('ignores invalid sends and falls back to the feature stage', async () => {
   expect(feature.messages.at(-2)?.text).toBe('Hello')
   expect(feature.messages.at(-1)?.author).toBe(feature.stage)
   vi.runAllTimers()
+})
+it('keeps a manually stopped agent terminal stopped while its reply keeps streaming', async () => {
+  const store = await setup()
+  store.getState().setRecipient('feature-1', 'implementer')
+  store.getState().sendMessage('feature-1', 'Implement')
+  vi.advanceTimersByTime(250)
+  store.getState().stopTerminal('feature-1', 'feature-1-implementer')
+  const stopped = streamed(store.getState().snapshot!.features[0])[0]
+  vi.runAllTimers()
+  const feature = store.getState().snapshot!.features[0]
+  expect(streamed(feature)[0]).toMatchObject({ state: 'interrupted', output: stopped.output })
+  expect(feature.messages.at(-1)?.status).toBe('completed')
+})
+it('creates manual shells as idle tabs in the feature directory', async () => {
+  const store = await setup()
+  store.getState().addShell('feature-1')
+  const shell = store.getState().snapshot!.features[0].terminals.at(-1)!
+  expect(shell).toMatchObject({ kind: 'shell', label: 'zsh', state: 'draft', cwd: '~/dev' })
+  expect(store.getState().terminalTabs['feature-1']).toBe(shell.id)
 })

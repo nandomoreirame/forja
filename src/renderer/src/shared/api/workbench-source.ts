@@ -21,6 +21,10 @@ export interface MockTerminal {
   label: string
   state: UiState
   output: string
+  kind?: 'agent' | 'shell'
+  agent?: RoleId
+  command?: string
+  cwd?: string
 }
 export interface FeatureSnapshot {
   id: string

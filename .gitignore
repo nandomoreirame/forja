@@ -20,3 +20,4 @@ docs/design/forja-2.0/stitch-cache/
 
 # Firebase deploy staging (site/scripts/deploy.mjs)
 site/.deploy/
+.vitest/

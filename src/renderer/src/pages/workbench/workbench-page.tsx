@@ -17,6 +17,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ProjectSidebar } from '@/renderer/src/widgets/project-sidebar'
 import { GitContext } from '@/renderer/src/widgets/git-context'
 import { IconButton } from '@/renderer/src/shared/ui/icon-button'
+import { TerminalFooterToolbar, TerminalPanel } from '@/renderer/src/features/terminal'
 export function WorkbenchPage({
   source,
   initialProjectId,
@@ -42,6 +43,12 @@ function WorkbenchShell() {
   const focusComposer = useRef(false)
   const opener = useRef<HTMLElement | null>(null)
   const a = getDictionary(s.source.locale).app
+  const selectedFeature =
+    s.view.kind === 'conversation'
+      ? s.snapshot?.features.find(
+          (f) => s.view.kind === 'conversation' && f.id === s.view.featureId,
+        )
+      : undefined
   useShortcuts({
     'ctrl+n': () => {
       if (s.snapshot) s.startCompose()
@@ -121,12 +128,9 @@ function WorkbenchShell() {
             </section>
           )}
           {s.snapshot && s.panels.terminal ? (
-            <section
-              aria-label={a.terminals}
-              className="border-t border-border p-3 text-xs text-muted-foreground"
-            >
-              {a.mockTerminal}
-            </section>
+            <TerminalPanel feature={selectedFeature} />
+          ) : selectedFeature?.terminals.length ? (
+            <TerminalFooterToolbar feature={selectedFeature} />
           ) : null}
         </main>
         {s.snapshot ? (
