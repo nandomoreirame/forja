@@ -1,12 +1,12 @@
 import {
   ChevronUp,
-  FolderGit2,
+  Code,
+  FileText,
   MessageCircle,
   Pencil,
-  Settings,
   SquareTerminal,
-  Terminal,
   TriangleAlert,
+  Zap,
 } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { cn } from '@/shared/ui/utils'
@@ -89,20 +89,6 @@ function Card({
   )
 }
 
-function HandoffLink({ text, action }: { text: string; action: string }) {
-  return (
-    <div className="flex items-center justify-between rounded-[3px] border border-border bg-background p-2.5 text-[12px]">
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <TriangleAlert className="size-3.5 text-primary" aria-hidden="true" />
-        <span>{text}</span>
-      </div>
-      <button type="button" className="text-[12px] font-medium text-primary hover:underline">
-        {action}
-      </button>
-    </div>
-  )
-}
-
 function InlineNotice({
   children,
   tone,
@@ -129,24 +115,60 @@ function InlineNotice({
   )
 }
 
+interface ToolbarItem {
+  id: string
+  label: string
+  detail: { agent?: string; command?: string; dir: string }
+  state: 'done' | 'running' | 'idle'
+  stateLabel: string
+}
+
+function ToolbarDetail({
+  item,
+  labels,
+}: {
+  item: ToolbarItem
+  labels: { agent: string; command: string; directory: string; hint: string }
+}) {
+  return (
+    <div className="grid gap-1 text-[11px]">
+      {item.detail.agent ? (
+        <div className="flex items-center justify-between gap-6">
+          <span className="text-muted-foreground">
+            {labels.agent}: <span className="text-foreground">{item.detail.agent}</span>
+          </span>
+          <span className={item.state === 'running' ? 'text-primary' : 'text-muted-foreground'}>
+            ● {item.stateLabel}
+          </span>
+        </div>
+      ) : null}
+      {item.detail.command ? (
+        <span className="text-muted-foreground">
+          {labels.command}: <span className="font-mono text-primary">{item.detail.command}</span>
+        </span>
+      ) : null}
+      <span className="font-mono text-muted-foreground">
+        {labels.directory}: {item.detail.dir}
+      </span>
+      <span className="text-[10px] text-muted-foreground/70">{labels.hint}</span>
+    </div>
+  )
+}
+
 function CollapsedToolbar({
   items,
   label,
   expandLabel,
+  detailLabels,
 }: {
-  items: {
-    id: string
-    label: string
-    detail: string
-    state: 'done' | 'running' | 'idle'
-    stateLabel: string
-  }[]
+  items: ToolbarItem[]
   label: string
   expandLabel: string
+  detailLabels: { agent: string; command: string; directory: string; hint: string }
 }) {
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-4 rounded-md border border-border bg-secondary px-3 py-2 text-[12px]">
+      <div className="flex items-center gap-4 rounded-[3px] border border-border bg-secondary px-3 py-2 text-[12px]">
         <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}:</span>
         {items.map((item) => (
           <Tooltip key={item.id}>
@@ -171,7 +193,9 @@ function CollapsedToolbar({
                 </span>
               </button>
             </TooltipTrigger>
-            <TooltipContent>{item.detail}</TooltipContent>
+            <TooltipContent>
+              <ToolbarDetail item={item} labels={detailLabels} />
+            </TooltipContent>
           </Tooltip>
         ))}
         <Button variant="ghost" size="sm" className="ml-auto gap-1">
@@ -212,6 +236,35 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
   const sec = sc.sections
   const w = locale === 'en' ? 'Section' : 'Seção'
   const roles = t.workflow.roles.map(([name]) => name)
+  const toolbarItems: ToolbarItem[] = [
+    {
+      id: 'tests',
+      label: x.shortTests,
+      detail: { agent: roles[2], command: 'npm test', dir: mock.worktree },
+      state: 'done',
+      stateLabel: c.status.completed,
+    },
+    {
+      id: 'dev',
+      label: x.shortDev,
+      detail: { agent: roles[2], command: 'npm run dev', dir: mock.worktree },
+      state: 'running',
+      stateLabel: c.status.running,
+    },
+    {
+      id: 'zsh',
+      label: x.shortShell,
+      detail: { dir: mock.worktree },
+      state: 'idle',
+      stateLabel: x.idle,
+    },
+  ]
+  const detailLabels = {
+    agent: x.agent,
+    command: x.command,
+    directory: sc.directory,
+    hint: sc.clickToExpand,
+  }
   const diagram = `flowchart LR\n  research["${x.diagramNodes[0]}"] --> planner["${x.diagramNodes[1]}"]\n  planner --> implementer["${x.diagramNodes[2]}"]\n  classDef accent fill:#2a1f0a,stroke:#F5A623,color:#F5A623\n  class implementer accent`
 
   return (
@@ -241,11 +294,29 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             <Card label={sc.typography} code="typography.css">
-              <div className="grid gap-3 font-mono">
-                <span className="text-[18px] font-semibold">{sc.headingSample}</span>
-                <span className="text-[13px]">{sc.bodySample}</span>
-                <span className="text-[12px] font-medium">{sc.labelSample}</span>
-                <span className="text-[11px] text-muted-foreground">{sc.metaSample}</span>
+              <div className="grid gap-2">
+                {[
+                  [sc.headingSample, 'text-[18px] font-semibold', mock.features[0]],
+                  [sc.bodySample, 'text-[13px]', x.userMessage],
+                  [
+                    sc.labelSample,
+                    'text-[12px] font-medium uppercase text-muted-foreground',
+                    c.textareaLabel,
+                  ],
+                  [
+                    sc.metaSample,
+                    'text-[11px] text-muted-foreground',
+                    `${t.product.destination}: ${mock.targetPath} · ${t.product.branch}: feature/login-oauth`,
+                  ],
+                ].map(([name, style, sample], index, all) => (
+                  <div
+                    key={name}
+                    className={index < all.length - 1 ? 'border-b border-border pb-2' : undefined}
+                  >
+                    <span className="block text-[11px] text-muted-foreground">{name}</span>
+                    <span className={style}>{sample}</span>
+                  </div>
+                ))}
               </div>
             </Card>
             <Card label={sc.spacing} code="spacing.css">
@@ -312,51 +383,85 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
         code="layout.scaffold.tsx"
       >
         <div className="grid gap-4">
-          <div className="overflow-hidden rounded-lg border border-border">
-            <AppTopbar brand="FORJA" commandText="dev" settingsLabel={c.buttonLabels.secondary} />
+          <div className="grid gap-1.5">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>{sc.topbarLabel}</span>
+              <span>topbar.fragment.tsx</span>
+            </div>
+            <div className="overflow-hidden rounded-[3px] border border-border">
+              <AppTopbar brand="FORJA" commandText="dev" settingsLabel={c.buttonLabels.secondary} />
+            </div>
           </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <FeatureTabs
-              selectedId="login"
-              items={[
-                { id: 'login', label: mock.features[0], state: 'running' },
-                { id: 'search', label: mock.features[1], state: 'idle' },
-              ]}
-              onSelect={() => {}}
-              label={t.product.feature}
-              stateLabels={{
-                running: x.agentRunning,
-                waiting: c.status.waiting,
-                idle: c.status.draft,
-              }}
-            />
-            <FeatureContext
-              title={mock.features[0]}
-              rows={[
-                { label: t.product.destination, value: mock.targetPath },
-                { label: t.product.branch, value: 'feature/login-oauth' },
-                { label: 'Fluxo', value: roles.join(' → ') },
-              ]}
-            />
+            <Card label={sc.featureTabsLabel} code="features.tab.tsx">
+              <FeatureTabs
+                selectedId="login"
+                items={[
+                  { id: 'login', label: mock.features[0], state: 'running' },
+                  { id: 'search', label: mock.features[1], state: 'waiting' },
+                ]}
+                onSelect={() => {}}
+                label={t.product.feature}
+                stateLabels={{
+                  running: x.agentRunning,
+                  waiting: c.status.waiting,
+                  idle: c.status.draft,
+                }}
+              />
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <div className="rounded-[3px] border border-border bg-secondary p-1.5">
+                  <span className="block text-[10px] text-muted-foreground">{sc.hoverSample}:</span>
+                  <span className="font-mono">bg-secondary + text-foreground</span>
+                </div>
+                <div className="rounded-[3px] border border-primary/40 bg-card p-1.5">
+                  <span className="block text-[10px] text-primary">{sc.focusSample}:</span>
+                  <span className="font-mono">ring-1 ring-ring</span>
+                </div>
+              </div>
+            </Card>
+            <Card label={sc.featureContextLabel} code="context.header.tsx">
+              <div className="rounded-[3px] border border-border bg-background p-3">
+                <FeatureContext
+                  title={mock.features[0]}
+                  mode={sc.guided}
+                  rows={[
+                    { label: t.product.destination, value: mock.targetPath },
+                    { label: t.product.branch, value: 'feature/login-oauth' },
+                  ]}
+                  cycleLabel={sc.cycle}
+                  cycle={roles.map((label, index) => ({
+                    label,
+                    state: index < 2 ? 'done' : index === 2 ? 'current' : 'pending',
+                  }))}
+                />
+              </div>
+            </Card>
           </div>
-          <div className="grid gap-2 md:grid-cols-2">
-            <SidebarRow
-              icon={<Terminal />}
-              title={roles[2]}
-              state="running"
-              stateLabel={c.status.running}
-              selected
-            />
-            <SidebarRow
-              icon={<FolderGit2 />}
-              title={mock.specName}
-              state="approved"
-              stateLabel={c.status.approved}
-            />
-            <SidebarRow icon={<Settings />} title={mock.skillName} />
-          </div>
-          <div className="overflow-hidden rounded-lg border border-border">
-            <AppStatusbar items={[mock.targetPath, 'UTF-8']} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card label={sc.sidebarLabel} code="sidebar.row.tsx">
+              <div className="grid gap-1.5">
+                <SidebarRow
+                  icon={<Code />}
+                  title={roles[2]}
+                  state="running"
+                  stateLabel={c.status.running}
+                  selected
+                />
+                <SidebarRow
+                  icon={<FileText />}
+                  title={mock.specName}
+                  state="approved"
+                  stateLabel={c.status.approved}
+                />
+                <SidebarRow icon={<Zap />} title={mock.skillName} stateLabel={sc.active} />
+              </div>
+            </Card>
+            <Card label={sc.statusbarLabel} code="statusbar.tsx">
+              <div className="overflow-hidden rounded-[3px] border border-border">
+                <AppStatusbar items={[mock.targetPath, 'UTF-8']} />
+              </div>
+              <p className="text-[11px] text-muted-foreground">{sc.statusbarNote}</p>
+            </Card>
           </div>
         </div>
       </Section>
@@ -372,6 +477,7 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
             label={sc.convLabel}
             items={[
               { id: 'u', author: x.you, role: 'user', text: x.userMessage },
+              { id: 'h', author: roles[3], role: 'event', text: x.handoff, action: x.viewRequest },
               {
                 id: 'a',
                 author: roles[2],
@@ -382,7 +488,6 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
               },
             ]}
           />
-          <HandoffLink text={x.handoff} action={x.viewRequest} />
         </Card>
         <Card label={sc.composerLabel} code="composer.tsx">
           <Composer
@@ -391,6 +496,7 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
             onRecipientChange={() => {}}
             featureLabel={mock.features[0]}
             targetLabel={mock.targetPath}
+            targetPrefix={t.product.destination}
             value=""
             onChange={() => {}}
             onSend={() => {}}
@@ -450,12 +556,16 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
               <MarkdownPreview source={markdownSample(x)} />
             </div>
           </Card>
-          <Card label="MermaidPreview (diagrama renderizado)" code="mermaid.render.tsx">
+          <Card label={sc.mermaidLabel} code="mermaid.render.tsx">
             <div className="grid gap-4 rounded-md border border-border bg-background p-6">
               <p className="text-center text-[11px] tracking-wider text-muted-foreground">
                 {x.mermaidTitle}
               </p>
-              <MermaidPreview source={diagram} errorLabel={x.inlineError} />
+              <MermaidPreview
+                source={diagram}
+                errorLabel={x.inlineError}
+                loadingLabel={sc.mermaidLoading}
+              />
               <p className="mx-auto max-w-md text-center text-[12px] text-muted-foreground">
                 {x.mermaidCaption}
               </p>
@@ -473,9 +583,27 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
         <div className="grid gap-4">
           <TerminalPreview
             tabs={[
-              { id: 'tests', label: x.tabTests, state: 'done', stateLabel: c.status.completed },
-              { id: 'dev', label: x.tabDev, state: 'running', stateLabel: c.status.running },
-              { id: 'zsh', label: x.tabShell, state: 'idle', stateLabel: '' },
+              {
+                id: 'tests',
+                label: x.tabTests,
+                state: 'done',
+                stateLabel: c.status.completed,
+                detail: 'npm test',
+              },
+              {
+                id: 'dev',
+                label: x.tabDev,
+                state: 'running',
+                stateLabel: c.status.running,
+                detail: 'npm run dev',
+              },
+              {
+                id: 'zsh',
+                label: x.tabShell,
+                state: 'idle',
+                stateLabel: '',
+                detail: mock.worktree,
+              },
             ]}
             activeId="dev"
             header={
@@ -496,61 +624,42 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
                 </div>
               </div>
             }
-            output={[]}
-            emptyOutputLabel={t.product.terminal}
+            output={['> forja@2.0.0 dev', '> electron-vite dev', '', t.product.terminal]}
             cwd={mock.worktree}
             cwdLabel={x.cwd}
             addLabel={x.newTerminal}
             collapseLabel={x.collapseTerminals}
             tabsLabel={t.gallery.terminals}
           />
-          <TerminalPreview
-            tabs={[
-              { id: 'hover', label: x.tabDev, state: 'idle', stateLabel: '', hovered: true },
-              { id: 'focus', label: x.tabTests, state: 'idle', stateLabel: '', focused: true },
-            ]}
-            activeId=""
-            output={[x.hoverSample]}
-            tabsLabel={x.hoverFocusLabel}
-          />
-          <TerminalPreview
-            tabs={[{ id: 'zsh', label: x.userTerminalLabel, state: 'idle', stateLabel: '' }]}
-            activeId="zsh"
-            output={[x.userPrompt]}
-            tabsLabel={x.userTerminalLabel}
-          />
-          <CollapsedToolbar
-            label={x.collapsedTerminals}
-            expandLabel={x.expandPanel}
-            items={[
-              {
-                id: 'tests',
-                label: x.shortTests,
-                detail: `${roles[2]} · npm test · ${mock.worktree}`,
-                state: 'done',
-                stateLabel: c.status.completed,
-              },
-              {
-                id: 'dev',
-                label: x.shortDev,
-                detail: `${roles[2]} · npm run dev · ${mock.worktree}`,
-                state: 'running',
-                stateLabel: c.status.running,
-              },
-              {
-                id: 'zsh',
-                label: x.shortShell,
-                detail: mock.worktree,
-                state: 'idle',
-                stateLabel: x.idle,
-              },
-            ]}
-          />
-          <p className="text-[12px] text-muted-foreground">{x.collapseNote}</p>
+          <Card label={sc.userTerminalLabel} code="user.terminal.tsx">
+            <TerminalPreview
+              tabs={[{ id: 'zsh', label: x.userTerminalLabel, state: 'idle', stateLabel: '' }]}
+              activeId="zsh"
+              output={[x.userPrompt]}
+              tabsLabel={x.userTerminalLabel}
+            />
+          </Card>
+          <Card label={sc.collapsedLabel} code="collapsed.toolbar.tsx">
+            <CollapsedToolbar
+              label={x.collapsedTerminals}
+              expandLabel={x.expandPanel}
+              detailLabels={detailLabels}
+              items={toolbarItems}
+            />
+            <div className="grid gap-1.5">
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                {sc.hoverDetails}
+              </span>
+              <div className="w-fit rounded-[3px] border border-border bg-popover p-2.5 shadow-md">
+                <ToolbarDetail item={toolbarItems[1]} labels={detailLabels} />
+              </div>
+            </div>
+            <p className="text-[12px] text-muted-foreground">{x.collapseNote}</p>
+          </Card>
         </div>
       </Section>
 
-      <Section id="gallery-notes" title={x.notesTitle} code="fidelity.rules.md">
+      <Section id="gallery-notes" title={`${w} 7: ${x.notesTitle}`} code="fidelity.rules.md">
         <ul className="grid gap-2 text-[13px] text-muted-foreground">
           {x.notes.map((note) => (
             <li key={note}>• {note}</li>
@@ -565,7 +674,7 @@ export function Styleguide({ locale }: { locale: Locale }) {
   const t = getDictionary(locale)
   const sc = gallerySectionCopy(locale)
   return (
-    <div className="mx-auto min-h-screen w-[1280px] max-w-full border-x border-[#2A2A2A] bg-[#0E0E0E] pb-24 text-[#E6E6E6]">
+    <div className="mx-auto min-h-screen w-[1280px] max-w-full border-x border-[#2A2A2A] bg-[#0E0E0E] text-[#E6E6E6]">
       <header className="flex h-16 items-center justify-between border-b border-[#2A2A2A] bg-[#121214] px-8">
         <div>
           <div className="flex items-center gap-3">
@@ -587,6 +696,10 @@ export function Styleguide({ locale }: { locale: Locale }) {
       <main className="space-y-12 p-8">
         <StyleguideSections locale={locale} />
       </main>
+      <footer className="flex items-center justify-between border-t border-[#2A2A2A] bg-[#121214] px-8 py-4 text-[11px] text-[#979797]">
+        <span>{sc.footerTitle}</span>
+        <span>{sc.footerMeta}</span>
+      </footer>
     </div>
   )
 }

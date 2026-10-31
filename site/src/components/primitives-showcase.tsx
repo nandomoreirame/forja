@@ -1,7 +1,6 @@
-import { Check, Settings } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import {
-  Badge,
   Button,
   Checkbox,
   Input,
@@ -13,9 +12,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  StatusBadge,
   Switch,
   Textarea,
-  statusTone,
   type UiState,
 } from '@/shared/ui'
 import { galleryCopy } from '../mocks/gallery'
@@ -50,6 +49,41 @@ function Card({
         ) : null}
       </div>
       {children}
+    </div>
+  )
+}
+
+function FieldLabel({
+  htmlFor,
+  label,
+  state,
+  tone = 'muted',
+}: {
+  htmlFor: string
+  label: string
+  state: string
+  tone?: 'muted' | 'accent' | 'danger' | 'disabled'
+}) {
+  const color = {
+    muted: 'text-muted-foreground',
+    accent: 'text-primary',
+    danger: 'text-destructive',
+    disabled: 'text-muted-foreground/40',
+  }[tone]
+  return (
+    <div className="flex items-center justify-between text-[11px]">
+      <Label
+        htmlFor={htmlFor}
+        className={`text-[11px] uppercase tracking-wider ${tone === 'accent' ? 'text-muted-foreground' : color}`}
+      >
+        {label}
+      </Label>
+      <span
+        aria-hidden="true"
+        className={`font-mono ${tone === 'muted' ? 'text-muted-foreground/60' : color}`}
+      >
+        {state}
+      </span>
     </div>
   )
 }
@@ -128,7 +162,7 @@ export function PrimitivesShowcase({ locale }: { locale: Locale }) {
               </Sample>
             </div>
           ))}
-          <div className="flex items-center gap-3">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
             <Button variant="outline" size="icon" aria-label={c.buttonLabels.secondary}>
               <Settings />
             </Button>
@@ -140,6 +174,24 @@ export function PrimitivesShowcase({ locale }: { locale: Locale }) {
             >
               <Settings />
             </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={c.buttonLabels.secondary}
+              className="border-ring ring-3 ring-ring/50"
+            >
+              <Settings />
+            </Button>
+            <Button variant="outline" size="icon" aria-label={c.buttonLabels.secondary} disabled>
+              <Settings />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label={c.buttonLabels.secondary}
+              loading
+              className="text-primary"
+            />
           </div>
         </div>
       </Card>
@@ -148,21 +200,11 @@ export function PrimitivesShowcase({ locale }: { locale: Locale }) {
         <Card label={s.inputStates} code="input.tsx">
           <div className="grid gap-3">
             <div className="grid gap-1.5">
-              <Label
-                htmlFor="g-model"
-                className="text-[11px] uppercase tracking-wider text-muted-foreground"
-              >
-                {c.model}
-              </Label>
+              <FieldLabel htmlFor="g-model" label={c.model} state={c.default} />
               <Input id="g-model" placeholder={c.modelPlaceholder} />
             </div>
             <div className="grid gap-1.5">
-              <Label
-                htmlFor="g-model-focus"
-                className="text-[11px] uppercase tracking-wider text-muted-foreground"
-              >
-                {c.model}
-              </Label>
+              <FieldLabel htmlFor="g-model-focus" label={c.model} state={c.focus} tone="accent" />
               <Input
                 id="g-model-focus"
                 defaultValue={c.modelValue}
@@ -170,21 +212,16 @@ export function PrimitivesShowcase({ locale }: { locale: Locale }) {
               />
             </div>
             <div className="grid gap-1.5">
-              <Label
+              <FieldLabel
                 htmlFor="g-model-disabled"
-                className="text-[11px] uppercase tracking-wider text-muted-foreground"
-              >
-                {c.model}
-              </Label>
+                label={c.model}
+                state={c.disabled}
+                tone="disabled"
+              />
               <Input id="g-model-disabled" disabled placeholder={c.modelPlaceholder} />
             </div>
             <div className="grid gap-1.5">
-              <Label
-                htmlFor="g-model-error"
-                className="text-[11px] uppercase tracking-wider text-primary"
-              >
-                {c.model}
-              </Label>
+              <FieldLabel htmlFor="g-model-error" label={c.model} state={c.error} tone="danger" />
               <Input
                 id="g-model-error"
                 aria-invalid="true"
@@ -267,38 +304,34 @@ export function PrimitivesShowcase({ locale }: { locale: Locale }) {
           </div>
         </Card>
 
-        <Card label={s.badgesKbd} code="badge.tsx">
-          <div className="flex flex-wrap gap-2">
+        <Card label={s.statusLabel} code="badge.tsx">
+          <span className="-mt-3 text-[10px] text-muted-foreground">{s.statusHint}</span>
+          <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
             {statusOrder.map((state) => (
-              <Badge
-                key={state}
-                variant="outline"
-                className={
-                  statusTone(state) === 'accent'
-                    ? 'gap-1.5 border-primary/60 text-primary'
-                    : statusTone(state) === 'danger'
-                      ? 'gap-1.5 border-destructive/50 text-destructive'
-                      : 'gap-1.5 text-muted-foreground'
-                }
-              >
-                {statusTone(state) === 'accent' ? (
-                  <Check className="size-3" aria-hidden="true" />
-                ) : null}
+              <StatusBadge key={state} state={state}>
                 {c.status[state]}
-              </Badge>
+              </StatusBadge>
             ))}
           </div>
-          <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
-            <span>{c.shortcuts}</span>
-            <KbdGroup>
-              <Kbd>Ctrl</Kbd>
-              <Kbd>Enter</Kbd>
-            </KbdGroup>
-            <KbdGroup>
-              <Kbd>Ctrl</Kbd>
-              <Kbd>Shift</Kbd>
-              <Kbd>P</Kbd>
-            </KbdGroup>
+          <div className="flex items-center justify-between border-t border-border pt-3 text-[11px] text-muted-foreground">
+            <span className="uppercase tracking-wider">{c.shortcuts}:</span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1">
+                {s.submit}:
+                <KbdGroup>
+                  <Kbd>Ctrl</Kbd>
+                  <Kbd>Enter</Kbd>
+                </KbdGroup>
+              </span>
+              <span className="flex items-center gap-1">
+                {s.commandBar}:
+                <KbdGroup>
+                  <Kbd>Ctrl</Kbd>
+                  <Kbd>Shift</Kbd>
+                  <Kbd>P</Kbd>
+                </KbdGroup>
+              </span>
+            </div>
           </div>
         </Card>
       </div>
