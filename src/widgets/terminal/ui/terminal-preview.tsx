@@ -29,6 +29,7 @@ export interface TerminalPreviewProps {
   onCollapse?: () => void
   onClose?: (id: string) => void
   closeLabel?: string
+  className?: string
 }
 
 const stateClass: Record<TerminalTab['state'], string> = {
@@ -53,10 +54,13 @@ export function TerminalPreview({
   onCollapse,
   onClose,
   closeLabel = 'Close',
+  className,
 }: TerminalPreviewProps) {
   return (
     <TooltipProvider delayDuration={300}>
-      <section className="overflow-hidden rounded-[3px] border border-border bg-card">
+      <section
+        className={cn('overflow-hidden rounded-[3px] border border-border bg-card', className)}
+      >
         <div
           role="tablist"
           aria-label={tabsLabel}

@@ -42,8 +42,9 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
       </div>
     ) : null
   return (
-    <section aria-label={a.terminalPanel} className="border-t border-border p-3">
+    <section aria-label={a.terminalPanel}>
       <TerminalPreview
+        className="rounded-none border-0"
         tabs={(feature?.terminals ?? []).map((terminal) => ({
           id: terminal.id,
           label: terminal.label,
