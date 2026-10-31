@@ -313,7 +313,7 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
         <div className="grid gap-4">
           <div className="overflow-hidden rounded-lg border border-border">
             <AppTopbar
-              brand="FORJA v2.0"
+              brand="FORJA"
               commandText="dev"
               settingsLabel={c.buttonLabels.secondary}
             />
