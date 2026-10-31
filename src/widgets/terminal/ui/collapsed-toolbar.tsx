@@ -55,6 +55,7 @@ export interface CollapsedToolbarProps {
   detailLabels: ToolbarDetailLabels
   onExpand?: (id?: string) => void
   className?: string
+  compact?: boolean
 }
 
 export function CollapsedToolbar({
@@ -64,18 +65,27 @@ export function CollapsedToolbar({
   detailLabels,
   onExpand,
   className = 'rounded-[3px] border',
+  compact = false,
 }: CollapsedToolbarProps) {
   return (
     <TooltipProvider>
       <div
         role="toolbar"
         aria-label={label}
-        className={`@container flex min-w-0 items-center gap-3 whitespace-nowrap border-border bg-secondary px-3 py-2 text-[12px] ${className}`}
+        className={
+          compact
+            ? `@container flex min-w-0 flex-1 items-center justify-end whitespace-nowrap text-[11px] ${className}`
+            : `@container flex min-w-0 items-center gap-3 whitespace-nowrap border-border bg-secondary px-3 py-2 text-[12px] ${className}`
+        }
       >
-        <span className="hidden shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground @4xl:inline">
-          {label}:
-        </span>
-        <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden @xl:gap-4">
+        {compact ? null : (
+          <span className="hidden shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground @4xl:inline">
+            {label}:
+          </span>
+        )}
+        <div
+          className={`flex min-w-0 items-center gap-2 overflow-hidden @xl:gap-4 flex-1 ${compact ? 'justify-end' : ''}`}
+        >
           {items.map((item) => (
             <Tooltip key={item.id}>
               <TooltipTrigger asChild>
@@ -108,21 +118,23 @@ export function CollapsedToolbar({
             </Tooltip>
           ))}
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="shrink-0 gap-1"
-              aria-label={expandLabel}
-              onClick={() => onExpand?.()}
-            >
-              <ChevronUp />
-              <span className="hidden @3xl:inline">{expandLabel}</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{expandLabel}</TooltipContent>
-        </Tooltip>
+        {compact ? null : (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0 gap-1"
+                aria-label={expandLabel}
+                onClick={() => onExpand?.()}
+              >
+                <ChevronUp />
+                <span className="hidden @3xl:inline">{expandLabel}</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{expandLabel}</TooltipContent>
+          </Tooltip>
+        )}
       </div>
     </TooltipProvider>
   )

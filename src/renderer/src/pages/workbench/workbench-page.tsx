@@ -88,9 +88,6 @@ function WorkbenchShell() {
         onForward={s.forward}
         canBack={s.historyIndex > 0}
         canForward={s.historyIndex < s.history.length - 1}
-        onTerminal={s.snapshot ? () => s.togglePanel('terminal') : undefined}
-        terminalOpen={s.panels.terminal}
-        terminalLabel={a.terminals}
         backLabel={a.back}
         forwardLabel={a.forward}
       />
@@ -127,11 +124,7 @@ function WorkbenchShell() {
               {s.view.kind === 'settings' ? a.settings : ''}
             </section>
           )}
-          {s.snapshot && s.panels.terminal ? (
-            <TerminalPanel feature={selectedFeature} />
-          ) : selectedFeature?.terminals.length ? (
-            <TerminalFooterToolbar feature={selectedFeature} />
-          ) : null}
+          {s.snapshot && s.panels.terminal ? <TerminalPanel feature={selectedFeature} /> : null}
         </main>
         {s.snapshot ? (
           s.panels.right ? (
@@ -168,7 +161,10 @@ function WorkbenchShell() {
           } else if (opener.current?.isConnected) opener.current.focus()
         }}
       />
-      <AppStatusbar items={[s.snapshot?.project.path ?? a.noProject, 'UTF-8']} />
+      <AppStatusbar
+        items={[s.snapshot?.project.path ?? a.noProject]}
+        end={s.snapshot ? <TerminalFooterToolbar feature={selectedFeature} /> : undefined}
+      />
     </div>
   )
 }

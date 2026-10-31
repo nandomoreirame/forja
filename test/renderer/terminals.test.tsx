@@ -44,3 +44,18 @@ it('keeps running state when collapsed, stops without losing output and follows 
     'No terminals for this feature.',
   )
 })
+
+it('keeps the terminal toggle and collapsed terminals in the status bar instead of the topbar', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  const footer = (await screen.findByText('~/dev', { selector: 'footer span' })).closest('footer')!
+  expect(within(footer).getByRole('button', { name: 'Toggle terminals' })).toBeInTheDocument()
+  expect(screen.getAllByRole('button', { name: 'Toggle terminals' })).toHaveLength(1)
+  expect(footer).not.toHaveTextContent('UTF-8')
+  const toolbar = within(footer).getByRole('toolbar', { name: 'Background terminals' })
+  fireEvent.click(within(toolbar).getByRole('button', { name: /Implementer · tests/ }))
+  expect(screen.getByRole('tab', { name: /Implementer · tests/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  expect(within(footer).queryByRole('toolbar')).toBeNull()
+})

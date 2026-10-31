@@ -362,7 +362,7 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
             </Card>
             <Card label={sc.statusbarLabel} code="statusbar.tsx">
               <div className="overflow-hidden rounded-[3px] border border-border">
-                <AppStatusbar items={[mock.targetPath, 'UTF-8']} />
+                <AppStatusbar items={[mock.targetPath]} />
               </div>
               <p className="text-[11px] text-muted-foreground">{sc.statusbarNote}</p>
             </Card>

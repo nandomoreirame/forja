@@ -107,14 +107,18 @@ export function AppTopbar({
 
 export interface AppStatusbarProps {
   items: string[]
+  end?: ReactNode
 }
 
-export function AppStatusbar({ items }: AppStatusbarProps) {
+export function AppStatusbar({ items, end }: AppStatusbarProps) {
   return (
-    <footer className="flex h-8 shrink-0 items-center justify-between gap-4 border-t border-border bg-secondary px-3 text-[11px] text-muted-foreground">
+    <footer className="flex h-8 shrink-0 items-center gap-4 border-t border-border bg-secondary px-3 text-[11px] text-muted-foreground">
       {items.map((item) => (
-        <span key={item}>{item}</span>
+        <span key={item} className="shrink-0">
+          {item}
+        </span>
       ))}
+      {end ? <div className="flex min-w-0 flex-1 items-center justify-end gap-2">{end}</div> : null}
     </footer>
   )
 }
