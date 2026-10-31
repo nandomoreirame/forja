@@ -13,11 +13,13 @@
 
 ## Dependencies
 
+- [document-viewer-screen](2026-10-31-document-viewer-screen.md)
 - [artifact-approval-gates](2026-10-30-artifact-approval-gates.md)
 - [feature-workbench-composer](2026-10-30-feature-workbench-composer.md)
 
 ## Execution Contract
 
+- Revised 2026-10-31: the mock screen slices (document-viewer-screen) create the renderer files listed as Modify here. Replace their `WorkbenchSource` mock data with core IPC and keep the screen behavior; do not create parallel pages. The seed tests below still apply to the extended files.
 - Planning only now. Later rpi-implement execution honors its current task-commit authorization and independent-review rules; do not interpret old deferred-commit text as overriding a current user instruction.
 - No branch switch, merge, push or destructive Git action is authorized by this plan-generation request.
 - Read the complete parent/child spec and current source before Task 1. New APIs below are implementation contracts, not claims that modules already exist.
@@ -165,7 +167,7 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Depends on:** Task 2
 **Files:**
 - Create: `src/renderer/src/features/document-reader/selection.ts`
-- Create: `src/renderer/src/features/document-reader/selection-popover.tsx`
+- Modify: `src/renderer/src/features/document-reader/selection-popover.tsx`
 - Create: `test/ui/selection.test.ts`
 - Test: `test/ui/selection.test.ts`
 
@@ -225,8 +227,8 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Requirement:** REQ-010, REQ-011, REQ-035, REQ-036, REQ-037, REQ-043, REQ-045
 **Depends on:** Task 3
 **Files:**
-- Create: `src/renderer/src/pages/document/index.ts`
-- Create: `src/renderer/src/pages/document/document-page.tsx`
+- Modify: `src/renderer/src/pages/document/index.ts`
+- Modify: `src/renderer/src/pages/document/document-page.tsx`
 - Create: `test/ui/document-page.test.tsx`
 - Test: `test/ui/document-page.test.tsx`
 

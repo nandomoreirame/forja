@@ -13,6 +13,12 @@ The CLIs are the execution layer; the opinionated RPI workflow and human control
 | Order | Plan | Tasks | Dependencies |
 | --- | --- | --- | --- |
 | 01 | [web-foundation-landing-styleguide](2026-10-30-web-foundation-landing-styleguide.md) | 8 | scaffold |
+| 01a | [project-home-screen](2026-10-31-project-home-screen.md) | 6 | web-foundation-landing-styleguide |
+| 01b | [command-palette](2026-10-31-command-palette.md) | 4 | project-home-screen |
+| 01c | [new-conversation-composer](2026-10-31-new-conversation-composer.md) | 4 | project-home-screen, command-palette |
+| 01d | [conversation-screen](2026-10-31-conversation-screen.md) | 6 | new-conversation-composer, command-palette |
+| 01e | [settings-screen](2026-10-31-settings-screen.md) | 4 | project-home-screen, conversation-screen |
+| 01f | [document-viewer-screen](2026-10-31-document-viewer-screen.md) | 4 | conversation-screen |
 | 02 | [cli-capability-contracts](2026-10-30-cli-capability-contracts.md) | 3 | scaffold |
 | 03 | [project-feature-state](2026-10-30-project-feature-state.md) | 4 | cli-capability-contracts |
 | 04 | [agent-settings-skills](2026-10-30-agent-settings-skills.md) | 4 | web-foundation-landing-styleguide, project-feature-state |
@@ -25,6 +31,17 @@ The CLIs are the execution layer; the opinionated RPI workflow and human control
 | 11 | [terminal-panel-footer](2026-10-30-terminal-panel-footer.md) | 5 | web-foundation-landing-styleguide, managed-command-runtime, feature-workbench-composer |
 | 12 | [guided-rpi-orchestration](2026-10-30-guided-rpi-orchestration.md) | 5 | artifact-approval-gates, feature-git-worktrees, cli-agent-sessions, feature-workbench-composer, document-review-reader, terminal-panel-footer |
 | 13 | [recovery-mvp-acceptance](2026-10-30-recovery-mvp-acceptance.md) | 4 | guided-rpi-orchestration, terminal-panel-footer, document-review-reader, web-foundation-landing-styleguide |
+
+## Mock Screens (2026-10-31)
+
+Slices 01a to 01f build frontend-only navigable screens in the desktop renderer on a swappable mock `WorkbenchSource`. Slices 04, 09, 10 and 11 later wire the same files to core. Implement them in two sequential batches:
+
+```text
+/rpi-implement project-home-screen command-palette new-conversation-composer --sequential
+/rpi-implement conversation-screen settings-screen document-viewer-screen --sequential
+```
+
+In Codex use `$rpi-implement` with the same arguments.
 
 ## First Delivery
 
@@ -41,7 +58,7 @@ This document generation does not start implementation. When explicitly requeste
 ```
 
 ```text
-/rpi-implement web-foundation-landing-styleguide cli-capability-contracts project-feature-state agent-settings-skills artifact-approval-gates feature-git-worktrees managed-command-runtime cli-agent-sessions feature-workbench-composer document-review-reader terminal-panel-footer guided-rpi-orchestration recovery-mvp-acceptance --agentic --sequential
+/rpi-implement web-foundation-landing-styleguide project-home-screen command-palette new-conversation-composer conversation-screen settings-screen document-viewer-screen cli-capability-contracts project-feature-state agent-settings-skills artifact-approval-gates feature-git-worktrees managed-command-runtime cli-agent-sessions feature-workbench-composer document-review-reader terminal-panel-footer guided-rpi-orchestration recovery-mvp-acceptance --agentic --sequential
 ```
 
 The ordered queue is the supported entry point, not an implementation call against the umbrella functional-mvp slug. Actual implementation uses the current commit authorization, TDD and independent review contracts. No push is implicit.

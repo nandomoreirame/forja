@@ -13,11 +13,13 @@
 
 ## Dependencies
 
+- [settings-screen](2026-10-31-settings-screen.md)
 - [web-foundation-landing-styleguide](2026-10-30-web-foundation-landing-styleguide.md)
 - [project-feature-state](2026-10-30-project-feature-state.md)
 
 ## Execution Contract
 
+- Revised 2026-10-31: the mock screen slices (settings-screen) create the renderer files listed as Modify here. Replace their `WorkbenchSource` mock data with core IPC and keep the screen behavior; do not create parallel pages. The seed tests below still apply to the extended files.
 - Planning only now. Later rpi-implement execution honors its current task-commit authorization and independent-review rules; do not interpret old deferred-commit text as overriding a current user instruction.
 - No branch switch, merge, push or destructive Git action is authorized by this plan-generation request.
 - Read the complete parent/child spec and current source before Task 1. New APIs below are implementation contracts, not claims that modules already exist.
@@ -250,9 +252,9 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Depends on:** Task 3
 **Files:**
 
-- Create: `src/renderer/src/pages/settings/index.ts`
-- Create: `src/renderer/src/pages/settings/settings-page.tsx`
-- Create: `src/renderer/src/features/agent-settings/model.ts`
+- Modify: `src/renderer/src/pages/settings/index.ts`
+- Modify: `src/renderer/src/pages/settings/settings-page.tsx`
+- Modify: `src/renderer/src/features/agent-settings/model.ts`
 - Create: `test/ui/settings.test.tsx`
 - Modify: `src/shared/contracts.ts`
 - Modify: `src/core/index.ts`

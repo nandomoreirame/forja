@@ -64,3 +64,22 @@ All requirements are approved and planned, not implemented. Task references belo
 | REQ-058 | [project-feature-state, Task 1](2026-10-30-project-feature-state.md), [feature-git-worktrees, Task 6](2026-10-30-feature-git-worktrees.md) |
 | REQ-059 | [agent-settings-skills, Task 4](2026-10-30-agent-settings-skills.md), [cli-agent-sessions, Task 8](2026-10-30-cli-agent-sessions.md) |
 | REQ-060 | [cli-agent-sessions, Task 8](2026-10-30-cli-agent-sessions.md) |
+| REQ-061 | [project-home-screen, Task 2](2026-10-31-project-home-screen.md), [project-home-screen, Task 3](2026-10-31-project-home-screen.md) |
+| REQ-062 | [project-home-screen, Task 1](2026-10-31-project-home-screen.md), [project-home-screen, Task 3](2026-10-31-project-home-screen.md), [project-home-screen, Task 4](2026-10-31-project-home-screen.md), [project-home-screen, Task 6](2026-10-31-project-home-screen.md) |
+| REQ-063 | [project-home-screen, Task 5](2026-10-31-project-home-screen.md), [project-home-screen, Task 6](2026-10-31-project-home-screen.md) |
+| REQ-064 | [command-palette, Task 1](2026-10-31-command-palette.md), [command-palette, Task 2](2026-10-31-command-palette.md), [command-palette, Task 3](2026-10-31-command-palette.md), [command-palette, Task 4](2026-10-31-command-palette.md) |
+| REQ-065 | [command-palette, Task 2](2026-10-31-command-palette.md), [command-palette, Task 3](2026-10-31-command-palette.md), [command-palette, Task 4](2026-10-31-command-palette.md) |
+| REQ-066 | [new-conversation-composer, Task 2](2026-10-31-new-conversation-composer.md), [new-conversation-composer, Task 3](2026-10-31-new-conversation-composer.md), [new-conversation-composer, Task 4](2026-10-31-new-conversation-composer.md) |
+| REQ-067 | [new-conversation-composer, Task 1](2026-10-31-new-conversation-composer.md), [new-conversation-composer, Task 2](2026-10-31-new-conversation-composer.md), [new-conversation-composer, Task 4](2026-10-31-new-conversation-composer.md) |
+| REQ-068 | [conversation-screen, Task 2](2026-10-31-conversation-screen.md), [conversation-screen, Task 3](2026-10-31-conversation-screen.md) |
+| REQ-069 | [conversation-screen, Task 1](2026-10-31-conversation-screen.md), [conversation-screen, Task 2](2026-10-31-conversation-screen.md), [conversation-screen, Task 6](2026-10-31-conversation-screen.md) |
+| REQ-070 | [conversation-screen, Task 5](2026-10-31-conversation-screen.md) |
+| REQ-071 | [conversation-screen, Task 3](2026-10-31-conversation-screen.md), [conversation-screen, Task 6](2026-10-31-conversation-screen.md) |
+| REQ-072 | [project-home-screen, Task 3](2026-10-31-project-home-screen.md), [project-home-screen, Task 4](2026-10-31-project-home-screen.md), [project-home-screen, Task 5](2026-10-31-project-home-screen.md), [conversation-screen, Task 5](2026-10-31-conversation-screen.md) |
+| REQ-073 | [new-conversation-composer, Task 2](2026-10-31-new-conversation-composer.md), [new-conversation-composer, Task 3](2026-10-31-new-conversation-composer.md) |
+| REQ-074 | [conversation-screen, Task 4](2026-10-31-conversation-screen.md) |
+| REQ-075 | [conversation-screen, Task 5](2026-10-31-conversation-screen.md), [conversation-screen, Task 6](2026-10-31-conversation-screen.md) |
+| REQ-076 | [settings-screen, Task 2](2026-10-31-settings-screen.md), [settings-screen, Task 3](2026-10-31-settings-screen.md), [settings-screen, Task 4](2026-10-31-settings-screen.md) |
+| REQ-077 | [settings-screen, Task 1](2026-10-31-settings-screen.md), [settings-screen, Task 3](2026-10-31-settings-screen.md), [settings-screen, Task 4](2026-10-31-settings-screen.md) |
+| REQ-078 | [document-viewer-screen, Task 1](2026-10-31-document-viewer-screen.md), [document-viewer-screen, Task 2](2026-10-31-document-viewer-screen.md), [document-viewer-screen, Task 4](2026-10-31-document-viewer-screen.md) |
+| REQ-079 | [document-viewer-screen, Task 3](2026-10-31-document-viewer-screen.md), [document-viewer-screen, Task 4](2026-10-31-document-viewer-screen.md) |

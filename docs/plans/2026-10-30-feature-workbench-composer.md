@@ -13,6 +13,10 @@
 
 ## Dependencies
 
+- [project-home-screen](2026-10-31-project-home-screen.md)
+- [command-palette](2026-10-31-command-palette.md)
+- [new-conversation-composer](2026-10-31-new-conversation-composer.md)
+- [conversation-screen](2026-10-31-conversation-screen.md)
 - [web-foundation-landing-styleguide](2026-10-30-web-foundation-landing-styleguide.md)
 - [project-feature-state](2026-10-30-project-feature-state.md)
 - [agent-settings-skills](2026-10-30-agent-settings-skills.md)
@@ -21,6 +25,7 @@
 
 ## Execution Contract
 
+- Revised 2026-10-31: the mock screen slices (project-home-screen, command-palette, new-conversation-composer, conversation-screen) create the renderer files listed as Modify here. Replace their `WorkbenchSource` mock data with core IPC and keep the screen behavior; do not create parallel pages. The seed tests below still apply to the extended files.
 - Planning only now. Later rpi-implement execution honors its current task-commit authorization and independent-review rules; do not interpret old deferred-commit text as overriding a current user instruction.
 - No branch switch, merge, push or destructive Git action is authorized by this plan-generation request.
 - Read the complete parent/child spec and current source before Task 1. New APIs below are implementation contracts, not claims that modules already exist.
@@ -42,7 +47,7 @@
 **Depends on:** none within this plan
 **Files:**
 
-- Create: `src/renderer/src/entities/feature/model/store.ts`
+- Modify: `src/renderer/src/entities/feature/model/store.ts`
 - Create: `test/ui/feature-context.test.ts`
 - Test: `test/ui/feature-context.test.ts`
 
@@ -106,11 +111,11 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Depends on:** Task 1
 **Files:**
 
-- Create: `src/renderer/src/pages/workbench/index.ts`
-- Create: `src/renderer/src/pages/workbench/workbench-page.tsx`
+- Modify: `src/renderer/src/pages/workbench/index.ts`
+- Modify: `src/renderer/src/pages/workbench/workbench-page.tsx`
 - Create: `src/renderer/src/features/feature-tabs/rename.tsx`
-- Create: `src/renderer/src/widgets/project-sidebar.tsx`
-- Create: `src/renderer/src/widgets/git-context.tsx`
+- Modify: `src/renderer/src/widgets/project-sidebar.tsx`
+- Modify: `src/renderer/src/widgets/git-context.tsx`
 - Create: `test/ui/workbench.test.tsx`
 - Modify: `src/renderer/src/app/App.tsx`
 - Modify: `src/renderer/src/app/styles.css`
@@ -176,8 +181,8 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Depends on:** Task 2
 **Files:**
 
-- Create: `src/renderer/src/features/composer/recipient.ts`
-- Create: `src/renderer/src/features/composer/controller.tsx`
+- Modify: `src/renderer/src/features/composer/recipient.ts`
+- Modify: `src/renderer/src/features/composer/controller.tsx`
 - Create: `test/ui/recipient.test.ts`
 - Test: `test/ui/recipient.test.ts`
 
@@ -241,8 +246,8 @@ Invoke `git-commit` only in the separately authorized implementation workflow af
 **Depends on:** Task 3
 **Files:**
 
-- Create: `src/renderer/src/features/conversation/history.tsx`
-- Create: `src/renderer/src/features/conversation/handoff-link.tsx`
+- Modify: `src/renderer/src/features/conversation/history.tsx`
+- Modify: `src/renderer/src/features/conversation/handoff-link.tsx`
 - Create: `src/renderer/src/features/approvals/request-card.tsx`
 - Create: `test/ui/conversation.test.tsx`
 - Test: `test/ui/conversation.test.tsx`
