@@ -55,6 +55,7 @@ export interface WorkbenchState {
   openTerminal(featureId: string, terminalId?: string): void
   addShell(featureId: string): void
   stopTerminal(featureId: string, terminalId: string): void
+  closeTerminal(featureId: string, terminalId: string): void
 }
 export function createWorkbenchStore(source: WorkbenchSource) {
   const replies = new Map<string, { cancel: () => void }>()
@@ -419,6 +420,23 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         }
         updateFeature(featureId, (item) => ({ ...item, terminals: [...item.terminals, terminal] }))
         get().selectTerminal(featureId, terminal.id)
+      },
+      closeTerminal(featureId, terminalId) {
+        const feature = get().snapshot?.features.find((f) => f.id === featureId)
+        const index = feature?.terminals.findIndex((terminal) => terminal.id === terminalId) ?? -1
+        if (!feature || index < 0) return
+        const target = feature.terminals[index]
+        if (target.kind === 'agent' && target.state === 'running') return
+        const remaining = feature.terminals.filter((terminal) => terminal.id !== terminalId)
+        const selected = get().terminalTabs[featureId] ?? feature.terminals[0]?.id
+        updateFeature(featureId, (item) => ({ ...item, terminals: remaining }))
+        const terminalTabs = { ...get().terminalTabs }
+        if (selected === terminalId) {
+          const next = remaining[Math.min(index, remaining.length - 1)]
+          if (next) terminalTabs[featureId] = next.id
+          else delete terminalTabs[featureId]
+        }
+        set({ terminalTabs })
       },
       stopTerminal(featureId, terminalId) {
         updateFeature(featureId, (item) => ({

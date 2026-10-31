@@ -13,7 +13,7 @@ export function TerminalFooterToolbar({ feature }: { feature?: FeatureSnapshot }
   const open = state.panels.terminal
   return (
     <>
-      {!open && feature?.terminals.length ? (
+      {feature?.terminals.length ? (
         <CollapsedToolbar
           compact
           className=""

@@ -1,4 +1,4 @@
-import { ChevronDown, Plus, SquareTerminal } from 'lucide-react'
+import { ChevronDown, Plus, SquareTerminal, X } from 'lucide-react'
 import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui'
 import { cn } from '@/shared/ui/utils'
 
@@ -10,6 +10,7 @@ export interface TerminalTab {
   hovered?: boolean
   focused?: boolean
   detail?: string
+  closable?: boolean
 }
 
 export interface TerminalPreviewProps {
@@ -26,6 +27,8 @@ export interface TerminalPreviewProps {
   cwdLabel?: string
   onAdd?: () => void
   onCollapse?: () => void
+  onClose?: (id: string) => void
+  closeLabel?: string
 }
 
 const stateClass: Record<TerminalTab['state'], string> = {
@@ -48,6 +51,8 @@ export function TerminalPreview({
   cwdLabel = 'Working directory',
   onAdd,
   onCollapse,
+  onClose,
+  closeLabel = 'Close',
 }: TerminalPreviewProps) {
   return (
     <TooltipProvider delayDuration={300}>
@@ -62,41 +67,71 @@ export function TerminalPreview({
               const active = tab.id === activeId
               const tip = [tab.label, tab.stateLabel, tab.detail].filter(Boolean).join(' · ')
               return (
-                <Tooltip key={tab.id}>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={active}
-                      onClick={() => onSelect?.(tab.id)}
-                      className={cn(
-                        '-mb-px flex h-7 min-w-0 items-center gap-2 whitespace-nowrap rounded-t-[2px] border-t border-r border-border px-2.5 text-[11px] first:border-l',
-                        active
-                          ? 'border-t-2 border-t-primary bg-background font-medium text-foreground'
-                          : 'bg-card text-muted-foreground hover:text-foreground',
-                        tab.hovered && !active && 'text-foreground',
-                        tab.focused && 'outline-none ring-1 ring-inset ring-ring',
-                      )}
-                    >
-                      <SquareTerminal aria-hidden="true" className="size-3.5 shrink-0" />
-                      <span className="flex items-center gap-1.5">
-                        {tab.state === 'running' ? (
-                          <span
-                            aria-hidden="true"
-                            className="size-1.5 animate-pulse rounded-full bg-primary"
-                          />
-                        ) : null}
-                        {tab.label}
-                      </span>
-                      {tab.stateLabel ? (
-                        <span className={cn('text-[10px]', stateClass[tab.state])}>
-                          {tab.stateLabel}
+                <div
+                  key={tab.id}
+                  role="presentation"
+                  className={cn(
+                    'group/tab -mb-px flex h-7 min-w-0 items-center whitespace-nowrap rounded-t-[2px] border-t border-r border-border text-[11px] first:border-l',
+                    active
+                      ? 'border-t-2 border-t-primary bg-background font-medium text-foreground'
+                      : 'bg-card text-muted-foreground hover:text-foreground',
+                    tab.hovered && !active && 'text-foreground',
+                  )}
+                >
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => onSelect?.(tab.id)}
+                        className={cn(
+                          'flex h-full min-w-0 items-center gap-2 px-2.5 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring',
+                          tab.focused && 'ring-1 ring-inset ring-ring',
+                          tab.closable && onClose && 'pr-1',
+                        )}
+                      >
+                        <SquareTerminal aria-hidden="true" className="size-3.5 shrink-0" />
+                        <span className="flex items-center gap-1.5">
+                          {tab.state === 'running' ? (
+                            <span
+                              aria-hidden="true"
+                              className="size-1.5 animate-pulse rounded-full bg-primary"
+                            />
+                          ) : null}
+                          {tab.label}
                         </span>
-                      ) : null}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">{tip}</TooltipContent>
-                </Tooltip>
+                        {tab.stateLabel ? (
+                          <span className={cn('text-[10px]', stateClass[tab.state])}>
+                            {tab.stateLabel}
+                          </span>
+                        ) : null}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">{tip}</TooltipContent>
+                  </Tooltip>
+                  {tab.closable && onClose ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          aria-label={`${closeLabel} ${tab.label}`}
+                          onClick={() => onClose(tab.id)}
+                          className={cn(
+                            'mr-1 size-5 opacity-0 group-hover/tab:opacity-100 focus-visible:opacity-100',
+                            active && 'opacity-100',
+                          )}
+                        >
+                          <X className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        {closeLabel} {tab.label}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : null}
+                </div>
               )
             })}
           </div>

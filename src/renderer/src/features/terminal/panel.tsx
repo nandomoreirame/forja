@@ -50,6 +50,7 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
           state: terminalTabState(terminal),
           stateLabel: terminalStateLabel(terminal, d),
           detail: terminal.command ?? terminal.cwd,
+          closable: !(terminal.kind === 'agent' && terminal.state === 'running'),
         }))}
         activeId={active?.id ?? ''}
         onSelect={(id) => feature && state.selectTerminal(feature.id, id)}
@@ -63,6 +64,8 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
         cwdLabel={a.workingDirectory}
         onAdd={feature ? () => state.addShell(feature.id) : undefined}
         onCollapse={() => state.setPanel('terminal', false)}
+        onClose={(id) => feature && state.closeTerminal(feature.id, id)}
+        closeLabel={a.close}
       />
     </section>
   )

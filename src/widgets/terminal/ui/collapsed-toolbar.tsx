@@ -92,7 +92,11 @@ export function CollapsedToolbar({
                 <button
                   type="button"
                   onClick={() => onExpand?.(item.id)}
-                  className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded px-1.5 py-0.5 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
+                  className={
+                    compact
+                      ? 'flex h-6 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[3px] px-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring'
+                      : 'flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded px-1.5 py-0.5 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring'
+                  }
                 >
                   <SquareTerminal className="size-3.5 text-muted-foreground" aria-hidden="true" />
                   <span className="sr-only @xl:not-sr-only">{item.label}</span>

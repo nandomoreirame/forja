@@ -57,5 +57,28 @@ it('keeps the terminal toggle and collapsed terminals in the status bar instead 
     'aria-selected',
     'true',
   )
-  expect(within(footer).queryByRole('toolbar')).toBeNull()
+  expect(within(footer).getByRole('toolbar')).toBeInTheDocument()
+})
+
+it('keeps footer terminals while the panel is open and closes only idle or finished terminals', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  const footer = screen.getByText('~/dev', { selector: 'footer span' }).closest('footer')!
+  const toolbar = within(footer).getByRole('toolbar', { name: 'Background terminals' })
+  fireEvent.click(within(toolbar).getByRole('button', { name: /Implementer · tests/ }))
+  expect(screen.getByRole('tab', { name: /Implementer · tests/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  expect(screen.queryByRole('button', { name: 'Close Implementer · dev' })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close zsh' }))
+  expect(screen.queryByRole('tab', { name: /zsh/ })).toBeNull()
+  expect(screen.getByRole('tab', { name: /Implementer · tests/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Close Implementer · tests' }))
+  expect(screen.queryByRole('tab', { name: /Implementer · tests/ })).toBeNull()
+  expect(within(toolbar).queryByRole('button', { name: /Implementer · tests/ })).toBeNull()
 })
