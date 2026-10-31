@@ -404,7 +404,7 @@ export function Landing({ locale }: { locale: Locale }) {
   const otherLocale: Locale = locale === 'en' ? 'pt-br' : 'en'
 
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground">
+    <div className="min-h-screen bg-[#131314] font-sans text-foreground">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-10 focus:bg-card focus:px-3 focus:py-2"
@@ -412,7 +412,7 @@ export function Landing({ locale }: { locale: Locale }) {
         {t.nav.skip}
       </a>
 
-      <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-[#131314]/95 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-[1120px] items-center justify-between px-6">
           <a href="/" className="flex items-center gap-2.5 text-foreground hover:text-primary">
             <AnvilMark />
