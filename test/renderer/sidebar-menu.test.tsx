@@ -13,6 +13,8 @@ it('opens Memory, Connectors and Settings from the workspace menu', async () => 
     'Connectors',
     'Settings',
   ])
+  fireEvent.click(within(menu).getByRole('button', { name: 'Usage and limits' }))
+  expect(await screen.findByRole('heading', { name: 'Usage and limits' })).toBeInTheDocument()
   fireEvent.click(within(menu).getByRole('button', { name: 'Connectors' }))
   expect(await screen.findByRole('tab', { name: 'Connectors' })).toHaveAttribute('aria-selected', 'true')
   fireEvent.click(within(menu).getByRole('button', { name: 'Memory' }))

@@ -123,7 +123,7 @@ export function UsageLimits({
           {action(refreshLabel, <RefreshCw />, onRefresh)}
           {action(closeLabel, <X />, onClose)}
         </header>
-        <Tabs value={current?.tool} onValueChange={(value) => setSelected(value as ToolId)}>
+        <Tabs value={current?.tool ?? ''} onValueChange={(value) => setSelected(value as ToolId)}>
           <TabsList
             aria-label={title}
             className="flex h-auto w-full flex-wrap gap-1 bg-transparent p-0"

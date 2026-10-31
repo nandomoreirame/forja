@@ -97,6 +97,21 @@ export interface ConnectorSnapshot {
   status: 'connected' | 'available' | 'offline'
   enabled: boolean
 }
+export interface UsageWindow {
+  id: string
+  label: string
+  usedPercent: number
+  pacePercent: number
+  resetLabel: string
+  paceLabel: string
+}
+export interface ToolUsage {
+  tool: ToolId
+  plan?: string
+  account?: string
+  updatedLabel?: string
+  windows: readonly UsageWindow[]
+}
 export type ReplyEvent =
   | { type: 'start' }
   | { type: 'text'; chunk: string }
@@ -125,4 +140,5 @@ export interface WorkbenchSource {
   saveSettings(settings: SettingsSnapshot): Promise<void>
   loadMemories(): Promise<MemoryRecord[]>
   loadConnectors(): Promise<ConnectorSnapshot[]>
+  loadUsage(): Promise<ToolUsage[]>
 }

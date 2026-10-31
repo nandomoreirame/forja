@@ -115,5 +115,14 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
         { id: 'filesystem', name: 'Filesystem', transport: 'stdio', status: 'available' as const, enabled: false },
       ]
     },
+    async loadUsage() {
+      return [
+        { tool: 'claude' as const, plan: 'Pro', account: 'dev@example.com', updatedLabel: 'updated now', windows: [{ id: 'session', label: 'Session (5h)', usedPercent: 35, pacePercent: 30, resetLabel: 'resets in 3h16m', paceLabel: 'on pace' }, { id: 'week', label: 'Weekly', usedPercent: 11, pacePercent: 20, resetLabel: 'resets in 6d5h', paceLabel: 'on pace' }] },
+        { tool: 'codex' as const, plan: 'Plus', account: 'dev@example.com', updatedLabel: 'updated 2 min ago', windows: [{ id: 'session', label: 'Session', usedPercent: 22, pacePercent: 25, resetLabel: 'resets in 2h', paceLabel: 'on pace' }] },
+        { tool: 'opencode' as const, windows: [] },
+        { tool: 'agy' as const, windows: [{ id: 'week', label: 'Weekly', usedPercent: 18, pacePercent: 20, resetLabel: 'resets in 5d', paceLabel: 'on pace' }] },
+        { tool: 'grok' as const, windows: [{ id: 'week', label: 'Weekly', usedPercent: 42, pacePercent: 35, resetLabel: 'resets in 4d', paceLabel: 'on pace' }] },
+      ]
+    },
   }
 }
