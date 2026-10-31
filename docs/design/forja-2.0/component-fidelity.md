@@ -42,6 +42,11 @@ Os componentes genéricos ficam na camada compartilhada. Composições específi
 | Terminal | Ícone em cada aba e botão + à direita estão aprovados pelo usuário. Recolher preserva os processos e mostra a toolbar no footer. |
 | Estado disabled | Usar para indisponibilidade real. O bloqueio temporário de cliques do scaffold não é o comportamento final. |
 | Animação | Respeitar movimento reduzido. Loading representa execução real ou estado mockado explícito, sem porcentagens inventadas. |
+| Select aberto na galeria | A galeria demonstra o Select fechado e interativo. O menu aberto da prancha não precisa ficar fixo na página, porque a galeria serve para demonstrar os componentes, não para reproduzir cada estado da prancha (decisão do usuário em 31/10/2026). |
+| Composer | Mantém as funções da segunda versão (seletor de agente, contexto, destino, atalho e enviar) com o acabamento da primeira versão do Stitch (tela "Projeto aberto"): superfície `#121214`, `rounded-xl`, sombra, borda que acende no foco, divisórias suaves e atalho como chip `kbd` (decisão do usuário em 31/10/2026). |
+| Tooltip | Escuro como o do VS Code: fundo `popover`, borda `border`, texto claro, sombra e sem seta. Todo botão só de ícone e toda aba de terminal tem tooltip; a aba mostra rótulo, estado e detalhe (decisão do usuário em 31/10/2026). |
+| Seta do Select | Uma única seta, a do próprio `SelectTrigger`, que gira quando o menu abre. Não adicionar outro chevron dentro do trigger (decisão do usuário em 31/10/2026). |
+| Status e badges | Estados usam o `StatusBadge` compartilhado, com uma só anatomia para os 8 estados. Badges usam raio de 2px, nunca pílula. |
 | Arquivos sugeridos na prancha | Rótulos como primitives.tsx ou base-tokens.json são sugestões visuais do Stitch. Os caminhos reais serão definidos nos planos. |
 
 ## Critérios para concluir a galeria
