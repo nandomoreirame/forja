@@ -42,10 +42,7 @@ test('keyboard focus reaches the skip link first and the locale switch keeps the
   await page.goto('/')
   await page.keyboard.press('Tab')
   await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused()
-  await page
-    .getByRole('navigation', { name: 'Primary' })
-    .getByRole('link', { name: 'Português (Brasil)' })
-    .click()
+  await page.getByRole('link', { name: 'Português (Brasil)' }).click()
   await expect(page).toHaveURL(/\/pt-br$/)
   await expect(page.locator('html')).toHaveAttribute('lang', 'pt-BR')
 })
