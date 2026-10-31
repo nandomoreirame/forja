@@ -57,4 +57,6 @@ it('keeps screens independent from mock modules', () => {
     }
   }
   visit(root)
+  visit('src/renderer/src/widgets')
+  visit('src/renderer/src/features')
 })

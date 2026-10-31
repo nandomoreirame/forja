@@ -3,7 +3,7 @@ import { expect, it, vi } from 'vitest'
 import { useShortcuts } from '../../src/renderer/src/shared/lib/shortcuts'
 import { detectLocale } from '../../src/renderer/src/shared/lib/locale'
 function Harness({ run }: { run: () => void }) {
-  useShortcuts({ 'ctrl+n': run, 'ctrl+shift+p': run })
+  useShortcuts({ 'ctrl+n': run, 'ctrl+r': run, 'ctrl+shift+p': run })
   return <input aria-label="Prompt" />
 }
 it('detects the supported system languages', () => {
@@ -28,4 +28,30 @@ it('ignores editable targets except the palette shortcut and removes its listene
   unmount()
   fireEvent.keyDown(window, { key: 'n', ctrlKey: true })
   expect(run).toHaveBeenCalledTimes(2)
+})
+
+it('keeps one keyboard subscription and uses the latest actions after rerender', () => {
+  const add = vi.spyOn(window, 'addEventListener')
+  const first = vi.fn(),
+    second = vi.fn()
+  const { rerender } = render(<Harness run={first} />)
+  rerender(<Harness run={second} />)
+  expect(add.mock.calls.filter(([name]) => name === 'keydown')).toHaveLength(1)
+  fireEvent.keyDown(window, { key: 'n', ctrlKey: true })
+  expect(second).toHaveBeenCalledOnce()
+  expect(first).not.toHaveBeenCalled()
+  add.mockRestore()
+})
+it('prevents browser reload inside a prompt without stealing other edit shortcuts', () => {
+  const run = vi.fn()
+  render(<Harness run={run} />)
+  const event = new KeyboardEvent('keydown', {
+    key: 'r',
+    ctrlKey: true,
+    cancelable: true,
+    bubbles: true,
+  })
+  screen.getByRole('textbox').dispatchEvent(event)
+  expect(event.defaultPrevented).toBe(true)
+  expect(run).not.toHaveBeenCalled()
 })
