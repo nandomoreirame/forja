@@ -241,35 +241,6 @@ export function PrimitivesShowcase({ locale }: { locale: Locale }) {
                 </Select>
               </div>
             </div>
-            <div className="grid gap-1.5">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                {s.openDemo}
-              </span>
-              <div
-                role="listbox"
-                aria-label={c.selectLabel}
-                className="grid gap-0.5 rounded-md border border-border bg-popover p-1 text-[13px] shadow-md"
-              >
-                {roles.map((role) => {
-                  const selected = role === c.selectValue
-                  return (
-                    <div
-                      key={role}
-                      role="option"
-                      aria-selected={selected}
-                      className={
-                        selected
-                          ? 'flex h-8 items-center justify-between rounded-sm bg-primary/15 px-2.5 text-primary'
-                          : 'flex h-8 items-center rounded-sm px-2.5 text-foreground/80 hover:bg-muted hover:text-foreground'
-                      }
-                    >
-                      {role}
-                      {selected ? <Check className="size-3.5" aria-hidden="true" /> : null}
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
           </div>
         </Card>
       </div>
