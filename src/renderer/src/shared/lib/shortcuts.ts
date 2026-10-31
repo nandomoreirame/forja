@@ -20,10 +20,7 @@ export function useShortcuts(map: Record<string, () => void>) {
         target instanceof HTMLElement &&
         (target.isContentEditable ||
           !!target.closest('input,textarea,select,[contenteditable="true"]'))
-      if (editable && key !== 'ctrl+shift+p') {
-        if (key === 'ctrl+r' && actions.current[key]) event.preventDefault()
-        return
-      }
+      if (editable && !['ctrl+shift+p', 'ctrl+r', 'ctrl+o', 'ctrl+,'].includes(key)) return
       if (!event.metaKey && actions.current[key]) {
         event.preventDefault()
         actions.current[key]()

@@ -1,5 +1,7 @@
 export const ptBr = {
   app: {
+    searchProjects: 'Buscar projetos recentes',
+    pickerUnavailable: 'Use o aplicativo desktop para selecionar uma pasta neste navegador.',
     features: 'Features',
     conversation: 'Conversa',
     you: 'Você',
@@ -54,7 +56,7 @@ export const ptBr = {
     send: 'Enviar',
     shortcutHint: 'Pressione Ctrl+Enter para enviar',
     commandBar: 'Barra de comandos',
-    searchCommands: 'Buscar projetos e comandos',
+    searchCommands: 'Buscar comandos',
     emptyCommands: 'Nenhum resultado encontrado.',
     commands: 'Comandos',
     openFolder: 'Abrir pasta…',

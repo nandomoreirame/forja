@@ -46,8 +46,12 @@ function WorkbenchShell() {
     'ctrl+n': () => {
       if (s.snapshot) s.startCompose()
     },
-    'ctrl+o': () => s.openPalette('recent'),
+    'ctrl+o': () => void s.openDirectory(),
     'ctrl+r': () => s.openPalette('recent'),
+    'ctrl+,': () => {
+      s.closePalette()
+      s.navigate({ kind: 'settings' })
+    },
     'ctrl+shift+p': () => s.openPalette('all'),
     'alt+arrowleft': s.back,
     'alt+arrowright': s.forward,
@@ -57,6 +61,7 @@ function WorkbenchShell() {
       focusComposer.current = true
       s.startCompose()
     }
+    if (id === 'open-project') void s.openDirectory()
     if (id === 'recent-projects') s.openPalette('recent')
     if (id === 'settings') s.navigate({ kind: 'settings' })
     if (id === 'toggle-terminals' && s.snapshot) s.togglePanel('terminal')
@@ -98,7 +103,7 @@ function WorkbenchShell() {
           {s.loading ? <p role="status">{a.loading}</p> : null}
           {s.error ? (
             <div role="alert">
-              {a.error}
+              {s.error === 'Directory picker unavailable' ? a.pickerUnavailable : a.error}
               <button type="button" onClick={() => void s.retryLoad()}>
                 {a.retry}
               </button>

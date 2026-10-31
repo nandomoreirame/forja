@@ -50,7 +50,7 @@ it('only closes when selecting the current project', () => {
   expect(close).toHaveBeenCalledWith(false)
   expect(select).not.toHaveBeenCalled()
 })
-it('offers localized commands and a disabled folder picker, and shows no matches', () => {
+it('offers only localized commands and opens the folder picker, and shows no matches', () => {
   const command = vi.fn()
   render(
     <CommandPalette
@@ -64,10 +64,12 @@ it('offers localized commands and a disabled folder picker, and shows no matches
       onCommand={command}
     />,
   )
-  expect(screen.getByRole('option', { name: /Abrir pasta/ })).toHaveAttribute(
-    'aria-disabled',
-    'true',
-  )
+  expect(screen.queryByRole('option', { name: /acme-api/ })).toBeNull()
+  expect(screen.getByRole('option', { name: /Projetos recentes/ })).toHaveTextContent('Ctrl+R')
+  expect(screen.getByRole('option', { name: /Configurações/ })).toHaveTextContent('Ctrl+,')
+  expect(document.querySelector('[data-slot=command-input-wrapper] svg')).toBeNull()
+  fireEvent.click(screen.getByRole('option', { name: /Abrir projeto/ }))
+  expect(command).toHaveBeenCalledWith('open-project')
   fireEvent.click(screen.getByRole('option', { name: /Nova conversa/ }))
   expect(command).toHaveBeenCalledWith('new-conversation')
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zzzzzz' } })

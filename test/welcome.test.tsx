@@ -1,13 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { App } from '../src/renderer/src/app/App'
-it('starts without a project and only shows sidebars after Open project selection', async () => {
+it('starts without a project and opens a selected recent project', async () => {
   render(<App locale="en" />)
   expect(await screen.findByRole('heading', { name: 'FORJA' })).toBeInTheDocument()
   expect(screen.queryAllByRole('complementary')).toHaveLength(0)
   expect(screen.getByRole('contentinfo')).toHaveTextContent('No project')
   expect(screen.queryByRole('button', { name: /New conversation/ })).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: /Open project/ }))
+  fireEvent.keyDown(window, { key: 'r', ctrlKey: true })
   fireEvent.click(await screen.findByRole('option', { name: /acme-api/ }))
   expect(await screen.findByRole('complementary', { name: 'acme-api' })).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
@@ -26,5 +26,18 @@ it('prevents reload when opening recent projects', async () => {
   const event = new KeyboardEvent('keydown', { key: 'r', ctrlKey: true, cancelable: true })
   act(() => window.dispatchEvent(event))
   expect(event.defaultPrevented).toBe(true)
-  expect(screen.getByRole('dialog', { name: 'Command bar' })).toBeInTheDocument()
+  expect(screen.getByRole('dialog', { name: 'Recent projects' })).toBeInTheDocument()
+})
+
+it('uses the same horizontal brand with and without a project', async () => {
+  render(<App locale="en" />)
+  const heading = screen.getByRole('heading', { name: 'FORJA' })
+  const initialBrand = heading.parentElement!
+  expect(initialBrand).toHaveTextContent('v2.0')
+  expect(initialBrand.querySelector('svg')).toHaveClass('size-6')
+  const markup = initialBrand.outerHTML
+  fireEvent.keyDown(window, { key: 'r', ctrlKey: true })
+  fireEvent.click(await screen.findByRole('option', { name: /acme-api/ }))
+  await screen.findByRole('complementary', { name: 'acme-api' })
+  expect(screen.getByRole('heading', { name: 'FORJA' }).parentElement!.outerHTML).toBe(markup)
 })

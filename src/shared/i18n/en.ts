@@ -1,5 +1,7 @@
 export const en = {
   app: {
+    searchProjects: 'Search recent projects',
+    pickerUnavailable: 'Use the desktop app to select a folder in this browser.',
     features: 'Features',
     conversation: 'Conversation',
     you: 'You',
@@ -54,7 +56,7 @@ export const en = {
     send: 'Send',
     shortcutHint: 'Press Ctrl+Enter to send',
     commandBar: 'Command bar',
-    searchCommands: 'Search projects and commands',
+    searchCommands: 'Search commands',
     emptyCommands: 'No results found.',
     commands: 'Commands',
     openFolder: 'Open folder…',

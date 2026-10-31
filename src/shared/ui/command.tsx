@@ -5,7 +5,7 @@ import { Command as CommandPrimitive } from 'cmdk'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './dialog'
 import { cn } from '@/shared/ui/utils'
 
-import { SearchIcon, CheckIcon } from 'lucide-react'
+import { CheckIcon } from 'lucide-react'
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
@@ -28,7 +28,7 @@ function CommandInput({
     <div data-slot="command-input-wrapper" className="p-1 pb-0">
       <div
         data-slot="input-group"
-        className="flex h-8 items-center gap-2 rounded-lg border border-input/30 bg-input/30 pl-2"
+        className="flex h-8 items-center gap-2 rounded-lg border border-input/30 bg-input/30 px-2"
       >
         <CommandPrimitive.Input
           data-slot="command-input"
@@ -38,7 +38,6 @@ function CommandInput({
           )}
           {...props}
         />
-        <SearchIcon className="size-4 shrink-0 opacity-50" />
       </div>
     </div>
   )

@@ -42,7 +42,7 @@ it('keeps one keyboard subscription and uses the latest actions after rerender',
   expect(first).not.toHaveBeenCalled()
   add.mockRestore()
 })
-it('prevents browser reload inside a prompt without stealing other edit shortcuts', () => {
+it('opens recent history inside a prompt without reloading', () => {
   const run = vi.fn()
   render(<Harness run={run} />)
   const event = new KeyboardEvent('keydown', {
@@ -53,5 +53,5 @@ it('prevents browser reload inside a prompt without stealing other edit shortcut
   })
   screen.getByRole('textbox').dispatchEvent(event)
   expect(event.defaultPrevented).toBe(true)
-  expect(run).not.toHaveBeenCalled()
+  expect(run).toHaveBeenCalledOnce()
 })
