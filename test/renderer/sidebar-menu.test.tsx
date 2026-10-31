@@ -8,13 +8,10 @@ it('opens Memory, Connectors and Settings from the workspace menu', async () => 
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
   const menu = within(sidebar).getByRole('navigation', { name: 'Workspace' })
   expect(within(menu).getAllByRole('button').map((button) => button.textContent)).toEqual([
-    'Usage and limits',
     'Memory',
     'Connectors',
     'Settings',
   ])
-  fireEvent.click(within(menu).getByRole('button', { name: 'Usage and limits' }))
-  expect(await screen.findByRole('heading', { name: 'Usage and limits' })).toBeInTheDocument()
   fireEvent.click(within(menu).getByRole('button', { name: 'Connectors' }))
   expect(await screen.findByRole('tab', { name: 'Connectors' })).toHaveAttribute('aria-selected', 'true')
   fireEvent.click(within(menu).getByRole('button', { name: 'Memory' }))

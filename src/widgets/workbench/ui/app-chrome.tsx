@@ -12,6 +12,7 @@ export interface AppTopbarProps {
   brand: string
   /** Project switcher shown next to the brand. */
   project?: ReactNode
+  usage?: ReactNode
   commandText: string
   onBack?: () => void
   onForward?: () => void
@@ -27,6 +28,7 @@ export interface AppTopbarProps {
 export function AppTopbar({
   brand,
   project,
+  usage,
   commandText,
   onBack,
   onForward,
@@ -92,7 +94,8 @@ export function AppTopbar({
             </kbd>
           </button>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {usage}
           {onTerminal
             ? icon(
                 terminalLabel,

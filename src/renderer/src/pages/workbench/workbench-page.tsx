@@ -28,6 +28,7 @@ import { GitContext } from '@/renderer/src/widgets/git-context'
 import { ProjectSwitcher } from '@/renderer/src/widgets/project-switcher'
 import { IconButton } from '@/renderer/src/shared/ui/icon-button'
 import { TerminalFooterToolbar, TerminalPanel } from '@/renderer/src/features/terminal'
+import { UsagePopover } from '@/renderer/src/features/usage/usage-popover'
 const mainLayoutKey = 'react-resizable-panels:forja-main:content:terminal'
 
 const collapsedTerminal = (value: string) => {
@@ -142,7 +143,8 @@ function WorkbenchShell() {
     >
       <AppTopbar
         brand="FORJA"
-        project={s.snapshot ? <ProjectSwitcher /> : undefined}
+          project={s.snapshot ? <ProjectSwitcher /> : undefined}
+          usage={<UsagePopover source={s.source} compact label={s.source.locale === 'pt-br' ? 'Uso' : 'Usage'} unavailableLabel={s.source.locale === 'pt-br' ? 'Uso indisponível' : 'Usage unavailable'} />}
         commandText={s.snapshot?.project.name ?? 'Forja'}
         onCommand={() => s.openPalette('all')}
         onBack={s.back}

@@ -15,7 +15,6 @@ import { StatusBadge, type UiState } from '@/shared/ui'
 import { SidebarRow } from '@/widgets/workbench'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import { IconButton } from '@/renderer/src/shared/ui/icon-button'
-import { UsagePopover } from '@/renderer/src/features/usage/usage-popover'
 const icons = {
   research: Search,
   planner: ClipboardList,
@@ -135,7 +134,6 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       </div>
       <nav aria-label={locale === 'pt-br' ? 'Espaço de trabalho' : 'Workspace'} className="shrink-0 border-t border-border p-2">
         <div className="space-y-0.5">
-          <UsagePopover source={state.source} label={locale === 'pt-br' ? 'Uso e limites' : 'Usage and limits'} unavailableLabel={locale === 'pt-br' ? 'Uso indisponível para esta ferramenta' : 'Usage unavailable for this tool'} />
           <WorkspaceButton icon={<Brain />} label="Memory" onClick={() => state.openSettings({ tab: 'memory' })} />
           <WorkspaceButton icon={<Plug />} label="Connectors" onClick={() => state.openSettings({ tab: 'connectors' })} />
           <WorkspaceButton icon={<Settings />} label={a.settings} onClick={() => state.openSettings({ tab: 'agents' })} />
