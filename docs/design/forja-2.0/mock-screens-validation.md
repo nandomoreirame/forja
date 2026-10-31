@@ -18,3 +18,9 @@ Foram abertas e comparadas capturas lado a lado de topbar, lateral, contexto, ro
 A comparação automática do início registrou `layout_diff=0.4115`, `diff_ratio=0.0049`, extensão horizontal da referência `[442, 920]` e da implementação `[444, 830]`. A diferença no extremo direito vem principalmente do atalho curto Ctrl+O no lugar da sequência Ctrl+K/Ctrl+O e dos textos localizados. Os números são indicadores de comparação; a conferência por bloco e as diferenças acima descrevem o aceite técnico, sem alegar igualdade de pixels.
 
 A validação técnica não substitui o aceite visual do usuário nem a revisão independente do código. Nenhuma integração real de CLI, Git, arquivos ou terminal foi exercitada por esses mocks.
+
+## Fechamento técnico
+
+As correções das duas rodadas anteriores foram reinspecionadas pelo agy. A rodada final retornou sem achados abertos nos três planos. O Electron também foi exercitado em modo headless, com diretório temporário de configuração e janela ajustada para 1280 × 1024: Ctrl+N abriu o composer e focou o prompt. A primeira tentativa usou a dimensão mínima imposta pela tela headless; o teste foi repetido com o tamanho explícito da janela.
+
+Resultado final: 83 testes unitários, 7 testes de navegador, typecheck, lint, formatação, build Electron e build/prerender do site passaram. A revisão independente e a validação visual técnica estão registradas; não houve push, publicação ou empacotamento de release.

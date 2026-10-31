@@ -19,7 +19,7 @@ Installed coding CLIs are execution tools within that workflow. The current repo
 
 Progress includes specification and planning as well as implementation: **SPEC 10% + PLAN 10% + validated implementation tasks 80%** per feature.
 
-**Overall MVP:** `████████░░░░░░░░░░░░` **39%**. All 19 specs are approved and all 19 plans are ready. Implementation has **22/93 tasks** done: the landing/styleguide and mock slices 01a to 01c are implemented and validated (independent review pending), with **0/19 slices delivered**.
+**Overall MVP:** `████████░░░░░░░░░░░░` **39%**. All 19 specs are approved and all 19 plans are ready. Implementation has **22/93 tasks** done: the landing/styleguide and mock slices 01a to 01c are implemented and validated (01a to 01c also independently reviewed; web foundation review pending), with **3/19 slices implemented, validated and reviewed**.
 
 | Order | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                          | Implementation (80%) | Progress                        |
 | ----- | ----------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------- | ------------------------------- |

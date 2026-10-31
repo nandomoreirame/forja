@@ -9,7 +9,7 @@
 **Order:** 01a of the mock screens (after 01, before 02) (frontend mock screens, implementation batch 1)
 **Total Tasks:** 6
 **Estimated Complexity:** medium
-**Status:** Spec approved 2026-10-31; planned; not implemented.
+**Status:** Implemented, validated and independently reviewed by agy on 2026-10-31. See STATE.md for task commits and adaptations.
 
 ## Dependencies
 
@@ -22,6 +22,10 @@
 - Mock timers are injected; tests use `vi.useFakeTimers()` and never wait on real time.
 - Visual acceptance: compare each block with the referenced Stitch screen using the stitch-fidelity skill against `npm run dev:web` (ask before starting a dev server). Recorded exceptions win over the Stitch image.
 - Seed snippets are contract tests. Expand them to the listed checks; do not hardcode test-only results.
+
+## Startup correction (user decision, 2026-10-31)
+
+The app starts without a project or sidebars. Open project opens mock selection; the shell is loaded only after selection. This supersedes the initial acme-api startup assumption in the original steps below.
 
 ## Acceptance
 

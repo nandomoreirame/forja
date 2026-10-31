@@ -8,11 +8,11 @@ Updated: 2026-10-31.
 
 ## Current Status
 
-The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The implementation queue contains **19 approved specs and plans, 93 tasks, and 79 requirements**. Implementation of this queue has started: **0/19 slices delivered; the web foundation and mock slices 01a to 01c are implemented (22/93 tasks overall) and validated, with independent review pending**.
+The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The implementation queue contains **19 approved specs and plans, 93 tasks, and 79 requirements**. Implementation of this queue has started: **3/19 slices implemented, validated and independently reviewed; web foundation is also implemented and validated, with its review pending (22/93 tasks overall)**.
 
 The existing Electron welcome-screen scaffold is already implemented. It is the starting point, not evidence that the planned RPI workflow, shared shadcn components or CLI integrations are complete.
 
-Combined documentation and implementation progress is **39%**: an approved SPEC contributes 10%, a ready PLAN contributes 10%, and validated implementation tasks contribute the remaining 80% per feature. The task counts below track implementation only; no slice is delivered yet.
+Combined documentation and implementation progress is **39%**: an approved SPEC contributes 10%, a ready PLAN contributes 10%, and validated implementation tasks contribute the remaining 80% per feature. The task counts below track implementation only; web foundation review and user visual acceptance remain separate.
 
 ## Execution Order
 
@@ -23,9 +23,9 @@ The order below is the recommended sequential queue. Dependencies are explicit i
 | Order | Spec                                                                                      | Plan                                                                              | Tasks completed | Spec / plan      | Implementation | Validation / independent review |
 | ----- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------- | ---------------- | -------------- | ------------------------------- |
 | 01    | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Implementation plan](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8             | Approved / ready | Implemented    | Passed / pending                |
-| 01a   | [project-home-screen](docs/specs/project-home-screen/SPEC.md)                             | [Implementation plan](docs/plans/2026-10-31-project-home-screen.md)               | 6/6             | Approved / ready | Implemented    | Passed / pending                |
-| 01b   | [command-palette](docs/specs/command-palette/SPEC.md)                                     | [Implementation plan](docs/plans/2026-10-31-command-palette.md)                   | 4/4             | Approved / ready | Implemented    | Passed / pending                |
-| 01c   | [new-conversation-composer](docs/specs/new-conversation-composer/SPEC.md)                 | [Implementation plan](docs/plans/2026-10-31-new-conversation-composer.md)         | 4/4             | Approved / ready | Implemented    | Passed / pending                |
+| 01a   | [project-home-screen](docs/specs/project-home-screen/SPEC.md)                             | [Implementation plan](docs/plans/2026-10-31-project-home-screen.md)               | 6/6             | Approved / ready | Implemented    | Passed / passed                 |
+| 01b   | [command-palette](docs/specs/command-palette/SPEC.md)                                     | [Implementation plan](docs/plans/2026-10-31-command-palette.md)                   | 4/4             | Approved / ready | Implemented    | Passed / passed                 |
+| 01c   | [new-conversation-composer](docs/specs/new-conversation-composer/SPEC.md)                 | [Implementation plan](docs/plans/2026-10-31-new-conversation-composer.md)         | 4/4             | Approved / ready | Implemented    | Passed / passed                 |
 | 01d   | [conversation-screen](docs/specs/conversation-screen/SPEC.md)                             | [Implementation plan](docs/plans/2026-10-31-conversation-screen.md)               | 0/6             | Approved / ready | Planned        | Not run / not started           |
 | 01e   | [settings-screen](docs/specs/settings-screen/SPEC.md)                                     | [Implementation plan](docs/plans/2026-10-31-settings-screen.md)                   | 0/4             | Approved / ready | Planned        | Not run / not started           |
 | 01f   | [document-viewer-screen](docs/specs/document-viewer-screen/SPEC.md)                       | [Implementation plan](docs/plans/2026-10-31-document-viewer-screen.md)            | 0/4             | Approved / ready | Planned        | Not run / not started           |

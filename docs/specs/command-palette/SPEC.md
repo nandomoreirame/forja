@@ -81,5 +81,5 @@ Unit and RTL tests in `test/renderer/` with jsdom and fake timers for scripted r
 
 | ID | Description | Priority | Status |
 | --- | --- | --- | --- |
-| REQ-064 | Command bar | P1 | Approved 2026-10-31; not implemented |
-| REQ-065 | Recent projects in command bar | P1 | Approved 2026-10-31; not implemented |
+| REQ-064 | Command bar | P1 | Implemented and validated; independently reviewed 2026-10-31 |
+| REQ-065 | Recent projects in command bar | P1 | Implemented and validated; independently reviewed 2026-10-31 |

@@ -89,7 +89,7 @@ Unit and RTL tests in `test/renderer/` with jsdom and fake timers for scripted r
 
 | ID | Description | Priority | Status |
 | --- | --- | --- | --- |
-| REQ-061 | Swappable mock source | P1 | Approved 2026-10-31; not implemented |
-| REQ-062 | Workbench shell | P1 | Approved 2026-10-31; not implemented |
-| REQ-063 | Project home | P1 | Approved 2026-10-31; not implemented |
-| REQ-072 | Shell navigation and panels | P1 | Approved 2026-10-31; not implemented |
+| REQ-061 | Swappable mock source | P1 | Implemented and validated; independently reviewed 2026-10-31 |
+| REQ-062 | Workbench shell | P1 | Implemented and validated; independently reviewed 2026-10-31 |
+| REQ-063 | Project home | P1 | Implemented and validated; independently reviewed 2026-10-31 |
+| REQ-072 | Shell navigation and panels | P1 | Implemented and validated; independently reviewed 2026-10-31 |

@@ -19,7 +19,7 @@ As CLIs de programação instaladas são ferramentas de execução desse fluxo. 
 
 O progresso inclui a documentação e a implementação: **SPEC 10% + PLAN 10% + tarefas de implementação validadas 80%** por feature.
 
-**MVP completo:** `████████░░░░░░░░░░░░` **39%**. As 19 specs estão aprovadas e os 19 planos estão prontos. A implementação tem **22/93 tarefas** concluídas: a landing, o styleguide e as telas mockadas 01a a 01c estão implementados e validados (revisão independente pendente), com **0/19 entregas concluídas**.
+**MVP completo:** `████████░░░░░░░░░░░░` **39%**. As 19 specs estão aprovadas e os 19 planos estão prontos. A implementação tem **22/93 tarefas** concluídas: a landing, o styleguide e as telas mockadas 01a a 01c estão implementados e validados (01a a 01c também revisadas de forma independente; revisão da base web pendente), com **3/19 entregas implementadas, validadas e revisadas**.
 
 | Ordem | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                           | Implementação (80%) | Progresso                       |
 | ----- | ----------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------- | ------------------------------- |

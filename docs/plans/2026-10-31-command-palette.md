@@ -9,7 +9,7 @@
 **Order:** 01b of the mock screens (frontend mock screens, implementation batch 1)
 **Total Tasks:** 4
 **Estimated Complexity:** medium
-**Status:** Spec approved 2026-10-31; planned; not implemented.
+**Status:** Implemented, validated and independently reviewed by agy on 2026-10-31. See STATE.md for task commits and adaptations.
 
 ## Dependencies
 
