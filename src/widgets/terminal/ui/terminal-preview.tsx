@@ -98,6 +98,7 @@ export function TerminalPreview({
                         type="button"
                         role="tab"
                         aria-selected={active}
+                        onMouseDown={(event) => event.preventDefault()}
                         onClick={() => onSelect?.(tab.id)}
                         className={cn(
                           'flex h-full min-w-0 items-center gap-2 px-2.5 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring',

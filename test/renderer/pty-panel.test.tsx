@@ -7,6 +7,7 @@ import { resetPtyRuntime } from '../../src/renderer/src/features/terminal/pty-ru
 const xterm = vi.hoisted(() => ({
   written: [] as string[],
   input: undefined as undefined | ((d: string) => void),
+  pending: [] as Array<() => void>,
 }))
 vi.mock('@xterm/xterm', () => ({
   Terminal: class {
@@ -16,8 +17,9 @@ vi.mock('@xterm/xterm', () => ({
     open() {}
     focus() {}
     dispose() {}
-    write(data: string) {
+    write(data: string, done?: () => void) {
       xterm.written.push(data)
+      if (done) xterm.pending.push(done)
     }
     onData(listener: (data: string) => void) {
       xterm.input = listener
@@ -59,6 +61,7 @@ const api = {
 beforeEach(() => {
   vi.clearAllMocks()
   xterm.written = []
+  xterm.pending = []
   resetPtyRuntime()
   Object.assign(window, { forja: { selectDirectory: vi.fn(), terminal: api } })
   globalThis.ResizeObserver ??= class {
@@ -91,4 +94,20 @@ it('marks the shell tab finished when the process exits', async () => {
   await waitFor(() => expect(api.create).toHaveBeenCalled())
   act(() => emitExit({ id: 'pty-1', exitCode: 0 }))
   expect(screen.getByRole('tab', { name: /zsh/ })).toHaveTextContent('Completed')
+})
+
+it('does not send the terminal replies produced while replaying a tab back to the shell', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
+  await waitFor(() => expect(api.create).toHaveBeenCalled())
+  act(() => emitData({ id: 'pty-1', data: '\x1b[c$ ' }))
+  fireEvent.click(screen.getByRole('tab', { name: /Implementer · dev/ }))
+  fireEvent.click(screen.getByRole('tab', { name: /zsh/ }))
+  await waitFor(() => expect(xterm.pending.length).toBeGreaterThan(0))
+  act(() => xterm.input?.('\x1b[?1;2c'))
+  expect(api.write).not.toHaveBeenCalled()
+  act(() => xterm.pending.splice(0).forEach((done) => done()))
+  act(() => xterm.input?.('ls\r'))
+  expect(api.write).toHaveBeenCalledWith('pty-1', 'ls\r')
 })

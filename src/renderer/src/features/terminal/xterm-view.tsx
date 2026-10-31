@@ -4,6 +4,14 @@ import { FitAddon } from '@xterm/addon-fit'
 import '@xterm/xterm/css/xterm.css'
 import type { PtySessions } from './pty-sessions'
 
+// Mirrors the user's VS Code terminal: a Nerd Font first so prompt glyphs render.
+export const terminalFont = {
+  fontFamily:
+    "'FiraCode Nerd Font', 'JetBrainsMono Nerd Font', 'FiraMono Nerd Font Propo', 'Symbols Nerd Font Mono', 'JetBrains Mono', ui-monospace, monospace",
+  fontSize: 12,
+  lineHeight: 1.4,
+}
+
 const theme = {
   background: '#0e0e0e',
   foreground: '#e4e4e7',
@@ -30,9 +38,7 @@ export function XtermView({
     const node = host.current
     if (!node) return
     const terminal = new Terminal({
-      fontFamily: '"JetBrains Mono", ui-monospace, monospace',
-      fontSize: 12,
-      lineHeight: 1.25,
+      ...terminalFont,
       cursorBlink: true,
       scrollback: 5000,
       theme,
@@ -48,17 +54,30 @@ export function XtermView({
       }
     }
     refit()
-    const input = terminal.onData((data) => sessions.write(terminalId, data))
+    // Replaying the transcript makes xterm answer old queries (device attributes,
+    // cursor reports); those answers must not reach the live shell as input.
+    let replaying = 0
+    const input = terminal.onData((data) => {
+      if (!replaying) sessions.write(terminalId, data)
+    })
     const resize = terminal.onResize(({ cols, rows }) => sessions.resize(terminalId, cols, rows))
     void sessions.attach(
       terminalId,
       { featureId, cwd, cols: terminal.cols, rows: terminal.rows },
-      (data) => terminal.write(data),
+      (data, replay) => {
+        if (!replay) return terminal.write(data)
+        replaying += 1
+        terminal.write(data, () => {
+          replaying -= 1
+        })
+      },
     )
     const observer = new ResizeObserver(refit)
     observer.observe(node)
-    terminal.focus()
+    // Focus after the click that selected this tab finishes, like VS Code does.
+    const focusFrame = requestAnimationFrame(() => terminal.focus())
     return () => {
+      cancelAnimationFrame(focusFrame)
       observer.disconnect()
       input.dispose()
       resize.dispose()

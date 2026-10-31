@@ -7,7 +7,7 @@ interface Session {
   failed?: boolean
   exited?: boolean
   buffer: string
-  view?: (data: string) => void
+  view?: (data: string, replay: boolean) => void
 }
 
 const defaultMaxBuffer = 256 * 1024
@@ -32,7 +32,7 @@ export function createPtySessions(
     const session = terminalId ? sessions.get(terminalId) : undefined
     if (!session) return
     session.buffer = (session.buffer + data).slice(-maxBuffer)
-    session.view?.(data)
+    session.view?.(data, false)
   })
   api.onExit(({ id, exitCode }) => {
     const terminalId = byPty.get(id)
@@ -47,7 +47,7 @@ export function createPtySessions(
     async attach(
       terminalId: string,
       request: { featureId: string; cwd: string; cols: number; rows: number },
-      write: (data: string) => void,
+      write: (data: string, replay: boolean) => void,
     ): Promise<boolean> {
       let session = sessions.get(terminalId)
       if (!session) {
@@ -69,7 +69,7 @@ export function createPtySessions(
           })
       }
       session.view = write
-      if (session.buffer) write(session.buffer)
+      if (session.buffer) write(session.buffer, true)
       return (await session.starting) ?? false
     },
     detach(terminalId: string) {
