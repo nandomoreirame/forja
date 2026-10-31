@@ -6,7 +6,7 @@ Um ambiente de desenvolvimento com agentes de IA, opinativo sobre o fluxo RPI, d
 
 ![Tela inicial do Forja com barra de comandos, atalhos de projeto e status da pasta aberta](docs/images/welcome.png)
 
-**Scaffold inicial:** a tela de boas-vindas é uma prévia estática. As integrações com IA ainda não foram implementadas.
+**Prévia de interface:** a seleção de projetos, o shell, a paleta de comandos e o compositor de conversa usam mocks locais. As integrações com IA ainda não foram implementadas.
 
 ## Por que existe
 
@@ -19,14 +19,14 @@ As CLIs de programação instaladas são ferramentas de execução desse fluxo. 
 
 O progresso inclui a documentação e a implementação: **SPEC 10% + PLAN 10% + tarefas de implementação validadas 80%** por feature.
 
-**MVP completo:** `█████░░░░░░░░░░░░░░░` **27%**. As 19 specs estão aprovadas e os 19 planos estão prontos. A implementação tem **8/93 tarefas** concluídas: a primeira entrega (landing e styleguide) está totalmente implementada e validada (revisão independente pendente), com **0/19 entregas concluídas**.
+**MVP completo:** `████████░░░░░░░░░░░░` **39%**. As 19 specs estão aprovadas e os 19 planos estão prontos. A implementação tem **22/93 tarefas** concluídas: a landing, o styleguide e as telas mockadas 01a a 01c estão implementados e validados (revisão independente pendente), com **0/19 entregas concluídas**.
 
 | Ordem | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                           | Implementação (80%) | Progresso                       |
 | ----- | ----------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------- | ------------------------------- |
 | 01    | `web-foundation-landing-styleguide` | [Aprovada](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Pronto](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8                 | `████████████████████` **100%** |
-| 01a   | `project-home-screen`               | [Aprovada](docs/specs/project-home-screen/SPEC.md)               | [Pronto](docs/plans/2026-10-31-project-home-screen.md)               | 0/6                 | `████░░░░░░░░░░░░░░░░` **20%**  |
-| 01b   | `command-palette`                   | [Aprovada](docs/specs/command-palette/SPEC.md)                   | [Pronto](docs/plans/2026-10-31-command-palette.md)                   | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
-| 01c   | `new-conversation-composer`         | [Aprovada](docs/specs/new-conversation-composer/SPEC.md)         | [Pronto](docs/plans/2026-10-31-new-conversation-composer.md)         | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 01a   | `project-home-screen`               | [Aprovada](docs/specs/project-home-screen/SPEC.md)               | [Pronto](docs/plans/2026-10-31-project-home-screen.md)               | 6/6                 | `████████████████████` **100%** |
+| 01b   | `command-palette`                   | [Aprovada](docs/specs/command-palette/SPEC.md)                   | [Pronto](docs/plans/2026-10-31-command-palette.md)                   | 4/4                 | `████████████████████` **100%** |
+| 01c   | `new-conversation-composer`         | [Aprovada](docs/specs/new-conversation-composer/SPEC.md)         | [Pronto](docs/plans/2026-10-31-new-conversation-composer.md)         | 4/4                 | `████████████████████` **100%** |
 | 01d   | `conversation-screen`               | [Aprovada](docs/specs/conversation-screen/SPEC.md)               | [Pronto](docs/plans/2026-10-31-conversation-screen.md)               | 0/6                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 01e   | `settings-screen`                   | [Aprovada](docs/specs/settings-screen/SPEC.md)                   | [Pronto](docs/plans/2026-10-31-settings-screen.md)                   | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 01f   | `document-viewer-screen`            | [Aprovada](docs/specs/document-viewer-screen/SPEC.md)            | [Pronto](docs/plans/2026-10-31-document-viewer-screen.md)            | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
@@ -70,8 +70,8 @@ A janela Electron abre na tela inicial. Esta prévia não exige conta de provedo
 
 ## Uso
 
-A tela inicial mostra ações de projeto, barra de comandos, configurações e status da pasta aberta.
-Os controles têm feedback ao passar o mouse e cursor de mão, mas cliques e atalhos ainda não executam ações.
+O aplicativo inicia sem projeto aberto. Clique em Abrir projeto e selecione `acme-api` para ver a home ou `dev` para abrir duas features mockadas.
+Use Ctrl+Shift+P para comandos, Ctrl+R para projetos recentes e Nova conversa para abrir o compositor com foco. Enviar um prompt cria uma aba de feature mockada. O conteúdo das configurações, dos documentos e as respostas dos agentes pertencem às próximas entregas.
 
 Para conferir somente a interface no navegador:
 
@@ -93,7 +93,7 @@ Abra a URL local informada pelo Vite. Essa prévia não inicia o núcleo nem cri
 | Contratos           | Validação Zod na fronteira de mensagens do núcleo          |
 | Testes              | Vitest e Testing Library                                   |
 
-Radix e Zustand estão instalados para as próximas telas; a tela inicial estática ainda não os utiliza.
+O renderer usa Radix nos controles acessíveis e Zustand para navegação, features e painéis em memória.
 Os adaptadores de IA definem somente interfaces TypeScript. Execução de sessões, conexões MCP, aprovações, armazenamento de credenciais, backups e atualizações automáticas ainda não foram implementados.
 O renderer ainda não se comunica com o contrato de saúde do núcleo.
 

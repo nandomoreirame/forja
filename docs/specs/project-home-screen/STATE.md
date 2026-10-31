@@ -32,3 +32,19 @@ Adaptations: browser tests use Playwright rather than the plan's erroneous Vites
 Independent review requested through agy. The helper initially failed because color.ui=always produced a colored patch; retried with a process-local color.ui=false override. Review remains pending until its actual result is recorded. No push or deployment.
 
 Queue: command-palette (4 tasks), then new-conversation-composer (4 tasks), sequential and agentic. Server startup and all development checks authorized by the user.
+
+## Final batch updates
+
+User correction: the app now starts without an open project or sidebars. Open project opens mock project selection; only selection loads the shell. This supersedes the saved plan's acme-api startup assumption. Updated implementation is covered by welcome and Chromium tests.
+
+The first independent agy review is recorded in docs/reviews/project-home-screen.md. Corrections include layered base CSS, sidebar state labels/focus, contextual topbar controls, locale/shortcut tests and load-failure coverage. Findings remain review-owned until reinspection. Final batch checks: 77 unit tests, 6 browser tests, typecheck, lint, formatting and Electron build pass; coverage lines 92.58%, branches 85.37%, functions 88.01%, statements 91.94%. Additional fixes: b10975a, 897cbd0, f002093. Second independent batch review requested through agy.
+
+## Latest validation
+
+79 unit tests and 7 Chromium tests pass. Typecheck, lint, repository formatting check and Electron build pass. Coverage: statements 92.02%, branches 85.49%, functions 88.06%, lines 92.67%. Ctrl+R preserves a focused prompt draft without reloading; the keyboard listener remains stable and receives current actions. Independent review status remains separate.
+
+## Independent review follow-up
+
+The second agy batch review is recorded in docs/reviews. The implementer added RED/GREEN regression coverage and corrections for repeated composer activation, agent selection within an open feature, valid tab/panel relationships, retrying the failed source operation, and preserving the history cursor when closing inactive tabs. Later palette/shortcut corrections were already present after that review snapshot. Review-owned findings remain open until the next independent inspection.
+
+Latest checks: 83 unit tests, 7 Chromium E2E tests, typecheck, lint, scoped/repository formatting and Electron build pass. Coverage: statements 91.82%, branches 85.20%, functions 88.40%, lines 92.73%. No push or deployment.

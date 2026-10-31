@@ -6,7 +6,7 @@ An opinionated AI agent development environment built around the RPI workflow, f
 
 ![Forja welcome screen with a command bar, project shortcuts, and workspace status](docs/images/welcome.png)
 
-**Early scaffold:** the welcome screen is a static preview. AI integrations are not implemented yet.
+**Frontend preview:** project selection, the workbench shell, command palette and conversation composer use local mock data. AI integrations are not implemented yet.
 
 ## Why
 
@@ -19,14 +19,14 @@ Installed coding CLIs are execution tools within that workflow. The current repo
 
 Progress includes specification and planning as well as implementation: **SPEC 10% + PLAN 10% + validated implementation tasks 80%** per feature.
 
-**Overall MVP:** `█████░░░░░░░░░░░░░░░` **27%**. All 19 specs are approved and all 19 plans are ready. Implementation has **8/93 tasks** done: the first slice (landing and styleguide) is fully implemented and validated (independent review pending), with **0/19 slices delivered**.
+**Overall MVP:** `████████░░░░░░░░░░░░` **39%**. All 19 specs are approved and all 19 plans are ready. Implementation has **22/93 tasks** done: the landing/styleguide and mock slices 01a to 01c are implemented and validated (independent review pending), with **0/19 slices delivered**.
 
 | Order | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                          | Implementation (80%) | Progress                        |
 | ----- | ----------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------- | ------------------------------- |
 | 01    | `web-foundation-landing-styleguide` | [Approved](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Ready](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8                  | `████████████████████` **100%** |
-| 01a   | `project-home-screen`               | [Approved](docs/specs/project-home-screen/SPEC.md)               | [Ready](docs/plans/2026-10-31-project-home-screen.md)               | 0/6                  | `████░░░░░░░░░░░░░░░░` **20%**  |
-| 01b   | `command-palette`                   | [Approved](docs/specs/command-palette/SPEC.md)                   | [Ready](docs/plans/2026-10-31-command-palette.md)                   | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
-| 01c   | `new-conversation-composer`         | [Approved](docs/specs/new-conversation-composer/SPEC.md)         | [Ready](docs/plans/2026-10-31-new-conversation-composer.md)         | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 01a   | `project-home-screen`               | [Approved](docs/specs/project-home-screen/SPEC.md)               | [Ready](docs/plans/2026-10-31-project-home-screen.md)               | 6/6                  | `████████████████████` **100%** |
+| 01b   | `command-palette`                   | [Approved](docs/specs/command-palette/SPEC.md)                   | [Ready](docs/plans/2026-10-31-command-palette.md)                   | 4/4                  | `████████████████████` **100%** |
+| 01c   | `new-conversation-composer`         | [Approved](docs/specs/new-conversation-composer/SPEC.md)         | [Ready](docs/plans/2026-10-31-new-conversation-composer.md)         | 4/4                  | `████████████████████` **100%** |
 | 01d   | `conversation-screen`               | [Approved](docs/specs/conversation-screen/SPEC.md)               | [Ready](docs/plans/2026-10-31-conversation-screen.md)               | 0/6                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 01e   | `settings-screen`                   | [Approved](docs/specs/settings-screen/SPEC.md)                   | [Ready](docs/plans/2026-10-31-settings-screen.md)                   | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 01f   | `document-viewer-screen`            | [Approved](docs/specs/document-viewer-screen/SPEC.md)            | [Ready](docs/plans/2026-10-31-document-viewer-screen.md)            | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
@@ -70,8 +70,8 @@ The Electron window opens on the welcome screen. No provider account or API key 
 
 ## Usage
 
-The welcome screen displays project actions, a command bar, settings, and workspace status.
-Controls have hover feedback and pointer cursors, but clicks and keyboard shortcuts do not perform actions yet.
+The app starts without an open project. Choose Open project and select `acme-api` for the project home or `dev` for two mock features.
+Use Ctrl+Shift+P for commands, Ctrl+R for recent projects, and New conversation to open the focused composer. Sending a prompt creates a mock feature tab. Settings, document contents and assistant replies belong to later slices.
 
 To preview only the interface in a browser:
 
@@ -93,7 +93,7 @@ Open the local URL printed by Vite. This preview does not start the core process
 | Contracts            | Zod validation at the core message boundary                 |
 | Tests                | Vitest and Testing Library                                  |
 
-Radix and Zustand are installed for future screens; the static welcome screen does not use them.
+The renderer uses Radix for accessible controls and Zustand for in-memory project navigation, features and panels.
 AI adapters currently define TypeScript interfaces only. Session execution, MCP connections, approvals, credential storage, backups, and automatic updates remain unimplemented.
 The renderer does not yet communicate with the core health endpoint.
 
