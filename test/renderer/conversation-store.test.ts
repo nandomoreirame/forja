@@ -198,3 +198,14 @@ it('seeds the first feature with markdown, code, a command run, a log and a scre
     expect(parts.some((p) => p.kind === 'command' && p.exitCode !== 0)).toBe(true)
   }
 })
+it('never reuses a shell id or name after closing a shell', async () => {
+  const store = await setup()
+  store.getState().addShell('feature-1')
+  store.getState().addShell('feature-1')
+  const first = store.getState().snapshot!.features[0].terminals.at(-2)!
+  store.getState().closeTerminal('feature-1', first.id)
+  store.getState().addShell('feature-1')
+  const shells = store.getState().snapshot!.features[0].terminals.filter((t) => t.kind === 'shell')
+  expect(new Set(shells.map((t) => t.id)).size).toBe(shells.length)
+  expect(new Set(shells.map((t) => t.label)).size).toBe(shells.length)
+})

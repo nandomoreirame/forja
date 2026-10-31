@@ -417,11 +417,17 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       addShell(featureId) {
         const feature = get().snapshot?.features.find((f) => f.id === featureId)
         if (!feature) return
-        const shells = feature.terminals.filter((terminal) => terminal.kind === 'shell').length
+        const next =
+          Math.max(
+            0,
+            ...feature.terminals.map((terminal) =>
+              terminal.kind === 'shell' ? Number(terminal.id.split('-shell-')[1]) || 0 : 0,
+            ),
+          ) + 1
         const cwd = feature.worktree ?? feature.destination
         const terminal = {
-          id: `${featureId}-shell-${shells + 1}`,
-          label: shells ? `zsh ${shells + 1}` : 'zsh',
+          id: `${featureId}-shell-${next}`,
+          label: next > 1 ? `zsh ${next}` : 'zsh',
           state: 'draft' as const,
           kind: 'shell' as const,
           cwd,
