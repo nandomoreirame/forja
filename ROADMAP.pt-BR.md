@@ -45,9 +45,16 @@ O primeiro plano entrega um site Vite separado em `site/`, com landing e stylegu
 | Landing    | `/`           | `/pt-br`             |
 | Styleguide | `/styleguide` | `/pt-br/styleguide`  |
 
-Essas rotas estão planejadas e ainda não estão disponíveis. O site e o Electron utilizarão os mesmos componentes shadcn/ui customizados e tokens Tailwind. Os previews terão mocks determinísticos no idioma da página, incluindo agentes, mensagens, estados e botões. Comandos, caminhos e nomes das ferramentas permanecem intactos. A galeria funciona sem efeitos de Electron, IA, Git ou terminais nativos.
+Essas rotas estão implementadas e publicadas; veja o status da landing abaixo. O site e o Electron utilizarão os mesmos componentes shadcn/ui customizados e tokens Tailwind. Os previews terão mocks determinísticos no idioma da página, incluindo agentes, mensagens, estados e botões. Comandos, caminhos e nomes das ferramentas permanecem intactos. A galeria funciona sem efeitos de Electron, IA, Git ou terminais nativos.
 
-A implementação deve seguir as [referências visuais e exceções aprovadas](docs/design/forja-2.0/component-fidelity.md). A publicação do site não está incluída.
+A implementação deve seguir as [referências visuais e exceções aprovadas](docs/design/forja-2.0/component-fidelity.md). A publicação está disponível com `npm run deploy:site`.
+
+### Status da landing page
+
+- **Publicada:** https://forjav2.web.app com `/`, `/pt-br`, `/styleguide` e `/pt-br/styleguide`. Para publicar, use `npm run deploy:site` (projeto Firebase `ascode-e08f8`, site de hosting `forjav2`).
+- **Implementado:** landing bilíngue com as sete seções aprovadas, troca de idioma na mesma página, recortes aprovados do Stitch no hero e nas funcionalidades planejadas, cabeçalho e rodapé para mobile, favicon; styleguide bilíngue com os componentes compartilhados.
+- **Testes:** 30 testes unitários e 6 testes E2E com Playwright passam. A baseline visual do styleguide ainda precisa de revisão humana.
+- **Pendente:** revisão de fidelidade ao Stitch bloco a bloco no styleguide (seções 2, 3, 5 e 6) e na landing; as versões em inglês dos recortes e o hero ainda mostram textos da interface em português; revisão independente. O contador de implementação do plano continua em 0/8 até essa revisão ser concluída.
 
 ## Entregas seguintes
 

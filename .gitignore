@@ -17,3 +17,6 @@ docs/design/forja-2.0/stitch-cache/
 
 # Visual comparison output (stitch-fidelity skill)
 .stitch-diff/
+
+# Firebase deploy staging (site/scripts/deploy.mjs)
+site/.deploy/

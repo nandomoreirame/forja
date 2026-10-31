@@ -43,9 +43,16 @@ The first plan delivers a separate Vite website under `site/`, with the landing 
 | Landing    | `/`             | `/pt-br`             |
 | Styleguide | `/styleguide`   | `/pt-br/styleguide`  |
 
-These are planned routes, not currently available application commands. The site and Electron will consume the same customized shadcn/ui components and Tailwind tokens. Product previews use deterministic mocks localized with the page, including agents, messages, states and buttons. Commands, paths and tool names remain literal. The gallery runs without Electron, AI, Git or native terminal side effects.
+These routes are implemented and deployed; see the landing status below. The site and Electron will consume the same customized shadcn/ui components and Tailwind tokens. Product previews use deterministic mocks localized with the page, including agents, messages, states and buttons. Commands, paths and tool names remain literal. The gallery runs without Electron, AI, Git or native terminal side effects.
 
-The implementation must follow the [approved visual references and exceptions](docs/design/forja-2.0/component-fidelity.md). Deployment is not included.
+The implementation must follow the [approved visual references and exceptions](docs/design/forja-2.0/component-fidelity.md). Deployment is available with `npm run deploy:site`.
+
+### Landing page status
+
+- **Deployed:** https://forjav2.web.app with `/`, `/pt-br`, `/styleguide` and `/pt-br/styleguide`. Publish with `npm run deploy:site` (Firebase project `ascode-e08f8`, hosting site `forjav2`).
+- **Implemented:** bilingual landing with the seven approved sections, same-page locale switch, approved Stitch crops for the hero and the planned capabilities, mobile header and footer, favicon; bilingual styleguide with the shared components.
+- **Tests:** 30 unit tests and 6 Playwright E2E tests pass. The styleguide visual baseline still needs human review.
+- **Pending:** block-by-block Stitch fidelity review of the styleguide (sections 2, 3, 5 and 6) and the landing; the English crops and hero still show Portuguese interface text; independent review. The plan's implementation counter stays at 0/8 until that review closes.
 
 ## Following Deliveries
 

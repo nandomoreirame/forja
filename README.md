@@ -41,6 +41,13 @@ Each bar ranges from 0 to 100%. Implementation progress is proportional to valid
 
 The Electron scaffold and static welcome screen are already implemented and are outside this new queue. The first planned delivery combines the bilingual landing and shared shadcn/Tailwind styleguide in `site/`, including localized product mocks.
 
+### Landing page status
+
+- **Deployed:** https://forjav2.web.app with `/`, `/pt-br`, `/styleguide` and `/pt-br/styleguide`. Publish with `npm run deploy:site` (Firebase project `ascode-e08f8`, hosting site `forjav2`).
+- **Implemented:** bilingual landing with the seven approved sections, same-page locale switch, approved Stitch crops for the hero and the planned capabilities, mobile header and footer, favicon; bilingual styleguide with the shared components.
+- **Tests:** 30 unit tests and 6 Playwright E2E tests pass. The styleguide visual baseline still needs human review.
+- **Pending:** block-by-block Stitch fidelity review of the styleguide (sections 2, 3, 5 and 6) and the landing; the English crops and hero still show Portuguese interface text; independent review. The plan's implementation counter stays at 0/8 until that review closes.
+
 See [ROADMAP.md](ROADMAP.md) for execution order and validation/review status, and the [plan index](docs/plans/README.md) for dependencies and implementation entry points.
 
 ## Quick start

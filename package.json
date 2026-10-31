@@ -15,6 +15,7 @@
     "dist": "npm run build && electron-builder --publish never",
     "dev:site": "vite --config site/vite.config.ts",
     "build:site": "vite build --config site/vite.config.ts && node site/scripts/prerender.ts",
+    "deploy:site": "npm run build:site && node site/scripts/deploy.mjs",
     "preview:site": "vite preview --config site/vite.config.ts",
     "test:e2e:site": "playwright test --config site/playwright.config.ts",
     "format:check": "prettier --check 'site/**/*.{ts,tsx,css,html}' 'src/shared/{ui,styles,i18n}/**/*.{ts,tsx,css}' 'src/widgets/**/*.{ts,tsx}' 'test/web/**/*.{ts,tsx}' --no-error-on-unmatched-pattern",

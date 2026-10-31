@@ -41,6 +41,13 @@ Cada barra vai de 0 a 100%. A parcela de implementação é proporcional às tar
 
 O scaffold Electron e a tela inicial estática já estão implementados e não entram nessa nova fila. A primeira entrega planejada reúne a landing bilíngue e o styleguide shadcn/Tailwind compartilhado em `site/`, com mocks do produto localizados.
 
+### Status da landing page
+
+- **Publicada:** https://forjav2.web.app com `/`, `/pt-br`, `/styleguide` e `/pt-br/styleguide`. Para publicar, use `npm run deploy:site` (projeto Firebase `ascode-e08f8`, site de hosting `forjav2`).
+- **Implementado:** landing bilíngue com as sete seções aprovadas, troca de idioma na mesma página, recortes aprovados do Stitch no hero e nas funcionalidades planejadas, cabeçalho e rodapé para mobile, favicon; styleguide bilíngue com os componentes compartilhados.
+- **Testes:** 30 testes unitários e 6 testes E2E com Playwright passam. A baseline visual do styleguide ainda precisa de revisão humana.
+- **Pendente:** revisão de fidelidade ao Stitch bloco a bloco no styleguide (seções 2, 3, 5 e 6) e na landing; as versões em inglês dos recortes e o hero ainda mostram textos da interface em português; revisão independente. O contador de implementação do plano continua em 0/8 até essa revisão ser concluída.
+
 Consulte o [roadmap em português](ROADMAP.pt-BR.md) para ver a ordem e os status de validação e revisão. O [índice dos planos, em inglês](docs/plans/README.md), contém as dependências e os comandos de implementação. As specs e os planos técnicos vinculados na tabela permanecem em inglês.
 
 ## Instalação
