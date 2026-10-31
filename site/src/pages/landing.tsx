@@ -52,12 +52,20 @@ export function Landing({ locale }: { locale: Locale }) {
 
       <header className="sticky top-0 z-50 w-full border-b border-border bg-[#131314]/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-3 px-6 py-3 md:h-14 md:flex-row md:justify-between md:py-0">
-          <a href="/" className="flex items-center gap-2.5 text-foreground hover:text-primary">
-            <AnvilMark />
-            <span className="text-sm font-bold tracking-wide">
-              FORJA <span className="font-normal text-muted-foreground">v2.0</span>
-            </span>
-          </a>
+          <div className="flex items-center gap-4">
+            <a href="/" className="flex items-center gap-2.5 text-foreground hover:text-primary">
+              <AnvilMark />
+              <span className="text-sm font-bold tracking-wide">
+                FORJA <span className="font-normal text-muted-foreground">v2.0</span>
+              </span>
+            </a>
+            <LocaleLink
+              page="landing"
+              target={otherLocale}
+              label={t.nav.localeSwitch}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            />
+          </div>
           <nav
             aria-label="Primary"
             className="hidden items-center gap-7 text-xs text-muted-foreground md:flex"
@@ -73,12 +81,6 @@ export function Landing({ locale }: { locale: Locale }) {
             </a>
           </nav>
           <div className="flex flex-wrap items-center justify-center gap-4">
-            <LocaleLink
-              page="landing"
-              target={otherLocale}
-              label={t.nav.localeSwitch}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            />
             <a
               href={followUrl}
               target="_blank"
