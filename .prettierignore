@@ -1,0 +1,13 @@
+# Planning documents and generated outputs: formatted by their authors, not by prettier.
+docs/specs/
+docs/plans/
+docs/design/
+site/.deploy/
+site/dist/
+out/
+dist/
+node_modules/
+coverage/
+test-results/
+playwright-report/
+.stitch-diff/
