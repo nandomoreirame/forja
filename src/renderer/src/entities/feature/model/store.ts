@@ -25,9 +25,12 @@ export interface WorkbenchState {
   palette: { open: boolean; scope: 'all' | 'recent' }
   openPalette(scope: 'all' | 'recent'): void
   closePalette(): void
+  retryLoad(): Promise<void>
   loadProjects(): Promise<void>
   openFeatureIds: string[]
   recipients: Record<string, RoleId>
+  composeActivation: number
+  setRecipient(id: string, role: RoleId): void
   startCompose(role?: RoleId): void
   createFeatureFromPrompt(prompt: string, role: RoleId): string
   selectFeature(id: string): void
@@ -41,12 +44,20 @@ export interface WorkbenchState {
 }
 export function createWorkbenchStore(source: WorkbenchSource) {
   let request = 0
+  let failedOperation: { kind: 'projects' } | { kind: 'project'; id: string } | null = null
   return createStore<WorkbenchState>((set, get) => ({
     source,
     openFeatureIds: [],
     recipients: {},
+    composeActivation: 0,
+    setRecipient(id, role) {
+      if (get().snapshot?.features.some((f) => f.id === id))
+        set((state) => ({ recipients: { ...state.recipients, [id]: role } }))
+    },
     startCompose(role = 'research') {
-      if (get().snapshot) get().navigate({ kind: 'compose', role })
+      if (!get().snapshot) return
+      get().navigate({ kind: 'compose', role })
+      set((state) => ({ composeActivation: state.composeActivation + 1 }))
     },
     createFeatureFromPrompt(prompt, role) {
       const snapshot = get().snapshot
@@ -116,9 +127,19 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             ? { kind: 'conversation', featureId: openFeatureIds[openFeatureIds.length - 1] }
             : { kind: 'compose', role: 'research' }
           : state.view
-      const history = state.history.filter((v) => v.kind !== 'conversation' || v.featureId !== id)
-      if (JSON.stringify(history.at(-1)) !== JSON.stringify(view)) history.push(view)
-      set({ openFeatureIds, view, history, historyIndex: history.length - 1 })
+      let historyIndex = -1
+      let history: View[] = []
+      state.history.forEach((entry, index) => {
+        if (entry.kind === 'conversation' && entry.featureId === id) return
+        history.push(entry)
+        if (index <= state.historyIndex) historyIndex = history.length - 1
+      })
+      if (state.view.kind === 'conversation' && state.view.featureId === id) {
+        history = history.slice(0, historyIndex + 1)
+        if (JSON.stringify(history.at(-1)) !== JSON.stringify(view)) history.push(view)
+        historyIndex = history.length - 1
+      }
+      set({ openFeatureIds, view, history, historyIndex })
     },
     projects: [],
     snapshot: null,
@@ -135,10 +156,18 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     closePalette() {
       set((state) => ({ palette: { ...state.palette, open: false } }))
     },
+    async retryLoad() {
+      const operation = failedOperation
+      if (operation?.kind === 'project') await get().openProject(operation.id)
+      else if (operation?.kind === 'projects') await get().loadProjects()
+    },
     async loadProjects() {
+      set({ error: null })
       try {
         set({ projects: await source.listProjects() })
+        failedOperation = null
       } catch {
+        failedOperation = { kind: 'projects' }
         set({ error: 'Unable to load project' })
       }
     },
@@ -151,6 +180,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           source.loadProject(id),
         ])
         if (token !== request) return
+        failedOperation = null
         const view: View = snapshot.features[0]
           ? { kind: 'conversation', featureId: snapshot.features[0].id }
           : { kind: 'home' }
@@ -165,7 +195,10 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           recipients: Object.fromEntries(snapshot.features.map((f) => [f.id, f.stage])),
         })
       } catch {
-        if (token === request) set({ loading: false, error: 'Unable to load project' })
+        if (token === request) {
+          failedOperation = { kind: 'project', id }
+          set({ loading: false, error: 'Unable to load project' })
+        }
       }
     },
     navigate(view) {

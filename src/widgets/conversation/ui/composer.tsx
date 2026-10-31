@@ -17,6 +17,7 @@ export interface ComposerRecipient {
 }
 
 export interface ComposerProps {
+  focusKey?: number
   autoFocus?: boolean
   recipients: ComposerRecipient[]
   recipientId: string
@@ -36,6 +37,7 @@ export interface ComposerProps {
 
 export function Composer({
   autoFocus = false,
+  focusKey,
   recipients,
   recipientId,
   onRecipientChange,
@@ -54,7 +56,7 @@ export function Composer({
   const field = useRef<HTMLTextAreaElement>(null)
   useEffect(() => {
     if (autoFocus) field.current?.focus()
-  }, [autoFocus])
+  }, [autoFocus, focusKey])
   const selected = recipients.find((item) => item.id === recipientId)
   const [hintBefore, hintAfter] = shortcutHint.includes(sendShortcut)
     ? shortcutHint.split(sendShortcut, 2)

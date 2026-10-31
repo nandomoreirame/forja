@@ -22,6 +22,7 @@ export interface FeatureTabsProps {
   onSelect: (id: string) => void
   onClose?: (id: string) => void
   closeLabel?: string
+  panelId?: string
   label?: string
   stateLabels?: Record<FeatureTabItem['state'], string>
 }
@@ -35,6 +36,7 @@ const defaultStateLabels: Record<FeatureTabItem['state'], string> = {
 export function FeatureTabs({
   onClose,
   closeLabel = 'Close',
+  panelId,
   selectedId,
   items,
   onSelect,
@@ -44,19 +46,20 @@ export function FeatureTabs({
   const select = (id: string) => {
     if (id !== selectedId) onSelect(id)
   }
-
   return (
     <TooltipProvider>
       <Tabs value={selectedId} onValueChange={select}>
-        <TabsList aria-label={label} className="h-8">
-          {items.map((item) => (
-            <div key={item.id} className="flex items-center">
+        <div className="grid auto-cols-max grid-flow-col items-center justify-start border-b border-border bg-sidebar">
+          <TabsList aria-label={label} className="contents">
+            {items.map((item, index) => (
               <TabsTrigger
+                key={item.id}
                 id={`feature-tab-${item.id}`}
-                aria-controls={`feature-panel-${item.id}`}
+                aria-controls={item.id === selectedId ? panelId : undefined}
                 value={item.id}
                 onClick={() => select(item.id)}
-                className="text-xs"
+                style={{ gridColumn: index + 1, gridRow: 1 }}
+                className={onClose ? 'h-9 pr-9 text-xs' : 'h-9 text-xs'}
               >
                 <span
                   aria-hidden="true"
@@ -71,12 +74,17 @@ export function FeatureTabs({
                 {item.label}
                 <span className="sr-only">, {stateLabels[item.state]}</span>
               </TabsTrigger>
-              {onClose ? (
-                <Tooltip>
+            ))}
+          </TabsList>
+          {onClose
+            ? items.map((item, index) => (
+                <Tooltip key={item.id}>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon-sm"
+                      style={{ gridColumn: index + 1, gridRow: 1 }}
+                      className="z-10 mr-1 justify-self-end"
                       aria-label={`${closeLabel} ${item.label}`}
                       onClick={() => onClose(item.id)}
                     >
@@ -87,10 +95,9 @@ export function FeatureTabs({
                     {closeLabel} {item.label}
                   </TooltipContent>
                 </Tooltip>
-              ) : null}
-            </div>
-          ))}
-        </TabsList>
+              ))
+            : null}
+        </div>
       </Tabs>
     </TooltipProvider>
   )

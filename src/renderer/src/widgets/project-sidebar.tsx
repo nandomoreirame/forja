@@ -60,7 +60,17 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                 type="button"
                 key={agent.id}
                 className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
-                onClick={() => state.startCompose(agent.id)}
+                onClick={() => {
+                  if (state.openFeatureIds.length === 0) state.startCompose(agent.id)
+                  else {
+                    const id =
+                      state.view.kind === 'conversation'
+                        ? state.view.featureId
+                        : state.openFeatureIds[state.openFeatureIds.length - 1]
+                    state.setRecipient(id, agent.id)
+                    state.selectFeature(id)
+                  }
+                }}
               >
                 <SidebarRow
                   className="h-7 rounded-none border-0 bg-transparent px-3 hover:bg-accent"

@@ -64,3 +64,17 @@ it('appends follow-up prompts to the selected mock feature without changing fixt
   expect(store.getState().snapshot?.features[0].messages).toHaveLength(2)
   expect((await source.loadProject('acme-api')).features).toHaveLength(0)
 })
+
+it('keeps the history cursor and forward entries when an inactive feature closes', async () => {
+  const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
+  await store.getState().openProject('dev')
+  store.getState().navigate({ kind: 'settings' })
+  store.getState().navigate({ kind: 'document', artifactId: 'spec' })
+  store.getState().back()
+  expect(store.getState().historyIndex).toBe(1)
+  store.getState().closeFeature('feature-2')
+  expect(store.getState().historyIndex).toBe(1)
+  expect(store.getState().history).toHaveLength(3)
+  store.getState().forward()
+  expect(store.getState().view).toEqual({ kind: 'document', artifactId: 'spec' })
+})

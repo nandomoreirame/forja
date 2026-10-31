@@ -99,7 +99,9 @@ function WorkbenchShell() {
           {s.error ? (
             <div role="alert">
               {a.error}
-              <button onClick={() => s.openPalette('recent')}>{a.retry}</button>
+              <button type="button" onClick={() => void s.retryLoad()}>
+                {a.retry}
+              </button>
             </div>
           ) : null}
           {s.view.kind === 'home' ? (

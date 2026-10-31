@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Composer } from '@/widgets/conversation'
 import { getDictionary } from '@/shared/i18n'
 import type { RoleId } from '@/renderer/src/shared/api'
@@ -14,18 +14,26 @@ export function FeatureComposer({
   autoFocus?: boolean
 }) {
   const state = useWorkbench((s) => s)
+  const activation = state.composeActivation
   const [prompt, setPrompt] = useState('')
   const [recipient, setRecipient] = useState(role)
+  useEffect(() => {
+    setRecipient(role)
+  }, [role, activation])
   const d = getDictionary(state.source.locale)
   const a = d.app
   const feature = state.snapshot?.features.find((f) => f.id === featureId)
   return (
     <Composer
       autoFocus={autoFocus}
+      focusKey={activation}
       recipients={roleIds.map((id) => ({ id, label: d.product[id] }))}
       recipientId={recipient}
       onRecipientChange={(id) => {
-        if (roleIds.includes(id as RoleId)) setRecipient(id as RoleId)
+        if (roleIds.includes(id as RoleId)) {
+          setRecipient(id as RoleId)
+          if (featureId) state.setRecipient(featureId, id as RoleId)
+        }
       }}
       featureLabel={feature?.name ?? a.newContext}
       targetLabel={state.snapshot?.project.path ?? ''}

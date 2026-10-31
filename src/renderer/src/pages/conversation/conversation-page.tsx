@@ -15,6 +15,7 @@ export function ConversationPage() {
     <section className="flex min-h-0 flex-1 flex-col">
       <FeatureTabs
         selectedId={feature.id}
+        panelId={`feature-panel-${feature.id}`}
         items={state
           .snapshot!.features.filter((f) => state.openFeatureIds.includes(f.id))
           .map((f) => ({

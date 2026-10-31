@@ -12,6 +12,8 @@ it('starts without a project and only shows sidebars after Open project selectio
   expect(await screen.findByRole('complementary', { name: 'acme-api' })).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   fireEvent.click(screen.getByRole('button', { name: /New conversation/ }))
+  expect(screen.getByRole('textbox')).toHaveFocus()
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
   expect(screen.queryByRole('heading', { name: 'FORJA' })).toBeNull()
   fireEvent.keyDown(window, { key: 'ArrowLeft', altKey: true })
   expect(screen.getByRole('heading', { name: 'FORJA' })).toBeInTheDocument()

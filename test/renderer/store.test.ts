@@ -62,3 +62,21 @@ it('retains the loaded project and exposes errors when a subsequent load fails',
   expect(store.getState().loading).toBe(false)
   expect(store.getState().error).toBe('Unable to load project')
 })
+
+it('retries the actual failed project request instead of a hardcoded project', async () => {
+  const source = createMockSource({ locale: 'en' })
+  let failed = true
+  const store = createWorkbenchStore({
+    ...source,
+    loadProject: async (id) => {
+      if (failed) throw new Error('Temporary failure')
+      return source.loadProject(id)
+    },
+  })
+  await store.getState().openProject('dev')
+  expect(store.getState().snapshot).toBeNull()
+  failed = false
+  await store.getState().retryLoad()
+  expect(store.getState().snapshot?.project.id).toBe('dev')
+  expect(store.getState().error).toBeNull()
+})
