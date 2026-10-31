@@ -52,10 +52,16 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                 className="block w-full text-left"
                 onClick={() => state.navigate({ kind: 'compose', role: agent.id })}
               >
-                <SidebarRow icon={<Icon />} title={d.product[agent.id]} />
-                <StatusBadge className="sr-only" state={agent.state}>
-                  {a.ready}
-                </StatusBadge>
+                <SidebarRow
+                  className="h-6 rounded-none border-0 bg-transparent px-3 hover:bg-accent"
+                  icon={<Icon />}
+                  title={d.product[agent.id]}
+                  stateLabel={
+                    <StatusBadge className="border-0 bg-transparent p-0" state={agent.state}>
+                      {a.ready}
+                    </StatusBadge>
+                  }
+                />
               </button>
             )
           })}
