@@ -99,8 +99,6 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
         tabsLabel={a.terminalTabs}
         header={header}
         body={liveShell}
-        cwd={active?.cwd}
-        cwdLabel={a.workingDirectory}
         onAdd={feature ? () => state.addShell(feature.id) : undefined}
         onCollapse={() => {
           state.setPanel('terminalMaximized', false)
