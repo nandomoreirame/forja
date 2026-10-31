@@ -492,6 +492,10 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         const remaining = feature.terminals.filter((terminal) => terminal.id !== terminalId)
         const selected = get().terminalTabs[featureId] ?? feature.terminals[0]?.id
         updateFeature(featureId, (item) => ({ ...item, terminals: remaining }))
+        if (!remaining.length)
+          set((state) => ({
+            panels: { ...state.panels, terminal: false, terminalMaximized: false },
+          }))
         const terminalTabs = { ...get().terminalTabs }
         if (selected === terminalId) {
           const next = remaining[Math.min(index, remaining.length - 1)]

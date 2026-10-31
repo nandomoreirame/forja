@@ -97,7 +97,7 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
         activeId={active?.id ?? ''}
         onSelect={(id) => feature && state.selectTerminal(feature.id, id)}
         output={active ? active.output.split('\n') : []}
-        emptyOutputLabel={feature?.terminals.length ? a.waitingOutput : a.noTerminals}
+        emptyOutputLabel={feature?.terminals.length ? a.waitingOutput : ''}
         addLabel={a.newTerminal}
         collapseLabel={a.collapseTerminals}
         tabsLabel={a.terminalTabs}

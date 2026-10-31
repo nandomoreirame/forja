@@ -91,7 +91,6 @@ export const en = {
     expandTerminals: 'Expand panel',
     stopProcess: 'Stop process',
     stopped: 'Stopped',
-    noTerminals: 'No terminals for this feature.',
     terminalAgent: 'Agent',
     terminalCommand: 'Command',
     terminalDirectory: 'Directory',

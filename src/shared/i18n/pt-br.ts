@@ -91,7 +91,6 @@ export const ptBr = {
     expandTerminals: 'Expandir painel',
     stopProcess: 'Parar processo',
     stopped: 'Parado',
-    noTerminals: 'Nenhum terminal nesta feature.',
     terminalAgent: 'Agente',
     terminalCommand: 'Comando',
     terminalDirectory: 'Diretório',

@@ -40,7 +40,7 @@ it('keeps running state when collapsed, stops without losing output and follows 
   expect(reopened).toHaveTextContent('npm run dev')
   expect(screen.queryByRole('button', { name: 'Stop process' })).toBeNull()
   fireEvent.click(screen.getByRole('tab', { name: /Catalog search/ }))
-  expect(screen.getByRole('region', { name: 'Terminals' })).toHaveTextContent(
+  expect(screen.getByRole('region', { name: 'Terminals' })).not.toHaveTextContent(
     'No terminals for this feature.',
   )
 })
@@ -118,4 +118,21 @@ it('opens a new shell when the terminal toggle opens an empty panel', async () =
   fireEvent.click(screen.getByRole('button', { name: 'Toggle terminals' }))
   fireEvent.click(screen.getByRole('button', { name: 'Toggle terminals' }))
   expect(screen.getAllByRole('tab', { name: /zsh/ })).toHaveLength(1)
+})
+
+it('closes the panel when its last terminal closes and never shows an empty-panel message', async () => {
+  render(
+    <WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="contrateum.dev" />,
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Maximize panel' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close zsh' }))
+  expect(screen.queryByRole('region', { name: 'Terminals' })).toBeNull()
+  expect(screen.getByRole('button', { name: 'Toggle terminals' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  )
+  fireEvent.click(screen.getByRole('button', { name: 'Toggle terminals' }))
+  expect(screen.getByRole('region', { name: 'Terminals' })).not.toHaveAttribute('data-maximized')
+  expect(screen.queryByText('No terminals for this feature.')).toBeNull()
 })
