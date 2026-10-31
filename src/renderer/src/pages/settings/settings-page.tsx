@@ -22,7 +22,7 @@ import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { AgentProfile } from '@/renderer/src/features/agent-settings/model'
 import { effortOptions, inactivityError, isDirty, normalizeProfile } from '@/renderer/src/features/agent-settings/model'
 import { UnsavedDialog } from '@/renderer/src/features/agent-settings/unsaved-dialog'
-import { roleIds, type RoleId, type SettingsSnapshot, type SettingsTab } from '@/renderer/src/shared/api'
+import { roleIds, type ConnectorSnapshot, type MemoryRecord, type RoleId, type SettingsSnapshot, type SettingsTab } from '@/renderer/src/shared/api'
 import { FeatureTabs } from '@/widgets/workbench'
 
 const catalogSkills = ['rpi-implement', 'git', 'git-flow']
@@ -42,6 +42,8 @@ export function SettingsPage() {
   const [saved, setSaved] = useState<SettingsSnapshot | null>(null)
   const [draft, setDraft] = useState<SettingsSnapshot | null>(null)
   const [edited, setEdited] = useState(false)
+  const [memories, setMemories] = useState<MemoryRecord[]>([])
+  const [connectors, setConnectors] = useState<ConnectorSnapshot[]>([])
   const [pending, setPending] = useState<(() => void) | null>(null)
   const viewTab = state.view.kind === 'settings' ? state.view.tab : undefined
   const [tab, setTab] = useState<SettingsTab>(viewTab === 'general' ? 'general' : 'agents')
@@ -49,12 +51,14 @@ export function SettingsPage() {
 
   useEffect(() => {
     let active = true
-    void state.source.loadSettings().then((value) => {
+    void Promise.all([state.source.loadSettings(), state.source.loadMemories(), state.source.loadConnectors()]).then(([value, nextMemories, nextConnectors]) => {
       if (!active) return
       const next = { ...value, general: value.general ?? defaultGeneral }
       setSaved(structuredClone(next))
       setDraft(structuredClone(next))
       setEdited(false)
+      setMemories(nextMemories)
+      setConnectors(nextConnectors)
     })
     return () => {
       active = false
@@ -62,7 +66,7 @@ export function SettingsPage() {
   }, [state.source])
 
   useEffect(() => {
-    if (viewTab && viewTab !== 'memory' && viewTab !== 'connectors') setTab(viewTab)
+    if (viewTab) setTab(viewTab)
   }, [viewTab])
 
   const activeRole: RoleId =
@@ -159,6 +163,12 @@ export function SettingsPage() {
               <TabsTrigger value="general" onClick={() => selectTab('general')}>
                 {a.generalTab}
               </TabsTrigger>
+              <TabsTrigger value="memory" onClick={() => selectTab('memory')}>
+                Memory
+              </TabsTrigger>
+              <TabsTrigger value="connectors" onClick={() => selectTab('connectors')}>
+                Connectors
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="agents" className="mt-5 space-y-5">
               <div className="grid gap-4 md:grid-cols-[180px_1fr]">
@@ -196,6 +206,14 @@ export function SettingsPage() {
               <Field label={a.skillsFolder}><div className="flex gap-2"><Input aria-label={a.skillsFolder} value={draft.general?.skillsRoot ?? ''} onChange={(event) => { setEdited(true); setDraft({ ...draft, general: { ...draft.general!, skillsRoot: event.target.value } }) }} /><Button variant="outline" size="sm"><RefreshCw />{a.refresh}</Button></div></Field>
               <Field label={a.interruptPolicy}><Select value={draft.general?.interruptPolicy} onValueChange={(value) => { setEdited(true); setDraft({ ...draft, general: { ...draft.general!, interruptPolicy: value as 'interrupt' | 'queue' } }) }}><SelectTrigger aria-label={a.interruptPolicy} className="w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="interrupt">{a.interruptRunning}</SelectItem><SelectItem value="queue">{a.queueReplies}</SelectItem></SelectContent></Select></Field>
               <div className="grid gap-4 sm:grid-cols-2"><Field label={a.guidedMode}><Input aria-label={a.guidedMode} value={a.correctionRounds} readOnly /></Field><Field label={a.inactivityMinutes}><Input aria-label={a.inactivityMinutes} type="number" min={1} max={120} value={draft.general?.inactivityMinutes ?? 30} aria-invalid={Boolean(inactivityMessage)} onChange={(event) => { setEdited(true); setDraft({ ...draft, general: { ...draft.general!, inactivityMinutes: Number(event.target.value) } }) }} />{inactivityMessage ? <span className="text-xs text-destructive">{inactivityMessage}</span> : null}</Field></div>
+            </TabsContent>
+            <TabsContent value="memory" className="mt-5 space-y-3">
+              <h2 className="text-sm font-medium">Memory</h2>
+              {memories.length ? memories.map((memory) => <article key={memory.id} className="rounded-md border border-border p-3"><div className="flex items-center justify-between"><strong className="text-sm">{memory.title}</strong><span className="text-[11px] text-muted-foreground">{memory.date}</span></div><p className="mt-1 text-xs text-muted-foreground">{memory.kind} · {d.product[memory.author]}</p></article>) : <p className="text-xs text-muted-foreground">No project memories.</p>}
+            </TabsContent>
+            <TabsContent value="connectors" className="mt-5 space-y-3">
+              <h2 className="text-sm font-medium">Connectors</h2>
+              {connectors.map((connector) => <label key={connector.id} className="flex items-center justify-between rounded-md border border-border p-3 text-sm"><span><strong>{connector.name}</strong><span className="ml-2 text-xs text-muted-foreground">{connector.transport} · {connector.status}</span></span><Switch aria-label={connector.name} checked={connector.enabled} onCheckedChange={(enabled) => setConnectors((items) => items.map((item) => item.id === connector.id ? { ...item, enabled } : item))} /></label>)}
             </TabsContent>
           </Tabs>
         ) : <p role="status">{a.loading}</p>}

@@ -83,6 +83,20 @@ export interface SettingsSnapshot {
   }
 }
 export type SettingsTab = 'agents' | 'general' | 'memory' | 'connectors'
+export interface MemoryRecord {
+  id: string
+  title: string
+  kind: string
+  author: RoleId
+  date: string
+}
+export interface ConnectorSnapshot {
+  id: string
+  name: string
+  transport: string
+  status: 'connected' | 'available' | 'offline'
+  enabled: boolean
+}
 export type ReplyEvent =
   | { type: 'start' }
   | { type: 'text'; chunk: string }
@@ -109,4 +123,6 @@ export interface WorkbenchSource {
   ): () => void
   loadSettings(): Promise<SettingsSnapshot>
   saveSettings(settings: SettingsSnapshot): Promise<void>
+  loadMemories(): Promise<MemoryRecord[]>
+  loadConnectors(): Promise<ConnectorSnapshot[]>
 }

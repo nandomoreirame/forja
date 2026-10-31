@@ -5,7 +5,12 @@ import {
   FlaskConical,
   GitPullRequest,
   ChevronLeft,
+  BarChart3,
+  Brain,
+  Plug,
+  Settings,
 } from 'lucide-react'
+import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, type UiState } from '@/shared/ui'
 import { SidebarRow } from '@/widgets/workbench'
@@ -26,9 +31,10 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
   return (
     <aside
       aria-label={snapshot.project.name}
-      className="h-full w-full overflow-y-auto border-r border-border bg-sidebar text-xs"
+      className="flex h-full w-full flex-col border-r border-border bg-sidebar text-xs"
     >
-      <div className="space-y-3 py-2">
+      <div className="min-h-0 flex-1 overflow-y-auto py-2">
+        <div className="space-y-3">
         <section>
           <h2 className="flex items-center justify-between gap-2 px-3 pb-1 text-[11px] uppercase tracking-wider">
             <span>{a.agents}</span>
@@ -125,7 +131,20 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
             </section>
           )
         })}
+        </div>
       </div>
+      <nav aria-label={locale === 'pt-br' ? 'Espaço de trabalho' : 'Workspace'} className="shrink-0 border-t border-border p-2">
+        <div className="space-y-0.5">
+          <WorkspaceButton icon={<BarChart3 />} label={locale === 'pt-br' ? 'Uso e limites' : 'Usage and limits'} onClick={() => undefined} />
+          <WorkspaceButton icon={<Brain />} label="Memory" onClick={() => state.openSettings({ tab: 'memory' })} />
+          <WorkspaceButton icon={<Plug />} label="Connectors" onClick={() => state.openSettings({ tab: 'connectors' })} />
+          <WorkspaceButton icon={<Settings />} label={a.settings} onClick={() => state.openSettings({ tab: 'agents' })} />
+        </div>
+      </nav>
     </aside>
   )
+}
+
+function WorkspaceButton({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
+  return <button type="button" className="flex h-7 w-full items-center gap-2 rounded-sm px-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring" onClick={onClick}>{icon}<span>{label}</span></button>
 }

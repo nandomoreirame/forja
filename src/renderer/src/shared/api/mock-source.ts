@@ -103,5 +103,17 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
     async saveSettings(next) {
       settings = structuredClone(next)
     },
+    async loadMemories() {
+      return [
+        { id: 'memory-1', title: 'OAuth callback decision', kind: 'decision', author: 'research', date: '2026-10-31' },
+        { id: 'memory-2', title: 'Regression test requested', kind: 'reference', author: 'reviewer', date: '2026-10-30' },
+      ]
+    },
+    async loadConnectors() {
+      return [
+        { id: 'github', name: 'GitHub', transport: 'MCP', status: 'connected' as const, enabled: true },
+        { id: 'filesystem', name: 'Filesystem', transport: 'stdio', status: 'available' as const, enabled: false },
+      ]
+    },
   }
 }
