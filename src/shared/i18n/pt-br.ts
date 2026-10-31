@@ -1,5 +1,15 @@
 export const ptBr = {
   app: {
+    closeFeature: 'Fechar feature',
+    keepOpen: 'Manter aberta',
+    closeFeatureDescription:
+      'O agente está em execução. Fechar esta aba interrompe a resposta e preserva a conversa.',
+    viewRequest: 'Ver solicitação',
+    guided: 'Guiado',
+    cycle: 'Ciclo',
+    worktree: 'Worktree',
+    none: 'Nenhum',
+
     searchProjects: 'Buscar projetos recentes',
     pickerUnavailable: 'Use o aplicativo desktop para selecionar uma pasta neste navegador.',
     features: 'Features',

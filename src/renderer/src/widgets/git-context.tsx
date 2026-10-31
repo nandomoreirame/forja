@@ -1,11 +1,16 @@
 import { ChevronRight, ChevronDown } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
+import { StatusBadge } from '@/shared/ui'
 import { IconButton } from '@/renderer/src/shared/ui/icon-button'
 export function GitContext({ locale }: { locale: Locale }) {
   const state = useWorkbench((s) => s)
   const snapshot = state.snapshot!
-  const a = getDictionary(locale).app
+  const d = getDictionary(locale)
+  const a = d.app
+  const feature = snapshot.features.find(
+    (f) => state.view.kind === 'conversation' && state.view.featureId === f.id,
+  )
   return (
     <aside
       aria-label={a.project}
@@ -29,8 +34,27 @@ export function GitContext({ locale }: { locale: Locale }) {
           </div>
           <div className="flex justify-between">
             <dt>{a.state}</dt>
-            <dd>{a.idle}</dd>
+            <dd>
+              {feature ? (
+                <StatusBadge state={feature.state}>{a.states[feature.state]}</StatusBadge>
+              ) : (
+                a.idle
+              )}
+            </dd>
           </div>
+          {feature
+            ? [
+                [a.destination, feature.destination],
+                [d.product.cwd, feature.worktree ?? feature.target],
+                [a.worktree, feature.worktree ?? a.none],
+                [d.product.branch, feature.branch],
+              ].map(([label, value]) => (
+                <div key={label} className="flex justify-between gap-2">
+                  <dt>{label}</dt>
+                  <dd className="min-w-0 break-all text-foreground">{value}</dd>
+                </div>
+              ))
+            : null}
         </dl>
       </section>
       <section className="border-t border-border pt-4">

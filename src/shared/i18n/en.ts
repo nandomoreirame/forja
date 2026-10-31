@@ -1,5 +1,15 @@
 export const en = {
   app: {
+    closeFeature: 'Close feature',
+    keepOpen: 'Keep open',
+    closeFeatureDescription:
+      'The agent is running. Closing this tab interrupts its reply and preserves the conversation.',
+    viewRequest: 'View request',
+    guided: 'Guided',
+    cycle: 'Cycle',
+    worktree: 'Worktree',
+    none: 'None',
+
     searchProjects: 'Search recent projects',
     pickerUnavailable: 'Use the desktop app to select a folder in this browser.',
     features: 'Features',

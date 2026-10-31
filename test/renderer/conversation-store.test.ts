@@ -142,7 +142,7 @@ it('ignores invalid sends and falls back to the feature stage', async () => {
   store.setState({ recipients: {} })
   store.getState().sendMessage('feature-1', ' Hello ')
   const feature = store.getState().snapshot!.features[0]
-  expect(feature.messages[0].text).toBe('Hello')
-  expect(feature.messages[1].author).toBe(feature.stage)
+  expect(feature.messages.at(-2)?.text).toBe('Hello')
+  expect(feature.messages.at(-1)?.author).toBe(feature.stage)
   vi.runAllTimers()
 })

@@ -27,8 +27,18 @@ it('preserves fixture structure and identifiers across locales', async () => {
   const pt = await createMockSource({ locale: 'pt-br' }).loadProject('dev')
   expect(en.project).toEqual(pt.project)
   expect(en.agents).toEqual(pt.agents)
-  expect(en.features.map((f) => ({ ...f, name: '' }))).toEqual(
-    pt.features.map((f) => ({ ...f, name: '' })),
+  expect(
+    en.features.map((f) => ({
+      ...f,
+      name: '',
+      messages: f.messages.map((m) => ({ ...m, text: '' })),
+    })),
+  ).toEqual(
+    pt.features.map((f) => ({
+      ...f,
+      name: '',
+      messages: f.messages.map((m) => ({ ...m, text: '' })),
+    })),
   )
   expect(en.features[0].name).toBe('Login with OAuth')
   expect(pt.features[0].name).toBe('Login com OAuth')

@@ -241,13 +241,20 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       get().sendMessage(id, prompt)
     },
     closeFeature(id) {
+      if (!get().openFeatureIds.includes(id)) return
+      get().interrupt(id)
       const state = get()
-      if (!state.openFeatureIds.includes(id)) return
       const openFeatureIds = state.openFeatureIds.filter((item) => item !== id)
       const view: View =
         state.view.kind === 'conversation' && state.view.featureId === id
           ? openFeatureIds.length
-            ? { kind: 'conversation', featureId: openFeatureIds[openFeatureIds.length - 1] }
+            ? {
+                kind: 'conversation',
+                featureId:
+                  openFeatureIds[
+                    Math.min(state.openFeatureIds.indexOf(id), openFeatureIds.length - 1)
+                  ],
+              }
             : { kind: 'compose', role: 'research' }
           : state.view
       let historyIndex = -1

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { TriangleAlert } from 'lucide-react'
 
 export interface ConversationMessage {
@@ -6,7 +7,7 @@ export interface ConversationMessage {
   role: 'user' | 'agent' | 'event'
   text: string
   status?: string
-  action?: string
+  action?: ReactNode
   onAction?: () => void
 }
 
@@ -42,13 +43,17 @@ export function Messages({
               {item.text}
             </span>
             {item.action ? (
-              <button
-                type="button"
-                onClick={item.onAction}
-                className="shrink-0 text-[12px] font-medium text-primary hover:underline"
-              >
-                {item.action}
-              </button>
+              typeof item.action !== 'string' ? (
+                item.action
+              ) : (
+                <button
+                  type="button"
+                  onClick={item.onAction}
+                  className="shrink-0 text-[12px] font-medium text-primary hover:underline"
+                >
+                  {item.action}
+                </button>
+              )
             ) : null}
           </li>
         ) : item.role === 'user' ? (
@@ -76,13 +81,17 @@ export function Messages({
                 ) : null}
               </div>
               {item.action ? (
-                <button
-                  type="button"
-                  onClick={item.onAction}
-                  className="text-[11px] text-muted-foreground hover:text-[#ff4d4f]"
-                >
-                  {item.action}
-                </button>
+                typeof item.action !== 'string' ? (
+                  item.action
+                ) : (
+                  <button
+                    type="button"
+                    onClick={item.onAction}
+                    className="text-[11px] text-muted-foreground hover:text-[#ff4d4f]"
+                  >
+                    {item.action}
+                  </button>
+                )
               ) : null}
             </div>
             <p className="text-[13px] text-foreground">{item.text}</p>

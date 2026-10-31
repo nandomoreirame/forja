@@ -22,6 +22,7 @@ it('focuses Planner from Add plan, sends a feature and closes back to Research',
     'Rate limit public endpoints',
   )
   fireEvent.click(screen.getByRole('button', { name: 'Close Rate limit public endpoints' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close feature' }))
   await waitFor(() =>
     expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveFocus(),
   )

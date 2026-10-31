@@ -1,9 +1,13 @@
-import { FeatureTabs } from '@/widgets/workbench'
-import { Messages } from '@/widgets/conversation'
+import { useState } from 'react'
+import { History } from '@/renderer/src/features/conversation'
+import { CloseFeatureDialog } from '@/renderer/src/features/feature-tabs'
+import { roleIds } from '@/renderer/src/shared/api'
+import { FeatureContext, FeatureTabs } from '@/widgets/workbench'
 import { getDictionary } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import { FeatureComposer } from '@/renderer/src/widgets/feature-composer'
 export function ConversationPage() {
+  const [closingId, setClosingId] = useState<string | null>(null)
   const state = useWorkbench((s) => s)
   const d = getDictionary(state.source.locale),
     a = d.app
@@ -24,7 +28,11 @@ export function ConversationPage() {
             state: f.state === 'running' ? 'running' : f.state === 'waiting' ? 'waiting' : 'idle',
           }))}
         onSelect={state.selectFeature}
-        onClose={state.closeFeature}
+        onClose={(id) => {
+          if (state.snapshot?.features.find((f) => f.id === id)?.state === 'running')
+            setClosingId(id)
+          else state.closeFeature(id)
+        }}
         closeLabel={a.close}
         label={a.features}
         stateLabels={{ running: a.states.running, waiting: a.states.waiting, idle: a.idle }}
@@ -35,18 +43,32 @@ export function ConversationPage() {
         aria-labelledby={`feature-tab-${feature.id}`}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="flex-1 overflow-auto p-6">
-          <Messages
-            label={a.conversation}
-            emptyLabel={d.product.empty}
-            items={feature.messages.map((m) => ({
-              id: m.id,
-              role: m.role === 'user' ? 'user' : 'agent',
-              author: m.role === 'user' ? a.you : d.product[m.author ?? feature.stage],
-              text: m.text,
+        <div className="border-b border-border p-4">
+          <FeatureContext
+            title={feature.name}
+            mode={a.guided}
+            rows={[
+              { label: a.destination, value: feature.destination },
+              { label: d.product.branch, value: feature.branch },
+            ]}
+            cycleLabel={a.cycle}
+            cycle={roleIds.map((role, index) => ({
+              label: d.product[role],
+              state:
+                index === roleIds.indexOf(feature.stage)
+                  ? 'current'
+                  : index < roleIds.indexOf(feature.stage)
+                    ? 'done'
+                    : 'pending',
             }))}
           />
         </div>
+        <History
+          key={feature.id}
+          messages={feature.messages}
+          locale={state.source.locale}
+          stage={feature.stage}
+        />
         <div className="p-4">
           <FeatureComposer
             key={feature.id}
@@ -55,6 +77,17 @@ export function ConversationPage() {
           />
         </div>
       </div>
+      <CloseFeatureDialog
+        open={closingId !== null}
+        locale={state.source.locale}
+        onOpenChange={(open) => {
+          if (!open) setClosingId(null)
+        }}
+        onConfirm={() => {
+          if (closingId) state.closeFeature(closingId)
+          setClosingId(null)
+        }}
+      />
     </section>
   )
 }

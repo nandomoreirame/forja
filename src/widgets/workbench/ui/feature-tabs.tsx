@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { X } from 'lucide-react'
 import {
   Tooltip,
@@ -43,6 +44,7 @@ export function FeatureTabs({
   label = 'Features',
   stateLabels = defaultStateLabels,
 }: FeatureTabsProps) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
   const select = (id: string) => {
     if (id !== selectedId) onSelect(id)
   }
@@ -54,11 +56,13 @@ export function FeatureTabs({
             {items.map((item, index) => (
               <TabsTrigger
                 key={item.id}
+                style={{ gridColumn: index + 1, gridRow: 1 }}
+                onMouseEnter={() => setHoveredId(item.id)}
+                onMouseLeave={() => setHoveredId(null)}
                 id={`feature-tab-${item.id}`}
                 aria-controls={item.id === selectedId ? panelId : undefined}
                 value={item.id}
                 onClick={() => select(item.id)}
-                style={{ gridColumn: index + 1, gridRow: 1 }}
                 className={onClose ? 'h-9 pr-9 text-xs' : 'h-9 text-xs'}
               >
                 <span
@@ -84,7 +88,9 @@ export function FeatureTabs({
                       variant="ghost"
                       size="icon-sm"
                       style={{ gridColumn: index + 1, gridRow: 1 }}
-                      className="z-10 mr-1 justify-self-end"
+                      onMouseEnter={() => setHoveredId(item.id)}
+                      onMouseLeave={() => setHoveredId(null)}
+                      className={`z-10 mr-1 justify-self-end hover:opacity-100 focus-visible:opacity-100 ${item.id === selectedId || item.id === hoveredId ? 'opacity-100' : 'opacity-0'}`}
                       aria-label={`${closeLabel} ${item.label}`}
                       onClick={() => onClose(item.id)}
                     >
