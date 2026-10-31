@@ -53,6 +53,12 @@ const copy = {
     loadingGhost: 'Loading',
     buttonsGroup: 'Button · variants and states',
     ghostHover: 'Hover (underline)',
+    convLabel: 'Message & HandoffLink (no avatars or initials)',
+    composerLabel: 'Composer (exact approved anatomy)',
+    contextLabel: 'Context',
+    hintText: 'Ctrl+Enter to send',
+    interrupt: 'Interrupt',
+    runningLabel: 'Running',
   },
   'pt-br': {
     sections: {
@@ -106,6 +112,12 @@ const copy = {
     loadingGhost: 'Carregando',
     buttonsGroup: 'Button · variações e estados',
     ghostHover: 'Hover (sublinhado)',
+    convLabel: 'Mensagem & HandoffLink (sem avatares nem iniciais)',
+    composerLabel: 'Composer (anatomia exata aprovada)',
+    contextLabel: 'Contexto',
+    hintText: 'Ctrl+Enter para enviar',
+    interrupt: 'Interromper',
+    runningLabel: 'Executando',
   },
 } as const
 

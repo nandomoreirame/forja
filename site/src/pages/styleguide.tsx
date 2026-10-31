@@ -1,5 +1,15 @@
-import { ChevronUp, FolderGit2, Pencil, Settings, SquareTerminal, Terminal } from 'lucide-react'
+import {
+  ChevronUp,
+  FolderGit2,
+  MessageCircle,
+  Pencil,
+  Settings,
+  SquareTerminal,
+  Terminal,
+  TriangleAlert,
+} from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
+import { cn } from '@/shared/ui/utils'
 import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui'
 import {
   AppStatusbar,
@@ -58,33 +68,6 @@ function Section({
   )
 }
 
-function HandoffLink({ text, action }: { text: string; action: string }) {
-  return (
-    <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-[12px]">
-      <span className="text-primary">▲</span>
-      <span className="flex-1">{text}</span>
-      <Button variant="ghost" size="sm">
-        {action}
-      </Button>
-    </div>
-  )
-}
-
-function InlineNotice({ children, tone }: { children: React.ReactNode; tone: 'muted' | 'danger' }) {
-  return (
-    <p
-      role={tone === 'danger' ? 'alert' : 'status'}
-      className={
-        tone === 'danger'
-          ? 'rounded-md border border-destructive/40 px-3 py-2 text-[12px] text-destructive'
-          : 'rounded-md border border-border px-3 py-2 text-[12px] text-muted-foreground'
-      }
-    >
-      {children}
-    </p>
-  )
-}
-
 function Card({
   label,
   code,
@@ -95,14 +78,52 @@ function Card({
   children: React.ReactNode
 }) {
   return (
-    <div className="grid content-start gap-3 rounded-lg border border-border bg-card p-4">
-      <div className="flex items-center gap-3">
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
-        {code ? (
-          <span className="ml-auto font-mono text-[11px] text-muted-foreground">{code}</span>
-        ) : null}
+    <div className="space-y-3 rounded-[3px] border border-border bg-card p-4">
+      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+        <span className="font-medium tracking-wider uppercase">{label}</span>
+        {code ? <span>{code}</span> : null}
       </div>
       {children}
+    </div>
+  )
+}
+
+function HandoffLink({ text, action }: { text: string; action: string }) {
+  return (
+    <div className="flex items-center justify-between rounded-[3px] border border-border bg-background p-2.5 text-[12px]">
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <TriangleAlert className="size-3.5 text-primary" aria-hidden="true" />
+        <span>{text}</span>
+      </div>
+      <button type="button" className="text-[12px] font-medium text-primary hover:underline">
+        {action}
+      </button>
+    </div>
+  )
+}
+
+function InlineNotice({
+  children,
+  tone,
+  icon,
+}: {
+  children: React.ReactNode
+  tone: 'muted' | 'danger'
+  icon: 'chat' | 'alert'
+}) {
+  const Icon = icon === 'chat' ? MessageCircle : TriangleAlert
+  return (
+    <div
+      role={tone === 'danger' ? 'alert' : 'status'}
+      className={cn(
+        'flex items-center gap-2.5 rounded-[3px] border p-3 text-[12px]',
+        tone === 'danger'
+          ? 'border-[#ff4d4f]/30 bg-[#ff4d4f]/10 text-[#ff4d4f]'
+          : 'border-border bg-card text-muted-foreground',
+      )}
+    >
+      <Icon className="size-4 shrink-0" aria-hidden="true" />
+      <span>{children}</span>
     </div>
   )
 }
@@ -349,33 +370,46 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
         description={sec.conversation.description}
         code="conversation.bundle.tsx"
       >
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="grid gap-3">
-            <Messages
-              label={t.gallery.conversation}
-              items={[
-                { id: 'u', author: x.you, role: 'user', text: x.userMessage },
-                { id: 'a', author: roles[2], role: 'agent', text: x.agentMessage },
-              ]}
-            />
-            <HandoffLink text={x.handoff} action={x.viewRequest} />
-          </div>
-          <div className="grid content-start gap-3">
-            <Composer
-              recipients={mock.recipients}
-              recipientId={mock.recipients[2].id}
-              onRecipientChange={() => {}}
-              featureLabel={mock.features[0]}
-              targetLabel={mock.targetPath}
-              value=""
-              onChange={() => {}}
-              onSend={() => {}}
-              placeholder={mock.prompt}
-              sendLabel={t.product.send}
-            />
-            <InlineNotice tone="muted">{t.product.empty}</InlineNotice>
-            <InlineNotice tone="danger">{x.inlineError}</InlineNotice>
-          </div>
+        <Card label={sc.convLabel}>
+          <Messages
+            label={sc.convLabel}
+            items={[
+              { id: 'u', author: x.you, role: 'user', text: x.userMessage },
+              {
+                id: 'a',
+                author: roles[2],
+                role: 'agent',
+                text: x.agentMessage,
+                status: sc.runningLabel,
+                action: sc.interrupt,
+              },
+            ]}
+          />
+          <HandoffLink text={x.handoff} action={x.viewRequest} />
+        </Card>
+        <Card label={sc.composerLabel} code="composer.tsx">
+          <Composer
+            recipients={mock.recipients}
+            recipientId={mock.recipients[2].id}
+            onRecipientChange={() => {}}
+            featureLabel={mock.features[0]}
+            targetLabel={mock.targetPath}
+            value=""
+            onChange={() => {}}
+            onSend={() => {}}
+            placeholder={mock.prompt}
+            contextLabel={sc.contextLabel}
+            sendLabel={t.product.send}
+            shortcutHint={sc.hintText}
+          />
+        </Card>
+        <div className="grid grid-cols-2 gap-4">
+          <InlineNotice tone="muted" icon="chat">
+            {t.product.empty}
+          </InlineNotice>
+          <InlineNotice tone="danger" icon="alert">
+            {x.inlineError}
+          </InlineNotice>
         </div>
       </Section>
 
