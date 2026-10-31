@@ -1,11 +1,11 @@
 ---
 feature: conversation-screen
-phase: plan-complete
+phase: implement
 started_at: 2026-10-31
 approved_at: 2026-10-31
 spec_path: docs/specs/conversation-screen/SPEC.md
 plan_path: docs/plans/2026-10-31-conversation-screen.md
-implementation_status: not-started
+implementation_status: in-progress
 validation_status: not-run
 review_status: not-started
 ---

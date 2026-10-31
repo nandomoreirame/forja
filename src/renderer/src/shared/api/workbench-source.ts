@@ -46,6 +46,18 @@ export interface ProjectSnapshot {
 export interface SettingsSnapshot {
   agents: { id: RoleId; model: string; instructions: string }[]
 }
+export type ReplyEvent =
+  | { type: 'start' }
+  | { type: 'text'; chunk: string }
+  | { type: 'terminal'; terminalId: string; line: string }
+  | { type: 'completed' }
+  | { type: 'interrupted' }
+export type ReplyTimer = number | ReturnType<typeof setTimeout>
+export interface ReplyOptions {
+  instant?: boolean
+  setTimeout?: (callback: () => void, delay: number) => ReplyTimer
+  clearTimeout?: (timer: ReplyTimer) => void
+}
 export interface WorkbenchSource {
   readonly locale: Locale
   addProject(project: ProjectSummary): Promise<ProjectSnapshot>
@@ -53,11 +65,10 @@ export interface WorkbenchSource {
   loadProject(id: string): Promise<ProjectSnapshot>
   readArtifact(id: string): Promise<string>
   streamReply(
-    featureId: string,
-    role: RoleId,
-    prompt: string,
-    onChunk: (text: string) => void,
-  ): Promise<void>
+    request: { featureId: string; role: RoleId; prompt: string },
+    onEvent: (event: ReplyEvent) => void,
+    options?: ReplyOptions,
+  ): () => void
   loadSettings(): Promise<SettingsSnapshot>
   saveSettings(settings: SettingsSnapshot): Promise<void>
 }

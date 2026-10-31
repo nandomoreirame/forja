@@ -38,9 +38,6 @@ it('keeps deferred integrations explicitly unavailable', async () => {
   await expect(source.readArtifact('missing')).rejects.toThrow('Not implemented in this slice')
   await expect(source.loadSettings()).rejects.toThrow('Not implemented in this slice')
   await expect(source.saveSettings({ agents: [] })).rejects.toThrow('Not implemented in this slice')
-  await expect(source.streamReply('id', 'research', 'prompt', () => {})).rejects.toThrow(
-    'Not implemented in this slice',
-  )
 })
 
 it('keeps screens independent from mock modules', () => {
