@@ -1,37 +1,104 @@
 import type { ReactNode } from 'react'
-import { Button, ForjaMark } from '@/shared/ui'
-import { Search, Settings } from 'lucide-react'
-
+import {
+  Button,
+  ForjaMark,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/shared/ui'
+import { Search, Settings, Terminal, ChevronLeft, ChevronRight } from 'lucide-react'
 export interface AppTopbarProps {
   brand: string
   commandText: string
   settingsLabel: string
   onSettings?: () => void
+  onBack?: () => void
+  onForward?: () => void
+  canBack?: boolean
+  canForward?: boolean
+  onCommand?: () => void
+  onTerminal?: () => void
+  terminalOpen?: boolean
+  backLabel?: string
+  forwardLabel?: string
+  terminalLabel?: string
 }
-
-export function AppTopbar({ brand, commandText, settingsLabel, onSettings }: AppTopbarProps) {
-  return (
-    <header className="grid h-10 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-secondary px-3">
-      <div className="flex items-center gap-2">
-        <ForjaMark className="size-4 text-primary" />
-        <span className="text-[11px] font-bold tracking-wider text-foreground">{brand}</span>
-        <span className="rounded-sm border border-border px-1.5 text-[10px] text-muted-foreground">
-          v2.0
-        </span>
-      </div>
-      <div className="flex h-7 w-[460px] items-center gap-2 rounded-sm border border-border bg-background px-3 text-[12px]">
-        <Search className="size-3.5 text-muted-foreground" aria-hidden="true" />
-        <span className="flex-1 text-foreground">{commandText}</span>
-        <kbd className="rounded-sm border border-border px-1.5 font-sans text-[10px] text-muted-foreground">
-          Ctrl+Shift+P
-        </kbd>
-      </div>
-      <div className="flex justify-end">
-        <Button variant="ghost" size="icon-sm" aria-label={settingsLabel} onClick={onSettings}>
-          <Settings />
+export function AppTopbar({
+  brand,
+  commandText,
+  settingsLabel,
+  onSettings,
+  onBack,
+  onForward,
+  canBack,
+  canForward,
+  onCommand,
+  onTerminal,
+  terminalOpen,
+  backLabel = 'Back',
+  forwardLabel = 'Forward',
+  terminalLabel = 'Toggle terminals',
+}: AppTopbarProps) {
+  const icon = (
+    label: string,
+    child: ReactNode,
+    action?: () => void,
+    disabled?: boolean,
+    pressed?: boolean,
+  ) => (
+    <Tooltip key={label}>
+      <TooltipTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          aria-label={label}
+          disabled={disabled}
+          onClick={action}
+          aria-pressed={pressed}
+        >
+          {child}
         </Button>
-      </div>
-    </header>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+  return (
+    <TooltipProvider>
+      <header className="flex h-10 shrink-0 items-center justify-between border-b border-border bg-sidebar px-3">
+        <div className="flex items-center gap-2">
+          <ForjaMark className="size-2.5 text-primary" />
+          <span className="text-xs font-bold tracking-wider">{brand}</span>
+          <span className="text-[10px] text-muted-foreground">v2.0</span>
+        </div>
+        <div className="mx-4 flex min-w-0 max-w-[460px] flex-1 items-center gap-1.5">
+          {icon(backLabel, <ChevronLeft className="size-3.5" />, onBack, !canBack)}
+          {icon(forwardLabel, <ChevronRight className="size-3.5" />, onForward, !canForward)}
+          <button
+            onClick={onCommand}
+            className="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-sm border border-border bg-background px-2.5 text-xs hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <Search className="size-3.5 text-muted-foreground" aria-hidden="true" />
+            <span className="flex-1 truncate text-left">{commandText}</span>
+            <kbd className="hidden rounded-sm border border-border bg-secondary px-1.5 py-0.5 text-[10px] text-muted-foreground sm:inline-flex">
+              Ctrl+Shift+P
+            </kbd>
+          </button>
+        </div>
+        <div className="flex gap-2">
+          {onTerminal
+            ? icon(
+                terminalLabel,
+                <Terminal className="size-4 text-primary" />,
+                onTerminal,
+                false,
+                terminalOpen,
+              )
+            : null}
+          {icon(settingsLabel, <Settings className="size-4" />, onSettings)}
+        </div>
+      </header>
+    </TooltipProvider>
   )
 }
 
@@ -41,7 +108,7 @@ export interface AppStatusbarProps {
 
 export function AppStatusbar({ items }: AppStatusbarProps) {
   return (
-    <footer className="flex h-8 items-center gap-4 border-t border-border bg-secondary px-3 text-[11px] text-muted-foreground">
+    <footer className="flex h-8 shrink-0 items-center justify-between gap-4 border-t border-border bg-secondary px-3 text-[11px] text-muted-foreground">
       {items.map((item) => (
         <span key={item}>{item}</span>
       ))}

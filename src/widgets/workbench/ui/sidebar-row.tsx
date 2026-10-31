@@ -7,7 +7,8 @@ export interface SidebarRowProps {
   title: string
   detail?: string
   state?: UiState
-  stateLabel?: string
+  stateLabel?: ReactNode
+  className?: string
   selected?: boolean
 }
 
@@ -18,6 +19,7 @@ export function SidebarRow({
   state,
   stateLabel,
   selected = false,
+  className,
 }: SidebarRowProps) {
   const tone = state ? statusTone(state) : 'muted'
 
@@ -27,6 +29,7 @@ export function SidebarRow({
       className={cn(
         'flex h-8 items-center gap-2 rounded-[3px] border border-border bg-background px-2.5 text-[12px] text-foreground',
         selected && 'bg-secondary font-medium text-primary',
+        className,
       )}
     >
       <span
