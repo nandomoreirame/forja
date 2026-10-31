@@ -1,7 +1,5 @@
-import { ArrowRight, Circle, ExternalLink, Lock, Plus, SquareTerminal } from 'lucide-react'
+import { ArrowRight, ExternalLink, Lock } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
-import { galleryCopy } from '../mocks/gallery'
-import { landingCopy } from '../mocks/landing-copy'
 import { productMock } from '../mocks/product'
 import { LocaleLink } from '../components/locale-link'
 
@@ -41,9 +39,6 @@ function ProductMock({ locale }: { locale: Locale }) {
 
 export function Landing({ locale }: { locale: Locale }) {
   const t = getDictionary(locale)
-  const mock = productMock(locale)
-  const copy = landingCopy(locale)
-  const x = galleryCopy(locale).extra
   const otherLocale: Locale = locale === 'en' ? 'pt-br' : 'en'
 
   return (
@@ -222,87 +217,44 @@ export function Landing({ locale }: { locale: Locale }) {
                     <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">{body}</p>
                   </div>
                   {index === 0 ? (
-                    <div className="space-y-2 rounded-sm border border-border bg-background p-3">
-                      <div className="flex items-center gap-1 border-b border-border pb-2">
-                        <div className="flex items-center gap-2 border-b-2 border-primary bg-card px-2.5 py-1 text-[11px] font-semibold text-foreground">
-                          <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
-                          <span>{copy.planned[0]}</span>
-                        </div>
-                        <div className="flex items-center gap-2 px-2.5 py-1 text-[11px] text-muted-foreground">
-                          <Circle className="size-1.5 fill-current" aria-hidden="true" />
-                          <span>{copy.planned[1]}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between pt-1 font-sans text-[10px] text-muted-foreground">
-                        <span>
-                          {t.product.destination}:{' '}
-                          <span className="text-foreground">{mock.worktree}</span>
-                        </span>
-                        <span className="text-primary">{t.product.branch}: feat/session</span>
-                      </div>
-                    </div>
+                    <img
+                      src="/stitch/cards/tab-per-feature.png"
+                      alt="Feature tabs: Renovar sessão, Busca rápida"
+                      width={956}
+                      height={0}
+                      loading="lazy"
+                      className="block h-auto w-full rounded-sm"
+                    />
                   ) : null}
                   {index === 1 ? (
-                    <div className="relative space-y-2 rounded-sm border border-border bg-background p-3">
-                      <div className="flex items-center justify-between border-b border-border pb-1.5 font-sans text-[10px] text-muted-foreground">
-                        <span className="font-semibold text-foreground">{copy.docId}</span>
-                        <span className="rounded-sm border border-emerald-800/40 bg-emerald-950/30 px-1 text-emerald-400">
-                          {copy.approved}
-                        </span>
-                      </div>
-                      <p className="text-[11px] leading-relaxed text-foreground">
-                        {x.selectionBefore}
-                        <mark className="rounded-sm border border-primary bg-primary/10 px-0.5 text-foreground">
-                          {x.selectedPart}
-                        </mark>
-                        {x.selectionAfter}
-                      </p>
-                      <span className="inline-flex items-center gap-1.5 rounded-sm border border-border bg-secondary px-2 py-1 text-[10px]">
-                        {x.reviewSelection}
-                      </span>
-                    </div>
+                    <img
+                      src="/stitch/cards/documents.png"
+                      alt="SPEC-042 document with the selected passage and the Review with agent action"
+                      width={956}
+                      height={0}
+                      loading="lazy"
+                      className="block h-auto w-full rounded-sm"
+                    />
                   ) : null}
                   {index === 2 ? (
-                    <div className="space-y-2 rounded-sm border border-border bg-background p-3">
-                      <div className="flex items-center gap-1 border-b border-border pb-2">
-                        <div className="flex items-center gap-1.5 border-t border-primary bg-card px-2.5 py-1 text-[10px] font-semibold text-primary">
-                          <SquareTerminal className="size-3" aria-hidden="true" />
-                          {mock.terminals[1]}
-                        </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] text-muted-foreground">
-                          <SquareTerminal className="size-3" aria-hidden="true" />
-                          {mock.terminals[0]}
-                        </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] text-muted-foreground">
-                          <SquareTerminal className="size-3" aria-hidden="true" />
-                          {mock.terminals[2]}
-                        </div>
-                        <Plus className="ml-auto size-3 text-muted-foreground" aria-hidden="true" />
-                      </div>
-                      <div className="flex items-center justify-between font-sans text-[10px] text-muted-foreground">
-                        <span className="truncate">{mock.targetPath}</span>
-                        <span>
-                          {copy.terminals} {mock.terminals[0]} ✓ · {mock.terminals[1]} ●
-                        </span>
-                      </div>
-                    </div>
+                    <img
+                      src="/stitch/cards/execution.png"
+                      alt="Agent terminals: dev, testes and zsh with the collapsed footer"
+                      width={956}
+                      height={0}
+                      loading="lazy"
+                      className="block h-auto w-full rounded-sm"
+                    />
                   ) : null}
                   {index === 3 ? (
-                    <div className="space-y-2 rounded-sm border border-border bg-background p-3">
-                      {mock.roles.map((role, roleIndex) => (
-                        <div
-                          key={role}
-                          className={
-                            roleIndex === 2
-                              ? 'flex items-center justify-between rounded-sm border-l-2 border-primary bg-primary/10 px-2 py-1 text-[11px] text-primary'
-                              : 'flex items-center justify-between rounded-sm px-2 py-1 text-[11px] text-muted-foreground'
-                          }
-                        >
-                          <span>{role}</span>
-                          <span className="text-[10px]">{copy.skillsLabel}</span>
-                        </div>
-                      ))}
-                    </div>
+                    <img
+                      src="/stitch/cards/tools.png"
+                      alt="Roles and CLI configuration: Implementador (Codex) and Revisor (agy)"
+                      width={956}
+                      height={0}
+                      loading="lazy"
+                      className="block h-auto w-full rounded-sm"
+                    />
                   ) : null}
                 </article>
               ))}
