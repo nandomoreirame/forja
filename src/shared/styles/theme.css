@@ -126,6 +126,30 @@
   * {
     @apply border-border outline-ring/50;
   }
+  * {
+    scrollbar-color: #3a3a3d transparent;
+    scrollbar-width: thin;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #3a3a3d;
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
   body {
     @apply bg-background text-foreground;
   }
