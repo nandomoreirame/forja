@@ -39,8 +39,10 @@ Shared decisions for the six screen slices (`project-home-screen`, `command-pale
 
 ### P1 (MVP)
 
-1. **[REQ-076]** WHEN the user activates the topbar gear, "Configure agents"/"Edit agents" or "+ Add skill" THEN the system SHALL open Settings in the center area with the Agents tab (and the clicked agent selected) or the General tab, keeping feature tabs, feature context and the global composer visible.
+1. **[REQ-076]** WHEN the user activates the sidebar Settings menu item, "Configure agents"/"Edit agents" or "+ Add skill" THEN the system SHALL open Settings in the center area with the Agents tab (and the clicked agent selected) or the General tab, keeping feature tabs, feature context and the global composer visible.
 2. **[REQ-077]** WHEN Settings is shown THEN the system SHALL offer, in Agents, the fixed role selector, AI tool (claude, codex, opencode, agy, grok) with a mock detection indicator, optional model (empty means the tool default), reasoning level with an availability hint, additional instructions, a skills checklist with an active count and the auto-invoke switch; in General, the skills folder with refresh, interrupt policy, read-only guided mode with three rounds and the inactivity window; changes SHALL persist only through Save, which is enabled when the form is dirty, and leaving with unsaved changes SHALL ask for confirmation.
+3. **[REQ-081]** WHEN a project is open THEN the left sidebar SHALL end with a menu holding "Usage and limits", "Memory", "Connectors" and "Settings" (the Settings entry moves out of the topbar); Memory and Connectors SHALL open their own tabs in the Settings area with mock content (project memories with source and date; MCP connectors with status and a mock enable switch).
+4. **[REQ-082]** WHEN the user activates "Usage and limits" THEN the system SHALL show a popover with one tab per AI tool (claude, codex, opencode, agy, grok) and, for the selected tool, the plan, account, last update and one card per window (5-hour session and weekly) with the used percentage, a progress bar, a pace marker, the time until reset and a pace label; a tool without usage data SHALL show it as unavailable instead of estimating (REQ-060), and the mock data SHALL come from `WorkbenchSource`.
 
 ### P2 (Should Have)
 
@@ -79,3 +81,5 @@ RTL tests in `test/renderer/` with jsdom; Playwright smoke against `npm run dev:
 | --- | --- | --- | --- |
 | REQ-076 | Settings entry points | P1 | Approved 2026-10-31; not implemented |
 | REQ-077 | Settings form with manual save | P1 | Approved 2026-10-31; not implemented |
+| REQ-081 | Sidebar menu with Memory and Connectors | P1 | Approved 2026-10-31 (user request during implementation); not implemented |
+| REQ-082 | Usage and limits widget | P1 | Approved 2026-10-31 (user request during implementation); not implemented |

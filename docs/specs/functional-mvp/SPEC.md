@@ -121,11 +121,13 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 73. **[REQ-073]** WHEN the user activates "+ Add plan" or an agent row while no feature tab is open THEN the system SHALL show the centered composer with the Planner or that agent preselected; "+ Add spec" SHALL preselect Research.
 74. **[REQ-074]** WHEN the user activates an agent row in the sidebar or types a valid @mention (token boundary, English or localized role alias, ignored inside code fences) THEN the system SHALL make that agent the composer recipient for the selected feature, with the latest explicit choice winning.
 75. **[REQ-075]** WHEN the user activates "View request", the terminal "+" or "Stop process" THEN the system SHALL scroll to and highlight the source message, add a mock manual shell tab labeled with the shell name, or mark that mock execution stopped with its output preserved.
-76. **[REQ-076]** WHEN the user activates the topbar gear, "Configure agents"/"Edit agents" or "+ Add skill" THEN the system SHALL open Settings in the center area with the Agents tab (and the clicked agent selected) or the General tab, keeping feature tabs, feature context and the global composer visible.
+76. **[REQ-076]** WHEN the user activates the sidebar Settings menu item, "Configure agents"/"Edit agents" or "+ Add skill" THEN the system SHALL open Settings in the center area with the Agents tab (and the clicked agent selected) or the General tab, keeping feature tabs, feature context and the global composer visible.
 77. **[REQ-077]** WHEN Settings is shown THEN the system SHALL offer, in Agents, the fixed role selector, AI tool (claude, codex, opencode, agy, grok) with a mock detection indicator, optional model (empty means the tool default), reasoning level with an availability hint, additional instructions, a skills checklist with an active count and the auto-invoke switch; in General, the skills folder with refresh, interrupt policy, read-only guided mode with three rounds and the inactivity window; changes SHALL persist only through Save, which is enabled when the form is dirty, and leaving with unsaved changes SHALL ask for confirmation.
 78. **[REQ-078]** WHEN the user activates a spec, plan or review in the sidebar THEN the system SHALL open (or focus) a closable document tab showing the document header with its state and, for a draft spec or plan, a mock approve action, followed by the rendered Markdown and Mermaid content from the mock source.
 79. **[REQ-079]** WHEN the user selects text in a document and chooses "Review with agent" THEN the system SHALL prefill the global composer with the artifact name, the quoted excerpt and the artifact's author agent as recipient, without sending.
 80. **[REQ-080]** WHEN a feature conversation shows agent replies or user messages THEN the system SHALL render them as sanitized Markdown with copyable code blocks, collapsible command runs (command, exit status and output), log excerpts and image attachments on user messages, and the mock data SHALL include examples of each in both locales.
+81. **[REQ-081]** WHEN a project is open THEN the left sidebar SHALL end with a menu holding "Usage and limits", "Memory", "Connectors" and "Settings" (the Settings entry moves out of the topbar); Memory and Connectors SHALL open their own tabs in the Settings area with mock content (project memories with source and date; MCP connectors with status and a mock enable switch).
+82. **[REQ-082]** WHEN the user activates "Usage and limits" THEN the system SHALL show a popover with one tab per AI tool (claude, codex, opencode, agy, grok) and, for the selected tool, the plan, account, last update and one card per window (5-hour session and weekly) with the used percentage, a progress bar, a pace marker, the time until reset and a pace label; a tool without usage data SHALL show it as unavailable instead of estimating (REQ-060), and the mock data SHALL come from `WorkbenchSource`.
 
 ### P2 (Should Have)
 
@@ -320,6 +322,8 @@ None in this delivery; deferred items are explicit below.
 | REQ-078 | Document tabs | P1 | Approved 2026-10-31; not implemented |
 | REQ-079 | Excerpt review | P1 | Approved 2026-10-31; not implemented |
 | REQ-080 | Rich mock conversation content | P1 | Approved 2026-10-31; not implemented |
+| REQ-081 | Sidebar menu with Memory and Connectors | P1 | Approved 2026-10-31; not implemented |
+| REQ-082 | Usage and limits widget | P1 | Approved 2026-10-31; not implemented |
 
 ## Implementation Sequence
 

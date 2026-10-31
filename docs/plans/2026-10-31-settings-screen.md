@@ -7,7 +7,7 @@
 **Architecture:** Frontend-only mock screen in the desktop renderer. Screens read data only through `WorkbenchSource` and the `createWorkbenchStore` Zustand store; widgets and primitives come from `src/widgets` and `src/shared/ui`. No CLI, Git, MCP, PTY, filesystem or network access.
 **Tech Stack:** Electron renderer (React 19, TypeScript), Tailwind 4, shadcn/ui (radix-nova), Zustand, Vitest + RTL, Playwright for the dev:web smoke.
 **Order:** 01e of the mock screens (frontend mock screens, implementation batch 2)
-**Total Tasks:** 4
+**Total Tasks:** 6
 **Estimated Complexity:** medium
 **Status:** Spec approved 2026-10-31; planned; not implemented.
 
@@ -132,7 +132,7 @@ Expected: FAIL on the asserted behavior, not on a missing dependency, environmen
 
 **Step 3: Write minimal implementation**
 
-Implement `loadSettings`/`saveSettings` in the mock source (in-memory, deep-copied, resets on reload). Store: `openSettings({ tab, role? })` navigates to the `settings` view. Entry points: topbar gear (Agents tab, current recipient or Research), sidebar "Configure agents"/"+ Edit agents" (Agents tab), "+ Add skill" (General tab), and the command bar Settings command. In a project with features, Settings replaces only the conversation area: feature tabs, feature context and the docked composer stay (REQ-047); in a project without features it replaces the home.
+Implement `loadSettings`/`saveSettings` in the mock source (in-memory, deep-copied, resets on reload). Store: `openSettings({ tab, role? })` navigates to the `settings` view. Entry points: the sidebar Settings menu item (Agents tab, current recipient or Research; the topbar gear is removed, see Task 5), sidebar "Configure agents"/"+ Edit agents" (Agents tab), "+ Add skill" (General tab), and the command bar Settings command. In a project with features, Settings replaces only the conversation area: feature tabs, feature context and the docked composer stay (REQ-047); in a project without features it replaces the home.
 
 **Step 4: Run test to verify it passes**
 
@@ -261,6 +261,142 @@ Run the task gates from the repository root: `rtk npm run typecheck`, `rtk npm r
 **Step 5: Commit at implementation time**
 
 Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 5: End the sidebar with the Usage, Memory, Connectors and Settings menu
+
+**Requirement:** REQ-081, REQ-076
+**Depends on:** Task 3
+**Files:**
+- Modify: `src/renderer/src/widgets/project-sidebar.tsx`
+- Modify: `src/widgets/workbench/ui/app-chrome.tsx`
+- Modify: `src/renderer/src/pages/workbench/workbench-page.tsx`
+- Modify: `src/renderer/src/pages/settings/settings-page.tsx`
+- Modify: `src/renderer/src/shared/api/workbench-source.ts`
+- Modify: `src/renderer/src/shared/api/mock-source.ts`
+- Modify: `src/shared/i18n/en.ts`
+- Modify: `src/shared/i18n/pt-br.ts`
+- Create: `test/renderer/sidebar-menu.test.tsx`
+- Test: `test/renderer/sidebar-menu.test.tsx`
+
+**Team:**
+- Track: frontend
+- Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
+- Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
+
+**Step 1: Write the failing test**
+
+```tsx
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { expect, it } from 'vitest'
+import { createMockSource } from '../../src/renderer/src/shared/api'
+import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
+it('opens Memory, Connectors and Settings from the sidebar menu instead of the topbar', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  const sidebar = await screen.findByRole('complementary', { name: 'dev' })
+  const menu = within(sidebar).getByRole('navigation', { name: 'Workspace' })
+  expect(within(menu).getAllByRole('button').map((b) => b.textContent)).toEqual([
+    'Usage and limits', 'Memory', 'Connectors', 'Settings',
+  ])
+  expect(screen.getAllByRole('button', { name: 'Settings' })).toHaveLength(1)
+  fireEvent.click(within(menu).getByRole('button', { name: 'Connectors' }))
+  expect(screen.getByRole('tab', { name: 'Connectors' })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('switch', { name: /GitHub/ })).toBeInTheDocument()
+  fireEvent.click(within(menu).getByRole('button', { name: 'Memory' }))
+  expect(screen.getByRole('tab', { name: 'Memory' })).toHaveAttribute('aria-selected', 'true')
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npx vitest run test/renderer/sidebar-menu.test.tsx`
+
+Expected: FAIL on the asserted behavior.
+
+**Step 3: Write minimal implementation**
+
+Remove the gear (and its props) from `AppTopbar`. The sidebar ends with a `nav` ("Workspace" / "Espaço de trabalho") pinned to the bottom, separated by a border: "Usage and limits" (chart icon, opens the Task 6 popover), "Memory" (brain), "Connectors" (plug) and "Settings" (gear), each a full-width row with icon and label, the active one highlighted with the Settings view. Settings gains two tabs: Memory (mock project memories: title, kind, source agent, date; read-only list with an empty state) and Connectors (mock MCP connectors: name, transport, status badge and an enable switch that only changes mock state). `WorkbenchSource` gets `loadMemories()` and `loadConnectors()`; the mock returns localized fixtures. `Ctrl+,` and the command bar Settings command keep working.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npx vitest run test/renderer/sidebar-menu.test.tsx`. Expected: PASS. Add and run these checks:
+
+- The menu stays visible at the bottom when the sidebar content scrolls.
+- Every row is keyboard reachable and announces the current view with `aria-current="page"`.
+
+Run the task gates: `rtk npm run typecheck`, `rtk npm run lint`, `rtk npm test`, `rtk npm run build`.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` after the gates pass. Never push.
+
+### Task 6: Show the Usage and limits widget
+
+**Requirement:** REQ-082, REQ-060
+**Depends on:** Task 5
+**Files:**
+- Create: `src/widgets/usage/ui/usage-limits.tsx`
+- Create: `src/widgets/usage/index.ts`
+- Create: `src/renderer/src/features/usage/usage-popover.tsx`
+- Modify: `src/renderer/src/shared/api/workbench-source.ts`
+- Modify: `src/renderer/src/shared/api/mock-source.ts`
+- Modify: `site/src/pages/styleguide.tsx`
+- Create: `test/web/usage-limits.test.tsx`
+- Test: `test/web/usage-limits.test.tsx`
+
+**Team:**
+- Track: frontend
+- Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
+- Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
+
+**Step 1: Write the failing test**
+
+```tsx
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { expect, it } from 'vitest'
+import { UsageLimits } from '../../src/widgets/usage'
+const usage = [
+  { tool: 'claude', plan: 'Pro', account: 'dev@example.com', updatedLabel: 'updated now',
+    windows: [
+      { id: 'session', label: 'Session (5h)', usedPercent: 35, pacePercent: 30, resetLabel: 'resets in 3h16m', paceLabel: 'on pace' },
+      { id: 'week', label: 'Weekly', usedPercent: 11, pacePercent: 20, resetLabel: 'resets in 6d5h', paceLabel: 'on pace' },
+    ] },
+  { tool: 'codex', plan: 'Plus', account: 'dev@example.com', updatedLabel: 'updated 2 min ago', windows: [] },
+] as const
+it('shows one tab per tool with session and weekly meters, and unavailable usage', () => {
+  render(<UsageLimits title="AI usage" usage={[...usage]} unavailableLabel="Usage unavailable for this tool" />)
+  expect(screen.getByRole('tab', { name: 'Claude' })).toHaveAttribute('aria-selected', 'true')
+  const session = screen.getByRole('meter', { name: 'Session (5h)' })
+  expect(session).toHaveAttribute('aria-valuenow', '35')
+  expect(within(session.closest('section')!).getByText(/resets in 3h16m/)).toBeInTheDocument()
+  expect(screen.getByRole('meter', { name: 'Weekly' })).toHaveAttribute('aria-valuenow', '11')
+  fireEvent.click(screen.getByRole('tab', { name: 'Codex' }))
+  expect(screen.getByText('Usage unavailable for this tool')).toBeInTheDocument()
+  expect(screen.queryByRole('meter')).toBeNull()
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npx vitest run test/web/usage-limits.test.tsx`
+
+Expected: FAIL on the asserted behavior.
+
+**Step 3: Write minimal implementation**
+
+`UsageLimits` (shared widget, props only): header with title and refresh/close icon buttons (tooltips), a tab row of tools (`ToolIcon` plus name; active tab uses the primary fill like the AIBar reference), the tool line (icon, product name, plan badge, account, last update), then one card per window: label, percentage (primary when under 80, danger at 80 or more), a track with the used bar and a thin pace marker below, and "resets in … · pace" text. Meters use `role="meter"` with `aria-valuenow/min/max` and the window label. Unavailable tools show the label instead of numbers (never estimate). `usage-popover.tsx` anchors it to the sidebar "Usage and limits" row (shadcn Popover, side right/top), loads `source.loadUsage()` (mock: Claude with both windows, Codex with session only, OpenCode unavailable, Agy and Grok with mock numbers), and refresh reloads. Add the widget to the styleguide.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npx vitest run test/web/usage-limits.test.tsx`. Expected: PASS. Add and run these checks:
+
+- The popover opens from the sidebar row, closes on Escape and returns focus to the row.
+- Percentages are clamped to 0 to 100.
+
+Run the task gates: `rtk npm run typecheck`, `rtk npm run lint`, `rtk npm test`, `rtk npm run build`.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` after the gates pass. Never push.
 
 ## Final Validation and Handoff
 
