@@ -209,3 +209,16 @@ it('never reuses a shell id or name after closing a shell', async () => {
   expect(new Set(shells.map((t) => t.id)).size).toBe(shells.length)
   expect(new Set(shells.map((t) => t.label)).size).toBe(shells.length)
 })
+it('names a shell tab after the shell that actually started', async () => {
+  const store = await setup()
+  store.getState().addShell('feature-1')
+  store.getState().addShell('feature-1')
+  const [first, second] = store.getState().snapshot!.features[0].terminals.slice(-2)
+  store.getState().setTerminalShell('feature-1', first.id, 'fish')
+  store.getState().setTerminalShell('feature-1', second.id, 'bash')
+  const labels = store
+    .getState()
+    .snapshot!.features[0].terminals.slice(-2)
+    .map((t) => t.label)
+  expect(labels).toEqual(['fish', 'bash 2'])
+})

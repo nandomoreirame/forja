@@ -55,3 +55,24 @@ it('opens recent history inside a prompt without reloading', () => {
   expect(event.defaultPrevented).toBe(true)
   expect(run).toHaveBeenCalledOnce()
 })
+
+it('leaves every key to the shell while typing in a terminal', () => {
+  const run = vi.fn()
+  render(
+    <>
+      <Harness run={run} />
+      <div className="xterm">
+        <textarea aria-label="Terminal input" />
+      </div>
+    </>,
+  )
+  for (const init of [
+    { key: 'r', ctrlKey: true },
+    { key: 'P', ctrlKey: true, shiftKey: true },
+  ]) {
+    const event = new KeyboardEvent('keydown', { ...init, cancelable: true, bubbles: true })
+    screen.getByRole('textbox', { name: 'Terminal input' }).dispatchEvent(event)
+    expect(event.defaultPrevented).toBe(false)
+  }
+  expect(run).not.toHaveBeenCalled()
+})

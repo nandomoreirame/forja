@@ -34,6 +34,7 @@ export interface TerminalPreviewProps {
   maximized?: boolean
   maximizeLabel?: string
   restoreLabel?: string
+  body?: React.ReactNode
 }
 
 const stateClass: Record<TerminalTab['state'], string> = {
@@ -63,6 +64,7 @@ export function TerminalPreview({
   maximized = false,
   maximizeLabel = 'Maximize panel',
   restoreLabel = 'Restore panel',
+  body,
 }: TerminalPreviewProps) {
   return (
     <TooltipProvider delayDuration={300}>
@@ -196,9 +198,11 @@ export function TerminalPreview({
             <span className="break-all text-foreground">{cwd}</span>
           </p>
         ) : null}
-        <pre className="min-h-20 whitespace-pre-wrap px-3 py-3 font-mono text-[12px] leading-5 text-foreground">
-          {output.length > 0 ? output.join('\n') : emptyOutputLabel}
-        </pre>
+        {body ?? (
+          <pre className="min-h-20 whitespace-pre-wrap px-3 py-3 font-mono text-[12px] leading-5 text-foreground">
+            {output.length > 0 ? output.join('\n') : emptyOutputLabel}
+          </pre>
+        )}
       </section>
     </TooltipProvider>
   )

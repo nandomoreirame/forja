@@ -5,13 +5,39 @@ import { Button } from '@/shared/ui'
 import { getDictionary } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { FeatureSnapshot } from '@/renderer/src/shared/api'
+import { useEffect } from 'react'
 import { selectedTerminal, terminalStateLabel, terminalTabState } from './model'
+import { getPtyRuntime } from './pty-runtime'
+import { XtermView } from './xterm-view'
 
 export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
   const state = useWorkbench((s) => s)
   const d = getDictionary(state.source.locale)
   const a = d.app
   const active = selectedTerminal(feature, state.terminalTabs)
+  const runtime = getPtyRuntime()
+  const markExited = state.markTerminalExited
+  const setShell = state.setTerminalShell
+  useEffect(() => {
+    if (!runtime) return
+    runtime.listeners.add(markExited)
+    runtime.startListeners.add(setShell)
+    return () => {
+      runtime.listeners.delete(markExited)
+      runtime.startListeners.delete(setShell)
+    }
+  }, [runtime, markExited, setShell])
+  const liveShell =
+    runtime && feature && active?.kind === 'shell' ? (
+      <XtermView
+        key={active.id}
+        terminalId={active.id}
+        featureId={feature.id}
+        cwd={active.cwd ?? feature.worktree ?? feature.destination}
+        sessions={runtime.sessions}
+        label={active.label}
+      />
+    ) : undefined
   const header =
     active?.kind === 'agent' ? (
       <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-2 text-[11px]">
@@ -69,6 +95,7 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
         collapseLabel={a.collapseTerminals}
         tabsLabel={a.terminalTabs}
         header={header}
+        body={liveShell}
         cwd={active?.cwd}
         cwdLabel={a.workingDirectory}
         onAdd={feature ? () => state.addShell(feature.id) : undefined}
@@ -80,7 +107,11 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
         maximized={state.panels.terminalMaximized}
         maximizeLabel={a.maximizePanel}
         restoreLabel={a.restorePanel}
-        onClose={(id) => feature && state.closeTerminal(feature.id, id)}
+        onClose={(id) => {
+          if (!feature) return
+          runtime?.sessions.close(id)
+          state.closeTerminal(feature.id, id)
+        }}
         closeLabel={a.close}
       />
     </section>

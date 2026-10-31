@@ -58,6 +58,8 @@ export interface WorkbenchState {
   addShell(featureId: string): void
   stopTerminal(featureId: string, terminalId: string): void
   closeTerminal(featureId: string, terminalId: string): void
+  markTerminalExited(featureId: string, terminalId: string, exitCode: number): void
+  setTerminalShell(featureId: string, terminalId: string, shell: string): void
 }
 export function createWorkbenchStore(source: WorkbenchSource) {
   const replies = new Map<string, { cancel: () => void }>()
@@ -452,6 +454,28 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           else delete terminalTabs[featureId]
         }
         set({ terminalTabs })
+      },
+      setTerminalShell(featureId, terminalId, shell) {
+        const name = shell.trim()
+        if (!/^[\w.+-]{1,32}$/.test(name)) return
+        updateFeature(featureId, (item) => ({
+          ...item,
+          terminals: item.terminals.map((terminal) => {
+            if (terminal.id !== terminalId || terminal.kind !== 'shell') return terminal
+            const number = Number(terminal.id.split('-shell-')[1]) || 1
+            return { ...terminal, label: number > 1 ? `${name} ${number}` : name }
+          }),
+        }))
+      },
+      markTerminalExited(featureId, terminalId, exitCode) {
+        updateFeature(featureId, (item) => ({
+          ...item,
+          terminals: item.terminals.map((terminal) =>
+            terminal.id === terminalId
+              ? { ...terminal, state: exitCode === 0 ? 'completed' : 'failed' }
+              : terminal,
+          ),
+        }))
       },
       stopTerminal(featureId, terminalId) {
         updateFeature(featureId, (item) => ({

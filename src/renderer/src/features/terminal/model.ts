@@ -11,7 +11,7 @@ export function terminalTabState(terminal: MockTerminal): TerminalTab['state'] {
 }
 
 export function terminalStateLabel(terminal: MockTerminal, d: Dictionary): string {
-  if (terminal.kind === 'shell') return d.app.idle
+  if (terminal.kind === 'shell' && terminal.state === 'draft') return d.app.idle
   return terminal.state === 'interrupted' ? d.app.stopped : d.app.states[terminal.state]
 }
 

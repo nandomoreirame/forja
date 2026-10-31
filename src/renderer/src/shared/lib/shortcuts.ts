@@ -16,6 +16,7 @@ export function useShortcuts(map: Record<string, () => void>) {
         .filter(Boolean)
         .join('+')
       const target = event.target
+      if (target instanceof Element && target.closest('.xterm')) return
       const editable =
         target instanceof HTMLElement &&
         (target.isContentEditable ||
