@@ -218,42 +218,50 @@ export function Landing({ locale }: { locale: Locale }) {
                   </div>
                   {index === 0 ? (
                     <img
-                      src="/stitch/cards/tab-per-feature.png"
-                      alt="Feature tabs: Renovar sessão, Busca rápida"
-                      width={956}
-                      height={0}
+                      src={`/stitch/cards/${locale}/tab-per-feature.png`}
+                      alt={
+                        locale === 'en'
+                          ? 'Feature tabs: Renew session, Quick search'
+                          : 'Abas de feature: Renovar sessão, Busca rápida'
+                      }
                       loading="lazy"
-                      className="block h-auto w-full rounded-sm"
+                      className="h-[180px] w-full rounded-sm object-contain"
                     />
                   ) : null}
                   {index === 1 ? (
                     <img
-                      src="/stitch/cards/documents.png"
-                      alt="SPEC-042 document with the selected passage and the Review with agent action"
-                      width={956}
-                      height={0}
+                      src={`/stitch/cards/${locale}/documents.png`}
+                      alt={
+                        locale === 'en'
+                          ? 'SPEC-042 document with the selected passage and the Review with agent action'
+                          : 'Documento SPEC-042 com o trecho selecionado e a ação Revisar com o agente'
+                      }
                       loading="lazy"
-                      className="block h-auto w-full rounded-sm"
+                      className="h-[180px] w-full rounded-sm object-contain"
                     />
                   ) : null}
                   {index === 2 ? (
                     <img
-                      src="/stitch/cards/execution.png"
-                      alt="Agent terminals: dev, testes and zsh with the collapsed footer"
-                      width={956}
-                      height={0}
+                      src={`/stitch/cards/${locale}/execution.png`}
+                      alt={
+                        locale === 'en'
+                          ? 'Agent terminals: dev, tests and zsh with the collapsed footer'
+                          : 'Terminais do agente: dev, testes e zsh com o rodapé recolhido'
+                      }
                       loading="lazy"
-                      className="block h-auto w-full rounded-sm"
+                      className="h-[180px] w-full rounded-sm object-contain"
                     />
                   ) : null}
                   {index === 3 ? (
                     <img
-                      src="/stitch/cards/tools.png"
-                      alt="Roles and CLI configuration: Implementador (Codex) and Revisor (agy)"
-                      width={956}
-                      height={0}
+                      src={`/stitch/cards/${locale}/tools.png`}
+                      alt={
+                        locale === 'en'
+                          ? 'Roles and CLI configuration: Implementer (Codex) and Reviewer (agy)'
+                          : 'Papéis e CLIs configuradas: Implementador (Codex) e Revisor (agy)'
+                      }
                       loading="lazy"
-                      className="block h-auto w-full rounded-sm"
+                      className="h-[180px] w-full rounded-sm object-contain"
                     />
                   ) : null}
                 </article>
