@@ -61,6 +61,8 @@ export interface ProjectSnapshot {
   branches: string[]
   changes: { path: string; status: string }[]
   features: FeatureSnapshot[]
+  /** Shells opened while no feature is selected; they run in the project folder. */
+  terminals?: MockTerminal[]
 }
 export interface SettingsSnapshot {
   agents: { id: RoleId; model: string; instructions: string }[]

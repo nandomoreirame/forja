@@ -151,3 +151,22 @@ it('titles the tab with the running command and shows Idle only at the prompt', 
   act(() => emitProcess({ id: 'pty-1', name: 'zsh' }))
   expect(screen.getByRole('tab', { name: /zsh/ })).toHaveTextContent('Idle')
 })
+
+it('opens a project shell in the project folder when no feature is selected', async () => {
+  render(
+    <WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="contrateum.dev" />,
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
+  await waitFor(() =>
+    expect(api.create).toHaveBeenCalledWith({
+      cwd: '~/dev/projects/contrateum.dev',
+      cols: 80,
+      rows: 24,
+    }),
+  )
+  expect(screen.getByRole('tab', { name: /zsh/ })).toHaveAttribute('aria-selected', 'true')
+  fireEvent.click(screen.getByRole('button', { name: 'Close zsh' }))
+  expect(api.close).toHaveBeenCalledWith('pty-1')
+  expect(screen.queryByRole('tab', { name: /zsh/ })).toBeNull()
+})

@@ -97,3 +97,15 @@ it('maximizes the terminal panel over the conversation and closes it with the cl
   fireEvent.click(screen.getByRole('button', { name: 'Close panel' }))
   expect(screen.queryByRole('region', { name: 'Terminals' })).toBeNull()
 })
+
+it('adds a mock shell to a project without features in the browser build', async () => {
+  render(
+    <WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="contrateum.dev" />,
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
+  expect(screen.getByRole('tab', { name: /zsh/ })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByRole('region', { name: 'Terminals' })).toHaveTextContent(
+    '~/dev/projects/contrateum.dev $',
+  )
+})

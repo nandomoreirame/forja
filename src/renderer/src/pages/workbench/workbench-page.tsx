@@ -7,6 +7,7 @@ import { useEffect, useState, useRef } from 'react'
 import type { WorkbenchSource } from '@/renderer/src/shared/api'
 import {
   createWorkbenchStore,
+  projectTerminalScope,
   WorkbenchProvider,
   useWorkbench,
 } from '@/renderer/src/entities/feature'
@@ -89,6 +90,8 @@ function WorkbenchShell() {
           (f) => s.view.kind === 'conversation' && f.id === s.view.featureId,
         )
       : undefined
+  const terminalScope =
+    selectedFeature ?? (s.snapshot ? projectTerminalScope(s.snapshot) : undefined)
   useShortcuts({
     'ctrl+n': () => {
       if (s.snapshot) s.startCompose()
@@ -201,7 +204,7 @@ function WorkbenchShell() {
                     defaultSize={300}
                     groupResizeBehavior={terminalMaximized ? undefined : 'preserve-pixel-size'}
                   >
-                    <TerminalPanel feature={selectedFeature} />
+                    <TerminalPanel feature={terminalScope} />
                   </ResizablePanel>
                 ) : null}
               </ResizablePanelGroup>
@@ -245,7 +248,7 @@ function WorkbenchShell() {
       />
       <AppStatusbar
         items={[s.snapshot?.project.path ?? a.noProject]}
-        end={s.snapshot ? <TerminalFooterToolbar feature={selectedFeature} /> : undefined}
+        end={s.snapshot ? <TerminalFooterToolbar feature={terminalScope} /> : undefined}
       />
     </div>
   )

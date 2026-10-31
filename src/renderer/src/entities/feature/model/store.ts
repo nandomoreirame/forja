@@ -64,24 +64,60 @@ export interface WorkbenchState {
 }
 const shellNumber = (id: string) => Number(/-shell-(\d+)$/.exec(id)?.[1] ?? 0)
 
+// Terminals opened with no feature selected belong to the project and start in its folder
+// (REQ-031: feature worktree, then target repository, then the opened folder).
+export const projectTerminalScopeId = (projectId: string) => `project:${projectId}`
+
+export function projectTerminalScope(snapshot: ProjectSnapshot): FeatureSnapshot {
+  return {
+    id: projectTerminalScopeId(snapshot.project.id),
+    slug: snapshot.project.id,
+    name: snapshot.project.name,
+    state: 'draft',
+    mode: 'guided',
+    tool: 'claude',
+    destination: snapshot.project.path,
+    branch: '',
+    worktree: null,
+    target: snapshot.project.path,
+    stage: 'research',
+    messages: [],
+    terminals: snapshot.terminals ?? [],
+  }
+}
+
 export function createWorkbenchStore(source: WorkbenchSource) {
   const replies = new Map<string, { cancel: () => void }>()
   let request = 0
   let failedOperation:
     { kind: 'projects' } | { kind: 'project'; id: string } | { kind: 'directory' } | null = null
   return createStore<WorkbenchState>((set, get) => {
+    const scopeOf = (id: string) => {
+      const snapshot = get().snapshot
+      if (!snapshot) return undefined
+      return id === projectTerminalScopeId(snapshot.project.id)
+        ? projectTerminalScope(snapshot)
+        : snapshot.features.find((feature) => feature.id === id)
+    }
     const updateFeature = (id: string, update: (feature: FeatureSnapshot) => FeatureSnapshot) =>
       set((state) =>
-        state.snapshot
+        state.snapshot && id === projectTerminalScopeId(state.snapshot.project.id)
           ? {
               snapshot: {
                 ...state.snapshot,
-                features: state.snapshot.features.map((feature) =>
-                  feature.id === id ? update(feature) : feature,
-                ),
+                terminals: update(projectTerminalScope(state.snapshot)).terminals,
               },
             }
-          : {},
+          : state.snapshot
+            ? {
+                snapshot: {
+                  ...state.snapshot,
+                  features: state.snapshot.features.map((feature) =>
+                    feature.id === id ? update(feature) : feature,
+                  ),
+                },
+              }
+            : {},
       )
     return {
       source,
@@ -411,7 +447,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       },
       terminalTabs: {},
       selectTerminal(featureId, terminalId) {
-        const feature = get().snapshot?.features.find((f) => f.id === featureId)
+        const feature = scopeOf(featureId)
         if (!feature?.terminals.some((terminal) => terminal.id === terminalId)) return
         set((state) => ({ terminalTabs: { ...state.terminalTabs, [featureId]: terminalId } }))
       },
@@ -420,7 +456,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         get().setPanel('terminal', true)
       },
       addShell(featureId) {
-        const feature = get().snapshot?.features.find((f) => f.id === featureId)
+        const feature = scopeOf(featureId)
         if (!feature) return
         const next =
           Math.max(
@@ -442,7 +478,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         get().selectTerminal(featureId, terminal.id)
       },
       closeTerminal(featureId, terminalId) {
-        const feature = get().snapshot?.features.find((f) => f.id === featureId)
+        const feature = scopeOf(featureId)
         const index = feature?.terminals.findIndex((terminal) => terminal.id === terminalId) ?? -1
         if (!feature || index < 0) return
         const target = feature.terminals[index]
