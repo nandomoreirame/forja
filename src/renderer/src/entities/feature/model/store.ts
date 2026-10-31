@@ -1,3 +1,4 @@
+import { selectProjectDirectory } from '@/renderer/src/shared/lib/directory-picker'
 import { featureIdentity } from './feature-name'
 import { createStore } from 'zustand/vanilla'
 import type {
@@ -26,6 +27,8 @@ export interface WorkbenchState {
   openPalette(scope: 'all' | 'recent'): void
   closePalette(): void
   retryLoad(): Promise<void>
+  openDirectory(): Promise<void>
+  pickingDirectory: boolean
   loadProjects(): Promise<void>
   openFeatureIds: string[]
   recipients: Record<string, RoleId>
@@ -44,9 +47,41 @@ export interface WorkbenchState {
 }
 export function createWorkbenchStore(source: WorkbenchSource) {
   let request = 0
-  let failedOperation: { kind: 'projects' } | { kind: 'project'; id: string } | null = null
+  let failedOperation:
+    { kind: 'projects' } | { kind: 'project'; id: string } | { kind: 'directory' } | null = null
   return createStore<WorkbenchState>((set, get) => ({
     source,
+    pickingDirectory: false,
+    async openDirectory() {
+      if (get().pickingDirectory) return
+      set({ pickingDirectory: true, error: null })
+      try {
+        const selected = await selectProjectDirectory()
+        if (selected.status === 'cancelled') return
+        if (selected.status !== 'selected') {
+          failedOperation = { kind: 'directory' }
+          set({
+            error:
+              selected.status === 'unavailable'
+                ? 'Directory picker unavailable'
+                : 'Unable to load project',
+          })
+          return
+        }
+        await source.addProject({
+          id: selected.id,
+          name: selected.name,
+          path: selected.path,
+          lastOpenedAt: new Date().toISOString(),
+        })
+        await get().openProject(selected.id)
+      } catch {
+        failedOperation = { kind: 'directory' }
+        set({ error: 'Unable to load project' })
+      } finally {
+        set({ pickingDirectory: false })
+      }
+    },
     openFeatureIds: [],
     recipients: {},
     composeActivation: 0,
@@ -158,7 +193,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     },
     async retryLoad() {
       const operation = failedOperation
-      if (operation?.kind === 'project') await get().openProject(operation.id)
+      if (operation?.kind === 'directory') await get().openDirectory()
+      else if (operation?.kind === 'project') await get().openProject(operation.id)
       else if (operation?.kind === 'projects') await get().loadProjects()
     },
     async loadProjects() {

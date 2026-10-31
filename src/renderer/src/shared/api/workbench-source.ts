@@ -48,6 +48,7 @@ export interface SettingsSnapshot {
 }
 export interface WorkbenchSource {
   readonly locale: Locale
+  addProject(project: ProjectSummary): Promise<ProjectSnapshot>
   listProjects(): Promise<ProjectSummary[]>
   loadProject(id: string): Promise<ProjectSnapshot>
   readArtifact(id: string): Promise<string>

@@ -60,3 +60,21 @@ it('keeps screens independent from mock modules', () => {
   visit('src/renderer/src/widgets')
   visit('src/renderer/src/features')
 })
+
+it('adds selected projects once and keeps returned metadata and snapshots isolated', async () => {
+  const source = createMockSource({ locale: 'en' })
+  const project = {
+    id: '/projects/selected',
+    name: 'selected',
+    path: '/projects/selected',
+    lastOpenedAt: '2026-10-31T12:00:00Z',
+  }
+  const snapshot = await source.addProject(project)
+  project.name = 'Changed outside source'
+  snapshot.features.push({} as never)
+  expect((await source.loadProject('/projects/selected')).project.name).toBe('selected')
+  expect((await source.loadProject('/projects/selected')).features).toHaveLength(0)
+  await source.addProject({ ...project, name: 'selected again' })
+  expect((await source.listProjects()).filter((p) => p.id === project.id)).toHaveLength(1)
+  expect((await source.loadProject(project.id)).project.name).toBe('selected again')
+})
