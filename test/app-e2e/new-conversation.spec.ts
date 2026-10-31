@@ -1,0 +1,28 @@
+import { expect, test } from '@playwright/test'
+test('starts a focused conversation, creates a feature and closes its last tab', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /Open project/ }).click()
+  await page.getByRole('option', { name: /acme-api/ }).click()
+  await page.getByRole('button', { name: /New conversation/ }).click()
+  await expect(page.getByRole('textbox')).toBeFocused()
+  await expect(page.getByRole('combobox', { name: 'Recipient' })).toHaveText('Research')
+  await page.keyboard.type('Add OAuth login')
+  await page.keyboard.press('Control+Enter')
+  await expect(page.getByRole('tab', { name: /Add OAuth login/ })).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Conversation' })).toContainText('Add OAuth login')
+  await page.getByRole('button', { name: 'Close Add OAuth login' }).click()
+  await expect(page.getByRole('tablist')).toHaveCount(0)
+  await expect(page.getByRole('textbox')).toBeFocused()
+})
+test('opens a focused Research composer from the command bar', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /Open project/ }).click()
+  await page.getByRole('option', { name: /acme-api/ }).click()
+  await page.keyboard.press('Control+Shift+P')
+  await page.getByRole('combobox').fill('New conversation')
+  await page.keyboard.press('Enter')
+  await expect(page.getByRole('textbox')).toBeFocused()
+  await expect(page.getByRole('combobox', { name: 'Recipient' })).toHaveText('Research')
+})
