@@ -13,6 +13,10 @@ test('starts a focused conversation, creates a feature and closes its last tab',
   await expect(page.getByRole('tab', { name: /Add OAuth login/ })).toBeVisible()
   await expect(page.getByRole('list', { name: 'Conversation' })).toContainText('Add OAuth login')
   await page.getByRole('button', { name: 'Close Add OAuth login' }).click()
+  await page
+    .getByRole('dialog', { name: 'Close feature' })
+    .getByRole('button', { name: 'Close feature' })
+    .click()
   await expect(page.getByRole('tablist')).toHaveCount(0)
   await expect(page.getByRole('textbox')).toBeFocused()
 })

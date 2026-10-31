@@ -68,6 +68,7 @@ export function ConversationPage() {
           messages={feature.messages}
           locale={state.source.locale}
           stage={feature.stage}
+          onViewRequest={state.focusComposer}
         />
         <div className="p-4">
           <ComposerController key={feature.id} featureId={feature.id} />

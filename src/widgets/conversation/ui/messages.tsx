@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { cn } from '@/shared/ui/utils'
 import { TriangleAlert } from 'lucide-react'
 
 export interface ConversationMessage {
@@ -9,6 +10,7 @@ export interface ConversationMessage {
   status?: string
   action?: ReactNode
   onAction?: () => void
+  highlighted?: boolean
 }
 
 export interface MessagesProps {
@@ -16,6 +18,13 @@ export interface MessagesProps {
   emptyLabel?: string
   label?: string
 }
+
+const rowProps = (item: ConversationMessage) => ({
+  'data-message-id': item.id,
+  'data-highlighted': item.highlighted ? 'true' : undefined,
+})
+
+const highlightClass = 'ring-2 ring-primary/70 ring-offset-2 ring-offset-background'
 
 export function Messages({
   items,
@@ -36,7 +45,11 @@ export function Messages({
         item.role === 'event' ? (
           <li
             key={item.id}
-            className="flex items-center justify-between gap-3 rounded-[3px] border border-border bg-background p-2.5 text-[12px]"
+            {...rowProps(item)}
+            className={cn(
+              'flex items-center justify-between gap-3 rounded-[3px] border border-border bg-background p-2.5 text-[12px]',
+              item.highlighted && highlightClass,
+            )}
           >
             <span className="flex items-center gap-2 text-muted-foreground">
               <TriangleAlert className="size-3.5 shrink-0 text-primary" aria-hidden="true" />
@@ -59,7 +72,11 @@ export function Messages({
         ) : item.role === 'user' ? (
           <li
             key={item.id}
-            className="space-y-1 rounded-[3px] border border-border bg-secondary p-3"
+            {...rowProps(item)}
+            className={cn(
+              'space-y-1 rounded-[3px] border border-border bg-secondary p-3',
+              item.highlighted && highlightClass,
+            )}
           >
             <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="font-medium text-foreground">{item.author}</span>
@@ -69,7 +86,11 @@ export function Messages({
         ) : (
           <li
             key={item.id}
-            className="space-y-1 rounded-[3px] border border-border bg-background p-3"
+            {...rowProps(item)}
+            className={cn(
+              'space-y-1 rounded-[3px] border border-border bg-background p-3',
+              item.highlighted && highlightClass,
+            )}
           >
             <div className="flex items-center justify-between text-[11px]">
               <div className="flex items-center gap-2">
