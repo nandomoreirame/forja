@@ -1,5 +1,16 @@
 export const ptBr = {
   app: {
+    states: {
+      draft: 'Pronto',
+      approved: 'Aprovado',
+      stale: 'Desatualizado',
+      waiting: 'Aguardando aprovação',
+      running: 'Em execução',
+      completed: 'Concluído',
+      failed: 'Falhou',
+      interrupted: 'Interrompido',
+    },
+    projectActions: 'Ações do projeto',
     openProject: 'Abrir projeto',
     noProject: 'Sem projeto',
     agents: 'Agentes',

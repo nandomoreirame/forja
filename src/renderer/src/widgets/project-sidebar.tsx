@@ -6,9 +6,10 @@ import {
   FlaskConical,
   GitPullRequest,
   ChevronLeft,
+  Ellipsis,
 } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
-import { StatusBadge } from '@/shared/ui'
+import { StatusBadge, type UiState } from '@/shared/ui'
 import { SidebarRow } from '@/widgets/workbench'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import { IconButton } from '@/renderer/src/shared/ui/icon-button'
@@ -31,6 +32,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
     >
       <div className="flex h-9 items-center justify-between border-b border-border px-3">
         <button
+          type="button"
           aria-label={`${snapshot.project.name}, ${a.switchProject}`}
           onClick={() => state.openPalette('recent')}
           className="flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
@@ -38,6 +40,9 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
           <Folder className="size-3.5 text-primary" />
           <span className="truncate font-semibold">{snapshot.project.name}</span>
         </button>
+        <IconButton label={a.projectActions} onClick={() => state.openPalette('recent')}>
+          <Ellipsis className="size-3" />
+        </IconButton>
         <IconButton label={a.collapseLeft} onClick={() => state.togglePanel('left')}>
           <ChevronLeft className="size-3" />
         </IconButton>
@@ -46,14 +51,15 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
         <section>
           <h2 className="flex justify-between px-3 pb-1 text-[11px] uppercase tracking-wider">
             <span>{a.agents}</span>
-            <span>5</span>
+            <span>{snapshot.agents.length}</span>
           </h2>
           {snapshot.agents.map((agent) => {
             const Icon = icons[agent.id]
             return (
               <button
+                type="button"
                 key={agent.id}
-                className="block w-full text-left"
+                className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
                 onClick={() => state.navigate({ kind: 'compose', role: agent.id })}
               >
                 <SidebarRow
@@ -62,7 +68,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                   title={d.product[agent.id]}
                   stateLabel={
                     <StatusBadge className="border-0 bg-transparent p-0" state={agent.state}>
-                      {a.ready}
+                      {a.states[agent.state]}
                     </StatusBadge>
                   }
                 />
@@ -70,14 +76,15 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
             )
           })}
           <button
-            className="w-full px-3 py-1 text-left text-muted-foreground hover:bg-accent hover:text-primary"
+            type="button"
+            className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full px-3 py-1 text-left text-muted-foreground hover:bg-accent hover:text-primary"
             onClick={() => state.navigate({ kind: 'settings' })}
           >
             {a.editAgents}
           </button>
         </section>
         {(['spec', 'plan', 'skill'] as const).map((kind) => {
-          const items =
+          const items: { id: string; name: string; state?: UiState }[] =
             kind === 'skill' ? snapshot.skills : snapshot.artifacts.filter((x) => x.kind === kind)
           return (
             <section key={kind} className="mx-3 border-t border-border pt-3">
@@ -86,12 +93,30 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                 <span>{items.length}</span>
               </h2>
               {items.map((item) => (
-                <div key={item.id} className="py-1">
-                  {item.name}
-                </div>
+                <button
+                  type="button"
+                  key={item.id}
+                  className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring"
+                  onClick={() =>
+                    kind === 'skill'
+                      ? state.navigate({ kind: 'settings' })
+                      : state.navigate({ kind: 'document', artifactId: item.id })
+                  }
+                >
+                  <SidebarRow
+                    icon={<ClipboardList />}
+                    title={item.name}
+                    stateLabel={
+                      item.state ? (
+                        <StatusBadge state={item.state}>{a.states[item.state]}</StatusBadge>
+                      ) : undefined
+                    }
+                  />
+                </button>
               ))}
               <button
-                className="w-full py-1 text-left text-muted-foreground hover:text-primary"
+                type="button"
+                className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full py-1 text-left text-muted-foreground hover:text-primary"
                 onClick={() =>
                   kind === 'skill'
                     ? state.navigate({ kind: 'settings' })

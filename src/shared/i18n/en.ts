@@ -1,5 +1,16 @@
 export const en = {
   app: {
+    states: {
+      draft: 'Ready',
+      approved: 'Approved',
+      stale: 'Stale',
+      waiting: 'Awaiting approval',
+      running: 'Running',
+      completed: 'Completed',
+      failed: 'Failed',
+      interrupted: 'Interrupted',
+    },
+    projectActions: 'Project actions',
     openProject: 'Open project',
     noProject: 'No project',
     agents: 'Agents',

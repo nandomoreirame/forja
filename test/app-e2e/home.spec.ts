@@ -17,3 +17,10 @@ test('home shell, panel toggles and view history work', async ({ page }) => {
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'FORJA' })).toBeVisible()
 })
+
+test('preserves Tailwind disabled button styling', async ({ page }) => {
+  await page.goto('/')
+  const back = page.getByRole('button', { name: 'Back', exact: true })
+  await expect(back).toBeDisabled()
+  await expect(back).toHaveCSS('opacity', '0.5')
+})

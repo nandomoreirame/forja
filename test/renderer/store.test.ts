@@ -52,3 +52,13 @@ it('ignores stale project loads and retains the last valid snapshot on errors', 
   await first
   expect(store.getState().snapshot?.project.id).toBe('dev')
 })
+
+it('retains the loaded project and exposes errors when a subsequent load fails', async () => {
+  const source = createMockSource({ locale: 'en' })
+  const store = createWorkbenchStore(source)
+  await store.getState().openProject('dev')
+  await store.getState().openProject('missing')
+  expect(store.getState().snapshot?.project.id).toBe('dev')
+  expect(store.getState().loading).toBe(false)
+  expect(store.getState().error).toBe('Unable to load project')
+})

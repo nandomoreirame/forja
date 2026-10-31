@@ -72,9 +72,12 @@ export function AppTopbar({
           <span className="text-[10px] text-muted-foreground">v2.0</span>
         </div>
         <div className="mx-4 flex min-w-0 max-w-[460px] flex-1 items-center gap-1.5">
-          {icon(backLabel, <ChevronLeft className="size-3.5" />, onBack, !canBack)}
-          {icon(forwardLabel, <ChevronRight className="size-3.5" />, onForward, !canForward)}
+          {onBack ? icon(backLabel, <ChevronLeft className="size-3.5" />, onBack, !canBack) : null}
+          {onForward
+            ? icon(forwardLabel, <ChevronRight className="size-3.5" />, onForward, !canForward)
+            : null}
           <button
+            type="button"
             onClick={onCommand}
             className="flex h-7 min-w-0 flex-1 items-center gap-2 rounded-sm border border-border bg-background px-2.5 text-xs hover:border-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
           >

@@ -51,7 +51,9 @@ it('keeps screens independent from mock modules', () => {
       const path = join(dir, entry.name)
       if (entry.isDirectory()) visit(path)
       else if (/\.tsx?$/.test(path))
-        expect(readFileSync(path, 'utf8')).not.toMatch(/from\s+['"][^'"]*mock-(source|data)/)
+        expect(readFileSync(path, 'utf8')).not.toMatch(
+          /createMockSource|mockProjects|from\s+['"][^'"]*mock-(source|data)/,
+        )
     }
   }
   visit(root)

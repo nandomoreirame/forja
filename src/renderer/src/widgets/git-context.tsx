@@ -49,7 +49,7 @@ export function GitContext({ locale }: { locale: Locale }) {
         )}
       </section>
       <details open className="group border-t border-border pt-4">
-        <summary className="flex cursor-pointer list-none items-center justify-between uppercase tracking-wider">
+        <summary className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 flex cursor-pointer list-none items-center justify-between uppercase tracking-wider">
           {a.branches}
           <ChevronDown className="size-3 group-open:rotate-180 motion-reduce:transition-none" />
         </summary>
