@@ -19,7 +19,8 @@
     "preview:site": "vite preview --config site/vite.config.ts",
     "test:e2e:site": "playwright test --config site/playwright.config.ts",
     "format:check": "prettier --check 'site/**/*.{ts,tsx,css,html}' 'src/shared/{ui,styles,i18n}/**/*.{ts,tsx,css}' 'src/widgets/**/*.{ts,tsx}' 'test/web/**/*.{ts,tsx}' --no-error-on-unmatched-pattern",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:e2e:app": "playwright test --config test/app-e2e/playwright.config.ts"
   },
   "build": {
     "appId": "dev.forja.app",

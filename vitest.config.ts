@@ -12,6 +12,7 @@ export default defineConfig({
       '**/dist/**',
       'out/**',
       'test/e2e/**',
+      'test/app-e2e/**',
       '**/playwright.config.ts',
     ],
     coverage: {
