@@ -48,6 +48,8 @@ const copy = {
     extra: {
       handoff: 'Tester requested a fix · Round 1 of 3',
       you: 'You',
+      hoverSample: 'Hover and focus sample · static preview',
+      hoverFocusLabel: 'Hover and focus',
       viewRequest: 'View request',
       userMessage: 'Fix the expired token scenario.',
       agentMessage: 'I will fix the scenario and run the tests.',
@@ -155,6 +157,8 @@ const copy = {
     extra: {
       handoff: 'Testador solicitou correção · Rodada 1 de 3',
       you: 'Você',
+      hoverSample: 'Amostra de hover e foco · prévia estática',
+      hoverFocusLabel: 'Hover e foco',
       viewRequest: 'Ver solicitação',
       userMessage: 'Corrija o cenário de token expirado.',
       agentMessage: 'Vou corrigir o cenário e executar os testes.',

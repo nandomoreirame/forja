@@ -7,6 +7,8 @@ export interface TerminalTab {
   label: string
   state: 'running' | 'done' | 'idle'
   stateLabel: string
+  hovered?: boolean
+  focused?: boolean
 }
 
 export interface TerminalPreviewProps {

@@ -13,6 +13,7 @@ import { TerminalPreview } from '@/widgets/terminal'
 import { DocumentPreview, MarkdownPreview, MermaidPreview } from '@/widgets/documents'
 import { PrimitivesShowcase } from '../components/primitives-showcase'
 import { galleryCopy } from '../mocks/gallery'
+import { gallerySectionCopy } from '../mocks/gallery-sections'
 import { productMock } from '../mocks/product'
 
 const tokens = [
@@ -29,20 +30,25 @@ const tokens = [
 function Section({
   id,
   title,
+  description,
   code,
   children,
 }: {
   id: string
   title: string
+  description?: string
   code?: string
   children: React.ReactNode
 }) {
   return (
     <section aria-labelledby={id} className="grid gap-5 border-t border-border pt-10">
-      <div className="flex items-baseline gap-3">
-        <h2 id={id} className="text-[15px] font-semibold">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <h2 id={id} className="text-[13px] font-semibold uppercase tracking-wider">
           {title}
         </h2>
+        {description ? (
+          <span className="text-[11px] text-muted-foreground">{description}</span>
+        ) : null}
         {code ? (
           <span className="ml-auto font-mono text-[11px] text-muted-foreground">{code}</span>
         ) : null}
@@ -180,57 +186,109 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
   const c = galleryCopy(locale)
   const mock = productMock(locale)
   const x = c.extra
+  const sc = gallerySectionCopy(locale)
+  const sec = sc.sections
+  const w = locale === 'en' ? 'Section' : 'Seção'
   const roles = t.workflow.roles.map(([name]) => name)
   const diagram = `flowchart LR\n  research["${x.diagramNodes[0]}"] --> planner["${x.diagramNodes[1]}"]\n  planner --> implementer["${x.diagramNodes[2]}"]\n  classDef accent fill:#2a1f0a,stroke:#F5A623,color:#F5A623\n  class implementer accent`
 
   return (
     <div className="grid gap-10">
-      <Section id="gallery-tokens" title={t.gallery.tokens} code="base.tokens.json">
-        <div className="grid grid-cols-4 gap-3 md:grid-cols-8">
-          {tokens.map(([name, value]) => (
-            <div key={name} className="grid gap-1.5">
-              <span
-                className="h-10 rounded-md border border-border"
-                style={{ background: value }}
-                aria-hidden="true"
-              />
-              <span className="text-[12px]">{name}</span>
-              <span className="font-mono text-[11px] text-muted-foreground">{value}</span>
-            </div>
-          ))}
-        </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="grid gap-1 font-mono text-[13px]">
-            <span>Heading 18px</span>
-            <span className="text-[13px]">Body 13px · 400</span>
-            <span className="text-[12px]">Label 12px · 500</span>
-            <span className="text-[11px] text-muted-foreground">Metadata 11px · 400</span>
-          </div>
-          <div className="grid gap-2 text-[11px] text-muted-foreground">
-            {[4, 8, 12, 16, 24, 32].map((space) => (
-              <span key={space} className="flex items-center gap-2">
+      <Section
+        id="gallery-tokens"
+        title={`${w} 1: ${sec.tokens.title}`}
+        description={sec.tokens.description}
+        code="base.tokens.json"
+      >
+        <div className="grid gap-4">
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+            {sc.semanticColors}
+          </span>
+          <div className="grid grid-cols-4 gap-3 md:grid-cols-8">
+            {tokens.map(([name, value]) => (
+              <div key={name} className="grid gap-1 rounded-md border border-border bg-card p-2">
                 <span
-                  className="h-2 rounded-sm bg-primary"
-                  style={{ width: space }}
+                  className="h-12 rounded-sm border border-border"
+                  style={{ background: value }}
                   aria-hidden="true"
                 />
-                {space}px
-              </span>
+                <span className="pt-1 text-[12px]">{name}</span>
+                <span className="font-mono text-[11px] text-muted-foreground">{value}</span>
+              </div>
             ))}
           </div>
-          <div className="grid gap-2 text-[12px]">
-            <span>Buttons, fields · 3–4px</span>
-            <span>Global composer · rounded-lg</span>
-            <span>Status badges · rounded-full</span>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card label={sc.typography} code="typography.css">
+              <div className="grid gap-3 font-mono">
+                <span className="text-[18px] font-semibold">{sc.headingSample}</span>
+                <span className="text-[13px]">{sc.bodySample}</span>
+                <span className="text-[12px] font-medium">{sc.labelSample}</span>
+                <span className="text-[11px] text-muted-foreground">{sc.metaSample}</span>
+              </div>
+            </Card>
+            <Card label={sc.spacing} code="spacing.css">
+              <div className="grid gap-2 font-mono text-[11px] text-muted-foreground">
+                {[
+                  [4, 'gap-1 / p-1'],
+                  [8, 'gap-2 / p-2'],
+                  [12, 'gap-3 / p-3'],
+                  [16, 'gap-4 / p-4'],
+                  [24, 'gap-6 / p-6'],
+                  [32, 'gap-8 / p-8'],
+                ].map(([space, token]) => (
+                  <span key={space} className="flex items-center gap-3">
+                    <span
+                      className="h-2 rounded-sm bg-primary"
+                      style={{ width: space }}
+                      aria-hidden="true"
+                    />
+                    {space}px: {token}
+                  </span>
+                ))}
+              </div>
+            </Card>
+            <Card label={sc.radii} code="radius.css">
+              <div className="grid gap-2 text-[12px]">
+                <span className="flex items-center justify-between">
+                  {sc.radiusButtons}
+                  <code className="rounded-[3px] border border-border px-1.5 font-mono text-[11px]">
+                    rounded-[3px] (3px/4px)
+                  </code>
+                </span>
+                <span className="flex items-center justify-between">
+                  {sc.radiusComposer}
+                  <code className="rounded-[4px] border border-border px-1.5 font-mono text-[11px]">
+                    rounded-[4px]
+                  </code>
+                </span>
+                <span className="flex items-center justify-between">
+                  {sc.radiusBadges}
+                  <code className="rounded-[2px] border border-primary/60 px-1.5 font-mono text-[11px] text-primary">
+                    rounded-[2px]
+                  </code>
+                </span>
+                <span className="pt-1 text-[11px] text-muted-foreground">{sc.radiusNote}</span>
+              </div>
+            </Card>
           </div>
         </div>
       </Section>
 
-      <Section id="gallery-primitives-section" title={t.gallery.primitives} code="primitives.tsx">
+      <Section
+        id="gallery-primitives-section"
+        title={`${w} 2: ${sec.primitives.title}`}
+        description={sec.primitives.description}
+        code="primitives.tsx"
+      >
         <PrimitivesShowcase locale={locale} />
       </Section>
 
-      <Section id="gallery-shell" title={t.gallery.shell} code="layout.scaffold.tsx">
+      <Section
+        id="gallery-shell"
+        title={`${w} 3: ${sec.shell.title}`}
+        description={sec.shell.description}
+        code="layout.scaffold.tsx"
+      >
         <div className="grid gap-4">
           <div className="overflow-hidden rounded-lg border border-border">
             <AppTopbar
@@ -287,7 +345,8 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
 
       <Section
         id="gallery-conversation"
-        title={t.gallery.conversation}
+        title={`${w} 4: ${sec.conversation.title}`}
+        description={sec.conversation.description}
         code="conversation.bundle.tsx"
       >
         <div className="grid gap-4 md:grid-cols-2">
@@ -320,7 +379,12 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
         </div>
       </Section>
 
-      <Section id="gallery-documents" title={t.gallery.documents} code="document.viewer.tsx">
+      <Section
+        id="gallery-documents"
+        title={`${w} 5: ${sec.documents.title}`}
+        description={sec.documents.description}
+        code="document.viewer.tsx"
+      >
         <div className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
             <Card label="DocumentHeader & ApprovalNotice" code="approval.status.tsx">
@@ -369,7 +433,12 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
         </div>
       </Section>
 
-      <Section id="gallery-terminals" title={t.gallery.terminals} code="terminals.panel.tsx">
+      <Section
+        id="gallery-terminals"
+        title={`${w} 6: ${sec.terminals.title}`}
+        description={sec.terminals.description}
+        code="terminals.panel.tsx"
+      >
         <div className="grid gap-4">
           <TerminalPreview
             tabs={[
@@ -403,6 +472,15 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
             addLabel={x.newTerminal}
             collapseLabel={x.collapseTerminals}
             tabsLabel={t.gallery.terminals}
+          />
+          <TerminalPreview
+            tabs={[
+              { id: 'hover', label: x.tabDev, state: 'idle', stateLabel: '', hovered: true },
+              { id: 'focus', label: x.tabTests, state: 'idle', stateLabel: '', focused: true },
+            ]}
+            activeId=""
+            output={[x.hoverSample]}
+            tabsLabel={x.hoverFocusLabel}
           />
           <TerminalPreview
             tabs={[{ id: 'zsh', label: x.userTerminalLabel, state: 'idle', stateLabel: '' }]}
