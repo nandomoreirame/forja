@@ -207,73 +207,76 @@ export function Landing({ locale }: { locale: Locale }) {
               </h2>
             </div>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-              {t.features.items.map(([title, body], index) => (
-                <article
-                  key={title}
-                  className="flex flex-col justify-between space-y-5 rounded-sm border border-border bg-card p-6"
-                >
-                  <div>
-                    <h3 className="text-lg font-bold">{title}</h3>
-                    <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">{body}</p>
-                  </div>
-                  {index === 0 ? (
-                    <div className="flex h-[180px] items-center justify-center">
-                      <img
-                        src={`/stitch/cards/${locale}/tab-per-feature.png`}
-                        alt={
-                          locale === 'en'
-                            ? 'Feature tabs: Renew session, Quick search'
-                            : 'Abas de feature: Renovar sessão, Busca rápida'
-                        }
-                        loading="lazy"
-                        className="h-auto w-[459px] max-w-full rounded-sm"
-                      />
+              {[0, 2, 1, 3].map((index) => {
+                const [title, body] = t.features.items[index]
+                return (
+                  <article
+                    key={title}
+                    className="flex flex-col justify-between space-y-5 rounded-sm border border-border bg-card p-6"
+                  >
+                    <div>
+                      <h3 className="text-lg font-bold">{title}</h3>
+                      <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">{body}</p>
                     </div>
-                  ) : null}
-                  {index === 1 ? (
-                    <div className="flex h-[180px] items-center justify-center">
-                      <img
-                        src={`/stitch/cards/${locale}/documents.png`}
-                        alt={
-                          locale === 'en'
-                            ? 'SPEC-042 document with the selected passage and the Review with agent action'
-                            : 'Documento SPEC-042 com o trecho selecionado e a ação Revisar com o agente'
-                        }
-                        loading="lazy"
-                        className="h-auto w-[459px] max-w-full rounded-sm"
-                      />
-                    </div>
-                  ) : null}
-                  {index === 2 ? (
-                    <div className="flex h-[180px] items-center justify-center">
-                      <img
-                        src={`/stitch/cards/${locale}/execution.png`}
-                        alt={
-                          locale === 'en'
-                            ? 'Agent terminals: dev, tests and zsh with the collapsed footer'
-                            : 'Terminais do agente: dev, testes e zsh com o rodapé recolhido'
-                        }
-                        loading="lazy"
-                        className="h-auto w-[459px] max-w-full rounded-sm"
-                      />
-                    </div>
-                  ) : null}
-                  {index === 3 ? (
-                    <div className="flex h-[180px] items-center justify-center">
-                      <img
-                        src={`/stitch/cards/${locale}/tools.png`}
-                        alt={
-                          locale === 'en'
-                            ? 'Roles and CLI configuration: Implementer (Codex) and Reviewer (agy)'
-                            : 'Papéis e CLIs configuradas: Implementador (Codex) e Revisor (agy)'
-                        }
-                        loading="lazy"
-                        className="h-auto w-[459px] max-w-full rounded-sm"
-                      />
-                    </div>
-                  ) : null}
-                </article>
-              ))}
+                    {index === 0 ? (
+                      <div className="flex justify-center">
+                        <img
+                          src={`/stitch/cards/${locale}/tab-per-feature.png`}
+                          alt={
+                            locale === 'en'
+                              ? 'Feature tabs: Renew session, Quick search'
+                              : 'Abas de feature: Renovar sessão, Busca rápida'
+                          }
+                          loading="lazy"
+                          className="h-auto w-[459px] max-w-full rounded-sm"
+                        />
+                      </div>
+                    ) : null}
+                    {index === 1 ? (
+                      <div className="flex justify-center">
+                        <img
+                          src={`/stitch/cards/${locale}/documents.png`}
+                          alt={
+                            locale === 'en'
+                              ? 'SPEC-042 document with the selected passage and the Review with agent action'
+                              : 'Documento SPEC-042 com o trecho selecionado e a ação Revisar com o agente'
+                          }
+                          loading="lazy"
+                          className="h-auto w-[459px] max-w-full rounded-sm"
+                        />
+                      </div>
+                    ) : null}
+                    {index === 2 ? (
+                      <div className="flex justify-center">
+                        <img
+                          src={`/stitch/cards/${locale}/execution.png`}
+                          alt={
+                            locale === 'en'
+                              ? 'Agent terminals: dev, tests and zsh with the collapsed footer'
+                              : 'Terminais do agente: dev, testes e zsh com o rodapé recolhido'
+                          }
+                          loading="lazy"
+                          className="h-auto w-[459px] max-w-full rounded-sm"
+                        />
+                      </div>
+                    ) : null}
+                    {index === 3 ? (
+                      <div className="flex justify-center">
+                        <img
+                          src={`/stitch/cards/${locale}/tools.png`}
+                          alt={
+                            locale === 'en'
+                              ? 'Roles and CLI configuration: Implementer (Codex) and Reviewer (agy)'
+                              : 'Papéis e CLIs configuradas: Implementador (Codex) e Revisor (agy)'
+                          }
+                          loading="lazy"
+                          className="h-auto w-[459px] max-w-full rounded-sm"
+                        />
+                      </div>
+                    ) : null}
+                  </article>
+                )
+              })}
             </div>
             <p className="mt-6 text-xs text-muted-foreground">{t.features.integrations}</p>
             <p className="mt-1 text-[11px] text-muted-foreground/70">{t.features.qualification}</p>
