@@ -31,6 +31,7 @@
   --color-destructive: var(--destructive);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
+  --color-success: var(--success);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -167,6 +168,7 @@
   --sidebar-accent-foreground: #e6e6e6;
   --sidebar-border: #2a2a2a;
   --sidebar-ring: #f5a623;
+  --success: #52c41a;
 }
 @layer base {
   body {

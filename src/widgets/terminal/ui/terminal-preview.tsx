@@ -28,9 +28,9 @@ export interface TerminalPreviewProps {
 }
 
 const stateClass: Record<TerminalTab['state'], string> = {
-  running: 'text-[#F5A623]',
-  done: 'text-[#52c41a]',
-  idle: 'text-[#979797]',
+  running: 'text-primary',
+  done: 'text-success',
+  idle: 'text-muted-foreground',
 }
 
 export function TerminalPreview({
@@ -49,11 +49,11 @@ export function TerminalPreview({
   onCollapse,
 }: TerminalPreviewProps) {
   return (
-    <section className="overflow-hidden rounded-[3px] border border-[#2A2A2A] bg-[#121214]">
+    <section className="overflow-hidden rounded-[3px] border border-border bg-card">
       <div
         role="tablist"
         aria-label={tabsLabel}
-        className="flex h-9 items-center justify-between border-b border-[#2A2A2A] bg-[#1C1C1C] px-3"
+        className="flex h-9 items-center justify-between border-b border-border bg-secondary px-3"
       >
         <div className="flex items-center gap-1">
           {tabs.map((tab) => {
@@ -66,12 +66,12 @@ export function TerminalPreview({
                 aria-selected={active}
                 onClick={() => onSelect?.(tab.id)}
                 className={cn(
-                  'flex h-7 items-center gap-2 rounded-t-[2px] border-x border-t border-[#2A2A2A] px-2.5 text-[11px]',
+                  'flex h-7 items-center gap-2 rounded-t-[2px] border-x border-t border-border px-2.5 text-[11px]',
                   active
-                    ? 'border-t-2 border-t-[#F5A623] bg-[#0E0E0E] font-medium text-[#E6E6E6]'
-                    : 'bg-[#121214] text-[#979797] hover:text-[#E6E6E6]',
-                  tab.hovered && !active && 'text-[#E6E6E6]',
-                  tab.focused && 'outline-none ring-1 ring-inset ring-[#F5A623]',
+                    ? 'border-t-2 border-t-primary bg-background font-medium text-foreground'
+                    : 'bg-card text-muted-foreground hover:text-foreground',
+                  tab.hovered && !active && 'text-foreground',
+                  tab.focused && 'outline-none ring-1 ring-inset ring-ring',
                 )}
               >
                 <SquareTerminal aria-hidden="true" className="size-3.5 shrink-0" />
@@ -79,7 +79,7 @@ export function TerminalPreview({
                   {tab.state === 'running' ? (
                     <span
                       aria-hidden="true"
-                      className="size-1.5 animate-pulse rounded-full bg-[#F5A623]"
+                      className="size-1.5 animate-pulse rounded-full bg-primary"
                     />
                   ) : null}
                   {tab.label}
@@ -102,12 +102,12 @@ export function TerminalPreview({
       </div>
       {header}
       {cwd ? (
-        <p className="border-b border-[#2A2A2A] px-3 py-2 font-mono text-[11px] text-[#979797]">
+        <p className="border-b border-border px-3 py-2 font-mono text-[11px] text-muted-foreground">
           <span className="mr-2">{cwdLabel}</span>
-          <span className="break-all text-[#E6E6E6]">{cwd}</span>
+          <span className="break-all text-foreground">{cwd}</span>
         </p>
       ) : null}
-      <pre className="min-h-20 whitespace-pre-wrap px-3 py-3 font-mono text-[12px] leading-5 text-[#E6E6E6]">
+      <pre className="min-h-20 whitespace-pre-wrap px-3 py-3 font-mono text-[12px] leading-5 text-foreground">
         {output.length > 0 ? output.join('\n') : emptyOutputLabel}
       </pre>
     </section>
