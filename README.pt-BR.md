@@ -70,8 +70,8 @@ A janela Electron abre na tela inicial. Esta prévia não exige conta de provedo
 
 ## Uso
 
-O aplicativo inicia sem projeto aberto. Clique em Abrir projeto e selecione `acme-api` para ver a home ou `dev` para abrir duas features mockadas.
-Use Ctrl+Shift+P para comandos, Ctrl+R para projetos recentes e Nova conversa para abrir o compositor com foco. Enviar um prompt cria uma aba de feature mockada. O conteúdo das configurações, dos documentos e as respostas dos agentes pertencem às próximas entregas.
+O aplicativo inicia sem projeto aberto. Clique em Abrir projeto (Ctrl+O) para selecionar um diretório. Ctrl+R abre os projetos recentes, incluindo os exemplos `acme-api` e `dev` da prévia.
+Use Ctrl+Shift+P para a paleta exclusiva de comandos, Ctrl+, para Configurações e Nova conversa para abrir o compositor com foco. O comando Projetos recentes (Ctrl+R) abre o histórico separadamente. Enviar um prompt cria uma aba de feature mockada. O conteúdo das configurações, dos documentos e as respostas dos agentes pertencem às próximas entregas.
 
 Para conferir somente a interface no navegador:
 
@@ -102,7 +102,7 @@ O repositório contém atualmente um aplicativo desktop. A próxima entrega apro
 ```text
 src/
   main/          Janela e ciclo de vida do aplicativo
-  preload/       Reservado para uma API desktop restrita
+  preload/       Ponte restrita para seleção de diretório
   core/          SQLite, mensagens do núcleo e interfaces dos adaptadores de IA
   shared/        Contratos de comunicação validados
   renderer/src/
@@ -125,8 +125,8 @@ O build gera arquivos em `out/`. Há configurações de instaladores para Linux 
 ## Segurança
 
 O renderer usa sandbox e context isolation, com integração Node.js desabilitada.
-O preload não expõe APIs desktop. Novas janelas e navegação externa são bloqueadas.
-A interface atual não chama provedores de IA, executa CLIs de programação nem armazena credenciais.
+O preload expõe somente a seleção de diretório. O processo principal verifica a janela e o frame de origem, abre o diálogo do sistema restrito a pastas e valida o caminho selecionado. O renderer não pode enviar caminhos arbitrários nem opções de diálogo por essa ponte. Novas janelas e navegação externa são bloqueadas.
+A interface atual não chama provedores de IA, executa CLIs de programação nem armazena credenciais. A seleção verifica os metadados do diretório, sem ler arquivos. Os projetos selecionados ficam em memória nesta prévia. No preview web, navegadores compatíveis usam um seletor com permissão de leitura e expõem somente o nome da pasta, sem seu caminho absoluto.
 
 O núcleo grava `forja.db` no diretório de dados do aplicativo Electron. Em desenvolvimento, usa o diretório separado `Forja Dev`.
 O banco não está criptografado. Não armazene segredos neste scaffold.

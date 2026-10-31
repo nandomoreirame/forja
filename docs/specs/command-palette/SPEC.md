@@ -83,3 +83,11 @@ Unit and RTL tests in `test/renderer/` with jsdom and fake timers for scripted r
 | --- | --- | --- | --- |
 | REQ-064 | Command bar | P1 | Implemented and validated; independently reviewed 2026-10-31 |
 | REQ-065 | Recent projects in command bar | P1 | Implemented and validated; independently reviewed 2026-10-31 |
+
+## Follow-up correction: directory picker and separate command/history scopes
+
+User decision on 2026-10-31 supersedes the earlier mock selector behavior: Open project and Ctrl+O open the operating system directory picker through a restricted Electron preload bridge. Compatible browser previews use showDirectoryPicker in read-only mode. Ctrl+R opens recent project history. The command bar (Ctrl+Shift+P) contains commands only, including Open project, with no recent-project group. The Recent projects command (Ctrl+R) opens history separately. Cancellation preserves the current view. Selecting a new directory registers an empty project snapshot in the current in-memory source; file contents and Git state are not scanned by this correction.
+
+## Follow-up refinement: keyboard commands and consistent branding
+
+User correction on 2026-10-31: Settings uses Ctrl+, and the command row displays that shortcut. The command palette includes a Recent projects command with Ctrl+R, while individual projects remain confined to the separate history scope. The command input has no trailing search icon. Both empty and project-open home screens use the same horizontal shared Forja mark, FORJA wordmark and v2.0 label.

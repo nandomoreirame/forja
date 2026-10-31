@@ -21,7 +21,7 @@ Forja is an Electron + React desktop app (plus a standalone `site/` Vite app) fo
 
 ## Architecture
 
-- `src/main/`: Electron window/app lifecycle. `src/preload/`: reserved; currently exposes no desktop APIs.
+- `src/main/`: Electron window/app lifecycle. `src/preload/`: exposes only the restricted directory-selection bridge; it does not expose IPC or Node APIs to the renderer.
 - `src/core/`: SQLite via `node:sqlite` (WAL, versioned SQL migrations) and AI adapter interfaces. Runs in a separate Electron utility process.
 - `src/shared/`: Zod contracts shared by core and renderer (`contracts.ts`), and browser-only UI primitives (`ui/`), tokens (`styles/`), and locales (`i18n/`). Shared code must stay browser-only and free of side effects.
 - `src/renderer/`: desktop renderer (`app/`, `shared/`). Its Vite root is `src/renderer` (see `vite.web.config.ts`).

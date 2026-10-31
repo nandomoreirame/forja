@@ -70,8 +70,8 @@ The Electron window opens on the welcome screen. No provider account or API key 
 
 ## Usage
 
-The app starts without an open project. Choose Open project and select `acme-api` for the project home or `dev` for two mock features.
-Use Ctrl+Shift+P for commands, Ctrl+R for recent projects, and New conversation to open the focused composer. Sending a prompt creates a mock feature tab. Settings, document contents and assistant replies belong to later slices.
+The app starts without an open project. Choose Open project (Ctrl+O) to select a directory. Ctrl+R opens recent projects, including the preview fixtures `acme-api` and `dev`.
+Use Ctrl+Shift+P for the commands-only palette, Ctrl+, for Settings and New conversation to open the focused composer. The Recent projects command (Ctrl+R) opens history separately. Sending a prompt creates a mock feature tab. Settings, document contents and assistant replies belong to later slices.
 
 To preview only the interface in a browser:
 
@@ -102,7 +102,7 @@ The current repository contains one desktop application. The approved next deliv
 ```text
 src/
   main/          Window and application lifecycle
-  preload/       Reserved for a restricted desktop API
+  preload/       Restricted directory-selection bridge
   core/          SQLite, core messages, and AI adapter interfaces
   shared/        Validated communication contracts
   renderer/src/
@@ -125,8 +125,8 @@ The build writes to `out/`. Installer targets are configured for Linux AppImage,
 ## Security
 
 The renderer runs with sandboxing and context isolation enabled, with Node.js integration disabled.
-The preload exposes no desktop APIs. New windows and external navigation are blocked.
-The current interface does not call AI providers, execute coding CLIs, or store credentials.
+The preload exposes only a directory-selection function. The main process verifies the requesting window and frame, opens a directory-only system dialog, and validates the selected path. The renderer cannot send arbitrary paths or dialog options through this bridge. New windows and external navigation are blocked.
+The current interface does not call AI providers, execute coding CLIs, or store credentials. Folder selection checks directory metadata and does not read file contents. Selected projects remain in memory in this preview. In compatible browsers, the web preview uses a read-only directory picker and receives only the folder name, not its absolute path.
 
 The core writes `forja.db` inside Electron's application data directory. Development uses a separate `Forja Dev` directory.
 The database is not encrypted. Do not store secrets in this scaffold.
