@@ -70,44 +70,59 @@ export function CollapsedToolbar({
       <div
         role="toolbar"
         aria-label={label}
-        className={`flex items-center gap-4 border-border bg-secondary px-3 py-2 text-[12px] ${className}`}
+        className={`flex min-w-0 items-center gap-3 whitespace-nowrap border-border bg-secondary px-3 py-2 text-[12px] ${className}`}
       >
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}:</span>
-        {items.map((item) => (
-          <Tooltip key={item.id}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={() => onExpand?.(item.id)}
-                className="flex items-center gap-1.5 rounded px-1.5 py-0.5 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
-              >
-                <SquareTerminal className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                <span>{item.label}</span>
-                <span
-                  className={
-                    item.state === 'done'
-                      ? 'text-success'
-                      : item.state === 'running'
-                        ? 'text-primary'
-                        : 'text-muted-foreground'
-                  }
+        <span className="hidden shrink-0 text-[11px] uppercase tracking-wider text-muted-foreground lg:inline">
+          {label}:
+        </span>
+        <div className="flex min-w-0 flex-1 items-center gap-4 overflow-x-auto">
+          {items.map((item) => (
+            <Tooltip key={item.id}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => onExpand?.(item.id)}
+                  className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded px-1.5 py-0.5 hover:bg-muted focus-visible:outline-2 focus-visible:outline-ring"
                 >
-                  <span aria-hidden="true">
-                    {item.state === 'done' ? '✓' : item.state === 'running' ? '◌' : '○'}{' '}
+                  <SquareTerminal className="size-3.5 text-muted-foreground" aria-hidden="true" />
+                  <span>{item.label}</span>
+                  <span
+                    className={
+                      item.state === 'done'
+                        ? 'text-success'
+                        : item.state === 'running'
+                          ? 'text-primary'
+                          : 'text-muted-foreground'
+                    }
+                  >
+                    <span aria-hidden="true">
+                      {item.state === 'done' ? '✓' : item.state === 'running' ? '◌' : '○'}{' '}
+                    </span>
+                    <span className="sr-only xl:not-sr-only">{item.stateLabel}</span>
                   </span>
-                  {item.stateLabel}
-                </span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <ToolbarDetail item={item} labels={detailLabels} />
-            </TooltipContent>
-          </Tooltip>
-        ))}
-        <Button variant="ghost" size="sm" className="ml-auto gap-1" onClick={() => onExpand?.()}>
-          <ChevronUp />
-          {expandLabel}
-        </Button>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <ToolbarDetail item={item} labels={detailLabels} />
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0 gap-1"
+              aria-label={expandLabel}
+              onClick={() => onExpand?.()}
+            >
+              <ChevronUp />
+              <span className="hidden xl:inline">{expandLabel}</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{expandLabel}</TooltipContent>
+        </Tooltip>
       </div>
     </TooltipProvider>
   )

@@ -301,8 +301,8 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
               <FeatureTabs
                 selectedId="login"
                 items={[
-                  { id: 'login', label: mock.features[0], state: 'running' },
-                  { id: 'search', label: mock.features[1], state: 'waiting' },
+                  { id: 'login', label: mock.features[0], state: 'running', tool: 'claude' },
+                  { id: 'search', label: mock.features[1], state: 'waiting', tool: 'codex' },
                 ]}
                 onSelect={() => {}}
                 label={t.product.feature}

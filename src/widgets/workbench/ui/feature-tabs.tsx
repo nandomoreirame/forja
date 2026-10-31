@@ -9,12 +9,16 @@ import {
   Tabs,
   TabsList,
   TabsTrigger,
+  ToolIcon,
+  type ToolId,
 } from '@/shared/ui'
+import { cn } from '@/shared/ui/utils'
 
 export interface FeatureTabItem {
   id: string
   label: string
   state: 'running' | 'waiting' | 'idle'
+  tool?: ToolId
 }
 
 export interface FeatureTabsProps {
@@ -51,7 +55,7 @@ export function FeatureTabs({
   return (
     <TooltipProvider>
       <Tabs value={selectedId} onValueChange={select}>
-        <div className="grid auto-cols-max grid-flow-col items-center justify-start border-b border-border bg-sidebar">
+        <div className="grid h-9 auto-cols-max grid-flow-col items-end justify-start border-b border-border bg-secondary px-3">
           <TabsList aria-label={label} className="contents">
             {items.map((item, index) => (
               <TabsTrigger
@@ -63,13 +67,20 @@ export function FeatureTabs({
                 aria-controls={item.id === selectedId ? panelId : undefined}
                 value={item.id}
                 onClick={() => select(item.id)}
-                className={onClose ? 'h-9 pr-9 text-xs' : 'h-9 text-xs'}
+                className={cn(
+                  '-mb-px h-7 flex-none gap-2 rounded-none rounded-t-[2px] border-t border-r border-b-0 border-l-0 border-border first:border-l px-2.5 text-[11px] font-normal shadow-none after:hidden focus-visible:ring-1 focus-visible:ring-inset',
+                  'bg-card text-muted-foreground hover:text-foreground',
+                  'data-active:border-r-border data-active:border-t-2 data-active:border-t-primary data-active:bg-background data-active:font-medium data-active:text-foreground dark:data-active:border-r-border dark:data-active:border-t-primary dark:data-active:bg-background',
+                  onClose && 'pr-8',
+                )}
               >
+                {item.tool ? <ToolIcon tool={item.tool} /> : null}
                 <span
                   aria-hidden="true"
+                  data-slot="feature-tab-status"
                   className={
                     item.state === 'running'
-                      ? 'size-1.5 rounded-full bg-primary'
+                      ? 'size-1.5 rounded-full bg-primary motion-safe:animate-pulse'
                       : item.state === 'waiting'
                         ? 'size-1.5 rounded-full border border-primary'
                         : 'size-1.5 rounded-full bg-muted-foreground/40'
@@ -90,7 +101,7 @@ export function FeatureTabs({
                       style={{ gridColumn: index + 1, gridRow: 1 }}
                       onMouseEnter={() => setHoveredId(item.id)}
                       onMouseLeave={() => setHoveredId(null)}
-                      className={`z-10 mr-1 justify-self-end hover:opacity-100 focus-visible:opacity-100 ${item.id === selectedId || item.id === hoveredId ? 'opacity-100' : 'opacity-0'}`}
+                      className={`z-10 mr-1 mb-1 size-5 self-end justify-self-end hover:opacity-100 focus-visible:opacity-100 ${item.id === selectedId || item.id === hoveredId ? 'opacity-100' : 'opacity-0'}`}
                       aria-label={`${closeLabel} ${item.label}`}
                       onClick={() => onClose(item.id)}
                     >

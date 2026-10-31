@@ -23,6 +23,7 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
               name,
               state: i === 0 ? 'running' : 'waiting',
               mode: 'guided',
+              tool: i === 0 ? 'claude' : 'codex',
               destination: path,
               branch: `feature/${['login-oauth', 'catalog-search'][i]}`,
               worktree: null,

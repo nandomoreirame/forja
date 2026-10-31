@@ -35,3 +35,4 @@ export {
   DialogHeader,
   DialogFooter,
 } from './dialog'
+export { ToolIcon, toolIds, toolNames, type ToolId } from './tool-icon'

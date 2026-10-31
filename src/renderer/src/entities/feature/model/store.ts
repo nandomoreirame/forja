@@ -137,6 +137,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           name,
           state: 'running' as const,
           mode: 'guided' as const,
+          tool: 'claude' as const,
           destination: snapshot.project.path,
           branch: `feature/${slug}`,
           worktree: null,

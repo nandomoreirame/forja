@@ -25,6 +25,7 @@ export function ConversationPage() {
           .map((f) => ({
             id: f.id,
             label: f.name,
+            tool: f.tool,
             state: f.state === 'running' ? 'running' : f.state === 'waiting' ? 'waiting' : 'idle',
           }))}
         onSelect={state.selectFeature}

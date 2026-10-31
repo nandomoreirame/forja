@@ -1,5 +1,5 @@
 import type { Locale } from '@/shared/i18n'
-import type { UiState } from '@/shared/ui'
+import type { ToolId, UiState } from '@/shared/ui'
 export const roleIds = ['research', 'planner', 'implementer', 'tester', 'reviewer'] as const
 export type RoleId = (typeof roleIds)[number]
 export interface ProjectSummary {
@@ -32,6 +32,7 @@ export interface FeatureSnapshot {
   name: string
   state: UiState
   mode: 'guided'
+  tool: ToolId
   destination: string
   branch: string
   worktree: string | null

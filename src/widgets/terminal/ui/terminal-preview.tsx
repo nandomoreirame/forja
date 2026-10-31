@@ -55,9 +55,9 @@ export function TerminalPreview({
         <div
           role="tablist"
           aria-label={tabsLabel}
-          className="flex h-9 items-center justify-between border-b border-border bg-secondary px-3"
+          className="flex h-9 items-end justify-between gap-2 border-b border-border bg-secondary px-3"
         >
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 items-end">
             {tabs.map((tab) => {
               const active = tab.id === activeId
               const tip = [tab.label, tab.stateLabel, tab.detail].filter(Boolean).join(' · ')
@@ -70,7 +70,7 @@ export function TerminalPreview({
                       aria-selected={active}
                       onClick={() => onSelect?.(tab.id)}
                       className={cn(
-                        'flex h-7 items-center gap-2 rounded-t-[2px] border-x border-t border-border px-2.5 text-[11px]',
+                        '-mb-px flex h-7 min-w-0 items-center gap-2 whitespace-nowrap rounded-t-[2px] border-t border-r border-border px-2.5 text-[11px] first:border-l',
                         active
                           ? 'border-t-2 border-t-primary bg-background font-medium text-foreground'
                           : 'bg-card text-muted-foreground hover:text-foreground',
@@ -100,7 +100,7 @@ export function TerminalPreview({
               )
             })}
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1 self-center">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon-xs" aria-label={addLabel} onClick={onAdd}>
