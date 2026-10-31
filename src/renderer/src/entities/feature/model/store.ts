@@ -1,3 +1,4 @@
+import { featureIdentity } from './feature-name'
 import { createStore } from 'zustand/vanilla'
 import type {
   ProjectSnapshot,
@@ -25,6 +26,12 @@ export interface WorkbenchState {
   openPalette(scope: 'all' | 'recent'): void
   closePalette(): void
   loadProjects(): Promise<void>
+  openFeatureIds: string[]
+  recipients: Record<string, RoleId>
+  startCompose(role?: RoleId): void
+  createFeatureFromPrompt(prompt: string, role: RoleId): string
+  selectFeature(id: string): void
+  closeFeature(id: string): void
   openProject(id: string): Promise<void>
   navigate(view: View): void
   back(): void
@@ -35,6 +42,58 @@ export function createWorkbenchStore(source: WorkbenchSource) {
   let request = 0
   return createStore<WorkbenchState>((set, get) => ({
     source,
+    openFeatureIds: [],
+    recipients: {},
+    startCompose(role = 'research') {
+      if (get().snapshot) get().navigate({ kind: 'compose', role })
+    },
+    createFeatureFromPrompt(prompt, role) {
+      const snapshot = get().snapshot
+      if (!snapshot) throw new Error('No open project')
+      const { name, slug } = featureIdentity(
+        prompt,
+        snapshot.features.map((f) => f.slug),
+      )
+      const id = `mock:${snapshot.project.id}:${slug}`
+      const feature = {
+        id,
+        slug,
+        name,
+        state: 'running' as const,
+        mode: 'guided' as const,
+        destination: snapshot.project.path,
+        branch: `feature/${slug}`,
+        worktree: null,
+        target: snapshot.project.path,
+        stage: role,
+        messages: [{ id: `${id}:user-1`, role: 'user' as const, text: prompt.trim() }],
+        terminals: [],
+      }
+      set((state) => ({
+        snapshot: { ...snapshot, features: [...snapshot.features, feature] },
+        openFeatureIds: [...state.openFeatureIds, id],
+        recipients: { ...state.recipients, [id]: role },
+      }))
+      get().navigate({ kind: 'conversation', featureId: id })
+      return id
+    },
+    selectFeature(id) {
+      if (get().openFeatureIds.includes(id)) get().navigate({ kind: 'conversation', featureId: id })
+    },
+    closeFeature(id) {
+      const state = get()
+      if (!state.openFeatureIds.includes(id)) return
+      const openFeatureIds = state.openFeatureIds.filter((item) => item !== id)
+      const view: View =
+        state.view.kind === 'conversation' && state.view.featureId === id
+          ? openFeatureIds.length
+            ? { kind: 'conversation', featureId: openFeatureIds[openFeatureIds.length - 1] }
+            : { kind: 'compose', role: 'research' }
+          : state.view
+      const history = state.history.filter((v) => v.kind !== 'conversation' || v.featureId !== id)
+      if (JSON.stringify(history.at(-1)) !== JSON.stringify(view)) history.push(view)
+      set({ openFeatureIds, view, history, historyIndex: history.length - 1 })
+    },
     projects: [],
     snapshot: null,
     loading: false,
@@ -69,7 +128,16 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         const view: View = snapshot.features[0]
           ? { kind: 'conversation', featureId: snapshot.features[0].id }
           : { kind: 'home' }
-        set({ projects, snapshot, view, history: [view], historyIndex: 0, loading: false })
+        set({
+          projects,
+          snapshot,
+          view,
+          history: [view],
+          historyIndex: 0,
+          loading: false,
+          openFeatureIds: snapshot.features.map((f) => f.id),
+          recipients: Object.fromEntries(snapshot.features.map((f) => [f.id, f.stage])),
+        })
       } catch {
         if (token === request) set({ loading: false, error: 'Unable to load project' })
       }
