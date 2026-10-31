@@ -69,6 +69,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                         : state.openFeatureIds[state.openFeatureIds.length - 1]
                     state.setRecipient(id, agent.id)
                     state.selectFeature(id)
+                    state.focusComposer()
                   }
                 }}
               >

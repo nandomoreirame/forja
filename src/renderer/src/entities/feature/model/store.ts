@@ -33,6 +33,7 @@ export interface WorkbenchState {
   loadProjects(): Promise<void>
   openFeatureIds: string[]
   recipients: Record<string, RoleId>
+  focusComposer(): void
   composeActivation: number
   setRecipient(id: string, role: RoleId): void
   startCompose(role?: RoleId): void
@@ -89,6 +90,9 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     openFeatureIds: [],
     recipients: {},
     composeActivation: 0,
+    focusComposer() {
+      set((state) => ({ composeActivation: state.composeActivation + 1 }))
+    },
     setRecipient(id, role) {
       if (get().snapshot?.features.some((f) => f.id === id))
         set((state) => ({ recipients: { ...state.recipients, [id]: role } }))

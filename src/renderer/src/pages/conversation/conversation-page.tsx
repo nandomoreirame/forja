@@ -5,7 +5,7 @@ import { roleIds } from '@/renderer/src/shared/api'
 import { FeatureContext, FeatureTabs } from '@/widgets/workbench'
 import { getDictionary } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-import { FeatureComposer } from '@/renderer/src/widgets/feature-composer'
+import { ComposerController } from '@/renderer/src/features/composer'
 export function ConversationPage() {
   const [closingId, setClosingId] = useState<string | null>(null)
   const state = useWorkbench((s) => s)
@@ -70,11 +70,7 @@ export function ConversationPage() {
           stage={feature.stage}
         />
         <div className="p-4">
-          <FeatureComposer
-            key={feature.id}
-            featureId={feature.id}
-            role={state.recipients[feature.id] ?? feature.stage}
-          />
+          <ComposerController key={feature.id} featureId={feature.id} />
         </div>
       </div>
       <CloseFeatureDialog

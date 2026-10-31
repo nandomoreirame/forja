@@ -6,11 +6,9 @@ import { roleIds } from '@/renderer/src/shared/api'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 export function FeatureComposer({
   role,
-  featureId,
   autoFocus = false,
 }: {
   role: RoleId
-  featureId?: string
   autoFocus?: boolean
 }) {
   const state = useWorkbench((s) => s)
@@ -22,7 +20,6 @@ export function FeatureComposer({
   }, [role, activation])
   const d = getDictionary(state.source.locale)
   const a = d.app
-  const feature = state.snapshot?.features.find((f) => f.id === featureId)
   return (
     <Composer
       autoFocus={autoFocus}
@@ -32,17 +29,15 @@ export function FeatureComposer({
       onRecipientChange={(id) => {
         if (roleIds.includes(id as RoleId)) {
           setRecipient(id as RoleId)
-          if (featureId) state.setRecipient(featureId, id as RoleId)
         }
       }}
-      featureLabel={feature?.name ?? a.newContext}
+      featureLabel={a.newContext}
       targetLabel={state.snapshot?.project.path ?? ''}
       targetPrefix={a.destination}
       value={prompt}
       onChange={setPrompt}
       onSend={() => {
-        if (featureId) state.sendMessage(featureId, prompt)
-        else state.createFeatureFromPrompt(prompt, recipient)
+        state.createFeatureFromPrompt(prompt, recipient)
         setPrompt('')
       }}
       placeholder={a.prompt}

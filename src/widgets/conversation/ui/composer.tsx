@@ -54,8 +54,10 @@ export function Composer({
   shortcutHint = 'Press Ctrl+Enter to send',
 }: ComposerProps) {
   const field = useRef<HTMLTextAreaElement>(null)
+  const previousFocusKey = useRef(focusKey)
   useEffect(() => {
-    if (autoFocus) field.current?.focus()
+    if (autoFocus || previousFocusKey.current !== focusKey) field.current?.focus()
+    previousFocusKey.current = focusKey
   }, [autoFocus, focusKey])
   const selected = recipients.find((item) => item.id === recipientId)
   const [hintBefore, hintAfter] = shortcutHint.includes(sendShortcut)
