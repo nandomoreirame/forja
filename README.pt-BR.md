@@ -19,11 +19,17 @@ As CLIs de programação instaladas são ferramentas de execução desse fluxo. 
 
 O progresso inclui a documentação e a implementação: **SPEC 10% + PLAN 10% + tarefas de implementação validadas 80%** por feature.
 
-**MVP completo:** `██████░░░░░░░░░░░░░░` **30%**. As 13 specs estão aprovadas e os 13 planos estão prontos. A implementação tem **8/65 tarefas** concluídas: a primeira entrega (landing e styleguide) está totalmente implementada e validada (revisão independente pendente), com **0/13 entregas concluídas**.
+**MVP completo:** `█████░░░░░░░░░░░░░░░` **27%**. As 19 specs estão aprovadas e os 19 planos estão prontos. A implementação tem **8/93 tarefas** concluídas: a primeira entrega (landing e styleguide) está totalmente implementada e validada (revisão independente pendente), com **0/19 entregas concluídas**.
 
 | Ordem | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                           | Implementação (80%) | Progresso                       |
 | ----- | ----------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------- | ------------------------------- |
 | 01    | `web-foundation-landing-styleguide` | [Aprovada](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Pronto](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8                 | `████████████████████` **100%** |
+| 01a   | `project-home-screen`               | [Aprovada](docs/specs/project-home-screen/SPEC.md)               | [Pronto](docs/plans/2026-10-31-project-home-screen.md)               | 0/6                 | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 01b   | `command-palette`                   | [Aprovada](docs/specs/command-palette/SPEC.md)                   | [Pronto](docs/plans/2026-10-31-command-palette.md)                   | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 01c   | `new-conversation-composer`         | [Aprovada](docs/specs/new-conversation-composer/SPEC.md)         | [Pronto](docs/plans/2026-10-31-new-conversation-composer.md)         | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 01d   | `conversation-screen`               | [Aprovada](docs/specs/conversation-screen/SPEC.md)               | [Pronto](docs/plans/2026-10-31-conversation-screen.md)               | 0/6                 | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 01e   | `settings-screen`                   | [Aprovada](docs/specs/settings-screen/SPEC.md)                   | [Pronto](docs/plans/2026-10-31-settings-screen.md)                   | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 01f   | `document-viewer-screen`            | [Aprovada](docs/specs/document-viewer-screen/SPEC.md)            | [Pronto](docs/plans/2026-10-31-document-viewer-screen.md)            | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 02    | `cli-capability-contracts`          | [Aprovada](docs/specs/cli-capability-contracts/SPEC.md)          | [Pronto](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 03    | `project-feature-state`             | [Aprovada](docs/specs/project-feature-state/SPEC.md)             | [Pronto](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |
 | 04    | `agent-settings-skills`             | [Aprovada](docs/specs/agent-settings-skills/SPEC.md)             | [Pronto](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                 | `████░░░░░░░░░░░░░░░░` **20%**  |

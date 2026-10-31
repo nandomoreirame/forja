@@ -4,23 +4,31 @@
 
 An opinionated AI agent development environment built around the RPI workflow, from specification to review, with you in control of every stage.
 
-Updated: 2026-10-30.
+Updated: 2026-10-31.
 
 ## Current Status
 
-The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The implementation queue contains **13 approved specs and plans, 65 tasks, and 60 requirements**. Implementation of this queue has started: **0/13 slices delivered; the first slice is fully implemented (8/8 tasks, 8/65 overall) and validated, with independent review pending**.
+The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The implementation queue contains **19 approved specs and plans, 93 tasks, and 79 requirements**. Implementation of this queue has started: **0/19 slices delivered; the first slice is fully implemented (8/8 tasks, 8/93 overall) and validated, with independent review pending**.
 
 The existing Electron welcome-screen scaffold is already implemented. It is the starting point, not evidence that the planned RPI workflow, shared shadcn components or CLI integrations are complete.
 
-Combined documentation and implementation progress is **30%**: an approved SPEC contributes 10%, a ready PLAN contributes 10%, and validated implementation tasks contribute the remaining 80% per feature. The task counts below track implementation only; no slice is delivered yet.
+Combined documentation and implementation progress is **27%**: an approved SPEC contributes 10%, a ready PLAN contributes 10%, and validated implementation tasks contribute the remaining 80% per feature. The task counts below track implementation only; no slice is delivered yet.
 
 ## Execution Order
+
+Slices 01a to 01f are frontend-only navigable mock screens added on 2026-10-31. They run in the desktop renderer with a swappable mock data source and become the screens that slices 04, 09, 10 and 11 wire to core. Recommended implementation in two sequential batches: 01a to 01c, then 01d to 01f.
 
 The order below is the recommended sequential queue. Dependencies are explicit in every plan; a missing external CLI capability blocks dependent work, not independent web delivery. Status is stated separately from spec approval.
 
 | Order | Spec                                                                                      | Plan                                                                              | Tasks completed | Spec / plan      | Implementation | Validation / independent review |
 | ----- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | --------------- | ---------------- | -------------- | ------------------------------- |
 | 01    | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Implementation plan](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8             | Approved / ready | Implemented    | Passed / pending                |
+| 01a   | [project-home-screen](docs/specs/project-home-screen/SPEC.md)                             | [Implementation plan](docs/plans/2026-10-31-project-home-screen.md)               | 0/6             | Approved / ready | Planned        | Not run / not started           |
+| 01b   | [command-palette](docs/specs/command-palette/SPEC.md)                                     | [Implementation plan](docs/plans/2026-10-31-command-palette.md)                   | 0/4             | Approved / ready | Planned        | Not run / not started           |
+| 01c   | [new-conversation-composer](docs/specs/new-conversation-composer/SPEC.md)                 | [Implementation plan](docs/plans/2026-10-31-new-conversation-composer.md)         | 0/4             | Approved / ready | Planned        | Not run / not started           |
+| 01d   | [conversation-screen](docs/specs/conversation-screen/SPEC.md)                             | [Implementation plan](docs/plans/2026-10-31-conversation-screen.md)               | 0/6             | Approved / ready | Planned        | Not run / not started           |
+| 01e   | [settings-screen](docs/specs/settings-screen/SPEC.md)                                     | [Implementation plan](docs/plans/2026-10-31-settings-screen.md)                   | 0/4             | Approved / ready | Planned        | Not run / not started           |
+| 01f   | [document-viewer-screen](docs/specs/document-viewer-screen/SPEC.md)                       | [Implementation plan](docs/plans/2026-10-31-document-viewer-screen.md)            | 0/4             | Approved / ready | Planned        | Not run / not started           |
 | 02    | [cli-capability-contracts](docs/specs/cli-capability-contracts/SPEC.md)                   | [Implementation plan](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3             | Approved / ready | Planned        | Not run / not started           |
 | 03    | [project-feature-state](docs/specs/project-feature-state/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-project-feature-state.md)             | 0/4             | Approved / ready | Planned        | Not run / not started           |
 | 04    | [agent-settings-skills](docs/specs/agent-settings-skills/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4             | Approved / ready | Planned        | Not run / not started           |

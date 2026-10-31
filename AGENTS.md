@@ -34,7 +34,7 @@ Forja is an Electron + React desktop app (plus a standalone `site/` Vite app) fo
 - Prettier: no semicolons, single quotes, trailing commas, width 100 (`.prettierrc.json`). ESLint is flat config with typescript-eslint recommended.
 - Security: renderer runs sandboxed with context isolation and no Node integration. Keep the preload minimal and validate messages with Zod at the core boundary. The SQLite DB is unencrypted; never store secrets.
 - Docs: `README.md`/`ROADMAP.md` have `.pt-BR.md` counterparts; keep them in sync when editing. README progress table is hand-maintained.
-- Plans in `docs/plans/` define implementation order (13 slices, starting with `web-foundation-landing-styleguide`). Follow the ordered queue and each plan's STATE.md; do not implement out of dependency order.
+- Plans in `docs/plans/` define implementation order (19 slices: `web-foundation-landing-styleguide`, the mock screens 01a to 01f, then 02 to 13). Follow the ordered queue and each plan's STATE.md; do not implement out of dependency order.
 
 ## Git
 

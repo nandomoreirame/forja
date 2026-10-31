@@ -4,17 +4,19 @@
 
 Um ambiente de desenvolvimento com agentes de IA, opinativo sobre o fluxo RPI, da especificação à revisão, com você no controle de cada etapa.
 
-Atualizado em: 30/10/2026.
+Atualizado em: 31/10/2026.
 
 ## Status atual
 
-A [spec principal do MVP, em inglês](docs/specs/functional-mvp/SPEC.md), está aprovada. A fila contém **13 specs e planos aprovados, 65 tarefas e 60 requisitos**. A implementação dessa fila começou: **0/13 entregas concluídas; a primeira entrega está totalmente implementada (8/8 tarefas, 8/65 no total) e validada, com revisão independente pendente**.
+A [spec principal do MVP, em inglês](docs/specs/functional-mvp/SPEC.md), está aprovada. A fila contém **19 specs e planos aprovados, 93 tarefas e 79 requisitos**. A implementação dessa fila começou: **0/19 entregas concluídas; a primeira entrega está totalmente implementada (8/8 tarefas, 8/93 no total) e validada, com revisão independente pendente**.
 
 O scaffold Electron com a tela inicial já está implementado. Ele é o ponto de partida; o fluxo RPI, os componentes shadcn compartilhados e as integrações com as CLIs continuam planejados.
 
-O progresso combinado da documentação e da implementação é **30%**: SPEC aprovada vale 10%, PLAN pronto vale 10% e as tarefas de implementação validadas representam os 80% restantes por feature. A contagem de tarefas abaixo acompanha somente a implementação; nenhuma entrega está concluída.
+O progresso combinado da documentação e da implementação é **27%**: SPEC aprovada vale 10%, PLAN pronto vale 10% e as tarefas de implementação validadas representam os 80% restantes por feature. A contagem de tarefas abaixo acompanha somente a implementação; nenhuma entrega está concluída.
 
 ## Ordem de execução
+
+As fatias 01a a 01f são telas mock navegáveis, só de frontend, adicionadas em 31/10/2026. Elas rodam no renderer do desktop com uma fonte de dados mock trocável e viram as telas que as fatias 04, 09, 10 e 11 ligam ao core. A implementação recomendada é em dois lotes sequenciais: 01a a 01c, depois 01d a 01f.
 
 A tabela apresenta a sequência recomendada. Cada plano declara suas dependências. Uma capacidade ausente em uma CLI bloqueia o trabalho que depende dela, sem impedir a entrega web independente. A aprovação da spec e a conclusão da implementação são estados separados.
 
@@ -23,6 +25,12 @@ As specs e os planos técnicos vinculados abaixo permanecem em inglês, conforme
 | Ordem | Spec                                                                                      | Plano                                                                                | Tarefas concluídas | Spec / plano      | Implementação | Validação / revisão independente |
 | ----- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------ | ----------------- | ------------- | -------------------------------- |
 | 01    | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Plano de implementação](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8                | Aprovada / pronto | Implementada  | Aprovada / pendente              |
+| 01a   | [project-home-screen](docs/specs/project-home-screen/SPEC.md)                             | [Plano de implementação](docs/plans/2026-10-31-project-home-screen.md)               | 0/6                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| 01b   | [command-palette](docs/specs/command-palette/SPEC.md)                                     | [Plano de implementação](docs/plans/2026-10-31-command-palette.md)                   | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| 01c   | [new-conversation-composer](docs/specs/new-conversation-composer/SPEC.md)                 | [Plano de implementação](docs/plans/2026-10-31-new-conversation-composer.md)         | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| 01d   | [conversation-screen](docs/specs/conversation-screen/SPEC.md)                             | [Plano de implementação](docs/plans/2026-10-31-conversation-screen.md)               | 0/6                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| 01e   | [settings-screen](docs/specs/settings-screen/SPEC.md)                                     | [Plano de implementação](docs/plans/2026-10-31-settings-screen.md)                   | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| 01f   | [document-viewer-screen](docs/specs/document-viewer-screen/SPEC.md)                       | [Plano de implementação](docs/plans/2026-10-31-document-viewer-screen.md)            | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 02    | [cli-capability-contracts](docs/specs/cli-capability-contracts/SPEC.md)                   | [Plano de implementação](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 03    | [project-feature-state](docs/specs/project-feature-state/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 04    | [agent-settings-skills](docs/specs/agent-settings-skills/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
