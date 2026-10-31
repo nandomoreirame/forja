@@ -49,7 +49,7 @@ export function Landing({ locale }: { locale: Locale }) {
             <a href="/" className="flex items-center gap-2.5 text-foreground hover:text-primary">
               <ForjaMark className="size-5 text-primary" />
               <span className="text-sm font-bold tracking-wide">
-                FORJA <span className="font-normal text-muted-foreground">v2.0</span>
+                FORJA <span className="rounded-sm border border-border px-1.5 text-[10px] font-normal text-muted-foreground">v2.0</span>
               </span>
             </a>
             <LocaleLink
