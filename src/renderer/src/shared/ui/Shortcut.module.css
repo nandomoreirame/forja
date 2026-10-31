@@ -1,5 +1,33 @@
- .shortcut, .compact { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--color-muted); }
-.shortcut kbd, .compact kbd { font: inherit; font-size: var(--text-small); line-height: 17px; min-width: 20px; padding: 0 5px; text-align: center; border: 1px solid var(--color-border); border-radius: var(--radius-small); background: var(--color-key); box-shadow: 0 1px 1px #0003; }
-.separator { font-size: var(--text-small); padding: 0 1px; }
-.compact { gap: 0; }
-.compact kbd { font-size: 9px; line-height: 13px; padding: 0 4px; }
+.shortcut,
+.compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: var(--color-muted);
+}
+.shortcut kbd,
+.compact kbd {
+  font: inherit;
+  font-size: var(--text-small);
+  line-height: 17px;
+  min-width: 20px;
+  padding: 0 5px;
+  text-align: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-small);
+  background: var(--color-key);
+  box-shadow: 0 1px 1px #0003;
+}
+.separator {
+  font-size: var(--text-small);
+  padding: 0 1px;
+}
+.compact {
+  gap: 0;
+}
+.compact kbd {
+  font-size: 9px;
+  line-height: 13px;
+  padding: 0 4px;
+}
