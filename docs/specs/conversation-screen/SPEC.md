@@ -47,6 +47,7 @@ Shared decisions for the six screen slices (`project-home-screen`, `command-pale
 4. **[REQ-071]** WHEN the user closes a feature tab THEN the system SHALL remove only that tab (confirming first when its mock agent is running), select a neighbor tab, and show the centered composer after the last tab closes.
 5. **[REQ-074]** WHEN the user activates an agent row in the sidebar or types a valid @mention (token boundary, English or localized role alias, ignored inside code fences) THEN the system SHALL make that agent the composer recipient for the selected feature, with the latest explicit choice winning.
 6. **[REQ-075]** WHEN the user activates "View request", the terminal "+" or "Stop process" THEN the system SHALL scroll to and highlight the source message, add a mock manual shell tab labeled with the shell name, or mark that mock execution stopped with its output preserved.
+7. **[REQ-080]** WHEN a feature conversation shows agent replies or user messages THEN the system SHALL render them as sanitized Markdown with copyable code blocks, collapsible command runs (command, exit status and output), log excerpts and image attachments on user messages, and the mock data SHALL include examples of each in both locales.
 
 ### P2 (Should Have)
 
@@ -95,3 +96,4 @@ Unit and RTL tests in `test/renderer/` with jsdom and fake timers for scripted r
 | REQ-071 | Closable feature tabs | P1 | Approved 2026-10-31; not implemented |
 | REQ-074 | Recipient by sidebar or mention | P1 | Approved 2026-10-31; not implemented |
 | REQ-075 | Conversation and terminal extras | P1 | Approved 2026-10-31; not implemented |
+| REQ-080 | Rich mock conversation content | P1 | Approved 2026-10-31 (user request during implementation); not implemented |

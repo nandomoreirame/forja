@@ -125,6 +125,7 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 77. **[REQ-077]** WHEN Settings is shown THEN the system SHALL offer, in Agents, the fixed role selector, AI tool (claude, codex, opencode, agy, grok) with a mock detection indicator, optional model (empty means the tool default), reasoning level with an availability hint, additional instructions, a skills checklist with an active count and the auto-invoke switch; in General, the skills folder with refresh, interrupt policy, read-only guided mode with three rounds and the inactivity window; changes SHALL persist only through Save, which is enabled when the form is dirty, and leaving with unsaved changes SHALL ask for confirmation.
 78. **[REQ-078]** WHEN the user activates a spec, plan or review in the sidebar THEN the system SHALL open (or focus) a closable document tab showing the document header with its state and, for a draft spec or plan, a mock approve action, followed by the rendered Markdown and Mermaid content from the mock source.
 79. **[REQ-079]** WHEN the user selects text in a document and chooses "Review with agent" THEN the system SHALL prefill the global composer with the artifact name, the quoted excerpt and the artifact's author agent as recipient, without sending.
+80. **[REQ-080]** WHEN a feature conversation shows agent replies or user messages THEN the system SHALL render them as sanitized Markdown with copyable code blocks, collapsible command runs (command, exit status and output), log excerpts and image attachments on user messages, and the mock data SHALL include examples of each in both locales.
 
 ### P2 (Should Have)
 
@@ -318,6 +319,7 @@ None in this delivery; deferred items are explicit below.
 | REQ-077 | Settings form with manual save | P1 | Approved 2026-10-31; not implemented |
 | REQ-078 | Document tabs | P1 | Approved 2026-10-31; not implemented |
 | REQ-079 | Excerpt review | P1 | Approved 2026-10-31; not implemented |
+| REQ-080 | Rich mock conversation content | P1 | Approved 2026-10-31; not implemented |
 
 ## Implementation Sequence
 

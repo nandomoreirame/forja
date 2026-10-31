@@ -7,7 +7,7 @@
 **Architecture:** Frontend-only mock screen in the desktop renderer. Screens read data only through `WorkbenchSource` and the `createWorkbenchStore` Zustand store; widgets and primitives come from `src/widgets` and `src/shared/ui`. No CLI, Git, MCP, PTY, filesystem or network access.
 **Tech Stack:** Electron renderer (React 19, TypeScript), Tailwind 4, shadcn/ui (radix-nova), Zustand, Vitest + RTL, Playwright for the dev:web smoke.
 **Order:** 01d of the mock screens (frontend mock screens, implementation batch 2)
-**Total Tasks:** 6
+**Total Tasks:** 7
 **Estimated Complexity:** medium
 **Status:** Spec approved 2026-10-31; planned; not implemented.
 
@@ -30,6 +30,7 @@
 - Terminals open, collapse to the footer toolbar, switch, add a manual shell and stop without losing output.
 - Closing feature tabs selects a neighbor and ends on the centered composer.
 - Sidebar agents and @mentions switch the recipient; "View request" highlights its source message.
+- The seeded conversation shows Markdown, code blocks with copy, command runs, logs and image attachments (Task 7, added 2026-10-31 at the user's request).
 
 ## Tasks
 
@@ -397,6 +398,80 @@ Run the task gates from the repository root: `rtk npm run typecheck`, `rtk npm r
 **Step 5: Commit at implementation time**
 
 Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 7: Render rich mock conversation content
+
+**Requirement:** REQ-080
+**Depends on:** Task 6
+**Files:**
+- Modify: `src/widgets/conversation/ui/messages.tsx`
+- Create: `src/widgets/conversation/ui/message-parts.tsx`
+- Modify: `src/widgets/conversation/index.ts`
+- Modify: `src/renderer/src/shared/api/workbench-source.ts`
+- Modify: `src/renderer/src/shared/api/mock-data.ts`
+- Modify: `src/renderer/src/shared/api/mock-replies.ts`
+- Modify: `src/renderer/src/features/conversation/history.tsx`
+- Modify: `site/src/pages/styleguide.tsx`
+- Create: `test/web/message-parts.test.tsx`
+- Test: `test/web/message-parts.test.tsx`
+
+**Team:**
+- Track: frontend
+- Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, accessibility-guardrails, test-driven-development)
+- Reviewers: type-safety-reviewer, test-reviewer, security-reviewer, accessibility-guardrails
+
+**Step 1: Write the failing test**
+
+```tsx
+import { fireEvent, render, screen, within } from '@testing-library/react'
+import { expect, it, vi } from 'vitest'
+import { Messages } from '../../src/widgets/conversation'
+it('renders markdown, copyable code, a collapsible command run and an image attachment', async () => {
+  const writeText = vi.fn().mockResolvedValue(undefined)
+  Object.assign(navigator, { clipboard: { writeText } })
+  render(
+    <Messages
+      items={[
+        { id: 'u', author: 'You', role: 'user', text: 'The login fails, see the screenshot.',
+          attachments: [{ kind: 'image', name: 'login-error.png', src: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"/>', alt: 'Login error toast' }] },
+        { id: 'a', author: 'Implementer', role: 'agent', text: 'Fixed in **token.ts**:\n\n```ts\nexport const ttl = 3600\n```',
+          parts: [{ kind: 'command', command: 'npm test -- token', exitCode: 1, output: 'FAIL token.test.ts\nexpected 3600' }] },
+      ]}
+    />,
+  )
+  expect(screen.getByRole('img', { name: 'Login error toast' })).toBeInTheDocument()
+  expect(screen.getByText('token.ts').tagName).toBe('STRONG')
+  fireEvent.click(screen.getByRole('button', { name: /Copy code/ }))
+  expect(writeText).toHaveBeenCalledWith('export const ttl = 3600')
+  const run = screen.getByRole('group', { name: /npm test -- token/ })
+  expect(within(run).getByText(/exit 1/)).toBeInTheDocument()
+  expect(within(run).queryByText(/expected 3600/)).not.toBeVisible()
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npx vitest run test/web/message-parts.test.tsx`
+
+Expected: FAIL on the asserted behavior, not on a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+`ConversationMessage` gains optional `attachments` (image: name, src, alt) and `parts` (`command`: command, exitCode, output, cwd?; `log`: title, lines, level?). Agent and user text render through `react-markdown` with `remark-gfm` and `skipHtml` (no raw HTML, links get `rel="noreferrer"`), with a compact message scale. Fenced code renders in a `CodeBlock` with the language label and a "Copy code" icon button (tooltip, `aria-label`, polite "Copied" status). A command run is a `<details>` group named by its command (mono, `$` prefix, exit badge: success token for 0, danger otherwise), collapsed by default, output in a scrollable mono block. A log part shows the title and up to 12 lines, with "Show all" when longer. Image attachments render as thumbnails (max 240 px, alt text required, the file name below) and open full size in a Dialog. Labels are props with English defaults; the renderer passes localized labels. Mock data: feature-1 of `dev` gets a richer seeded conversation in both locales (user request with a screenshot attachment from an inline SVG data URL, a Research reply with a list and a table, a Planner reply with a task checklist, an Implementer reply with a TypeScript code block, a failing then passing `npm test` command run and a short log, a Tester event linking back). Mock reply scripts for Implementer and Tester also return a code block or command part. Add the parts to the styleguide Messages card.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npx vitest run test/web/message-parts.test.tsx`. Expected: PASS. Add and run these checks before completing the task:
+
+- Raw HTML in message text is not rendered (`<img onerror>` stays text).
+- An image without alt text is not rendered as an image.
+- The streamed reply still appends text chunk by chunk and renders Markdown when complete.
+
+Run the task gates from the repository root: `rtk npm run typecheck`, `rtk npm run lint`, `rtk npm test`, `rtk npm run build`. A passing mock proves only the mock screen; it is not evidence of core, CLI, Git or PTY behavior.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push.
 
 ## Final Validation and Handoff
 
