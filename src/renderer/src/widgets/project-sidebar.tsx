@@ -1,12 +1,10 @@
 import {
-  Folder,
   Search,
   ClipboardList,
   Code,
   FlaskConical,
   GitPullRequest,
   ChevronLeft,
-  Ellipsis,
 } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, type UiState } from '@/shared/ui'
@@ -30,28 +28,18 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       aria-label={snapshot.project.name}
       className="h-full w-full overflow-y-auto border-r border-border bg-sidebar text-xs"
     >
-      <div className="flex h-9 items-center justify-between border-b border-border px-3">
-        <button
-          type="button"
-          aria-label={`${snapshot.project.name}, ${a.switchProject}`}
-          onClick={() => state.openPalette('recent')}
-          className="flex min-w-0 items-center gap-2 rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
-        >
-          <Folder className="size-3.5 text-primary" />
-          <span className="truncate font-semibold">{snapshot.project.name}</span>
-        </button>
-        <IconButton label={a.projectActions} onClick={() => state.openPalette('recent')}>
-          <Ellipsis className="size-3" />
-        </IconButton>
-        <IconButton label={a.collapseLeft} onClick={() => state.togglePanel('left')}>
-          <ChevronLeft className="size-3" />
-        </IconButton>
-      </div>
       <div className="space-y-3 py-2">
         <section>
-          <h2 className="flex justify-between px-3 pb-1 text-[11px] uppercase tracking-wider">
+          <h2 className="flex items-center justify-between gap-2 px-3 pb-1 text-[11px] uppercase tracking-wider">
             <span>{a.agents}</span>
-            <span>{snapshot.agents.length}</span>
+            <span className="ml-auto">{snapshot.agents.length}</span>
+            <IconButton
+              className="size-5"
+              label={a.collapseLeft}
+              onClick={() => state.togglePanel('left')}
+            >
+              <ChevronLeft className="size-3" />
+            </IconButton>
           </h2>
           {snapshot.agents.map((agent) => {
             const Icon = icons[agent.id]

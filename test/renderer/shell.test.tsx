@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
@@ -40,4 +40,18 @@ it('renders the localized shell', async () => {
     'Agentes5',
   )
   expect(screen.getByRole('complementary', { name: 'Projeto' })).toBeInTheDocument()
+})
+
+it('shows the project switcher in the topbar next to the brand', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  const sidebar = await screen.findByRole('complementary', { name: 'dev' })
+  const header = screen.getByText('FORJA').closest('header')!
+  const switcher = within(header).getByRole('button', { name: 'dev, switch project' })
+  expect(within(header).queryByRole('button', { name: 'Project actions' })).toBeNull()
+  fireEvent.focus(switcher)
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('Project actions')
+  expect(within(sidebar).queryByRole('button', { name: 'dev, switch project' })).toBeNull()
+  expect(within(sidebar).getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument()
+  fireEvent.click(switcher)
+  expect(screen.getByRole('dialog', { name: 'Recent projects' })).toBeInTheDocument()
 })

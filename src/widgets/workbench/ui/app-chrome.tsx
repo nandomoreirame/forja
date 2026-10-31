@@ -10,6 +10,8 @@ import {
 import { Search, Settings, Terminal, ChevronLeft, ChevronRight } from 'lucide-react'
 export interface AppTopbarProps {
   brand: string
+  /** Project switcher shown next to the brand. */
+  project?: ReactNode
   commandText: string
   settingsLabel: string
   onSettings?: () => void
@@ -26,6 +28,7 @@ export interface AppTopbarProps {
 }
 export function AppTopbar({
   brand,
+  project,
   commandText,
   settingsLabel,
   onSettings,
@@ -66,10 +69,15 @@ export function AppTopbar({
   return (
     <TooltipProvider>
       <header className="flex h-10 shrink-0 items-center justify-between border-b border-border bg-sidebar px-3">
-        <div className="flex items-center gap-2">
-          <ForjaMark className="size-2.5 text-primary" />
+        <div className="flex min-w-0 items-center gap-2">
+          <ForjaMark className="size-2.5 shrink-0 text-primary" />
           <span className="text-xs font-bold tracking-wider">{brand}</span>
           <span className="text-[10px] text-muted-foreground">v2.0</span>
+          {project ? (
+            <div className="ml-2 flex min-w-0 items-center gap-1 border-l border-border pl-3">
+              {project}
+            </div>
+          ) : null}
         </div>
         <div className="mx-4 flex min-w-0 max-w-[460px] flex-1 items-center gap-1.5">
           {onBack ? icon(backLabel, <ChevronLeft className="size-3.5" />, onBack, !canBack) : null}

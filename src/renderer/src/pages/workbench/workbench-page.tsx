@@ -24,6 +24,7 @@ import { getDictionary } from '@/shared/i18n'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ProjectSidebar } from '@/renderer/src/widgets/project-sidebar'
 import { GitContext } from '@/renderer/src/widgets/git-context'
+import { ProjectSwitcher } from '@/renderer/src/widgets/project-switcher'
 import { IconButton } from '@/renderer/src/shared/ui/icon-button'
 import { TerminalFooterToolbar, TerminalPanel } from '@/renderer/src/features/terminal'
 const mainLayoutKey = 'react-resizable-panels:forja-main:content:terminal'
@@ -140,6 +141,7 @@ function WorkbenchShell() {
     >
       <AppTopbar
         brand="FORJA"
+        project={s.snapshot ? <ProjectSwitcher /> : undefined}
         commandText={s.snapshot?.project.name ?? 'Forja'}
         onCommand={() => s.openPalette('all')}
         settingsLabel={a.settings}
