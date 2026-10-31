@@ -44,6 +44,8 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 11. **[REQ-051]** WHEN native configuration, skills or documents enter context THEN the system SHALL treat their content as data subject to role/tool constraints and adapt RPI state instructions for the current invocation without editing user skill/config files.
 12. **[REQ-052]** WHEN a dependency, permission, port, process or file operation fails THEN the system SHALL show an actionable non-secret error and a truthful stopped/failed state without fabricating completion or automatically weakening controls.
 13. **[REQ-053]** WHEN agent configuration changes while work is active THEN the system SHALL apply it to future turns; preserve the current turn settings snapshot and explicit recipient context.
+14. **[REQ-059]** WHEN an agent turn emits no events for the configurable inactivity window (default 10 minutes) THEN the system SHALL mark it unresponsive and let the user keep waiting or stop it; a forced stop SHALL always be available and release the feature lease only after the owned process group terminates.
+15. **[REQ-060]** WHEN a CLI reports token or cost usage THEN the system SHALL record and display it per turn and per feature; when a CLI does not report usage the system SHALL show it as unavailable instead of estimating.
 
 ### P2 (Should Have)
 
@@ -99,3 +101,5 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-051 | Untrusted context | P1 | Approved; not implemented |
 | REQ-052 | Operational errors | P1 | Approved; not implemented |
 | REQ-053 | Settings snapshots | P1 | Approved; not implemented |
+| REQ-059 | Stalled turns | P1 | Approved 2026-10-31; not implemented |
+| REQ-060 | Usage visibility | P1 | Approved 2026-10-31; not implemented |

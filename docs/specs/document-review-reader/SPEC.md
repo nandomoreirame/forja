@@ -32,13 +32,13 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 ### P1 (MVP)
 
 1. **[REQ-010]** WHEN an agent start is requested THEN the system SHALL check required approved artifacts and dependencies in the core before spawning a CLI; disabled UI or prompt text alone SHALL NOT implement the gate.
-2. **[REQ-011]** WHEN an artifact or reviewed code changes THEN the system SHALL bind approvals to exact content hashes and dependency revisions, invalidate affected approvals/results and preserve history; recheck at dispatch and approval time.
-3. **[REQ-013]** WHEN an agent publishes a spec, plan or review THEN the system SHALL write only the scoped approved artifact type under the opened folder layout, honoring optional .claude/rpi-paths.json and default docs/specs, docs/plans and docs/reviews paths.
+2. **[REQ-011]** WHEN an artifact or reviewed code changes THEN the system SHALL bind approvals and evidence to exact content hashes and dependency revisions, invalidate affected approvals/results and preserve history; recheck at dispatch and approval time. RPI artifact paths SHALL be excluded from the code fingerprint and invalidate only through the artifact dependency graph.
+3. **[REQ-013]** WHEN an agent publishes a spec, plan or review THEN the system SHALL write only the scoped artifact type under the feature artifact root (the feature worktree when the target is a Git repository, otherwise the opened folder), honoring that root's optional .claude/rpi-paths.json and default docs/specs, docs/plans and docs/reviews paths.
 4. **[REQ-035]** WHEN a document is opened from the sidebar THEN the system SHALL render CommonMark/GFM, highlighted fenced code, tables, tasks, authorized local images and strict Mermaid with no arbitrary HTML or script execution.
 5. **[REQ-036]** WHEN the user selects document text and chooses Review with agent THEN the system SHALL prepare its author, feature, artifact identity/hash and selected excerpt in the global composer without sending automatically.
 6. **[REQ-037]** WHEN an artifact is written or externally changed THEN the system SHALL use atomic publication, preserve content/history and unknown fields, reconcile filesystem changes, and never silently approve imported, missing, stale or malformed artifacts.
 7. **[REQ-043]** WHEN a functional screen is implemented THEN the system SHALL reuse approved component anatomy and recorded user exceptions, compare deterministic captures at matching viewports and fix drift before accepting the screen.
-8. **[REQ-045]** WHEN a tool or agent requests approval mutation THEN the system SHALL reject it; human-authorized core commands alone approve artifacts, implementation, final completion and Git integration.
+8. **[REQ-045]** WHEN a tool or agent requests approval mutation THEN the system SHALL reject it; human-authorized core commands alone approve specs, plans, final approval/integration, finding waivers and push.
 9. **[REQ-048]** WHEN IPC or MCP receives input THEN the system SHALL validate schemas, project/feature ownership, canonical paths and tool grants; never rely on connector annotations or model-supplied IDs as authorization.
 
 ### P2 (Should Have)

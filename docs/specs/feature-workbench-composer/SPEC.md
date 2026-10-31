@@ -43,6 +43,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 10. **[REQ-043]** WHEN a functional screen is implemented THEN the system SHALL reuse approved component anatomy and recorded user exceptions, compare deterministic captures at matching viewports and fix drift before accepting the screen.
 11. **[REQ-047]** WHEN the user views settings THEN the system SHALL keep the global composer available but separate from manual form saves; agents SHALL NOT read or alter settings merely because the screen is visible.
 12. **[REQ-054]** WHEN an output view or feature tab is closed THEN the system SHALL distinguish hiding a tab from stopping an execution, preserve feature history and require explicit confirmation before abandoning active owned work.
+13. **[REQ-055]** WHEN a Git target is bound THEN the system SHALL detect candidate validation commands and test-file patterns from repository manifests, require human confirmation, store them per target repository and run them itself through the managed executor as the only authoritative validation evidence.
 
 ### P2 (Should Have)
 
@@ -97,3 +98,4 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-043 | Visual fidelity | P1 | Approved; not implemented |
 | REQ-047 | Manual app configuration | P1 | Approved; not implemented |
 | REQ-054 | Feature archive and sessions | P1 | Approved; not implemented |
+| REQ-055 | Repository gates | P1 | Approved 2026-10-31; not implemented |

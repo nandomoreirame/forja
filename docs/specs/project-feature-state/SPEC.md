@@ -40,6 +40,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 7. **[REQ-048]** WHEN IPC or MCP receives input THEN the system SHALL validate schemas, project/feature ownership, canonical paths and tool grants; never rely on connector annotations or model-supplied IDs as authorization.
 8. **[REQ-050]** WHEN Git or file operations encounter external changes THEN the system SHALL preserve unrelated changes, fail safely on conflicts and require re-evaluation rather than force reset, auto-delete or silently including user work.
 9. **[REQ-054]** WHEN an output view or feature tab is closed THEN the system SHALL distinguish hiding a tab from stopping an execution, preserve feature history and require explicit confirmation before abandoning active owned work.
+10. **[REQ-058]** WHEN a feature is integrated or abandoned THEN the system SHALL move it to a read-only terminal state preserving history; after integration it SHALL offer explicit worktree/branch removal, and abandoning SHALL require confirmation, stop owned processes and keep branch/worktree until explicit cleanup.
 
 ### P2 (Should Have)
 
@@ -91,3 +92,4 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-048 | Scoped boundaries | P1 | Approved; not implemented |
 | REQ-050 | User work preservation | P1 | Approved; not implemented |
 | REQ-054 | Feature archive and sessions | P1 | Approved; not implemented |
+| REQ-058 | Feature end states | P1 | Approved 2026-10-31; not implemented |

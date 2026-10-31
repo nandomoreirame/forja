@@ -32,13 +32,15 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 ### P1 (MVP)
 
 1. **[REQ-003]** WHEN a feature selects a target repository THEN the system SHALL bind execution, branch and worktree to that repository and display its directory without moving the opened folder or its artifacts.
-2. **[REQ-011]** WHEN an artifact or reviewed code changes THEN the system SHALL bind approvals to exact content hashes and dependency revisions, invalidate affected approvals/results and preserve history; recheck at dispatch and approval time.
-3. **[REQ-024]** WHEN approved implementation starts THEN the system SHALL create or reuse one owned branch and worktree per feature in the selected Git repository and share it sequentially among Implementer, Tester and Reviewer.
-4. **[REQ-025]** WHEN an implementation batch passes validation THEN the system SHALL commit only its owned delta on the feature branch, preserving unrelated user changes and index entries; failed checks SHALL NOT be recorded as successful.
-5. **[REQ-026]** WHEN the user approves Git integration THEN the system SHALL bind authorization to the exact feature commit and destination HEAD, require valid tests/review, pause on divergence/conflicts and treat push as a separate explicit approval.
-6. **[REQ-027]** WHEN review findings are produced or revisited THEN the system SHALL preserve the RPI review format and round trail; only Reviewer updates findings, and implementation does not declare its own independent review approved.
+2. **[REQ-011]** WHEN an artifact or reviewed code changes THEN the system SHALL bind approvals and evidence to exact content hashes and dependency revisions, invalidate affected approvals/results and preserve history; recheck at dispatch and approval time. RPI artifact paths SHALL be excluded from the code fingerprint and invalidate only through the artifact dependency graph.
+3. **[REQ-024]** WHEN a feature is bound to a Git target repository THEN the system SHALL create or reuse one owned branch and worktree for it from the explicitly selected base before any role publishes, and share it sequentially among all five roles.
+4. **[REQ-025]** WHEN an Implementer or Tester turn ends with the confirmed repository gates passing THEN the system SHALL commit only the owned delta on the feature branch with an agent-proposed Conventional Commits message validated by core, preserving unrelated user changes and index entries; failed or skipped gates SHALL NOT be recorded as successful or advance the workflow. Approved spec/plan versions and published reviews are committed by core.
+5. **[REQ-026]** WHEN the user grants final approval THEN the system SHALL bind it to the exact feature commit, destination branch and HEAD, perform a no-fast-forward merge in an owned integration worktree, run the confirmed gates on the merge result and update the destination only if they pass and its HEAD is unchanged since approval; otherwise pause with diagnostics. Push SHALL be a separate explicit approval.
+6. **[REQ-027]** WHEN review findings are produced or revisited THEN the system SHALL preserve the RPI review format and round trail; only Reviewer resolves findings, implementation does not declare its own independent review approved, and open Critical/High findings without a human waiver block final approval.
 7. **[REQ-048]** WHEN IPC or MCP receives input THEN the system SHALL validate schemas, project/feature ownership, canonical paths and tool grants; never rely on connector annotations or model-supplied IDs as authorization.
 8. **[REQ-050]** WHEN Git or file operations encounter external changes THEN the system SHALL preserve unrelated changes, fail safely on conflicts and require re-evaluation rather than force reset, auto-delete or silently including user work.
+9. **[REQ-055]** WHEN a Git target is bound THEN the system SHALL detect candidate validation commands and test-file patterns from repository manifests, require human confirmation, store them per target repository and run them itself through the managed executor as the only authoritative validation evidence.
+10. **[REQ-058]** WHEN a feature is integrated or abandoned THEN the system SHALL move it to a read-only terminal state preserving history; after integration it SHALL offer explicit worktree/branch removal, and abandoning SHALL require confirmation, stop owned processes and keep branch/worktree until explicit cleanup.
 
 ### P2 (Should Have)
 
@@ -83,9 +85,11 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | --- | --- | --- | --- |
 | REQ-003 | Per-feature repository | P1 | Approved; not implemented |
 | REQ-011 | Approval invalidation | P1 | Approved; not implemented |
-| REQ-024 | Feature worktrees | P1 | Approved; not implemented |
+| REQ-024 | Feature worktrees from binding | P1 | Approved; not implemented |
 | REQ-025 | Feature commits | P1 | Approved; not implemented |
-| REQ-026 | Approved integration | P1 | Approved; not implemented |
+| REQ-026 | Final approval with tested merge | P1 | Approved; not implemented |
 | REQ-027 | Review ownership | P1 | Approved; not implemented |
 | REQ-048 | Scoped boundaries | P1 | Approved; not implemented |
 | REQ-050 | User work preservation | P1 | Approved; not implemented |
+| REQ-055 | Repository gates | P1 | Approved 2026-10-31; not implemented |
+| REQ-058 | Feature end states | P1 | Approved 2026-10-31; not implemented |

@@ -39,6 +39,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 6. **[REQ-047]** WHEN the user views settings THEN the system SHALL keep the global composer available but separate from manual form saves; agents SHALL NOT read or alter settings merely because the screen is visible.
 7. **[REQ-051]** WHEN native configuration, skills or documents enter context THEN the system SHALL treat their content as data subject to role/tool constraints and adapt RPI state instructions for the current invocation without editing user skill/config files.
 8. **[REQ-053]** WHEN agent configuration changes while work is active THEN the system SHALL apply it to future turns; preserve the current turn settings snapshot and explicit recipient context.
+9. **[REQ-059]** WHEN an agent turn emits no events for the configurable inactivity window (default 10 minutes) THEN the system SHALL mark it unresponsive and let the user keep waiting or stop it; a forced stop SHALL always be available and release the feature lease only after the owned process group terminates.
 
 ### P2 (Should Have)
 
@@ -89,3 +90,4 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-047 | Manual app configuration | P1 | Approved; not implemented |
 | REQ-051 | Untrusted context | P1 | Approved; not implemented |
 | REQ-053 | Settings snapshots | P1 | Approved; not implemented |
+| REQ-059 | Stalled turns | P1 | Approved 2026-10-31; not implemented |

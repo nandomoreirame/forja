@@ -31,18 +31,19 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 
 ### P1 (MVP)
 
-1. **[REQ-009]** WHEN a feature advances THEN the system SHALL follow Research, approved spec, Planner, approved plan, Implementer, approved implementation, Tester, Reviewer and final human approval.
+1. **[REQ-009]** WHEN a feature advances THEN the system SHALL follow Research, human-approved spec, Planner, human-approved plan, Implementer, machine-validated implementation (confirmed repository gates green on the committed fingerprint), Tester, Reviewer and one human final approval that also authorizes integration.
 2. **[REQ-010]** WHEN an agent start is requested THEN the system SHALL check required approved artifacts and dependencies in the core before spawning a CLI; disabled UI or prompt text alone SHALL NOT implement the gate.
-3. **[REQ-011]** WHEN an artifact or reviewed code changes THEN the system SHALL bind approvals to exact content hashes and dependency revisions, invalidate affected approvals/results and preserve history; recheck at dispatch and approval time.
+3. **[REQ-011]** WHEN an artifact or reviewed code changes THEN the system SHALL bind approvals and evidence to exact content hashes and dependency revisions, invalidate affected approvals/results and preserve history; recheck at dispatch and approval time. RPI artifact paths SHALL be excluded from the code fingerprint and invalidate only through the artifact dependency graph.
 4. **[REQ-012]** WHEN workflow state changes THEN the system SHALL persist versioned JSON and event history in SQLite and expose scoped state through Forja MCP without creating runtime STATE.md in the user project.
-5. **[REQ-013]** WHEN an agent publishes a spec, plan or review THEN the system SHALL write only the scoped approved artifact type under the opened folder layout, honoring optional .claude/rpi-paths.json and default docs/specs, docs/plans and docs/reviews paths.
-6. **[REQ-022]** WHEN a role performs work THEN the system SHALL let Research and Planner publish their artifacts, Implementer modify authorized feature code, Tester validate and Reviewer publish findings; corrections SHALL return to Implementer.
-7. **[REQ-027]** WHEN review findings are produced or revisited THEN the system SHALL preserve the RPI review format and round trail; only Reviewer updates findings, and implementation does not declare its own independent review approved.
+5. **[REQ-013]** WHEN an agent publishes a spec, plan or review THEN the system SHALL write only the scoped artifact type under the feature artifact root (the feature worktree when the target is a Git repository, otherwise the opened folder), honoring that root's optional .claude/rpi-paths.json and default docs/specs, docs/plans and docs/reviews paths.
+6. **[REQ-022]** WHEN a role performs work THEN the system SHALL let Research and Planner publish their artifacts, Implementer modify authorized feature code, Tester add or edit only files matching the confirmed test patterns and report coverage gaps, and Reviewer publish findings; corrections SHALL return to Implementer.
+7. **[REQ-027]** WHEN review findings are produced or revisited THEN the system SHALL preserve the RPI review format and round trail; only Reviewer resolves findings, implementation does not declare its own independent review approved, and open Critical/High findings without a human waiver block final approval.
 8. **[REQ-037]** WHEN an artifact is written or externally changed THEN the system SHALL use atomic publication, preserve content/history and unknown fields, reconcile filesystem changes, and never silently approve imported, missing, stale or malformed artifacts.
-9. **[REQ-045]** WHEN a tool or agent requests approval mutation THEN the system SHALL reject it; human-authorized core commands alone approve artifacts, implementation, final completion and Git integration.
+9. **[REQ-045]** WHEN a tool or agent requests approval mutation THEN the system SHALL reject it; human-authorized core commands alone approve specs, plans, final approval/integration, finding waivers and push.
 10. **[REQ-048]** WHEN IPC or MCP receives input THEN the system SHALL validate schemas, project/feature ownership, canonical paths and tool grants; never rely on connector annotations or model-supplied IDs as authorization.
 11. **[REQ-050]** WHEN Git or file operations encounter external changes THEN the system SHALL preserve unrelated changes, fail safely on conflicts and require re-evaluation rather than force reset, auto-delete or silently including user work.
 12. **[REQ-051]** WHEN native configuration, skills or documents enter context THEN the system SHALL treat their content as data subject to role/tool constraints and adapt RPI state instructions for the current invocation without editing user skill/config files.
+13. **[REQ-056]** WHEN a role requests a handoff or a human rejects an approval THEN the system SHALL allow only Tester/Reviewer to Implementer (correction), Implementer to Planner (infeasible plan) and Planner to Research (ambiguous spec); returning to Planner or Research SHALL invalidate downstream approvals and evidence, and a human rejection SHALL return its reason to the owning role.
 
 ### P2 (Should Have)
 
@@ -85,7 +86,7 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 
 | ID | Description | Priority | Status |
 | --- | --- | --- | --- |
-| REQ-009 | Guided RPI | P1 | Approved; not implemented |
+| REQ-009 | Guided RPI with machine-validated implementation | P1 | Approved; not implemented |
 | REQ-010 | Authoritative gates | P1 | Approved; not implemented |
 | REQ-011 | Approval invalidation | P1 | Approved; not implemented |
 | REQ-012 | JSON workflow state | P1 | Approved; not implemented |
@@ -97,3 +98,4 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-048 | Scoped boundaries | P1 | Approved; not implemented |
 | REQ-050 | User work preservation | P1 | Approved; not implemented |
 | REQ-051 | Untrusted context | P1 | Approved; not implemented |
+| REQ-056 | Handoff matrix | P1 | Approved 2026-10-31; not implemented |

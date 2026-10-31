@@ -33,7 +33,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 
 1. **[REQ-007]** WHEN multiple features run THEN the system SHALL allow execution across features while enforcing one agent turn per feature and separate session, process and Git ownership.
 2. **[REQ-019]** WHEN a CLI enters controlled mode THEN the system SHALL verify Forja MCP attachment and effective native-shell restrictions; unsupported tools SHALL remain unavailable for controlled execution instead of silently bypassing permissions.
-3. **[REQ-022]** WHEN a role performs work THEN the system SHALL let Research and Planner publish their artifacts, Implementer modify authorized feature code, Tester validate and Reviewer publish findings; corrections SHALL return to Implementer.
+3. **[REQ-022]** WHEN a role performs work THEN the system SHALL let Research and Planner publish their artifacts, Implementer modify authorized feature code, Tester add or edit only files matching the confirmed test patterns and report coverage gaps, and Reviewer publish findings; corrections SHALL return to Implementer.
 4. **[REQ-028]** WHEN an agent invokes development commands THEN the system SHALL run them exclusively through the scoped Forja MCP executor and expose command, authorized cwd, live stdout/stderr, state and eventual exit code.
 5. **[REQ-029]** WHEN command output grows THEN the system SHALL stream and persist ordered bounded chunks with backpressure, configurable internal limits and explicit truncation notices rather than growing renderer memory without bounds.
 6. **[REQ-030]** WHEN a server is explicitly launched in background mode THEN the system SHALL return an owned execution identifier and allow scoped log reads and stop requests independently from the agent turn.
@@ -41,6 +41,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 8. **[REQ-048]** WHEN IPC or MCP receives input THEN the system SHALL validate schemas, project/feature ownership, canonical paths and tool grants; never rely on connector annotations or model-supplied IDs as authorization.
 9. **[REQ-050]** WHEN Git or file operations encounter external changes THEN the system SHALL preserve unrelated changes, fail safely on conflicts and require re-evaluation rather than force reset, auto-delete or silently including user work.
 10. **[REQ-052]** WHEN a dependency, permission, port, process or file operation fails THEN the system SHALL show an actionable non-secret error and a truthful stopped/failed state without fabricating completion or automatically weakening controls.
+11. **[REQ-055]** WHEN a Git target is bound THEN the system SHALL detect candidate validation commands and test-file patterns from repository manifests, require human confirmation, store them per target repository and run them itself through the managed executor as the only authoritative validation evidence.
 
 ### P2 (Should Have)
 
@@ -93,3 +94,4 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-048 | Scoped boundaries | P1 | Approved; not implemented |
 | REQ-050 | User work preservation | P1 | Approved; not implemented |
 | REQ-052 | Operational errors | P1 | Approved; not implemented |
+| REQ-055 | Repository gates | P1 | Approved 2026-10-31; not implemented |
