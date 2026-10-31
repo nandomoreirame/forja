@@ -114,7 +114,7 @@ function WorkbenchShell() {
     if (id === 'open-project') void s.openDirectory()
     if (id === 'recent-projects') s.openPalette('recent')
     if (id === 'settings') s.navigate({ kind: 'settings' })
-    if (id === 'toggle-terminals' && s.snapshot) s.togglePanel('terminal')
+    if (id === 'toggle-terminals' && s.snapshot) s.toggleTerminals(terminalScope?.id)
   }
   return (
     <div

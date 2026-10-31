@@ -58,6 +58,7 @@ export interface WorkbenchState {
   addShell(featureId: string): void
   stopTerminal(featureId: string, terminalId: string): void
   closeTerminal(featureId: string, terminalId: string): void
+  toggleTerminals(scopeId?: string): void
   markTerminalExited(featureId: string, terminalId: string, exitCode: number): void
   setTerminalShell(featureId: string, terminalId: string, shell: string): void
   setTerminalProcess(featureId: string, terminalId: string, name: string): void
@@ -476,6 +477,11 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         }
         updateFeature(featureId, (item) => ({ ...item, terminals: [...item.terminals, terminal] }))
         get().selectTerminal(featureId, terminal.id)
+      },
+      toggleTerminals(scopeId) {
+        const opening = !get().panels.terminal
+        get().togglePanel('terminal')
+        if (opening && scopeId && scopeOf(scopeId)?.terminals.length === 0) get().addShell(scopeId)
       },
       closeTerminal(featureId, terminalId) {
         const feature = scopeOf(featureId)

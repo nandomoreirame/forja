@@ -157,7 +157,6 @@ it('opens a project shell in the project folder when no feature is selected', as
     <WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="contrateum.dev" />,
   )
   fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
-  fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
   await waitFor(() =>
     expect(api.create).toHaveBeenCalledWith({
       cwd: '~/dev/projects/contrateum.dev',

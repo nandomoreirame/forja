@@ -103,9 +103,19 @@ it('adds a mock shell to a project without features in the browser build', async
     <WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="contrateum.dev" />,
   )
   fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
-  fireEvent.click(screen.getByRole('button', { name: 'New terminal' }))
   expect(screen.getByRole('tab', { name: /zsh/ })).toHaveAttribute('aria-selected', 'true')
   expect(screen.getByRole('region', { name: 'Terminals' })).toHaveTextContent(
     '~/dev/projects/contrateum.dev $',
   )
+})
+
+it('opens a new shell when the terminal toggle opens an empty panel', async () => {
+  render(
+    <WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="contrateum.dev" />,
+  )
+  fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
+  expect(screen.getByRole('tab', { name: /zsh/ })).toHaveAttribute('aria-selected', 'true')
+  fireEvent.click(screen.getByRole('button', { name: 'Toggle terminals' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Toggle terminals' }))
+  expect(screen.getAllByRole('tab', { name: /zsh/ })).toHaveLength(1)
 })

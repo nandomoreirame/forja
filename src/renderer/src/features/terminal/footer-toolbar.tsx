@@ -36,7 +36,7 @@ export function TerminalFooterToolbar({ feature }: { feature?: FeatureSnapshot }
             size="icon-xs"
             aria-label={a.terminals}
             aria-pressed={open}
-            onClick={() => state.togglePanel('terminal')}
+            onClick={() => state.toggleTerminals(feature?.id)}
             className="shrink-0"
           >
             <Terminal className={open ? 'text-primary' : undefined} />
