@@ -7,34 +7,34 @@ spec_path: docs/specs/new-conversation-composer/SPEC.md
 plan_path: docs/plans/2026-10-31-new-conversation-composer.md
 implementation_status: complete
 validation_status: passed
-review_status: pending
+review_status: passed
+reviewed_at: 2026-10-31
 ---
 
 # Implementation State
 
-Implementer: Codex. Review base: ccf3a83 (the preceding palette commits are also included in the batch review).
+Implementer: Codex. Independent lead reviewer: agy. Original batch review base: f20986e7957827b55e3b39c47a7fcfc4a8659c73. Branch: release/2.0. The reviewer inspected all three requested plans and returned NONE in the closure round after the recorded corrections. The implementer's own validation is not the independent review.
 
-| Task | Result | Commit |
-| --- | --- | --- |
-| 1. Feature names and unique slugs | Validated with RED/GREEN | fec54c9 |
-| 2. Compose and feature actions | Validated with RED/GREEN | 11dd9c3 |
-| 3. Centered composer and entry points | Validated with RED/GREEN | ef934de |
-| 4. Chromium conversation smoke | Validated | 4348e60 |
+| Task | Implementer | Reviewer | Commit | Result |
+| --- | --- | --- | --- | --- |
+| 1. Feature identities | Codex | agy | `fec54c9` | Passed |
+| 2. Compose and feature actions | Codex | agy | `11dd9c3` | Passed |
+| 3. Focused composer and conversations | Codex | agy | `ef934de` | Passed |
+| 4. Conversation smoke | Codex | agy | `4348e60` | Passed |
 
-The composer opens with the selected agent and focused prompt, creates a uniquely named feature tab and records the first user message. Closing the last tab returns to Research. Docked follow-up prompts stay in the same mock feature. Scripted assistant replies are deferred to conversation-screen as required by this plan.
+## Validation
 
-Validation: typecheck, lint, formatting, 77 unit tests, Electron build and 6 Chromium E2E tests pass. Coverage: statements 91.94%, branches 85.37%, functions 88.01%, lines 92.58%. The browser tests verify autofocus without clicking the field, Ctrl+Enter, tab creation, last-tab closure and opening through the command palette.
+- Typecheck, lint, repository formatting and Electron build pass. Lint retains one pre-existing warning in generated coverage output.
+- 83 unit tests and 7 Chromium E2E tests pass.
+- Coverage: statements 91.82%, branches 85.20%, functions 88.40%, lines 92.73% (minimum 80% each).
+- Site build and prerender of four routes pass after shared component changes.
+- Independent review: no open findings. Review state and round history are in docs/reviews/.
+- No push, deployment or release packaging. The preview at port 5180 remains available; E2E owns port 5181.
 
-Visual: centered composer content is 712px inside the reference 760px padded container, with a 12px radius, semantic surface/border/shadow and shared recipient/context/destination controls. The reference's Conversation tab is intentionally omitted. The shared control header increases height from the old export according to the recorded composer exception. At 900px window width the prompt remains usable. Review crops are in the temporary visual validation directory, not versioned.
+## Behavior and adaptations
 
-Independent review is pending the agy batch result. No deployment or push. User preview: port 5180; isolated E2E server: port 5181.
+Compose entry points preselect the requested role and focus the prompt. Repeating the same entry restores that role/focus while keeping the draft. First send creates a unique feature and its tab; follow-up prompts remain in that mock feature. Agent selection with open tabs changes the current recipient. Closing the last tab returns to Research. Tab close controls are outside tablist; only the rendered panel has an aria-controls reference.
 
-## Latest validation
+The centered composer uses the reference 760px padded container (712px content), a 12px radius and the recorded recipient/context/destination exception. Scripted assistant replies are deferred to conversation-screen, as required by this implementation plan.
 
-79 unit tests and 7 Chromium tests pass. Typecheck, lint, repository formatting check and Electron build pass. Coverage: statements 92.02%, branches 85.49%, functions 88.06%, lines 92.67%. Ctrl+R preserves a focused prompt draft without reloading; the keyboard listener remains stable and receives current actions. Independent review status remains separate.
-
-## Independent review follow-up
-
-The second agy batch review is recorded in docs/reviews. The implementer added RED/GREEN regression coverage and corrections for repeated composer activation, agent selection within an open feature, valid tab/panel relationships, retrying the failed source operation, and preserving the history cursor when closing inactive tabs. Later palette/shortcut corrections were already present after that review snapshot. Review-owned findings remain open until the next independent inspection.
-
-Latest checks: 83 unit tests, 7 Chromium E2E tests, typecheck, lint, scoped/repository formatting and Electron build pass. Coverage: statements 91.82%, branches 85.20%, functions 88.40%, lines 92.73%. No push or deployment.
+Browser E2E commands use Playwright instead of the erroneous Vitest commands in the saved plans. Test servers use a separate port to preserve the user's preview. Independent review initially needed a process-local color.ui=false override so its snapshot patch remained machine-readable; no CLI fallback was needed. Follow-up corrections are task-attributed in Git history, including b10975a, 897cbd0, f002093, 5337fb5 and bce5c7c.

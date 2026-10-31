@@ -7,29 +7,32 @@ spec_path: docs/specs/command-palette/SPEC.md
 plan_path: docs/plans/2026-10-31-command-palette.md
 implementation_status: complete
 validation_status: passed
-review_status: pending
+review_status: passed
+reviewed_at: 2026-10-31
 ---
 
-# Planning State
+# Implementation State
 
-Frontend-only navigable mock screen requested on 2026-10-31. Spec approved and plan saved (4 tasks). Implementation batch 1: run 01a to 01c, then 01d to 01f, sequentially.
+Implementer: Codex. Independent lead reviewer: agy. Original batch review base: f20986e7957827b55e3b39c47a7fcfc4a8659c73. Branch: release/2.0. The reviewer inspected all three requested plans and returned NONE in the closure round after the recorded corrections. The implementer's own validation is not the independent review.
 
-## Implementation run (Codex)
+| Task | Implementer | Reviewer | Commit | Result |
+| --- | --- | --- | --- | --- |
+| 1. Accessible shadcn dialog | Codex | agy | `0ace089` | Passed |
+| 2. Project and command groups | Codex | agy | `08978ff` | Passed |
+| 3. Entry points and project selection | Codex | agy | `4b16067` | Passed |
+| 4. Keyboard and focus smoke | Codex | agy | `ccf3a83` | Passed |
 
-Review base: 5626493. Tasks 1 and 2 validated and committed as 0ace089 and 08978ff. Task 3 connects all palette entry points and focus restoration. User clarified that startup must have no project; Open project opens recent mock projects and selection opens the shell. The default acme-api assumption is superseded. 64 unit tests, typecheck, lint, build and home Chromium smoke pass. Task 4 and final coverage/visual/review checks remain.
+## Validation
 
-## Feature validation
+- Typecheck, lint, repository formatting and Electron build pass. Lint retains one pre-existing warning in generated coverage output.
+- 83 unit tests and 7 Chromium E2E tests pass.
+- Coverage: statements 91.82%, branches 85.20%, functions 88.40%, lines 92.73% (minimum 80% each).
+- Site build and prerender of four routes pass after shared component changes.
+- Independent review: no open findings. Review state and round history are in docs/reviews/.
+- No push, deployment or release packaging. The preview at port 5180 remains available; E2E owns port 5181.
 
-Tasks 4/4 implemented and validated. Task commits: 0ace089, 08978ff, 4b16067, ccf3a83. 64 unit tests and 3 Chromium E2E tests pass; typecheck, lint and build pass. Coverage: statements 90.10%, branches 84%, functions 85.16%, lines 91.17%. Reviewed the recent-project row reference (folder, name, path, time/current marker); command dialog intentionally replaces the Stitch sidebar dropdown. Final screenshot comparison and independent review are tracked separately. User preview remains on port 5180; E2E owns port 5181.
+## Behavior and adaptations
 
-Final batch regression checks: search resets when changing scope, project-only commands are disabled before project selection, and Settings can be reached before selecting a project (screen contents remain a later slice). Fix: 897cbd0. Formatting, 77 unit tests, 6 Chromium tests and build pass; coverage remains above 80%. Independent agy batch review is pending.
+One shadcn command dialog serves topbar, project header, recent-project actions and shortcuts. Selecting the current project only closes it. Scope changes clear the query, project-only commands are unavailable without an open project, and Escape/outside click restore opener focus. Project rows follow the approved anatomy inside the central dialog. Open folder remains unavailable until the real picker slice.
 
-## Latest validation
-
-79 unit tests and 7 Chromium tests pass. Typecheck, lint, repository formatting check and Electron build pass. Coverage: statements 92.02%, branches 85.49%, functions 88.06%, lines 92.67%. Ctrl+R preserves a focused prompt draft without reloading; the keyboard listener remains stable and receives current actions. Independent review status remains separate.
-
-## Independent review follow-up
-
-The second agy batch review is recorded in docs/reviews. The implementer added RED/GREEN regression coverage and corrections for repeated composer activation, agent selection within an open feature, valid tab/panel relationships, retrying the failed source operation, and preserving the history cursor when closing inactive tabs. Later palette/shortcut corrections were already present after that review snapshot. Review-owned findings remain open until the next independent inspection.
-
-Latest checks: 83 unit tests, 7 Chromium E2E tests, typecheck, lint, scoped/repository formatting and Electron build pass. Coverage: statements 91.82%, branches 85.20%, functions 88.40%, lines 92.73%. No push or deployment.
+Browser E2E commands use Playwright instead of the erroneous Vitest commands in the saved plans. Test servers use a separate port to preserve the user's preview. Independent review initially needed a process-local color.ui=false override so its snapshot patch remained machine-readable; no CLI fallback was needed. Follow-up corrections are task-attributed in Git history, including b10975a, 897cbd0, f002093, 5337fb5 and bce5c7c.
