@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Folder, Check } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import {
@@ -39,6 +40,10 @@ export function CommandPalette({
   onCloseAutoFocus,
   onOpenAutoFocus,
 }: Props) {
+  const [search, setSearch] = useState('')
+  useEffect(() => {
+    setSearch('')
+  }, [scope, open])
   const a = getDictionary(locale).app
   const commands: { id: CommandId; label: string; shortcut?: string }[] = [
     { id: 'new-conversation', label: a.newConversation, shortcut: 'Ctrl+N' },
@@ -55,7 +60,12 @@ export function CommandPalette({
       onCloseAutoFocus={onCloseAutoFocus}
       onOpenAutoFocus={onOpenAutoFocus}
     >
-      <CommandInput aria-label={a.searchCommands} placeholder={a.searchCommands} />
+      <CommandInput
+        value={search}
+        onValueChange={setSearch}
+        aria-label={a.searchCommands}
+        placeholder={a.searchCommands}
+      />
       <CommandList>
         <CommandEmpty>{a.emptyCommands}</CommandEmpty>
         <CommandGroup heading={a.recent}>
@@ -90,6 +100,10 @@ export function CommandPalette({
             {commands.map((command) => (
               <CommandItem
                 key={command.id}
+                disabled={
+                  !currentProjectId &&
+                  (command.id === 'new-conversation' || command.id === 'toggle-terminals')
+                }
                 value={command.label}
                 onSelect={() => {
                   onCommand(command.id)

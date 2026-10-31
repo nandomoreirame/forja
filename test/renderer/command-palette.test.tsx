@@ -73,3 +73,26 @@ it('offers localized commands and a disabled folder picker, and shows no matches
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zzzzzz' } })
   expect(screen.getByText('Nenhum resultado encontrado.')).toBeInTheDocument()
 })
+
+it('disables project-only commands before a project is opened', () => {
+  render(
+    <CommandPalette
+      open
+      scope="all"
+      locale="en"
+      projects={projects}
+      currentProjectId=""
+      onOpenChange={() => {}}
+      onSelectProject={() => {}}
+      onCommand={() => {}}
+    />,
+  )
+  expect(screen.getByRole('option', { name: /New conversation/ })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+  expect(screen.getByRole('option', { name: /Toggle terminals/ })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+})

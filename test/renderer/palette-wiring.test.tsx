@@ -34,3 +34,20 @@ it('opens recent projects without reloading and opens all commands from text inp
   expect(screen.queryByRole('dialog')).toBeNull()
   expect(screen.getByRole('main')).toHaveTextContent('Settings')
 })
+
+it('clears the command search when switching to recent projects', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="acme-api" />)
+  await screen.findByRole('complementary', { name: 'acme-api' })
+  fireEvent.keyDown(window, { key: 'P', ctrlKey: true, shiftKey: true })
+  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Recent projects' } })
+  fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' })
+  expect(screen.getByRole('option', { name: /acme-api/ })).toBeInTheDocument()
+  expect(screen.getByRole('combobox')).toHaveValue('')
+})
+
+it('navigates to Settings even before opening a project', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} />)
+  fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+  expect(screen.getByRole('main')).toHaveTextContent('Settings')
+  expect(screen.queryByRole('heading', { name: 'FORJA' })).toBeNull()
+})

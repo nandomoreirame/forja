@@ -102,7 +102,7 @@ function WorkbenchShell() {
               <button onClick={() => s.openPalette('recent')}>{a.retry}</button>
             </div>
           ) : null}
-          {!s.snapshot || s.view.kind === 'home' ? (
+          {s.view.kind === 'home' ? (
             <HomePage />
           ) : s.view.kind === 'compose' ? (
             <ComposePage />
