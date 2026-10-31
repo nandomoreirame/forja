@@ -12,24 +12,26 @@ const copy = {
         description: 'Form controls, buttons in multiple states, badges and kbd shortcuts',
       },
       shell: {
-        title: 'App structure',
-        description: 'Topbar 40px, feature tabs, sidebar rows, feature context and statusbar 32px',
+        title: 'App structure, isolated samples',
+        description: 'Topbar 40px, FeatureTabs, SidebarRow, FeatureContext and Statusbar 32px',
       },
       conversation: {
         title: 'Conversation and composer',
-        description: 'User and agent messages, handoff link, global composer and inline notices',
+        description: 'User/agent messages, HandoffLink, global composer and InlineNotice',
       },
       documents: {
-        title: 'Documents and approvals',
+        title: 'Documents and approval',
         description:
-          'Document header, Markdown preview, Mermaid preview, selection popover and approval notice',
+          'DocumentHeader, MarkdownPreview, MermaidPreview, SelectionPopover and ApprovalNotice',
       },
       terminals: {
-        title: 'Terminals',
+        title: 'Terminals, following the user refinement',
         description:
           'Terminal window icon on every tab, + button, agent execution and collapsed toolbar',
       },
     },
+    headerStack: 'React + TypeScript + shadcn/ui + Tailwind',
+    headerRef: 'Visual anatomy reference',
     semanticColors: 'Semantic colors',
     typography: 'Typography (JetBrains Mono)',
     headingSample: 'Compact heading (18px / 600)',
@@ -63,26 +65,26 @@ const copy = {
         description: 'Controles de formulário, botões em múltiplos estados, badges e atalhos kbd',
       },
       shell: {
-        title: 'Estrutura do app',
-        description:
-          'Topbar 40px, abas de feature, linhas da sidebar, contexto da feature e statusbar 32px',
+        title: 'Estrutura do app, amostras isoladas',
+        description: 'Topbar 40px, FeatureTabs, SidebarRow, FeatureContext e Statusbar 32px',
       },
       conversation: {
         title: 'Conversa e compositor',
-        description:
-          'Mensagens do usuário e do agente, link de handoff, compositor global e avisos inline',
+        description: 'Mensagens Usuário/Agente, HandoffLink, Compositor Global e InlineNotice',
       },
       documents: {
-        title: 'Documentos e aprovações',
+        title: 'Documentos e aprovação',
         description:
-          'Cabeçalho do documento, prévia Markdown, prévia Mermaid, popover de seleção e aviso de aprovação',
+          'DocumentHeader, MarkdownPreview, MermaidPreview, SelectionPopover e ApprovalNotice',
       },
       terminals: {
-        title: 'Terminais',
+        title: 'Terminais, seguindo o ajuste do usuário',
         description:
-          'Ícone de janela de terminal em cada aba, botão +, execução do agente e toolbar recolhida',
+          'Ícone de janelinha de terminal em cada aba, botão +, execução do agente e toolbar recolhida',
       },
     },
+    headerStack: 'React + TypeScript + shadcn/ui + Tailwind',
+    headerRef: 'Referência de Anatomia Visual',
     semanticColors: 'Cores semânticas',
     typography: 'Tipografia (JetBrains Mono)',
     headingSample: 'Heading compacto (18px / 600)',

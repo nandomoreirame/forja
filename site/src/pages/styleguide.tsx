@@ -41,19 +41,19 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <section aria-labelledby={id} className="grid gap-5 border-t border-border pt-10">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <h2 id={id} className="text-[14px] font-semibold uppercase tracking-wider">
-          {title}
-        </h2>
-        {description ? (
-          <span className="text-[11px] text-muted-foreground">{description}</span>
-        ) : null}
-        {code ? (
-          <span className="ml-auto font-mono text-[11px] text-muted-foreground">{code}</span>
-        ) : null}
+    <section aria-labelledby={id} className="space-y-6">
+      <div className="flex items-center justify-between border-b border-[#2A2A2A] pb-2">
+        <div className="flex flex-wrap items-baseline gap-2">
+          <h2 id={id} className="text-[14px] font-bold uppercase tracking-wider text-[#F5A623]">
+            {title}
+          </h2>
+          {description ? (
+            <span className="font-mono text-[11px] text-[#979797]">{description}</span>
+          ) : null}
+        </div>
+        {code ? <span className="text-[11px] text-[#979797]">{code}</span> : null}
       </div>
-      {children}
+      <div className="space-y-5">{children}</div>
     </section>
   )
 }
@@ -532,13 +532,30 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
 
 export function Styleguide({ locale }: { locale: Locale }) {
   const t = getDictionary(locale)
+  const sc = gallerySectionCopy(locale)
   return (
-    <main className="mx-auto grid max-w-[1280px] gap-6 px-6 py-10 text-foreground">
-      <header className="grid gap-1">
-        <h1 className="text-xl font-semibold">{t.gallery.title}</h1>
-        <p className="text-[12px] text-muted-foreground">{t.gallery.subtitle}</p>
+    <div className="mx-auto min-h-screen w-[1280px] max-w-full border-x border-[#2A2A2A] bg-[#0E0E0E] pb-24 text-[#E6E6E6]">
+      <header className="flex h-16 items-center justify-between border-b border-[#2A2A2A] bg-[#121214] px-8">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="inline-block size-2.5 rounded-sm bg-[#F5A623]" aria-hidden="true" />
+            <h1 className="text-[18px] font-bold tracking-tight text-[#E6E6E6] uppercase">
+              {t.gallery.title}
+            </h1>
+            <span className="rounded border border-[#2A2A2A] bg-[#1C1C1C] px-2 py-0.5 text-xs text-[#979797]">
+              FORJA v2.0
+            </span>
+          </div>
+          <p className="mt-0.5 text-[12px] text-[#979797]">{t.gallery.subtitle}</p>
+        </div>
+        <div className="text-right font-mono text-[11px] text-[#979797]">
+          <div>{sc.headerStack}</div>
+          <div className="text-[#E6E6E6]">{sc.headerRef}</div>
+        </div>
       </header>
-      <StyleguideSections locale={locale} />
-    </main>
+      <main className="space-y-12 p-8">
+        <StyleguideSections locale={locale} />
+      </main>
+    </div>
   )
 }

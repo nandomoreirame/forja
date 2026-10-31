@@ -28,9 +28,9 @@ export interface TerminalPreviewProps {
 }
 
 const stateClass: Record<TerminalTab['state'], string> = {
-  running: 'text-primary',
-  done: 'text-emerald-400',
-  idle: 'text-muted-foreground',
+  running: 'text-[#F5A623]',
+  done: 'text-[#52c41a]',
+  idle: 'text-[#979797]',
 }
 
 export function TerminalPreview({
@@ -49,44 +49,49 @@ export function TerminalPreview({
   onCollapse,
 }: TerminalPreviewProps) {
   return (
-    <section className="flex min-w-0 flex-col overflow-hidden rounded-md border border-border bg-background">
+    <section className="overflow-hidden rounded-[3px] border border-[#2A2A2A] bg-[#121214]">
       <div
-        className="flex h-9 items-stretch border-b border-border bg-secondary"
         role="tablist"
         aria-label={tabsLabel}
+        className="flex h-9 items-center justify-between border-b border-[#2A2A2A] bg-[#1C1C1C] px-3"
       >
-        {tabs.map((tab) => {
-          const active = tab.id === activeId
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => onSelect?.(tab.id)}
-              className={cn(
-                'relative flex items-center gap-2 border-r border-border px-3 text-[12px] text-foreground/80',
-                active &&
-                  'bg-background text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-primary',
-              )}
-            >
-              <SquareTerminal
-                aria-hidden="true"
-                className="size-3.5 shrink-0 text-muted-foreground"
-              />
-              <span>{tab.label}</span>
-              {tab.stateLabel ? (
-                <span className={cn('flex items-center gap-1 text-[11px]', stateClass[tab.state])}>
+        <div className="flex items-center gap-1">
+          {tabs.map((tab) => {
+            const active = tab.id === activeId
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => onSelect?.(tab.id)}
+                className={cn(
+                  'flex h-7 items-center gap-2 rounded-t-[2px] border-x border-t border-[#2A2A2A] px-2.5 text-[11px]',
+                  active
+                    ? 'border-t-2 border-t-[#F5A623] bg-[#0E0E0E] font-medium text-[#E6E6E6]'
+                    : 'bg-[#121214] text-[#979797] hover:text-[#E6E6E6]',
+                  tab.hovered && !active && 'text-[#E6E6E6]',
+                  tab.focused && 'outline-none ring-1 ring-inset ring-[#F5A623]',
+                )}
+              >
+                <SquareTerminal aria-hidden="true" className="size-3.5 shrink-0" />
+                <span className="flex items-center gap-1.5">
                   {tab.state === 'running' ? (
-                    <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
+                    <span
+                      aria-hidden="true"
+                      className="size-1.5 animate-pulse rounded-full bg-[#F5A623]"
+                    />
                   ) : null}
-                  {tab.stateLabel}
+                  {tab.label}
                 </span>
-              ) : null}
-            </button>
-          )
-        })}
-        <div className="ml-auto flex items-center gap-1 px-2">
+                {tab.stateLabel ? (
+                  <span className={cn('text-[10px]', stateClass[tab.state])}>{tab.stateLabel}</span>
+                ) : null}
+              </button>
+            )
+          })}
+        </div>
+        <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon-xs" aria-label={addLabel} onClick={onAdd}>
             <Plus />
           </Button>
@@ -97,12 +102,12 @@ export function TerminalPreview({
       </div>
       {header}
       {cwd ? (
-        <p className="border-b border-border px-3 py-1.5 font-mono text-[11px] text-muted-foreground">
+        <p className="border-b border-[#2A2A2A] px-3 py-2 font-mono text-[11px] text-[#979797]">
           <span className="mr-2">{cwdLabel}</span>
-          <span className="break-all text-foreground/80">{cwd}</span>
+          <span className="break-all text-[#E6E6E6]">{cwd}</span>
         </p>
       ) : null}
-      <pre className="min-h-20 whitespace-pre-wrap px-3 py-2.5 font-mono text-[12px] leading-5 text-foreground/90">
+      <pre className="min-h-20 whitespace-pre-wrap px-3 py-3 font-mono text-[12px] leading-5 text-[#E6E6E6]">
         {output.length > 0 ? output.join('\n') : emptyOutputLabel}
       </pre>
     </section>
