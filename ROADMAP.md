@@ -8,11 +8,11 @@ Updated: 2026-10-30.
 
 ## Current Status
 
-The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The implementation queue contains **13 approved specs and plans, 62 tasks, and 54 requirements**. Implementation of this queue has started: **0/13 slices delivered; the first slice has 8/62 tasks implemented, with independent review pending**.
+The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The implementation queue contains **13 approved specs and plans, 62 tasks, and 54 requirements**. Implementation of this queue has started: **0/13 slices delivered; the first slice is fully implemented (8/8 tasks, 8/62 overall) and validated, with independent review pending**.
 
 The existing Electron welcome-screen scaffold is already implemented. It is the starting point, not evidence that the planned RPI workflow, shared shadcn components or CLI integrations are complete.
 
-Combined documentation and implementation progress is **20%**: an approved SPEC contributes 10%, a ready PLAN contributes 10%, and validated implementation tasks contribute the remaining 80% per feature. The task counts below track implementation only; no slice is delivered yet.
+Combined documentation and implementation progress is **30%**: an approved SPEC contributes 10%, a ready PLAN contributes 10%, and validated implementation tasks contribute the remaining 80% per feature. The task counts below track implementation only; no slice is delivered yet.
 
 ## Execution Order
 
@@ -20,7 +20,7 @@ The order below is the recommended sequential queue. Dependencies are explicit i
 
 | Order | Spec                                                                                      | Plan                                                                              | Tasks completed      | Spec / plan      | Implementation | Validation / independent review |
 | ----- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------- | ---------------- | -------------- | ------------------------------- |
-| 01    | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Implementation plan](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8 (review pending) | Approved / ready | Planned        | Not run / not started           |
+| 01    | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Implementation plan](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8 (review pending) | Approved / ready | Implemented    | Passed / pending                |
 | 02    | [cli-capability-contracts](docs/specs/cli-capability-contracts/SPEC.md)                   | [Implementation plan](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3                  | Approved / ready | Planned        | Not run / not started           |
 | 03    | [project-feature-state](docs/specs/project-feature-state/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                  | Approved / ready | Planned        | Not run / not started           |
 | 04    | [agent-settings-skills](docs/specs/agent-settings-skills/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                  | Approved / ready | Planned        | Not run / not started           |
@@ -51,8 +51,8 @@ The implementation must follow the [approved visual references and exceptions](d
 
 - **Deployed:** https://forjav2.web.app with `/`, `/pt-br`, `/styleguide` and `/pt-br/styleguide`. Publish with `npm run deploy:site` (Firebase project `ascode-e08f8`, hosting site `forjav2`).
 - **Implemented:** bilingual landing with the seven approved sections, same-page locale switch, approved Stitch crops for the hero and the planned capabilities, mobile header and footer, favicon; bilingual styleguide with the shared components.
-- **Tests:** 30 unit tests and 6 Playwright E2E tests pass. The styleguide visual baseline still needs human review.
-- **Pending:** block-by-block Stitch fidelity review of the styleguide (sections 2, 3, 5 and 6) and the landing; the English crops and hero still show Portuguese interface text; independent review. The plan's implementation counter stays at 0/8 until that review closes.
+- **Tests:** 40 unit tests and 6 Playwright E2E tests pass. The styleguide visual baseline still needs human review.
+- **Pending:** block-by-block Stitch fidelity review of the styleguide (sections 2, 3, 5 and 6) and the landing; the English crops and hero still show Portuguese interface text; independent review. All 8 plan tasks are implemented and validated; the slice counts as delivered only after that review closes.
 
 ## Following Deliveries
 

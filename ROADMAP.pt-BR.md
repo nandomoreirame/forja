@@ -8,11 +8,11 @@ Atualizado em: 30/10/2026.
 
 ## Status atual
 
-A [spec principal do MVP, em inglês](docs/specs/functional-mvp/SPEC.md), está aprovada. A fila contém **13 specs e planos aprovados, 62 tarefas e 54 requisitos**. A implementação dessa fila começou: **0/13 entregas concluídas; a primeira entrega tem 8/62 tarefas implementadas, com revisão independente pendente**.
+A [spec principal do MVP, em inglês](docs/specs/functional-mvp/SPEC.md), está aprovada. A fila contém **13 specs e planos aprovados, 62 tarefas e 54 requisitos**. A implementação dessa fila começou: **0/13 entregas concluídas; a primeira entrega está totalmente implementada (8/8 tarefas, 8/62 no total) e validada, com revisão independente pendente**.
 
 O scaffold Electron com a tela inicial já está implementado. Ele é o ponto de partida; o fluxo RPI, os componentes shadcn compartilhados e as integrações com as CLIs continuam planejados.
 
-O progresso combinado da documentação e da implementação é **20%**: SPEC aprovada vale 10%, PLAN pronto vale 10% e as tarefas de implementação validadas representam os 80% restantes por feature. A contagem de tarefas abaixo acompanha somente a implementação; nenhuma entrega está concluída.
+O progresso combinado da documentação e da implementação é **30%**: SPEC aprovada vale 10%, PLAN pronto vale 10% e as tarefas de implementação validadas representam os 80% restantes por feature. A contagem de tarefas abaixo acompanha somente a implementação; nenhuma entrega está concluída.
 
 ## Ordem de execução
 
@@ -22,7 +22,7 @@ As specs e os planos técnicos vinculados abaixo permanecem em inglês, conforme
 
 | Ordem | Spec                                                                                      | Plano                                                                                | Tarefas concluídas     | Spec / plano      | Implementação | Validação / revisão independente |
 | ----- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------- | ----------------- | ------------- | -------------------------------- |
-| 01    | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Plano de implementação](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8 (revisão pendente) | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| 01    | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Plano de implementação](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8 (revisão pendente) | Aprovada / pronto | Implementada  | Aprovada / pendente              |
 | 02    | [cli-capability-contracts](docs/specs/cli-capability-contracts/SPEC.md)                   | [Plano de implementação](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3                    | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 03    | [project-feature-state](docs/specs/project-feature-state/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                    | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
 | 04    | [agent-settings-skills](docs/specs/agent-settings-skills/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                    | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
@@ -53,8 +53,8 @@ A implementação deve seguir as [referências visuais e exceções aprovadas](d
 
 - **Publicada:** https://forjav2.web.app com `/`, `/pt-br`, `/styleguide` e `/pt-br/styleguide`. Para publicar, use `npm run deploy:site` (projeto Firebase `ascode-e08f8`, site de hosting `forjav2`).
 - **Implementado:** landing bilíngue com as sete seções aprovadas, troca de idioma na mesma página, recortes aprovados do Stitch no hero e nas funcionalidades planejadas, cabeçalho e rodapé para mobile, favicon; styleguide bilíngue com os componentes compartilhados.
-- **Testes:** 30 testes unitários e 6 testes E2E com Playwright passam. A baseline visual do styleguide ainda precisa de revisão humana.
-- **Pendente:** revisão de fidelidade ao Stitch bloco a bloco no styleguide (seções 2, 3, 5 e 6) e na landing; as versões em inglês dos recortes e o hero ainda mostram textos da interface em português; revisão independente. O contador de implementação do plano continua em 0/8 até essa revisão ser concluída.
+- **Testes:** 40 testes unitários e 6 testes E2E com Playwright passam. A baseline visual do styleguide ainda precisa de revisão humana.
+- **Pendente:** revisão de fidelidade ao Stitch bloco a bloco no styleguide (seções 2, 3, 5 e 6) e na landing; as versões em inglês dos recortes e o hero ainda mostram textos da interface em português; revisão independente. As 8 tarefas do plano estão implementadas e validadas; a entrega só conta como concluída depois dessa revisão.
 
 ## Entregas seguintes
 

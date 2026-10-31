@@ -19,23 +19,23 @@ Installed coding CLIs are execution tools within that workflow. The current repo
 
 Progress includes specification and planning as well as implementation: **SPEC 10% + PLAN 10% + validated implementation tasks 80%** per feature.
 
-**Overall MVP:** `████░░░░░░░░░░░░░░░░` **20%**. All 13 specs are approved and all 13 plans are ready. Implementation has **8/62 tasks** done in the first slice (landing and styleguide, independent review pending), with **0/13 slices delivered**.
+**Overall MVP:** `██████░░░░░░░░░░░░░░` **30%**. All 13 specs are approved and all 13 plans are ready. Implementation has **8/62 tasks** done: the first slice (landing and styleguide) is fully implemented and validated (independent review pending), with **0/13 slices delivered**.
 
-| Order | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                          | Implementation (80%) | Progress                       |
-| ----- | ----------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------- | ------------------------------ |
-| 01    | `web-foundation-landing-styleguide` | [Approved](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Ready](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8 (review pending) | `████░░░░░░░░░░░░░░░░` **20%** |
-| 02    | `cli-capability-contracts`          | [Approved](docs/specs/cli-capability-contracts/SPEC.md)          | [Ready](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 03    | `project-feature-state`             | [Approved](docs/specs/project-feature-state/SPEC.md)             | [Ready](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 04    | `agent-settings-skills`             | [Approved](docs/specs/agent-settings-skills/SPEC.md)             | [Ready](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 05    | `artifact-approval-gates`           | [Approved](docs/specs/artifact-approval-gates/SPEC.md)           | [Ready](docs/plans/2026-10-30-artifact-approval-gates.md)           | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 06    | `feature-git-worktrees`             | [Approved](docs/specs/feature-git-worktrees/SPEC.md)             | [Ready](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 07    | `managed-command-runtime`           | [Approved](docs/specs/managed-command-runtime/SPEC.md)           | [Ready](docs/plans/2026-10-30-managed-command-runtime.md)           | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 08    | `cli-agent-sessions`                | [Approved](docs/specs/cli-agent-sessions/SPEC.md)                | [Ready](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/7                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 09    | `feature-workbench-composer`        | [Approved](docs/specs/feature-workbench-composer/SPEC.md)        | [Ready](docs/plans/2026-10-30-feature-workbench-composer.md)        | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 10    | `document-review-reader`            | [Approved](docs/specs/document-review-reader/SPEC.md)            | [Ready](docs/plans/2026-10-30-document-review-reader.md)            | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 11    | `terminal-panel-footer`             | [Approved](docs/specs/terminal-panel-footer/SPEC.md)             | [Ready](docs/plans/2026-10-30-terminal-panel-footer.md)             | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 12    | `guided-rpi-orchestration`          | [Approved](docs/specs/guided-rpi-orchestration/SPEC.md)          | [Ready](docs/plans/2026-10-30-guided-rpi-orchestration.md)          | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%** |
-| 13    | `recovery-mvp-acceptance`           | [Approved](docs/specs/recovery-mvp-acceptance/SPEC.md)           | [Ready](docs/plans/2026-10-30-recovery-mvp-acceptance.md)           | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%** |
+| Order | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                          | Implementation (80%) | Progress                        |
+| ----- | ----------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------- | ------------------------------- |
+| 01    | `web-foundation-landing-styleguide` | [Approved](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Ready](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8 (review pending) | `████████████████████` **100%** |
+| 02    | `cli-capability-contracts`          | [Approved](docs/specs/cli-capability-contracts/SPEC.md)          | [Ready](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 03    | `project-feature-state`             | [Approved](docs/specs/project-feature-state/SPEC.md)             | [Ready](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 04    | `agent-settings-skills`             | [Approved](docs/specs/agent-settings-skills/SPEC.md)             | [Ready](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 05    | `artifact-approval-gates`           | [Approved](docs/specs/artifact-approval-gates/SPEC.md)           | [Ready](docs/plans/2026-10-30-artifact-approval-gates.md)           | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 06    | `feature-git-worktrees`             | [Approved](docs/specs/feature-git-worktrees/SPEC.md)             | [Ready](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 07    | `managed-command-runtime`           | [Approved](docs/specs/managed-command-runtime/SPEC.md)           | [Ready](docs/plans/2026-10-30-managed-command-runtime.md)           | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 08    | `cli-agent-sessions`                | [Approved](docs/specs/cli-agent-sessions/SPEC.md)                | [Ready](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/7                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 09    | `feature-workbench-composer`        | [Approved](docs/specs/feature-workbench-composer/SPEC.md)        | [Ready](docs/plans/2026-10-30-feature-workbench-composer.md)        | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 10    | `document-review-reader`            | [Approved](docs/specs/document-review-reader/SPEC.md)            | [Ready](docs/plans/2026-10-30-document-review-reader.md)            | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 11    | `terminal-panel-footer`             | [Approved](docs/specs/terminal-panel-footer/SPEC.md)             | [Ready](docs/plans/2026-10-30-terminal-panel-footer.md)             | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 12    | `guided-rpi-orchestration`          | [Approved](docs/specs/guided-rpi-orchestration/SPEC.md)          | [Ready](docs/plans/2026-10-30-guided-rpi-orchestration.md)          | 0/5                  | `████░░░░░░░░░░░░░░░░` **20%**  |
+| 13    | `recovery-mvp-acceptance`           | [Approved](docs/specs/recovery-mvp-acceptance/SPEC.md)           | [Ready](docs/plans/2026-10-30-recovery-mvp-acceptance.md)           | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%**  |
 
 Each bar ranges from 0 to 100%. Implementation progress is proportional to validated tasks within the feature: `10 × approved spec + 10 × ready plan + 80 × (completed tasks / total tasks)`. Overall progress weights feature percentages by their implementation task counts, preserving each delivery's relative size. Independent review and final acceptance remain separate gates; progress does not mean approved delivery.
 
@@ -45,8 +45,8 @@ The Electron scaffold and static welcome screen are already implemented and are 
 
 - **Deployed:** https://forjav2.web.app with `/`, `/pt-br`, `/styleguide` and `/pt-br/styleguide`. Publish with `npm run deploy:site` (Firebase project `ascode-e08f8`, hosting site `forjav2`).
 - **Implemented:** bilingual landing with the seven approved sections, same-page locale switch, approved Stitch crops for the hero and the planned capabilities, mobile header and footer, favicon; bilingual styleguide with the shared components.
-- **Tests:** 30 unit tests and 6 Playwright E2E tests pass. The styleguide visual baseline still needs human review.
-- **Pending:** block-by-block Stitch fidelity review of the styleguide (sections 2, 3, 5 and 6) and the landing; the English crops and hero still show Portuguese interface text; independent review. The plan's implementation counter stays at 0/8 until that review closes.
+- **Tests:** 40 unit tests and 6 Playwright E2E tests pass. The styleguide visual baseline still needs human review.
+- **Pending:** block-by-block Stitch fidelity review of the styleguide (sections 2, 3, 5 and 6) and the landing; the English crops and hero still show Portuguese interface text; independent review. All 8 plan tasks are implemented and validated; the slice counts as delivered only after that review closes.
 
 See [ROADMAP.md](ROADMAP.md) for execution order and validation/review status, and the [plan index](docs/plans/README.md) for dependencies and implementation entry points.
 
