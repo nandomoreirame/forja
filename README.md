@@ -19,11 +19,11 @@ Installed coding CLIs are execution tools within that workflow. The current repo
 
 Progress includes specification and planning as well as implementation: **SPEC 10% + PLAN 10% + validated implementation tasks 80%** per feature.
 
-**Overall MVP:** `████░░░░░░░░░░░░░░░░` **20%**. All 13 specs are approved and all 13 plans are ready. Implementation remains at **0/62 tasks**, with **0/13 slices delivered**.
+**Overall MVP:** `████░░░░░░░░░░░░░░░░` **20%**. All 13 specs are approved and all 13 plans are ready. Implementation has **8/62 tasks** done in the first slice (landing and styleguide, independent review pending), with **0/13 slices delivered**.
 
 | Order | Feature                             | SPEC (10%)                                                       | PLAN (10%)                                                          | Implementation (80%) | Progress                       |
 | ----- | ----------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------- | ------------------------------ |
-| 01    | `web-foundation-landing-styleguide` | [Approved](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Ready](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 0/8                  | `████░░░░░░░░░░░░░░░░` **20%** |
+| 01    | `web-foundation-landing-styleguide` | [Approved](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Ready](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8 (review pending) | `████░░░░░░░░░░░░░░░░` **20%** |
 | 02    | `cli-capability-contracts`          | [Approved](docs/specs/cli-capability-contracts/SPEC.md)          | [Ready](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3                  | `████░░░░░░░░░░░░░░░░` **20%** |
 | 03    | `project-feature-state`             | [Approved](docs/specs/project-feature-state/SPEC.md)             | [Ready](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%** |
 | 04    | `agent-settings-skills`             | [Approved](docs/specs/agent-settings-skills/SPEC.md)             | [Ready](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                  | `████░░░░░░░░░░░░░░░░` **20%** |
