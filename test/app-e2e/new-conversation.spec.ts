@@ -3,7 +3,7 @@ test('starts a focused conversation, creates a feature and closes its last tab',
   page,
 }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: /Open project/ }).click()
+  await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /acme-api/ }).click()
   await page.getByRole('button', { name: /New conversation/ }).click()
   await expect(page.getByRole('textbox')).toBeFocused()
@@ -18,7 +18,7 @@ test('starts a focused conversation, creates a feature and closes its last tab',
 })
 test('opens a focused Research composer from the command bar', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: /Open project/ }).click()
+  await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /acme-api/ }).click()
   await page.keyboard.press('Control+Shift+P')
   await page.getByRole('combobox').fill('New conversation')
@@ -29,11 +29,13 @@ test('opens a focused Research composer from the command bar', async ({ page }) 
 
 test('Ctrl+R in the prompt preserves the draft without reloading', async ({ page }) => {
   await page.goto('/')
-  await page.getByRole('button', { name: /Open project/ }).click()
+  await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /acme-api/ }).click()
   await page.getByRole('button', { name: /New conversation/ }).click()
   await page.getByRole('textbox').fill('Keep this draft')
   await page.keyboard.press('Control+r')
+  await expect(page.getByRole('dialog', { name: 'Recent projects' })).toBeVisible()
+  await page.keyboard.press('Escape')
   await expect(page.getByRole('textbox')).toHaveValue('Keep this draft')
   await expect(page.getByRole('complementary', { name: 'acme-api' })).toBeVisible()
 })

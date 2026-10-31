@@ -20,7 +20,8 @@
     "test:e2e:site": "playwright test --config site/playwright.config.ts",
     "format:check": "prettier --check 'site/**/*.{ts,tsx,css,html}' 'src/shared/{ui,styles,i18n}/**/*.{ts,tsx,css}' 'src/widgets/**/*.{ts,tsx}' 'test/web/**/*.{ts,tsx}' --no-error-on-unmatched-pattern",
     "test:coverage": "vitest run --coverage",
-    "test:e2e:app": "playwright test --config test/app-e2e/playwright.config.ts"
+    "test:e2e:app": "playwright test --config test/app-e2e/playwright.config.ts",
+    "test:desktop:picker": "npm run build && node test/desktop/project-directory.smoke.ts"
   },
   "build": {
     "appId": "dev.forja.app",
