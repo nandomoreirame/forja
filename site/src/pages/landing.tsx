@@ -1,5 +1,6 @@
 import { ArrowRight, ExternalLink, Lock } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
+import { ForjaMark } from '@/shared/ui'
 import { productMock } from '../mocks/product'
 import { LocaleLink } from '../components/locale-link'
 
@@ -7,14 +8,6 @@ export const developmentUrl = 'https://github.com/nandomoreirame/forja'
 export const followUrl = `${developmentUrl}/tree/release/2.0`
 export const issuesUrl = `${developmentUrl}/issues`
 export const previewCommands = { dev: 'npm run dev', shell: 'zsh' } as const
-
-function AnvilMark() {
-  return (
-    <svg className="size-5 text-primary" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M3 5h18v3l-3 2v2h2v4H4v-4h2v-2L3 8V5zm4 7h10v-1.5l2-1.33V7H5v2.17l2 1.33V12zM6 18h12v-2H6v2z" />
-    </svg>
-  )
-}
 
 function ProductMock({ locale }: { locale: Locale }) {
   const t = getDictionary(locale)
@@ -54,7 +47,7 @@ export function Landing({ locale }: { locale: Locale }) {
         <div className="mx-auto flex max-w-[1120px] flex-col items-center gap-3 px-6 py-3 md:h-14 md:flex-row md:justify-between md:py-0">
           <div className="flex items-center gap-4">
             <a href="/" className="flex items-center gap-2.5 text-foreground hover:text-primary">
-              <AnvilMark />
+              <ForjaMark className="size-5 text-primary" />
               <span className="text-sm font-bold tracking-wide">
                 FORJA <span className="font-normal text-muted-foreground">v2.0</span>
               </span>

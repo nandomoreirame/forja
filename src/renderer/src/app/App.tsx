@@ -1,4 +1,5 @@
-import { Clock3, Folder, Search, Settings, Terminal, Anvil } from 'lucide-react'
+import { Clock3, Folder, Search, Settings, Terminal } from 'lucide-react'
+import { ForjaMark } from '../../../shared/ui/forja-mark'
 import { Shortcut } from '../shared/ui/Shortcut'
 import styles from './Shell.module.css'
 
@@ -11,7 +12,7 @@ const actions = [
 export function App() {
   return <div className={styles.shell}>
     <header className={styles.titlebar}>
-      <div className={styles.brand}><span className={styles.brandDot} /><span>FORJA</span><span className={styles.version}>v2.0</span></div>
+      <div className={styles.brand}><ForjaMark className={styles.brandMark} /><span>FORJA</span><span className={styles.version}>v2.0</span></div>
       <div className={styles.commandArea}>
         <button disabled className={styles.command} aria-label="Command palette">
           <Search size={14} strokeWidth={1.5} /><span className={styles.commandLabel}>Forja</span><Shortcut keys={['Ctrl+Shift+P']} compact />
@@ -22,7 +23,7 @@ export function App() {
     <main className={styles.main}>
       <section className={styles.welcome} aria-label="Welcome to Forja">
         <div className={styles.identity}>
-          <div className={styles.emblem}><Anvil size={17} strokeWidth={1.5} aria-hidden="true" /></div>
+          <div className={styles.emblem}><ForjaMark className={styles.emblemMark} /></div>
           <h1 className={styles.wordmark}>FORJA</h1>
         </div>
         <div className={styles.actions}>

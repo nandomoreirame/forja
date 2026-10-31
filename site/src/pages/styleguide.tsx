@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { cn } from '@/shared/ui/utils'
+import { ForjaMark } from '@/shared/ui'
 import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui'
 import {
   AppStatusbar,
@@ -312,11 +313,7 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
       >
         <div className="grid gap-4">
           <div className="overflow-hidden rounded-lg border border-border">
-            <AppTopbar
-              brand="FORJA"
-              commandText="dev"
-              settingsLabel={c.buttonLabels.secondary}
-            />
+            <AppTopbar brand="FORJA" commandText="dev" settingsLabel={c.buttonLabels.secondary} />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <FeatureTabs
@@ -572,7 +569,7 @@ export function Styleguide({ locale }: { locale: Locale }) {
       <header className="flex h-16 items-center justify-between border-b border-[#2A2A2A] bg-[#121214] px-8">
         <div>
           <div className="flex items-center gap-3">
-            <span className="inline-block size-2.5 rounded-sm bg-[#F5A623]" aria-hidden="true" />
+            <ForjaMark className="size-4 text-primary" />
             <h1 className="text-[18px] font-bold tracking-tight text-[#E6E6E6] uppercase">
               {t.gallery.title}
             </h1>

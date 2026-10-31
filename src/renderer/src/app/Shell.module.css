@@ -31,3 +31,15 @@
 @media (prefers-reduced-motion: reduce) { .action, .iconButton, .command { transition: none; } }
 
 .action:disabled, .iconButton:disabled, .command:disabled { cursor: pointer; }
+
+.brandMark {
+  width: 14px;
+  height: 14px;
+  color: var(--color-accent);
+}
+
+.emblemMark {
+  width: 20px;
+  height: 20px;
+  color: var(--color-accent);
+}

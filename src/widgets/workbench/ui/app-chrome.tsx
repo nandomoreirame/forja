@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Button } from '@/shared/ui'
+import { Button, ForjaMark } from '@/shared/ui'
 import { Search, Settings } from 'lucide-react'
 
 export interface AppTopbarProps {
@@ -13,7 +13,7 @@ export function AppTopbar({ brand, commandText, settingsLabel, onSettings }: App
   return (
     <header className="grid h-10 grid-cols-[1fr_auto_1fr] items-center border-b border-border bg-secondary px-3">
       <div className="flex items-center gap-2">
-        <span aria-hidden="true" className="size-2.5 rounded-sm bg-primary" />
+        <ForjaMark className="size-4 text-primary" />
         <span className="text-[11px] font-bold tracking-wider text-foreground">{brand}</span>
         <span className="rounded-sm border border-border px-1.5 text-[10px] text-muted-foreground">
           v2.0
