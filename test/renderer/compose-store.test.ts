@@ -5,7 +5,7 @@ import { createWorkbenchStore } from '../../src/renderer/src/entities/feature'
 it('creates immutable unique features with their selected recipient and first message', async () => {
   const source = createMockSource({ locale: 'en' })
   const store = createWorkbenchStore(source)
-  await store.getState().openProject('acme-api')
+  await store.getState().openProject('nandomoreira.dev')
   const before = store.getState().snapshot
   store.getState().startCompose('planner')
   expect(store.getState().view).toEqual({ kind: 'compose', role: 'planner' })
@@ -17,7 +17,7 @@ it('creates immutable unique features with their selected recipient and first me
   expect(feature).toMatchObject({
     state: 'running',
     stage: 'planner',
-    destination: '~/projects/acme-api',
+    destination: '~/dev/projects/nandomoreira.dev',
     branch: 'feature/rate-limit-public-endpoints',
     messages: [
       { role: 'user', text: 'Rate limit public endpoints' },
@@ -25,7 +25,7 @@ it('creates immutable unique features with their selected recipient and first me
     ],
   })
   expect(before?.features).toHaveLength(0)
-  expect((await source.loadProject('acme-api')).features).toHaveLength(0)
+  expect((await source.loadProject('nandomoreira.dev')).features).toHaveLength(0)
   const second = store.getState().createFeatureFromPrompt('Rate limit public endpoints', 'research')
   expect(store.getState().snapshot?.features.find((f) => f.id === second)?.slug).toBe(
     'rate-limit-public-endpoints-2',
@@ -57,7 +57,7 @@ it('requires an open project and defaults new conversations to Research', async 
 it('appends follow-up prompts to the selected mock feature without changing fixtures', async () => {
   const source = createMockSource({ locale: 'en' })
   const store = createWorkbenchStore(source)
-  await store.getState().openProject('acme-api')
+  await store.getState().openProject('nandomoreira.dev')
   const id = store.getState().createFeatureFromPrompt('Login', 'research')
   store.getState().appendPrompt(id, 'Handle expiration', 'planner')
   expect(
@@ -69,7 +69,7 @@ it('appends follow-up prompts to the selected mock feature without changing fixt
   expect(
     store.getState().snapshot?.features[0].messages.filter((message) => message.role === 'user'),
   ).toHaveLength(2)
-  expect((await source.loadProject('acme-api')).features).toHaveLength(0)
+  expect((await source.loadProject('nandomoreira.dev')).features).toHaveLength(0)
 })
 
 it('keeps the history cursor and forward entries when an inactive feature closes', async () => {

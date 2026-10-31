@@ -6,8 +6,8 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
     locale === 'en'
       ? ['Login with OAuth', 'Catalog search']
       : ['Login com OAuth', 'Busca no catálogo']
-  return ['acme-api', 'dev'].map((id, index) => {
-    const path = id === 'dev' ? '~/dev' : '~/projects/acme-api'
+  return ['nandomoreira.dev', 'dev'].map((id, index) => {
+    const path = id === 'dev' ? '~/dev' : '~/dev/projects/nandomoreira.dev'
     return {
       project: { id, name: id, path, lastOpenedAt: `2026-10-${31 - index}T12:00:00Z` },
       agents: roleIds.map((id) => ({ id, state: 'draft' })),

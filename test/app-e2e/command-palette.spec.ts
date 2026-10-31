@@ -12,7 +12,7 @@ test('selects recent projects by keyboard and restores focus after Escape', asyn
   await expect(opener).toBeFocused()
   await page.keyboard.press('Control+r')
   await expect(page.getByRole('option', { name: /^Settings/ })).toHaveCount(0)
-  await page.getByRole('combobox').fill('acme-api')
+  await page.getByRole('combobox').fill('nandomoreira.dev')
   await page.keyboard.press('Enter')
   await expect(page.getByRole('heading', { name: 'FORJA' })).toBeVisible()
 })
@@ -31,12 +31,12 @@ test('traps focus and closes on outside click', async ({ page }) => {
 test('shows only commands in the command bar', async ({ page }) => {
   await page.goto('/')
   await page.keyboard.press('Control+Shift+P')
-  await expect(page.getByRole('option', { name: /acme-api/ })).toHaveCount(0)
+  await expect(page.getByRole('option', { name: /nandomoreira.dev/ })).toHaveCount(0)
   await expect(page.getByRole('option', { name: /Recent projects/ })).toHaveCount(1)
   await expect(page.getByRole('option', { name: /Open project/ })).toBeVisible()
   await page.keyboard.press('Control+r')
   await expect(page.getByRole('dialog', { name: 'Recent projects' })).toBeVisible()
-  await expect(page.getByRole('option', { name: /acme-api/ })).toBeVisible()
+  await expect(page.getByRole('option', { name: /nandomoreira.dev/ })).toBeVisible()
 })
 test('opens the browser directory picker from the action and shortcut', async ({ page }) => {
   await page.addInitScript(() => {
@@ -68,7 +68,7 @@ test('opens Settings with Ctrl+comma and recent history from its command', async
   await page.getByRole('combobox').fill('Recent projects')
   await page.keyboard.press('Enter')
   await expect(page.getByRole('dialog', { name: 'Recent projects' })).toBeVisible()
-  await expect(page.getByRole('option', { name: /acme-api/ })).toBeVisible()
+  await expect(page.getByRole('option', { name: /nandomoreira.dev/ })).toBeVisible()
   await page.keyboard.press('Control+,')
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await expect(page.getByRole('main')).toContainText('Settings')

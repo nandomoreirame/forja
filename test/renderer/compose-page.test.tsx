@@ -3,7 +3,12 @@ import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
 it('focuses Planner from Add plan, sends a feature and closes back to Research', async () => {
-  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="acme-api" />)
+  render(
+    <WorkbenchPage
+      source={createMockSource({ locale: 'en' })}
+      initialProjectId="nandomoreira.dev"
+    />,
+  )
   fireEvent.click(await screen.findByRole('button', { name: '+ Add plan' }))
   const field = screen.getByRole('textbox', { name: /Send your prompt/ })
   expect(field).toHaveFocus()
@@ -30,7 +35,12 @@ it('focuses Planner from Add plan, sends a feature and closes back to Research',
   expect(screen.queryByRole('tablist')).toBeNull()
 })
 it('preselects agents and Add spec, and permits changing the recipient', async () => {
-  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="acme-api" />)
+  render(
+    <WorkbenchPage
+      source={createMockSource({ locale: 'en' })}
+      initialProjectId="nandomoreira.dev"
+    />,
+  )
   fireEvent.click(await screen.findByRole('button', { name: /Tester/ }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Tester')
   fireEvent.click(screen.getByRole('button', { name: '+ Add spec' }))
@@ -45,7 +55,12 @@ it('preselects agents and Add spec, and permits changing the recipient', async (
 })
 
 it('reactivates the requested agent and focus without losing the draft', async () => {
-  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="acme-api" />)
+  render(
+    <WorkbenchPage
+      source={createMockSource({ locale: 'en' })}
+      initialProjectId="nandomoreira.dev"
+    />,
+  )
   const add = await screen.findByRole('button', { name: '+ Add spec' })
   fireEvent.click(add)
   const field = screen.getByRole('textbox')

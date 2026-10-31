@@ -10,7 +10,7 @@ it('starts on home', () => {
 
 it('loads projects, navigates history and toggles panels without duplicating views', async () => {
   const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
-  await store.getState().openProject('acme-api')
+  await store.getState().openProject('nandomoreira.dev')
   expect(store.getState().projects).toHaveLength(2)
   store.getState().back()
   expect(store.getState().historyIndex).toBe(0)
@@ -44,11 +44,11 @@ it('ignores stale project loads and retains the last valid snapshot on errors', 
         pending[id] = resolve
       }),
   })
-  const first = store.getState().openProject('acme-api')
+  const first = store.getState().openProject('nandomoreira.dev')
   const second = store.getState().openProject('dev')
   pending.dev(await source.loadProject('dev'))
   await second
-  pending['acme-api'](await source.loadProject('acme-api'))
+  pending['nandomoreira.dev'](await source.loadProject('nandomoreira.dev'))
   await first
   expect(store.getState().snapshot?.project.id).toBe('dev')
 })
