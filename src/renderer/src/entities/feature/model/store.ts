@@ -7,13 +7,14 @@ import type {
   ProjectSnapshot,
   ProjectSummary,
   RoleId,
+  SettingsTab,
   WorkbenchSource,
 } from '@/renderer/src/shared/api'
 export type View =
   | { kind: 'home' }
   | { kind: 'compose'; role: RoleId }
   | { kind: 'conversation'; featureId: string }
-  | { kind: 'settings' }
+  | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
   | { kind: 'document'; artifactId: string }
 export interface WorkbenchState {
   source: WorkbenchSource
@@ -40,6 +41,7 @@ export interface WorkbenchState {
   composeActivation: number
   setRecipient(id: string, role: RoleId): void
   startCompose(role?: RoleId): void
+  openSettings(options?: { tab?: SettingsTab; role?: RoleId }): void
   createFeatureFromPrompt(prompt: string, role: RoleId): string
   selectFeature(id: string): void
   closeFeature(id: string): void
@@ -174,6 +176,9 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         if (!get().snapshot) return
         get().navigate({ kind: 'compose', role })
         set((state) => ({ composeActivation: state.composeActivation + 1 }))
+      },
+      openSettings(options = {}) {
+        get().navigate({ kind: 'settings', ...options })
       },
       createFeatureFromPrompt(prompt, role) {
         const snapshot = get().snapshot

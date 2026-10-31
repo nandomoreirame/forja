@@ -1,9 +1,33 @@
 import type { Locale } from '@/shared/i18n'
 import { mockReplies } from './mock-replies'
 import { mockProjects } from './mock-data'
-import { roleIds, type ReplyEvent, type ReplyTimer, type WorkbenchSource } from './workbench-source'
+import {
+  roleIds,
+  type ReplyEvent,
+  type ReplyTimer,
+  type SettingsSnapshot,
+  type WorkbenchSource,
+} from './workbench-source'
 export function createMockSource({ locale }: { locale: Locale }): WorkbenchSource {
   const fixtures = mockProjects(locale)
+  let settings: SettingsSnapshot = {
+    agents: roleIds.map((id, index) => ({
+      id,
+      tool: (['claude', 'codex', 'opencode', 'agy', 'grok'] as const)[index],
+      model: undefined,
+      effort: 'default',
+      instructions: '',
+      skills: index === 2 ? ['rpi-implement', 'git-commit'] : ['rpi-implement'],
+      autoInvoke: false,
+    })),
+    general: {
+      skillsRoot: '~/.claude/skills',
+      interruptPolicy: 'interrupt' as const,
+      guidedMode: true as const,
+      correctionRounds: 3 as const,
+      inactivityMinutes: 30,
+    },
+  }
   const unavailable = async (): Promise<never> => {
     throw new Error('Not implemented in this slice')
   }
@@ -73,7 +97,11 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
         onEvent({ type: 'interrupted' })
       }
     },
-    loadSettings: unavailable,
-    saveSettings: unavailable,
+    async loadSettings() {
+      return structuredClone(settings)
+    },
+    async saveSettings(next) {
+      settings = structuredClone(next)
+    },
   }
 }

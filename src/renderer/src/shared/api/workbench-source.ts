@@ -65,8 +65,24 @@ export interface ProjectSnapshot {
   terminals?: MockTerminal[]
 }
 export interface SettingsSnapshot {
-  agents: { id: RoleId; model: string; instructions: string }[]
+  agents: {
+    id: RoleId
+    tool: ToolId
+    model?: string
+    effort: string
+    instructions: string
+    skills: string[]
+    autoInvoke: boolean
+  }[]
+  general?: {
+    skillsRoot: string
+    interruptPolicy: 'interrupt' | 'queue'
+    guidedMode: true
+    correctionRounds: 3
+    inactivityMinutes: number
+  }
 }
+export type SettingsTab = 'agents' | 'general' | 'memory' | 'connectors'
 export type ReplyEvent =
   | { type: 'start' }
   | { type: 'text'; chunk: string }

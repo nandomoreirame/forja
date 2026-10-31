@@ -58,11 +58,14 @@ it('preserves fixture structure and identifiers across locales', async () => {
   expect(en.features[0].name).toBe('Login with OAuth')
   expect(pt.features[0].name).toBe('Login com OAuth')
 })
-it('keeps deferred integrations explicitly unavailable', async () => {
+it('keeps artifact reading deferred while settings stay editable in memory', async () => {
   const source = createMockSource({ locale: 'en' })
   await expect(source.readArtifact('missing')).rejects.toThrow('Not implemented in this slice')
-  await expect(source.loadSettings()).rejects.toThrow('Not implemented in this slice')
-  await expect(source.saveSettings({ agents: [] })).rejects.toThrow('Not implemented in this slice')
+  const settings = await source.loadSettings()
+  expect(settings.agents).toHaveLength(5)
+  settings.agents[0].instructions = 'Prefer focused changes'
+  await source.saveSettings(settings)
+  expect((await source.loadSettings()).agents[0].instructions).toBe('Prefer focused changes')
 })
 
 it('keeps screens independent from mock modules', () => {
