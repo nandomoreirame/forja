@@ -55,6 +55,7 @@ export interface WorkbenchState {
   openSettings(options?: { tab?: SettingsTab; role?: RoleId }): void
   closeSettings(): void
   createFeatureFromPrompt(prompt: string, role: RoleId): string
+  openFeature(id: string): void
   selectFeature(id: string): void
   closeFeature(id: string): void
   sendMessage(id: string, text: string): void
@@ -371,6 +372,13 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         get().navigate({ kind: 'conversation', featureId: id })
         get().sendMessage(id, prompt)
         return id
+      },
+      openFeature(id) {
+        const feature = get().snapshot?.features.find((item) => item.id === id)
+        if (!feature || feature.archived) return
+        if (!get().openFeatureIds.includes(id))
+          set((state) => ({ openFeatureIds: [...state.openFeatureIds, id] }))
+        get().selectFeature(id)
       },
       selectFeature(id) {
         if (get().openFeatureIds.includes(id))

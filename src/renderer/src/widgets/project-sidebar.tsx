@@ -1,27 +1,10 @@
-import {
-  Search,
-  ClipboardList,
-  Code,
-  FlaskConical,
-  GitPullRequest,
-  ChevronLeft,
-  Brain,
-  Plug,
-  Settings,
-} from 'lucide-react'
+import { ClipboardList, Brain, Plug, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, type UiState } from '@/shared/ui'
 import { SidebarRow } from '@/widgets/workbench'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-import { IconButton } from '@/renderer/src/shared/ui/icon-button'
-const icons = {
-  research: Search,
-  planner: ClipboardList,
-  implementer: Code,
-  tester: FlaskConical,
-  reviewer: GitPullRequest,
-}
+import { FeaturesSection } from '@/renderer/src/features/project-navigator'
 export function ProjectSidebar({ locale }: { locale: Locale }) {
   const state = useWorkbench((s) => s)
   const snapshot = state.snapshot!
@@ -34,59 +17,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
     >
       <div className="min-h-0 flex-1 overflow-y-auto py-2">
         <div className="space-y-3">
-          <section>
-            <h2 className="flex items-center justify-between gap-2 px-3 pb-1 text-[11px] uppercase tracking-wider">
-              <span>{a.agents}</span>
-              <span className="ml-auto">{snapshot.agents.length}</span>
-              <IconButton
-                className="size-5"
-                label={a.collapseLeft}
-                onClick={() => state.togglePanel('left')}
-              >
-                <ChevronLeft className="size-3" />
-              </IconButton>
-            </h2>
-            {snapshot.agents.map((agent) => {
-              const Icon = icons[agent.id]
-              return (
-                <button
-                  type="button"
-                  key={agent.id}
-                  className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
-                  onClick={() => {
-                    if (state.openFeatureIds.length === 0) state.startCompose(agent.id)
-                    else {
-                      const id =
-                        state.view.kind === 'conversation'
-                          ? state.view.featureId
-                          : state.openFeatureIds[state.openFeatureIds.length - 1]
-                      state.setRecipient(id, agent.id)
-                      state.selectFeature(id)
-                      state.focusComposer()
-                    }
-                  }}
-                >
-                  <SidebarRow
-                    className="h-7 rounded-none border-0 bg-transparent px-3 hover:bg-accent"
-                    icon={<Icon />}
-                    title={d.product[agent.id]}
-                    stateLabel={
-                      <StatusBadge size="sm" state={agent.state}>
-                        {a.states[agent.state]}
-                      </StatusBadge>
-                    }
-                  />
-                </button>
-              )
-            })}
-            <button
-              type="button"
-              className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full px-3 py-1 text-left text-muted-foreground hover:bg-accent hover:text-primary"
-              onClick={() => state.openSettings({ tab: 'agents' })}
-            >
-              {a.editAgents}
-            </button>
-          </section>
+          <FeaturesSection locale={locale} />
           {(['spec', 'plan', 'review', 'skill'] as const).map((kind) => {
             const items: { id: string; name: string; state?: UiState }[] =
               kind === 'skill' ? snapshot.skills : snapshot.artifacts.filter((x) => x.kind === kind)

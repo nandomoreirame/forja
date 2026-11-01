@@ -34,14 +34,16 @@ it('focuses Planner from Add plan, sends a feature and closes back to Research',
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
   expect(screen.queryByRole('tablist')).toBeNull()
 })
-it('preselects agents and Add spec, and permits changing the recipient', async () => {
+it('preselects Research from Add spec and permits changing the recipient', async () => {
   render(
     <WorkbenchPage
       source={createMockSource({ locale: 'en' })}
       initialProjectId="nandomoreira.dev"
     />,
   )
-  fireEvent.click(await screen.findByRole('button', { name: /Tester/ }))
+  fireEvent.click(await screen.findByRole('button', { name: '+ New conversation' }))
+  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
+  fireEvent.click(screen.getByRole('option', { name: 'Tester' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Tester')
   fireEvent.click(screen.getByRole('button', { name: '+ Add spec' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
@@ -76,7 +78,8 @@ it('reactivates the requested agent and focus without losing the draft', async (
 it('changes the agent within the current feature and keeps valid tab relationships', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const tab = await screen.findByRole('tab', { name: /Login with OAuth/ })
-  fireEvent.click(screen.getByRole('button', { name: /Planner/ }))
+  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
+  fireEvent.click(screen.getByRole('option', { name: 'Planner' }))
   expect(tab).toHaveAttribute('aria-selected', 'true')
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Planner')
   for (const item of screen.getAllByRole('tab')) {

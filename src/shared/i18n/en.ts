@@ -30,6 +30,13 @@ export const en = {
     searchProjects: 'Search recent projects',
     pickerUnavailable: 'Use the desktop app to select a folder in this browser.',
     features: 'Features',
+    featureNavigator: {
+      finished: 'Finished',
+      integrated: 'Integrated',
+      abandoned: 'Abandoned',
+      stalled: 'Stalled',
+      needsFix: 'Needs fix',
+    },
     conversation: 'Conversation',
     you: 'You',
     states: {

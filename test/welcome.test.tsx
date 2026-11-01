@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { App } from '../src/renderer/src/app/App'
 it('starts without a project and opens a selected recent project', async () => {
@@ -11,7 +11,9 @@ it('starts without a project and opens a selected recent project', async () => {
   fireEvent.click(await screen.findByRole('option', { name: /nandomoreira.dev/ }))
   expect(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-  fireEvent.click(screen.getByRole('button', { name: /New conversation/ }))
+  fireEvent.click(
+    within(screen.getByRole('main')).getByRole('button', { name: /New conversation/ }),
+  )
   expect(screen.getByRole('textbox')).toHaveFocus()
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
   expect(screen.queryByRole('heading', { name: 'FORJA' })).toBeNull()

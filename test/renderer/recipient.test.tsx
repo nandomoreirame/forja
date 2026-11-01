@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
@@ -21,27 +21,24 @@ it('lets the combobox override a mention until a new mention is typed', async ()
   expect(recipient).toHaveTextContent('Planner')
 })
 
-it('switches recipients from sidebar agents and focuses the composer on every activation', async () => {
+it('switches recipients through the composer without changing the selected feature', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
-  const field = await screen.findByRole('textbox', { name: /Send your prompt/ })
-  const agent = screen.getByRole('button', { name: /Reviewer/ })
-  for (let activation = 0; activation < 2; activation++) {
-    agent.focus()
-    fireEvent.click(agent)
-    expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Reviewer')
-    expect(field).toHaveFocus()
+  const tab = await screen.findByRole('tab', { name: /Login with OAuth/ })
+  for (const role of ['Reviewer', 'Tester']) {
+    fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
+    fireEvent.click(screen.getByRole('option', { name: role }))
+    expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent(role)
+    expect(tab).toHaveAttribute('aria-selected', 'true')
   }
 })
 
-it('focuses the docked composer when a sidebar agent is chosen from another view', async () => {
+it('returns from another view through a feature row and selects a recipient by mention', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   await screen.findByRole('tab', { name: /Login with OAuth/ })
-  act(() => {
-    fireEvent.keyDown(window, { key: ',', ctrlKey: true })
-  })
+  fireEvent.keyDown(window, { key: ',', ctrlKey: true })
   expect(screen.queryByRole('textbox', { name: /Send your prompt/ })).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: /^Tester/ }))
+  fireEvent.click(screen.getByRole('button', { name: /Login with OAuth ·/ }))
   const prompt = await screen.findByRole('textbox', { name: /Send your prompt/ })
-  await waitFor(() => expect(prompt).toHaveFocus())
+  fireEvent.change(prompt, { target: { value: '@tester' } })
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Tester')
 })
