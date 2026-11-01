@@ -38,7 +38,7 @@ it('creates immutable unique features with their selected recipient and first me
   expect(store.getState().view).toEqual({ kind: 'home' })
   expect(store.getState().openFeatureIds).toHaveLength(0)
 })
-it('requires an open project and defaults new conversations to Research', async () => {
+it('requires an open project and defaults new conversations to Smith', async () => {
   const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
   expect(() => store.getState().createFeatureFromPrompt('Login', 'research')).toThrow(
     'No open project',
@@ -53,10 +53,10 @@ it('requires an open project and defaults new conversations to Research', async 
     'feature-4',
   ])
   store.getState().startCompose()
-  expect(store.getState().view).toMatchObject({ kind: 'compose', role: 'research' })
+  expect(store.getState().view).toMatchObject({ kind: 'compose', role: 'smith' })
   expect(() => store.getState().createFeatureFromPrompt('  ', 'research')).toThrow('Empty prompt')
   store.getState().selectFeature('missing')
-  expect(store.getState().view).toMatchObject({ kind: 'compose', role: 'research' })
+  expect(store.getState().view).toMatchObject({ kind: 'compose', role: 'smith' })
 })
 
 it('appends follow-up prompts to the selected mock feature without changing fixtures', async () => {

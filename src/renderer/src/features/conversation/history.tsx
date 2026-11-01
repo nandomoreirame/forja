@@ -7,7 +7,7 @@ import {
   getDictionary,
   type Locale,
 } from '@/shared/i18n'
-import type { ChatMessage, RoleId } from '@/renderer/src/shared/api'
+import type { ChatMessage } from '@/renderer/src/shared/api'
 import { toolNames, type ToolId } from '@/shared/ui'
 import { agentName, type AgentId } from '@/renderer/src/entities/feature'
 import { HandoffLink } from './handoff-link'
@@ -46,9 +46,9 @@ export function History({
   agentNames?: Partial<Record<AgentId, string>>
   messages: ChatMessage[]
   locale: Locale
-  stage: RoleId
+  stage: AgentId
   /** Configured tool of a role, used when a reply has no stamped tool. */
-  toolFor?: (role: RoleId) => ToolId | undefined
+  toolFor?: (role: AgentId) => ToolId | undefined
   onViewRequest?: (id: string) => void
 }) {
   const viewport = useRef<HTMLDivElement>(null)

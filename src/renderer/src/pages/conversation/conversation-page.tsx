@@ -20,14 +20,16 @@ export function ConversationPage() {
   const summaryOpen = summaryFor === feature.id
   const flowOpen = flowFor === feature.id
   const headerButton = 'h-5 gap-1 px-1.5 text-[11px] [&_svg]:size-3.5'
+  // The Ferreiro is outside the RPI cycle, so its chats show every role as pending.
+  const stageIndex = feature.stage === 'smith' ? -1 : roleIds.indexOf(feature.stage)
   const cycle = roleIds.map((role, index) => ({
     label: agentName(role, state.source.locale, state.agentNames),
     roleLabel: d.product[role],
     tool: state.agentTools[role],
     state:
-      index === roleIds.indexOf(feature.stage)
+      index === stageIndex
         ? ('current' as const)
-        : index < roleIds.indexOf(feature.stage)
+        : index < stageIndex
           ? ('done' as const)
           : ('pending' as const),
   }))

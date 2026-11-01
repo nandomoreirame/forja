@@ -313,6 +313,7 @@ export const ptBr = {
     reviewer: 'Polidor',
   },
   product: {
+    smith: 'Agente geral',
     feature: 'Feature',
     target: 'Destino',
     destination: 'Destino',

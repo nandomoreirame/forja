@@ -1,5 +1,5 @@
 import type { Locale } from '@/shared/i18n'
-import type { MessagePart, RoleId } from './workbench-source'
+import type { AgentId, MessagePart } from './workbench-source'
 
 interface MockReply {
   text: string
@@ -7,8 +7,11 @@ interface MockReply {
   part?: MessagePart
 }
 
-export const mockReplies: Record<Locale, Record<RoleId, MockReply>> = {
+export const mockReplies: Record<Locale, Record<AgentId, MockReply>> = {
   en: {
+    smith: {
+      text: 'We can talk it through here. I will not create anything without you: when the scope is clear, I can propose a feature or a backlog item. This is a scripted mock reply.',
+    },
     research: {
       text: 'What is the scope of this feature? Which behavior should stay unchanged? What acceptance criteria should we use?',
     },
@@ -34,6 +37,9 @@ export const mockReplies: Record<Locale, Record<RoleId, MockReply>> = {
     },
   },
   'pt-br': {
+    smith: {
+      text: 'Podemos conversar sobre isso aqui. Não vou criar nada sem você: quando o escopo estiver claro, posso propor uma feature ou um item de backlog. Esta é uma resposta simulada.',
+    },
     research: {
       text: 'Qual é o escopo desta funcionalidade? Qual comportamento deve ser preservado? Quais critérios de aceitação devemos usar?',
     },

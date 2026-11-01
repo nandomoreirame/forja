@@ -2,6 +2,9 @@ import type { Locale } from '@/shared/i18n'
 import type { ToolId, UiState } from '@/shared/ui'
 export const roleIds = ['research', 'planner', 'implementer', 'tester', 'reviewer'] as const
 export type RoleId = (typeof roleIds)[number]
+/** The Ferreiro (general agent) plus the five RPI roles. */
+export const agentIds = ['smith', ...roleIds] as const
+export type AgentId = (typeof agentIds)[number]
 export interface ProjectSummary {
   id: string
   name: string
@@ -24,7 +27,7 @@ export interface ChatMessage {
   status?: 'running' | 'completed' | 'interrupted'
   linkTo?: string
   tool?: ToolId
-  author?: RoleId
+  author?: AgentId
   parts?: MessagePart[]
   attachments?: ImageAttachment[]
   /** ISO timestamp of when the message was sent or the reply started. */
@@ -40,7 +43,7 @@ export interface MockTerminal {
   state: UiState
   output: string
   kind?: 'agent' | 'shell'
-  agent?: RoleId
+  agent?: AgentId
   command?: string
   cwd?: string
   shell?: string
@@ -63,7 +66,7 @@ export interface FeatureSnapshot {
   ahead?: number
   worktree: string | null
   target: string
-  stage: RoleId
+  stage: AgentId
   messages: ChatMessage[]
   terminals: MockTerminal[]
 }
@@ -98,7 +101,7 @@ export interface ProjectSnapshot {
   terminals?: MockTerminal[]
 }
 export interface SettingsSnapshot {
-  agentNames?: Partial<Record<'smith' | RoleId, string>>
+  agentNames?: Partial<Record<AgentId, string>>
   agents: {
     id: RoleId
     tool: ToolId
@@ -179,7 +182,7 @@ export interface WorkbenchSource {
   scanSkills(root: string): Promise<ProjectSnapshot['skills']>
   readArtifact(id: string): Promise<string>
   streamReply(
-    request: { featureId: string; role: RoleId; prompt: string; authoring?: LibraryKind },
+    request: { featureId: string; role: AgentId; prompt: string; authoring?: LibraryKind },
     onEvent: (event: ReplyEvent) => void,
     options?: ReplyOptions,
   ): () => void

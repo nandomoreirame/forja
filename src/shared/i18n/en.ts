@@ -313,6 +313,7 @@ export const en = {
     reviewer: 'Polisher',
   },
   product: {
+    smith: 'General agent',
     feature: 'Feature',
     target: 'Target',
     destination: 'Destination',

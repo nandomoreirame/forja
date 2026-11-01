@@ -8,7 +8,6 @@ import { selectProjectDirectory } from '@/renderer/src/shared/lib/directory-pick
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { saveLocale } from '@/renderer/src/shared/lib/locale'
 import { featureIdentity } from './feature-name'
-import type { AgentId } from './agent-names'
 import { createStore } from 'zustand/vanilla'
 import type {
   FeatureSnapshot,
@@ -19,6 +18,7 @@ import type {
   ProjectSnapshot,
   ProjectSummary,
   RoleId,
+  AgentId,
   SettingsTab,
   WorkbenchSource,
 } from '@/renderer/src/shared/api'
@@ -26,13 +26,13 @@ export type View =
   | { kind: 'authoring' }
   | { kind: 'home' }
   | { kind: 'archived' }
-  | { kind: 'compose'; role: RoleId; id: string }
+  | { kind: 'compose'; role: AgentId; id: string }
   | { kind: 'conversation'; featureId: string }
   | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
   | { kind: 'document'; documentId: string }
 export interface ComposeTab {
   id: string
-  role: RoleId
+  role: AgentId
   prompt: string
 }
 export interface WorkbenchState {
@@ -48,8 +48,8 @@ export interface WorkbenchState {
   startAuthoring(kind: LibraryKind, scope: LibraryScope, name?: string): void
   sendAuthoring(text: string): void
   source: WorkbenchSource
-  agentTools: Partial<Record<RoleId, ToolId>>
-  agentModels: Partial<Record<RoleId, string>>
+  agentTools: Partial<Record<AgentId, ToolId>>
+  agentModels: Partial<Record<AgentId, string>>
   agentNames: Partial<Record<AgentId, string>>
   setAgentName(id: AgentId, name: string): Promise<void>
   summaries: Record<string, { text: string; createdAt: string }>
@@ -83,14 +83,14 @@ export interface WorkbenchState {
   lastSettings: { tab?: SettingsTab; role?: RoleId }
   drafts: Record<string, string>
   setDraft(id: string, text: string): void
-  prefillDraft(id: string, draft: { recipient: RoleId; text: string }): void
-  recipients: Record<string, RoleId>
+  prefillDraft(id: string, draft: { recipient: AgentId; text: string }): void
+  recipients: Record<string, AgentId>
   focusComposer(): void
   composerFocusPending: boolean
   consumeComposerFocus(): void
   composeActivation: number
-  setRecipient(id: string, role: RoleId): void
-  startCompose(role?: RoleId): void
+  setRecipient(id: string, role: AgentId): void
+  startCompose(role?: AgentId): void
   openSettings(options?: { tab?: SettingsTab; role?: RoleId }): void
   /** Switches the UI language for this session and remembers it for the next launch. */
   setLocale(locale: Locale): void
@@ -107,13 +107,13 @@ export interface WorkbenchState {
   closeAuthoring(): void
   /** Closes whatever tab is showing (Ctrl+W); does nothing on the empty state. */
   closeActiveTab(): void
-  createFeatureFromPrompt(prompt: string, role: RoleId): string
+  createFeatureFromPrompt(prompt: string, role: AgentId): string
   openFeature(id: string): void
   selectFeature(id: string): void
   closeFeature(id: string): void
   sendMessage(id: string, text: string): void
   interrupt(id: string): void
-  appendPrompt(id: string, prompt: string, role: RoleId): void
+  appendPrompt(id: string, prompt: string, role: AgentId): void
   openProject(id: string): Promise<void>
   navigate(view: View): void
   back(): void
@@ -525,7 +525,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         if (get().snapshot?.features.some((f) => f.id === id))
           set((state) => ({ recipients: { ...state.recipients, [id]: role } }))
       },
-      startCompose(role = 'research') {
+      startCompose(role = 'smith') {
         if (!get().snapshot) return
         // Every call opens another tab, like a new untitled editor.
         const id = `compose-${++composeSequence}`

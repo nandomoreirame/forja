@@ -27,7 +27,7 @@
 
 - Explorer, Changes and sync counts never render in production builds.
 - Agents show their forge names (editable) with the role in tooltips.
-- New chats talk to the Ferreiro and create features only after confirmation.
+- New chats open a conversation with the Ferreiro on the first prompt; nothing else is created without the user.
 - Plan usage is always visible above Archived.
 - New faces are previewed in Stitch and the styleguide before any app change.
 - Feature states read at a glance with animated and distinct glyphs.
@@ -41,7 +41,7 @@
 
 - C1 (REQ-106): unfinished features are off in production and their panels do not render. Proof: run quick | PASS renders no Explorer, Changes or sync counts while their flags are off
 - C2 (REQ-110): agents show localized forge names that the user can rename. Proof: run quick | PASS renames an agent in Settings and shows the name with its role in the tooltip
-- C3 (REQ-107): New chat talks to the Ferreiro and starts a feature only after confirmation. Proof: run quick | PASS chats with the Ferreiro and starts a feature only after confirmation
+- C3 (REQ-107): the first prompt of a New chat opens the chat with the Ferreiro directly. Proof: run quick | PASS opens the chat with the Ferreiro as soon as the first prompt is sent
 - C4 (REQ-108): summaries are attributed to the Ferreiro. Proof: run quick | PASS shows the Ferreiro as the author of a summary
 - C5 (REQ-082): plan usage sits above Archived for tools with data. Proof: run quick | PASS shows plan usage above Archived for tools with data
 - C6 (REQ-114): minimal faces exist for preview with a distinct Ferreiro mark. Proof: run quick | PASS draws a face per agent with a distinct Ferreiro mark and moving eyes while speaking
@@ -349,7 +349,7 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-New chat tabs default to the recipient `smith`. Sending to the Ferreiro keeps the conversation inside the New chat tab (messages stored on the compose tab) and streams a scripted mock reply that ends with a "Start feature" proposal; clicking it creates the feature with Research (Minerador) and the original prompt, replacing the tab as today. Picking an RPI agent in the recipient selector keeps the current direct feature creation.
+New chat tabs default to the recipient `smith`. Sending to the Ferreiro opens the chat directly as a conversation tab with stage `smith` (no intermediate screen or "Start feature" button; user decision 2026-11-01) and streams a scripted mock reply in it. `smith` joins `AgentId` in `shared/api` (stage, author, recipients, `streamReply`), gets a hammer mascot and the role label "General agent", and stays outside the Flow cycle. Picking an RPI agent in the recipient selector keeps the current direct feature creation.
 
 **Step 4: Run test to verify it passes**
 

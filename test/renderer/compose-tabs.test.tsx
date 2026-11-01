@@ -43,6 +43,8 @@ it('turns only the sent conversation tab into its feature', async () => {
   await screen.findByRole('tab', { name: /Login with OAuth/ })
   add()
   add()
+  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
+  fireEvent.click(screen.getByRole('option', { name: 'Miner, Research' }))
   fireEvent.change(field(), { target: { value: 'Rate limit public endpoints' } })
   fireEvent.keyDown(field(), { key: 'Enter', ctrlKey: true })
   expect(screen.getByRole('tab', { name: /Rate limit public endpoints/ })).toHaveAttribute(

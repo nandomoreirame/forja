@@ -1,6 +1,6 @@
 import { ToolIcon, type ToolId } from './tool-icon'
 
-export type AgentRole = 'research' | 'planner' | 'implementer' | 'tester' | 'reviewer'
+export type AgentRole = 'smith' | 'research' | 'planner' | 'implementer' | 'tester' | 'reviewer'
 
 export interface AgentSprite {
   /** Twelve rows of twelve characters; `.` is transparent. */
@@ -18,6 +18,24 @@ const shared = {
 }
 
 export const agentSprites: Record<AgentRole, AgentSprite> = {
+  // Hammer: the Ferreiro, the general agent outside the RPI cycle.
+  smith: {
+    rows: [
+      '.........kkk',
+      '...hhhhhhkkk',
+      '..hhhhhhhhk.',
+      '..hhehhehhk.',
+      '..hhhhhhhhk.',
+      '...hhmmhh.k.',
+      '....bbbb..k.',
+      '..bbbbbbbbk.',
+      '.bbbbbbbbbb.',
+      '.bbaabbbbbb.',
+      '..bb..bb....',
+      '..bb..bb....',
+    ],
+    palette: { ...shared, a: 'var(--primary)', k: 'var(--primary)' },
+  },
   // Magnifying glass.
   research: {
     rows: [

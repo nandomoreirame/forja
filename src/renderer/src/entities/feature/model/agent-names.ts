@@ -1,8 +1,7 @@
 import { getDictionary, type Locale } from '@/shared/i18n'
-import { roleIds } from '@/renderer/src/shared/api'
+import { agentIds, type AgentId } from '@/renderer/src/shared/api'
 
-export const agentIds = ['smith', ...roleIds] as const
-export type AgentId = (typeof agentIds)[number]
+export { agentIds, type AgentId }
 
 export function agentName(
   id: AgentId,
