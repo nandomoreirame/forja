@@ -19,8 +19,13 @@ it('splits the sidebar into resizable panes that scroll on their own', async () 
     expect(pane.closest('[data-slot="resizable-panel"]')).not.toBeNull()
     expect(pane.querySelector('[data-slot="scroll-area"]')).not.toBeNull()
   }
-  expect(sidebar.querySelector('[class*="max-h-"]')).toBeNull()
-  expect(sidebar.querySelector('.overflow-y-auto')).toBeNull()
+  const usage = within(sidebar).getByRole('region', { name: 'Plan usage' })
+  expect(sidebar.querySelectorAll('.overflow-y-auto')).toHaveLength(1)
+  expect(usage).toHaveClass('overflow-y-auto')
+  for (const pane of panes) {
+    expect(pane.querySelector('[class*="max-h-"]')).toBeNull()
+    expect(pane.querySelector('.overflow-y-auto')).toBeNull()
+  }
 })
 
 it('uses VS Code metrics: 22 px headers and rows, 13 px labels and 16 px icons', async () => {

@@ -1,3 +1,4 @@
+import { UsagePanel } from '@/renderer/src/features/usage/usage-panel'
 import { Archive, Plug, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
@@ -41,25 +42,28 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
         <ResizableHandle className="bg-border" />
         <MemoriesSection locale={locale} />
       </PaneStack>
-      <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
-        <div className="space-y-0.5">
-          <WorkspaceButton
-            icon={<Archive />}
-            label={a.archived}
-            onClick={() => state.openArchived()}
-          />
-          <WorkspaceButton
-            icon={<Plug />}
-            label="Connectors"
-            onClick={() => state.openSettings({ tab: 'connectors' })}
-          />
-          <WorkspaceButton
-            icon={<Settings />}
-            label={a.settings}
-            onClick={() => state.openSettings({ tab: 'general' })}
-          />
-        </div>
-      </nav>
+      <div className="flex min-h-0 max-h-full flex-col border-t border-border">
+        <UsagePanel source={state.source} />
+        <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
+          <div className="space-y-0.5">
+            <WorkspaceButton
+              icon={<Archive />}
+              label={a.archived}
+              onClick={() => state.openArchived()}
+            />
+            <WorkspaceButton
+              icon={<Plug />}
+              label="Connectors"
+              onClick={() => state.openSettings({ tab: 'connectors' })}
+            />
+            <WorkspaceButton
+              icon={<Settings />}
+              label={a.settings}
+              onClick={() => state.openSettings({ tab: 'general' })}
+            />
+          </div>
+        </nav>
+      </div>
     </aside>
   )
 }

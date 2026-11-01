@@ -1,5 +1,15 @@
 export const ptBr = {
   app: {
+    planUsage: {
+      title: 'Uso do plano',
+      unavailable: 'Uso indisponível',
+      week: 'semana',
+      session: '5h',
+      updated: 'atualizado {time}',
+      reset: 'reinicia em {time}',
+      now: 'agora',
+      ago: 'há {time} min',
+    },
     gitStatus: {
       label: 'Branch {branch}, {behind} atrás, {ahead} à frente',
       sync: '{behind} commits atrás e {ahead} à frente de {base}',

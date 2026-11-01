@@ -1,5 +1,15 @@
 export const en = {
   app: {
+    planUsage: {
+      title: 'Plan usage',
+      unavailable: 'Usage unavailable',
+      week: 'week',
+      session: '5h',
+      updated: 'updated {time}',
+      reset: 'resets in {time}',
+      now: 'now',
+      ago: '{time} min ago',
+    },
     gitStatus: {
       label: 'Branch {branch}, {behind} behind, {ahead} ahead',
       sync: '{behind} commits behind and {ahead} ahead of {base}',
