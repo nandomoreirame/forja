@@ -51,6 +51,8 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  /* Workbench part frames and the prompt composer share one radius, like VS Code parts. */
+  --radius-part: 0.5rem;
 }
 
 /* Font families are tokens so every utility resolves through var(--font-*). */

@@ -186,7 +186,7 @@ function WorkbenchShell() {
                       <div
                         data-slot="workbench-part"
                         data-part="editor"
-                        className="flex h-full min-h-0 flex-col overflow-auto rounded-md border border-border"
+                        className="flex h-full min-h-0 flex-col overflow-auto rounded-part border border-border"
                       >
                         {s.view.kind === 'archived' ? (
                           <ArchivedPage />
@@ -236,7 +236,7 @@ function WorkbenchShell() {
                       <div
                         data-slot="workbench-part"
                         data-part="panel"
-                        className="h-full overflow-hidden rounded-md border border-border"
+                        className="h-full overflow-hidden rounded-part border border-border"
                       >
                         <TerminalPanel feature={terminalScope} />
                       </div>

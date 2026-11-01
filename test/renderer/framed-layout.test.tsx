@@ -12,7 +12,7 @@ it('frames each workbench part with its own rounded border on the app background
   const parts = Array.from(document.querySelectorAll<HTMLElement>('[data-slot="workbench-part"]'))
   expect(parts.map((part) => part.dataset.part)).toEqual(['sidebar', 'editor', 'panel', 'context'])
   for (const part of parts) {
-    expect(part.className).toMatch(/\brounded-md\b/)
+    expect(part.className).toMatch(/\brounded-part\b/)
     expect(part.className).toMatch(/\bborder\b/)
     expect(part.className).not.toMatch(backgrounds)
     // Breathing room around every frame, like VS Code's part gaps.
@@ -22,4 +22,12 @@ it('frames each workbench part with its own rounded border on the app background
     expect(bar.className).not.toMatch(/\bborder-[tb]\b/)
     expect(bar.className).not.toMatch(backgrounds)
   }
+})
+
+it('rounds the prompt composer like the workbench frames', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  await screen.findByRole('tab', { name: /Login with OAuth/ })
+  const composer = screen.getByRole('textbox', { name: /prompt/i }).closest('.border')!
+  expect(composer.className).toMatch(/\brounded-part\b/)
+  expect(composer.className).not.toMatch(/\brounded-xl\b/)
 })

@@ -44,7 +44,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       aria-label={snapshot.project.name}
       data-slot="workbench-part"
       data-part="sidebar"
-      className="flex h-full w-full flex-col overflow-hidden rounded-md border border-border text-xs"
+      className="flex h-full w-full flex-col overflow-hidden rounded-part border border-border text-xs"
     >
       {/* VS Code style panes: each one resizes from the sash above it and collapses to its header. */}
       <ResizablePanelGroup

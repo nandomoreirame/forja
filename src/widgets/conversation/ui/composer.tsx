@@ -66,7 +66,7 @@ export function Composer({
 
   return (
     <form
-      className="space-y-2.5 rounded-xl border border-border bg-card p-3.5 shadow-2xl shadow-black/40 transition-colors focus-within:border-primary/70 motion-reduce:transition-none"
+      className="space-y-2.5 rounded-part border border-border bg-card p-3.5 shadow-2xl shadow-black/40 transition-colors focus-within:border-primary/70 motion-reduce:transition-none"
       onSubmit={(event) => {
         event.preventDefault()
         if (value.trim()) onSend()
