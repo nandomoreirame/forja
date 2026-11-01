@@ -41,6 +41,9 @@ export interface WorkbenchState {
   openFeatureIds: string[]
   settingsOpen: boolean
   lastSettings: { tab?: SettingsTab; role?: RoleId }
+  drafts: Record<string, string>
+  setDraft(id: string, text: string): void
+  prefillDraft(id: string, draft: { recipient: RoleId; text: string }): void
   recipients: Record<string, RoleId>
   focusComposer(): void
   composerFocusPending: boolean
@@ -246,6 +249,18 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       openFeatureIds: [],
       settingsOpen: false,
       lastSettings: {},
+      drafts: {},
+      setDraft(id, text) {
+        if (!get().snapshot?.features.some((feature) => feature.id === id)) return
+        set((state) => ({ drafts: { ...state.drafts, [id]: text } }))
+      },
+      prefillDraft(id, draft) {
+        if (!get().snapshot?.features.some((feature) => feature.id === id)) return
+        const existing = get().drafts[id] ?? ''
+        get().setDraft(id, existing ? `${existing}\n${draft.text}` : draft.text)
+        get().setRecipient(id, draft.recipient)
+        get().focusComposer()
+      },
       recipients: {},
       composeActivation: 0,
       focusComposer() {
@@ -541,6 +556,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             terminalTabs: {},
             openDocumentIds: [],
             documents: {},
+            drafts: {},
           })
         } catch {
           if (token === request) {

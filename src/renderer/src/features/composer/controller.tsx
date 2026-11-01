@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Composer } from '@/widgets/conversation'
 import { getDictionary } from '@/shared/i18n'
 import { roleIds, type RoleId } from '@/renderer/src/shared/api'
@@ -7,7 +7,7 @@ import { mentionedRoles } from './recipient'
 
 export function ComposerController({ featureId }: { featureId: string }) {
   const state = useWorkbench((s) => s)
-  const [prompt, setPrompt] = useState('')
+  const prompt = state.drafts[featureId] ?? ''
   const feature = state.snapshot?.features.find((item) => item.id === featureId)
   const d = getDictionary(state.source.locale)
   const a = d.app
@@ -40,11 +40,11 @@ export function ComposerController({ featureId }: { featureId: string }) {
           const role = mentions.at(-1)
           if (role) state.setRecipient(featureId, role)
         }
-        setPrompt(value)
+        state.setDraft(featureId, value)
       }}
       onSend={() => {
         state.sendMessage(featureId, prompt)
-        setPrompt('')
+        state.setDraft(featureId, '')
       }}
       placeholder={a.prompt}
       recipientLabel={a.recipient}

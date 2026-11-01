@@ -1,6 +1,8 @@
 export const en = {
   app: {
     document: {
+      reviewWithAgent: 'Review with agent',
+      reviewPrefix: 'Review',
       approveSpec: 'Approve spec',
       approvePlan: 'Approve plan',
       approvalNotice: 'Human approval required. This action updates mock state only.',

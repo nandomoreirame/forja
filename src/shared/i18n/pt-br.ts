@@ -1,6 +1,8 @@
 export const ptBr = {
   app: {
     document: {
+      reviewWithAgent: 'Revisar com o agente',
+      reviewPrefix: 'Revisar',
       approveSpec: 'Aprovar spec',
       approvePlan: 'Aprovar plano',
       approvalNotice: 'Aprovação humana necessária. Esta ação altera apenas o estado simulado.',
