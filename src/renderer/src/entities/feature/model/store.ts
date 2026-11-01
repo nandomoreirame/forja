@@ -15,7 +15,7 @@ export type View =
   | { kind: 'compose'; role: RoleId }
   | { kind: 'conversation'; featureId: string }
   | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
-  | { kind: 'document'; artifactId: string }
+  | { kind: 'document'; documentId: string }
 export interface WorkbenchState {
   source: WorkbenchSource
   projects: ProjectSummary[]
@@ -33,6 +33,11 @@ export interface WorkbenchState {
   openDirectory(): Promise<void>
   pickingDirectory: boolean
   loadProjects(): Promise<void>
+  openDocumentIds: string[]
+  documents: Record<string, string>
+  openDocument(id: string): Promise<void>
+  closeDocument(id: string): void
+  approveDocument(id: string): void
   openFeatureIds: string[]
   settingsOpen: boolean
   lastSettings: { tab?: SettingsTab; role?: RoleId }
@@ -94,6 +99,8 @@ export function projectTerminalScope(snapshot: ProjectSnapshot): FeatureSnapshot
 
 export function createWorkbenchStore(source: WorkbenchSource) {
   const replies = new Map<string, { cancel: () => void }>()
+  const documentReads = new Map<string, Promise<string>>()
+  let previousDocumentView: View = { kind: 'home' }
   let request = 0
   let failedOperation:
     { kind: 'projects' } | { kind: 'project'; id: string } | { kind: 'directory' } | null = null
@@ -157,6 +164,84 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         } finally {
           set({ pickingDirectory: false })
         }
+      },
+      openDocumentIds: [],
+      documents: {},
+      async openDocument(id) {
+        const snapshot = get().snapshot
+        if (!snapshot?.artifacts.some((artifact) => artifact.id === id))
+          throw new Error('Unknown artifact')
+        const token = request
+        let content = get().documents[id]
+        if (content === undefined) {
+          let pending = documentReads.get(id)
+          if (!pending) {
+            pending = source.readArtifact(id)
+            documentReads.set(id, pending)
+          }
+          try {
+            content = await pending
+          } finally {
+            if (documentReads.get(id) === pending) documentReads.delete(id)
+          }
+        }
+        if (token !== request || get().snapshot?.project.id !== snapshot.project.id) return
+        if (get().view.kind !== 'document') previousDocumentView = get().view
+        set((state) => ({
+          documents: { ...state.documents, [id]: content },
+          openDocumentIds: state.openDocumentIds.includes(id)
+            ? state.openDocumentIds
+            : [...state.openDocumentIds, id],
+        }))
+        get().navigate({ kind: 'document', documentId: id })
+      },
+      closeDocument(id) {
+        const state = get()
+        const index = state.openDocumentIds.indexOf(id)
+        if (index < 0) return
+        const openDocumentIds = state.openDocumentIds.filter((item) => item !== id)
+        const isTarget = (view: View) => view.kind === 'document' && view.documentId === id
+        const active = isTarget(state.view)
+        const view: View = active
+          ? openDocumentIds.length
+            ? {
+                kind: 'document',
+                documentId: openDocumentIds[Math.min(index, openDocumentIds.length - 1)],
+              }
+            : previousDocumentView.kind === 'conversation' &&
+                !state.openFeatureIds.includes(previousDocumentView.featureId)
+              ? state.openFeatureIds[0]
+                ? { kind: 'conversation', featureId: state.openFeatureIds[0] }
+                : { kind: 'home' }
+              : previousDocumentView
+          : state.view
+        let historyIndex = -1
+        let history: View[] = []
+        state.history.forEach((entry, entryIndex) => {
+          if (isTarget(entry)) return
+          history.push(entry)
+          if (entryIndex <= state.historyIndex) historyIndex = history.length - 1
+        })
+        if (active) {
+          history = history.slice(0, historyIndex + 1)
+          if (JSON.stringify(history.at(-1)) !== JSON.stringify(view)) history.push(view)
+          historyIndex = history.length - 1
+        }
+        set({ openDocumentIds, view, history, historyIndex })
+      },
+      approveDocument(id) {
+        // Mock-only stand-in for explicit human approval; agent events never invoke this action.
+        const snapshot = get().snapshot
+        if (snapshot?.artifacts.find((artifact) => artifact.id === id)?.state !== 'draft')
+          throw new Error('Only drafts can be approved')
+        set({
+          snapshot: {
+            ...snapshot,
+            artifacts: snapshot.artifacts.map((artifact) =>
+              artifact.id === id ? { ...artifact, state: 'approved' } : artifact,
+            ),
+          },
+        })
       },
       openFeatureIds: [],
       settingsOpen: false,
@@ -439,6 +524,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           for (const reply of replies.values()) reply.cancel()
           replies.clear()
           failedOperation = null
+          documentReads.clear()
+          previousDocumentView = { kind: 'home' }
           const view: View = snapshot.features[0]
             ? { kind: 'conversation', featureId: snapshot.features[0].id }
             : { kind: 'home' }
@@ -452,6 +539,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             openFeatureIds: snapshot.features.map((f) => f.id),
             recipients: Object.fromEntries(snapshot.features.map((f) => [f.id, f.stage])),
             terminalTabs: {},
+            openDocumentIds: [],
+            documents: {},
           })
         } catch {
           if (token === request) {

@@ -18,7 +18,32 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
     return {
       project: { id, name: id, path, lastOpenedAt: `${openedAt}T12:00:00Z` },
       agents: roleIds.map((id) => ({ id, state: 'draft' })),
-      artifacts: [],
+      artifacts:
+        id === 'dev'
+          ? [
+              {
+                id: 'dev:login-oauth:spec',
+                name: 'login-oauth/SPEC.md',
+                kind: 'spec',
+                state: 'approved',
+                author: 'research',
+              },
+              {
+                id: 'dev:login-oauth:plan',
+                name: 'login-oauth/PLAN.md',
+                kind: 'plan',
+                state: 'draft',
+                author: 'planner',
+              },
+              {
+                id: 'dev:login-oauth:review',
+                name: 'login-oauth/REVIEW.md',
+                kind: 'review',
+                state: 'completed',
+                author: 'reviewer',
+              },
+            ]
+          : [],
       skills: [],
       branches: ['main'],
       changes: [],
@@ -77,4 +102,41 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
             })),
     }
   })
+}
+
+export function mockArtifactMarkdown(
+  locale: Locale,
+  kind: ProjectSnapshot['artifacts'][number]['kind'],
+): string {
+  const en = locale === 'en'
+  if (kind === 'plan')
+    return [
+      '# login-oauth/PLAN.md',
+      en ? '## Implementation tasks' : '## Tarefas de implementação',
+      en
+        ? '- [ ] Test callback expiration.\n- [ ] Validate state before exchanging the code.'
+        : '- [ ] Testar a expiração do callback.\n- [ ] Validar o state antes de trocar o código.',
+    ].join('\n\n')
+  if (kind === 'review')
+    return [
+      '# login-oauth/REVIEW.md',
+      en ? '## Findings' : '## Achados',
+      en
+        ? '| Finding | Status |\n| --- | --- |\n| Expired callback rejected | Verified |'
+        : '| Achado | Estado |\n| --- | --- |\n| Callback expirado rejeitado | Verificado |',
+    ].join('\n\n')
+  return [
+    '# login-oauth/SPEC.md',
+    en
+      ? '## Objective\nEnsure deterministic expiration handling for the OAuth callback.'
+      : '## Objetivo\nGarantir tratamento determinístico da expiração do callback OAuth.',
+    en
+      ? '## Tasks\n- [ ] Validate state.\n- [ ] Reject expired callbacks.'
+      : '## Tarefas\n- [ ] Validar o state.\n- [ ] Rejeitar callbacks expirados.',
+    en
+      ? '| Parameter | Meaning |\n| --- | --- |\n| state | Request identifier |\n| code | Authorization code |'
+      : '| Parâmetro | Significado |\n| --- | --- |\n| state | Identificador da requisição |\n| code | Código de autorização |',
+    '```mermaid\nflowchart TD\n  Login --> Callback\n  Callback --> Validate\n  Validate --> Session\n```',
+    '```typescript\nconst expired = expiresAt <= now\nif (expired) throw new Error("Expired callback")\n```',
+  ].join('\n\n')
 }

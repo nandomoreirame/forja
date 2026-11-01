@@ -56,7 +56,13 @@ export interface FeatureSnapshot {
 export interface ProjectSnapshot {
   project: ProjectSummary
   agents: { id: RoleId; state: UiState }[]
-  artifacts: { id: string; name: string; kind: 'spec' | 'plan'; state: UiState; author: RoleId }[]
+  artifacts: {
+    id: string
+    name: string
+    kind: 'spec' | 'plan' | 'review'
+    state: UiState
+    author: RoleId
+  }[]
   skills: { id: string; name: string }[]
   branches: string[]
   changes: { path: string; status: string }[]

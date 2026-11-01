@@ -102,7 +102,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                   onClick={() =>
                     kind === 'skill'
                       ? state.openSettings({ tab: 'agents' })
-                      : state.navigate({ kind: 'document', artifactId: item.id })
+                      : state.navigate({ kind: 'document', documentId: item.id })
                   }
                 >
                   <SidebarRow

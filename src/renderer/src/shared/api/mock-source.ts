@@ -1,6 +1,6 @@
 import type { Locale } from '@/shared/i18n'
 import { mockReplies } from './mock-replies'
-import { mockProjects } from './mock-data'
+import { mockArtifactMarkdown, mockProjects } from './mock-data'
 import {
   roleIds,
   type ReplyEvent,
@@ -27,9 +27,6 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
       correctionRounds: 3 as const,
       inactivityMinutes: 30,
     },
-  }
-  const unavailable = async (): Promise<never> => {
-    throw new Error('Not implemented in this slice')
   }
   return {
     locale,
@@ -59,7 +56,11 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
       if (!snapshot) throw new Error('Unknown project')
       return structuredClone(snapshot)
     },
-    readArtifact: unavailable,
+    async readArtifact(id) {
+      const artifact = fixtures.flatMap((item) => item.artifacts).find((item) => item.id === id)
+      if (!artifact) throw new Error('Unknown artifact')
+      return mockArtifactMarkdown(locale, artifact.kind)
+    },
     streamReply(request, onEvent, options = {}) {
       const script = mockReplies[locale][request.role]
       const size = Math.ceil(script.text.length / 12)
@@ -105,23 +106,109 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
     },
     async loadMemories() {
       return [
-        { id: 'memory-1', title: 'OAuth callback decision', kind: 'decision', author: 'research', date: '2026-10-31' },
-        { id: 'memory-2', title: 'Regression test requested', kind: 'reference', author: 'reviewer', date: '2026-10-30' },
+        {
+          id: 'memory-1',
+          title: 'OAuth callback decision',
+          kind: 'decision',
+          author: 'research',
+          date: '2026-10-31',
+        },
+        {
+          id: 'memory-2',
+          title: 'Regression test requested',
+          kind: 'reference',
+          author: 'reviewer',
+          date: '2026-10-30',
+        },
       ]
     },
     async loadConnectors() {
       return [
-        { id: 'github', name: 'GitHub', transport: 'MCP', status: 'connected' as const, enabled: true },
-        { id: 'filesystem', name: 'Filesystem', transport: 'stdio', status: 'available' as const, enabled: false },
+        {
+          id: 'github',
+          name: 'GitHub',
+          transport: 'MCP',
+          status: 'connected' as const,
+          enabled: true,
+        },
+        {
+          id: 'filesystem',
+          name: 'Filesystem',
+          transport: 'stdio',
+          status: 'available' as const,
+          enabled: false,
+        },
       ]
     },
     async loadUsage() {
       return [
-        { tool: 'claude' as const, plan: 'Pro', account: 'dev@example.com', updatedLabel: 'updated now', windows: [{ id: 'session', label: 'Session (5h)', usedPercent: 35, pacePercent: 30, resetLabel: 'resets in 3h16m', paceLabel: 'on pace' }, { id: 'week', label: 'Weekly', usedPercent: 11, pacePercent: 20, resetLabel: 'resets in 6d5h', paceLabel: 'on pace' }] },
-        { tool: 'codex' as const, plan: 'Plus', account: 'dev@example.com', updatedLabel: 'updated 2 min ago', windows: [{ id: 'session', label: 'Session', usedPercent: 22, pacePercent: 25, resetLabel: 'resets in 2h', paceLabel: 'on pace' }] },
+        {
+          tool: 'claude' as const,
+          plan: 'Pro',
+          account: 'dev@example.com',
+          updatedLabel: 'updated now',
+          windows: [
+            {
+              id: 'session',
+              label: 'Session (5h)',
+              usedPercent: 35,
+              pacePercent: 30,
+              resetLabel: 'resets in 3h16m',
+              paceLabel: 'on pace',
+            },
+            {
+              id: 'week',
+              label: 'Weekly',
+              usedPercent: 11,
+              pacePercent: 20,
+              resetLabel: 'resets in 6d5h',
+              paceLabel: 'on pace',
+            },
+          ],
+        },
+        {
+          tool: 'codex' as const,
+          plan: 'Plus',
+          account: 'dev@example.com',
+          updatedLabel: 'updated 2 min ago',
+          windows: [
+            {
+              id: 'session',
+              label: 'Session',
+              usedPercent: 22,
+              pacePercent: 25,
+              resetLabel: 'resets in 2h',
+              paceLabel: 'on pace',
+            },
+          ],
+        },
         { tool: 'opencode' as const, windows: [] },
-        { tool: 'agy' as const, windows: [{ id: 'week', label: 'Weekly', usedPercent: 18, pacePercent: 20, resetLabel: 'resets in 5d', paceLabel: 'on pace' }] },
-        { tool: 'grok' as const, windows: [{ id: 'week', label: 'Weekly', usedPercent: 42, pacePercent: 35, resetLabel: 'resets in 4d', paceLabel: 'on pace' }] },
+        {
+          tool: 'agy' as const,
+          windows: [
+            {
+              id: 'week',
+              label: 'Weekly',
+              usedPercent: 18,
+              pacePercent: 20,
+              resetLabel: 'resets in 5d',
+              paceLabel: 'on pace',
+            },
+          ],
+        },
+        {
+          tool: 'grok' as const,
+          windows: [
+            {
+              id: 'week',
+              label: 'Weekly',
+              usedPercent: 42,
+              pacePercent: 35,
+              resetLabel: 'resets in 4d',
+              paceLabel: 'on pace',
+            },
+          ],
+        },
       ]
     },
   }
