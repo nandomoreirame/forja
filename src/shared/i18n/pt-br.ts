@@ -14,6 +14,7 @@ export const ptBr = {
       title: 'Resumo da conversa',
       empty: 'ainda não há',
       summarizeNow: 'Resumir agora',
+      by: 'por {name}',
       close: 'Fechar resumo',
       explain:
         'Quando passar de {limit} mensagens, o que sair da janela vira um resumo aqui, e os agentes recebem o resumo mais as mensagens recentes.',

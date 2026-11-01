@@ -14,6 +14,7 @@ export const en = {
       title: 'Conversation summary',
       empty: 'none yet',
       summarizeNow: 'Summarize now',
+      by: 'by {name}',
       close: 'Close summary',
       explain:
         'Past {limit} messages, what leaves the window becomes a summary here, and agents receive the summary plus the recent messages.',

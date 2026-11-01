@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
-import { X } from 'lucide-react'
+import { Hammer, X } from 'lucide-react'
+import { agentName, useWorkbench } from '@/renderer/src/entities/feature'
 import { Button } from '@/shared/ui'
 import { formatMessageTime, getDictionary, type Locale } from '@/shared/i18n'
 
@@ -20,6 +21,8 @@ export function ConversationSummary({
   onClose: () => void
 }) {
   const s = getDictionary(locale).app.summary
+  const names = useWorkbench((state) => state.agentNames)
+  const author = agentName('smith', locale, names)
   const heading = useId()
   const [busy, setBusy] = useState(false)
   const context =
@@ -39,6 +42,13 @@ export function ConversationSummary({
           {summary
             ? s.updated.replace('{time}', formatMessageTime(summary.createdAt, locale))
             : s.empty}
+        </span>
+        <span
+          className="inline-flex items-center gap-1 text-muted-foreground"
+          title={`${author}, ${getDictionary(locale).product.smith}`}
+        >
+          <Hammer aria-hidden="true" className="size-3.5" />
+          {s.by.replace('{name}', author)}
         </span>
         <Button
           variant="outline"
