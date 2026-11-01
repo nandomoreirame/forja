@@ -20,7 +20,7 @@ it('selects Planner in the composer, sends a feature and closes back to Research
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
   fireEvent.click(screen.getByRole('option', { name: 'Planner' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Planner')
-  expect(screen.queryByRole('tablist')).toBeNull()
+  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['New conversation'])
   expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
   fireEvent.change(field, { target: { value: '   ' } })
   expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
@@ -33,13 +33,14 @@ it('selects Planner in the composer, sends a feature and closes back to Research
   expect(screen.getByRole('list', { name: 'Conversation' })).toHaveTextContent(
     'Rate limit public endpoints',
   )
+  // The new feature replaced the New conversation tab.
+  expect(screen.queryByRole('tab', { name: /New conversation/ })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Close Rate limit public endpoints' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Close feature' }))
   await waitFor(() =>
     expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveFocus(),
   )
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
-  expect(screen.queryByRole('tablist')).toBeNull()
+  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['New conversation'])
 })
 it('preselects Research from New spec and permits changing the recipient', async () => {
   render(

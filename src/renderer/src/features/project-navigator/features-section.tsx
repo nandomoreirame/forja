@@ -1,38 +1,21 @@
 import { NavigatorSection, ArchiveAction, PaneAction, PaneRow, rowButton } from './section'
-import {
-  Search,
-  ClipboardList,
-  Code,
-  FlaskConical,
-  GitPullRequest,
-  ChevronLeft,
-  Plus,
-} from 'lucide-react'
+import { ChevronLeft, Plus } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
-import { StatusBadge, type UiState } from '@/shared/ui'
+import { StatusBadge, ToolIcon, toolNames, type UiState } from '@/shared/ui'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { FeatureSnapshot } from '@/renderer/src/shared/api'
 import { cn } from '@/shared/ui/utils'
 import { groupFeatures } from './model'
 
-const icons = {
-  research: Search,
-  planner: ClipboardList,
-  implementer: Code,
-  tester: FlaskConical,
-  reviewer: GitPullRequest,
-}
-
 export function FeaturesSection({ locale }: { locale: Locale }) {
   const state = useWorkbench((s) => s)
-  const d = getDictionary(locale)
-  const a = d.app
+  const a = getDictionary(locale).app
   const copy = a.featureNavigator
   const groups = groupFeatures(state.snapshot!.features)
   const active = [...groups.attention, ...groups.running, ...groups.idle]
   const row = (feature: FeatureSnapshot) => {
-    const Icon = icons[feature.stage]
-    const role = d.product[feature.stage]
+    // The AI tool of the agent working on the feature now, as configured in Settings.
+    const tool = state.agentTools[feature.stage] ?? feature.tool
     const badgeState: UiState = feature.endState
       ? feature.endState === 'integrated'
         ? 'completed'
@@ -56,10 +39,7 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
         current={current}
         hover={
           <>
-            <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
-              <Icon aria-hidden="true" className="size-3.5 shrink-0" />
-              {role}
-            </span>
+            <ToolIcon tool={tool} />
             <StatusBadge size="sm" state={badgeState}>
               {label}
             </StatusBadge>
@@ -74,7 +54,7 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
       >
         <button
           type="button"
-          aria-label={`${feature.name} · ${role} · ${label}`}
+          aria-label={`${feature.name} · ${toolNames[tool]} · ${label}`}
           aria-current={current ? 'true' : undefined}
           className={cn(rowButton, 'pl-5 text-foreground')}
           onClick={() => state.openFeature(feature.id)}

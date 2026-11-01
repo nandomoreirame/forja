@@ -19,7 +19,8 @@ import { cn } from '@/shared/ui/utils'
 export interface FeatureTabItem {
   id: string
   label: string
-  state: 'running' | 'waiting' | 'idle'
+  /** Agent state of a feature tab; pages and documents have none. */
+  state?: 'running' | 'waiting' | 'idle'
   tool?: ToolId
   closable?: boolean
   icon?: ReactNode
@@ -34,10 +35,10 @@ export interface FeatureTabsProps {
   closeLabel?: string
   panelId?: string
   label?: string
-  stateLabels?: Record<FeatureTabItem['state'], string>
+  stateLabels?: Record<NonNullable<FeatureTabItem['state']>, string>
 }
 
-const defaultStateLabels: Record<FeatureTabItem['state'], string> = {
+const defaultStateLabels: Record<NonNullable<FeatureTabItem['state']>, string> = {
   running: 'Running',
   waiting: 'Waiting',
   idle: 'Idle',
@@ -100,7 +101,7 @@ export function FeatureTabs({
                 >
                   {item.icon}
                   {item.tool ? <ToolIcon tool={item.tool} /> : null}
-                  {item.badge ? null : (
+                  {item.badge || !item.state ? null : (
                     <span
                       aria-hidden="true"
                       data-slot="feature-tab-status"
@@ -114,7 +115,10 @@ export function FeatureTabs({
                     />
                   )}
                   {item.label}
-                  {item.badge ?? <span className="sr-only">, {stateLabels[item.state]}</span>}
+                  {item.badge ??
+                    (item.state ? (
+                      <span className="sr-only">, {stateLabels[item.state]}</span>
+                    ) : null)}
                 </TabsTrigger>
               </div>
             ))}

@@ -28,6 +28,7 @@ import {
 import { getDictionary } from '@/shared/i18n'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ProjectSidebar } from '@/renderer/src/widgets/project-sidebar'
+import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 import { GitContext } from '@/renderer/src/widgets/git-context'
 import { GitStatus } from '@/renderer/src/widgets/git-status'
 import { ProjectSwitcher } from '@/renderer/src/widgets/project-switcher'
@@ -186,23 +187,26 @@ function WorkbenchShell() {
                       <div
                         data-slot="workbench-part"
                         data-part="editor"
-                        className="flex h-full min-h-0 flex-col overflow-auto rounded-part border border-border"
+                        className="flex h-full min-h-0 flex-col overflow-hidden rounded-part border border-border"
                       >
-                        {s.view.kind === 'archived' ? (
-                          <ArchivedPage />
-                        ) : s.view.kind === 'authoring' ? (
-                          <AuthoringPage />
-                        ) : s.view.kind === 'home' ? (
-                          <HomePage />
-                        ) : s.view.kind === 'compose' ? (
-                          <ComposePage />
-                        ) : s.view.kind === 'conversation' ? (
-                          <ConversationPage />
-                        ) : s.view.kind === 'document' ? (
-                          <DocumentPage />
-                        ) : s.view.kind === 'settings' ? (
-                          <SettingsPage />
-                        ) : null}
+                        {s.snapshot ? <WorkbenchTabs /> : null}
+                        <div className="flex min-h-0 flex-1 flex-col overflow-auto">
+                          {s.view.kind === 'archived' ? (
+                            <ArchivedPage />
+                          ) : s.view.kind === 'authoring' ? (
+                            <AuthoringPage />
+                          ) : s.view.kind === 'home' ? (
+                            <HomePage />
+                          ) : s.view.kind === 'compose' ? (
+                            <ComposePage />
+                          ) : s.view.kind === 'conversation' ? (
+                            <ConversationPage />
+                          ) : s.view.kind === 'document' ? (
+                            <DocumentPage />
+                          ) : s.view.kind === 'settings' ? (
+                            <SettingsPage />
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </ResizablePanel>

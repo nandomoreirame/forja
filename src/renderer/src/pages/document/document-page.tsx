@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Button, Textarea, StatusBadge } from '@/shared/ui'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 import { DocumentPreview, MarkdownPreview } from '@/widgets/documents'
 import { getDictionary } from '@/shared/i18n'
 import { DocumentSelection } from '@/renderer/src/features/document-reader'
@@ -22,7 +21,6 @@ export function DocumentPage() {
   if (library)
     return (
       <section className="flex min-h-0 flex-1 flex-col">
-        <WorkbenchTabs />
         <div
           role="tabpanel"
           id={`document-panel-${library.id}`}
@@ -69,7 +67,6 @@ export function DocumentPage() {
   )
   return (
     <section className="flex min-h-0 flex-1 flex-col">
-      <WorkbenchTabs />
       <div
         role="tabpanel"
         id={`document-panel-${artifact.id}`}
@@ -126,7 +123,6 @@ export function AuthoringPage() {
   const recipient = conversation.kind === 'skill' ? a.skillAuthor : a.memoryCurator
   return (
     <section className="flex min-h-0 flex-1 flex-col">
-      <WorkbenchTabs />
       <div className="flex w-full flex-1 flex-col gap-4 overflow-auto p-6">
         <header>
           <h1 className="text-lg font-semibold">{recipient}</h1>

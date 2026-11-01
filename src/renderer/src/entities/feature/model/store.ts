@@ -87,6 +87,13 @@ export interface WorkbenchState {
   /** Switches the UI language for this session and remembers it for the next launch. */
   setLocale(locale: Locale): void
   closeSettings(): void
+  /** Pages other than features and documents open as tabs too, like Settings. */
+  archivedOpen: boolean
+  openArchived(): void
+  closeArchived(): void
+  composeOpen: boolean
+  closeCompose(): void
+  closeAuthoring(): void
   createFeatureFromPrompt(prompt: string, role: RoleId): string
   openFeature(id: string): void
   selectFeature(id: string): void
@@ -146,6 +153,39 @@ export function createWorkbenchStore(source: WorkbenchSource) {
   let failedOperation:
     { kind: 'projects' } | { kind: 'project'; id: string } | { kind: 'directory' } | null = null
   return createStore<WorkbenchState>((set, get) => {
+    // Visiting a page view (also through history) keeps its tab open.
+    const pageFlags = (view: View): Partial<WorkbenchState> =>
+      view.kind === 'archived'
+        ? { archivedOpen: true }
+        : view.kind === 'compose'
+          ? { composeOpen: true }
+          : view.kind === 'settings'
+            ? { settingsOpen: true }
+            : {}
+    // Drops a page's entries from history and, when it is showing, moves to the previous view.
+    const leavePage = (kind: 'settings' | 'archived' | 'compose' | 'authoring') => {
+      const state = get()
+      const history: View[] = []
+      let historyIndex = -1
+      state.history.forEach((entry, index) => {
+        if (entry.kind === kind) return
+        history.push(entry)
+        if (index <= state.historyIndex) historyIndex = history.length - 1
+      })
+      let view = state.view
+      if (view.kind === kind) {
+        view =
+          history[historyIndex] ??
+          (state.openFeatureIds.length
+            ? { kind: 'conversation', featureId: state.openFeatureIds[0] }
+            : { kind: 'home' })
+        if (historyIndex < 0) {
+          history.push(view)
+          historyIndex = history.length - 1
+        }
+      }
+      return { view, history, historyIndex }
+    }
     const scopeOf = (id: string) => {
       const snapshot = get().snapshot
       if (!snapshot) return undefined
@@ -430,6 +470,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       },
       openFeatureIds: [],
       settingsOpen: false,
+      archivedOpen: false,
+      composeOpen: false,
       lastSettings: {},
       drafts: {},
       setDraft(id, text) {
@@ -462,7 +504,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       startCompose(role = 'research') {
         if (!get().snapshot) return
         get().navigate({ kind: 'compose', role })
-        set((state) => ({ composeActivation: state.composeActivation + 1 }))
+        set((state) => ({ composeOpen: true, composeActivation: state.composeActivation + 1 }))
       },
       setLocale(locale) {
         if (get().source.locale === locale) return
@@ -476,28 +518,25 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         get().navigate({ kind: 'settings', ...next })
       },
       closeSettings() {
-        const state = get()
-        if (!state.settingsOpen) return
-        const history: View[] = []
-        let historyIndex = -1
-        state.history.forEach((entry, index) => {
-          if (entry.kind === 'settings') return
-          history.push(entry)
-          if (index <= state.historyIndex) historyIndex = history.length - 1
-        })
-        let view = state.view
-        if (view.kind === 'settings') {
-          view =
-            history[historyIndex] ??
-            (state.openFeatureIds.length
-              ? { kind: 'conversation', featureId: state.openFeatureIds[0] }
-              : { kind: 'home' })
-          if (historyIndex < 0) {
-            history.push(view)
-            historyIndex = history.length - 1
-          }
-        }
-        set({ settingsOpen: false, view, history, historyIndex })
+        if (!get().settingsOpen) return
+        set({ settingsOpen: false, ...leavePage('settings') })
+      },
+      openArchived() {
+        set({ archivedOpen: true })
+        get().navigate({ kind: 'archived' })
+      },
+      closeArchived() {
+        if (!get().archivedOpen) return
+        set({ archivedOpen: false, ...leavePage('archived') })
+      },
+      closeCompose() {
+        if (!get().composeOpen) return
+        set({ composeOpen: false, ...leavePage('compose') })
+      },
+      closeAuthoring() {
+        if (!get().authoring) return
+        authoringCancel?.()
+        set({ authoring: null, ...leavePage('authoring') })
       },
       createFeatureFromPrompt(prompt, role) {
         const snapshot = get().snapshot
@@ -528,6 +567,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           openFeatureIds: [...state.openFeatureIds, id],
           recipients: { ...state.recipients, [id]: role },
         }))
+        // The new feature takes the place of the New conversation tab.
+        if (get().composeOpen) set({ composeOpen: false, ...leavePage('compose') })
         get().navigate({ kind: 'conversation', featureId: id })
         get().sendMessage(id, prompt)
         return id
@@ -697,8 +738,9 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         get().sendMessage(id, prompt)
       },
       closeFeature(id) {
+        // Closing only hides the tab: a running agent keeps going in the background and the
+        // sidebar shows its state.
         if (!get().openFeatureIds.includes(id)) return
-        get().interrupt(id)
         const state = get()
         const openFeatureIds = state.openFeatureIds.filter((item) => item !== id)
         const view: View =
@@ -725,7 +767,13 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           if (JSON.stringify(history.at(-1)) !== JSON.stringify(view)) history.push(view)
           historyIndex = history.length - 1
         }
-        set({ openFeatureIds, view, history, historyIndex })
+        set({
+          openFeatureIds,
+          view,
+          history,
+          historyIndex,
+          composeOpen: state.composeOpen || view.kind === 'compose',
+        })
       },
       projects: [],
       snapshot: null,
@@ -818,17 +866,25 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         const state = get()
         if (JSON.stringify(state.view) === JSON.stringify(view)) return
         const history = [...state.history.slice(0, state.historyIndex + 1), view]
-        set({ view, history, historyIndex: history.length - 1 })
+        set({ view, history, historyIndex: history.length - 1, ...pageFlags(view) })
       },
       back() {
         const { history, historyIndex } = get()
         if (historyIndex > 0)
-          set({ view: history[historyIndex - 1], historyIndex: historyIndex - 1 })
+          set({
+            view: history[historyIndex - 1],
+            historyIndex: historyIndex - 1,
+            ...pageFlags(history[historyIndex - 1]),
+          })
       },
       forward() {
         const { history, historyIndex } = get()
         if (historyIndex < history.length - 1)
-          set({ view: history[historyIndex + 1], historyIndex: historyIndex + 1 })
+          set({
+            view: history[historyIndex + 1],
+            historyIndex: historyIndex + 1,
+            ...pageFlags(history[historyIndex + 1]),
+          })
       },
       togglePanel(panel) {
         set((state) => ({ panels: { ...state.panels, [panel]: !state.panels[panel] } }))

@@ -6,7 +6,7 @@ import { createMockSource } from '../../src/renderer/src/shared/api'
 import { createWorkbenchStore } from '../../src/renderer/src/entities/feature'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
 
-it('confirms closing a running feature and ends on the centered composer', async () => {
+it('closes a running feature without asking and ends on the New conversation tab', async () => {
   const source = createMockSource({ locale: 'en' })
   const loadProject = source.loadProject
   source.loadProject = async (id) => {
@@ -20,22 +20,9 @@ it('confirms closing a running feature and ends on the centered composer', async
     'true',
   )
   fireEvent.click(screen.getByRole('button', { name: 'Close Login with OAuth' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Close feature' }))
-  expect(screen.queryByRole('tablist')).toBeNull()
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
-})
-
-it('keeps a running feature open when cancelled, including with Escape', async () => {
-  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Close Login with OAuth' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Keep open' }))
-  expect(screen.getByRole('tab', { name: /Login with OAuth/ })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
-  fireEvent.click(screen.getByRole('button', { name: 'Close Login with OAuth' }))
-  fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' })
   expect(screen.queryByRole('dialog')).toBeNull()
+  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['New conversation'])
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
 })
 
 it('selects the right neighbor, otherwise the left, preserving feature history', async () => {
@@ -67,15 +54,13 @@ it('shows localized seeded history, a handoff and the selected feature context',
   expect(screen.queryByText('feature/login-oauth')).toBeNull()
 })
 
-it('localizes confirmation and handoffs in Portuguese', async () => {
+it('localizes tab closing and handoffs in Portuguese', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'pt-br' })} initialProjectId="dev" />)
   expect(await screen.findByRole('button', { name: 'Ver solicitação' })).toBeVisible()
-  fireEvent.click(screen.getByRole('button', { name: 'Fechar Login com OAuth' }))
-  expect(screen.getByRole('button', { name: 'Manter aberta' })).toBeVisible()
-  expect(screen.getByRole('button', { name: 'Fechar feature' })).toBeVisible()
+  expect(screen.getByRole('button', { name: 'Fechar Login com OAuth' })).toBeInTheDocument()
 })
 
-it('interrupts a streamed reply on confirmed close and preserves its partial history', async () => {
+it('keeps streaming a reply in the background after its tab closes', async () => {
   vi.useFakeTimers()
   try {
     const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
@@ -83,10 +68,14 @@ it('interrupts a streamed reply on confirmed close and preserves its partial his
     store.getState().sendMessage('feature-1', 'Hello')
     vi.advanceTimersByTime(200)
     store.getState().closeFeature('feature-1')
-    const feature = store.getState().snapshot!.features[0]
-    expect(feature.messages.at(-1)?.status).toBe('interrupted')
+    expect(store.getState().openFeatureIds).not.toContain('feature-1')
+    const partial = store.getState().snapshot!.features[0]
+    expect(partial.state).toBe('running')
+    expect(partial.messages.at(-1)?.status).not.toBe('interrupted')
     vi.runAllTimers()
-    expect(store.getState().snapshot!.features[0]).toEqual(feature)
+    const done = store.getState().snapshot!.features[0]
+    expect(done.messages.at(-1)!.text.length).toBeGreaterThan(partial.messages.at(-1)!.text.length)
+    expect(done.messages.at(-1)?.status).not.toBe('interrupted')
   } finally {
     vi.useRealTimers()
   }

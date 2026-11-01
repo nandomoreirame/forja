@@ -1,22 +1,23 @@
-import { useState } from 'react'
-import { FileText } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Archive, BookOpen, FileText, MessageSquarePlus, Settings } from 'lucide-react'
 import { StatusBadge } from '@/shared/ui'
-import { CloseFeatureDialog } from '@/renderer/src/features/feature-tabs'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import { getDictionary } from '@/shared/i18n'
 import { FeatureTabs, type FeatureTabItem } from '@/widgets/workbench'
 
 /**
- * Tab strip shared by every view that can host feature tabs.
+ * Tab strip above every page of the editor area.
  *
- * The Settings tab lives in the store (`settingsOpen`) instead of the page that
- * renders it, so navigating to a feature keeps it open. Only its own close
- * button removes it.
+ * Features and documents are tabs, and so is every other page (Settings, Archived, New
+ * conversation, skill or memory authoring). Page tabs live in the store instead of the page
+ * that renders them, so navigating elsewhere keeps them open; only their close button removes
+ * them. Closing a feature tab never stops its agent.
  */
+type PageId = 'settings' | 'archived' | 'compose' | 'authoring'
+
 export function WorkbenchTabs() {
   const state = useWorkbench((s) => s)
   const a = getDictionary(state.source.locale).app
-  const [closingId, setClosingId] = useState<string | null>(null)
   const items: FeatureTabItem[] = (state.snapshot?.features ?? [])
     .filter((feature) => state.openFeatureIds.includes(feature.id))
     .map((feature) => ({
@@ -33,14 +34,12 @@ export function WorkbenchTabs() {
       items.push({
         id,
         label: library.name,
-        state: 'idle',
         icon: <FileText aria-hidden="true" className="size-3" />,
       })
     if (artifact)
       items.push({
         id,
         label: artifact.name,
-        state: 'idle',
         icon: <FileText aria-hidden="true" className="size-3" />,
         badge: (
           <StatusBadge size="sm" state={artifact.state}>
@@ -49,60 +48,76 @@ export function WorkbenchTabs() {
         ),
       })
   }
-  if (state.settingsOpen) items.push({ id: 'settings', label: a.settings, state: 'idle' })
+  const icon = 'size-3'
+  const pages: { id: PageId; label: string; open: boolean; icon: ReactNode }[] = [
+    {
+      id: 'settings',
+      label: a.settings,
+      open: state.settingsOpen,
+      icon: <Settings aria-hidden="true" className={icon} />,
+    },
+    {
+      id: 'archived',
+      label: a.archived,
+      open: state.archivedOpen,
+      icon: <Archive aria-hidden="true" className={icon} />,
+    },
+    {
+      id: 'compose',
+      label: a.newConversation,
+      open: state.composeOpen,
+      icon: <MessageSquarePlus aria-hidden="true" className={icon} />,
+    },
+    {
+      id: 'authoring',
+      icon: <BookOpen aria-hidden="true" className={icon} />,
+      label:
+        state.authoring?.name ?? (state.authoring?.kind === 'memory' ? a.newMemory : a.newSkill),
+      open: state.authoring !== null,
+    },
+  ]
+  for (const page of pages)
+    if (page.open) items.push({ id: page.id, label: page.label, icon: page.icon })
+  if (!items.length) return null
+  const isPage = (id: string): id is PageId => pages.some((page) => page.id === id)
   const selectedId =
-    state.view.kind === 'settings'
-      ? 'settings'
-      : state.view.kind === 'conversation'
-        ? state.view.featureId
-        : state.view.kind === 'document'
-          ? state.view.documentId
+    state.view.kind === 'conversation'
+      ? state.view.featureId
+      : state.view.kind === 'document'
+        ? state.view.documentId
+        : isPage(state.view.kind)
+          ? state.view.kind
           : ''
   return (
-    <>
-      <FeatureTabs
-        selectedId={selectedId}
-        panelId={
-          state.view.kind === 'conversation'
-            ? `feature-panel-${state.view.featureId}`
-            : state.view.kind === 'document'
-              ? `document-panel-${state.view.documentId}`
-              : undefined
-        }
-        items={items}
-        onSelect={(id) => {
-          if (state.openDocumentIds.includes(id)) void state.openDocument(id)
-          else if (id === 'settings') state.openSettings()
-          else state.selectFeature(id)
-        }}
-        onClose={(id) => {
-          if (state.openDocumentIds.includes(id)) {
-            state.closeDocument(id)
-            return
-          }
-          if (id === 'settings') {
-            state.closeSettings()
-            return
-          }
-          if (state.snapshot?.features.find((feature) => feature.id === id)?.state === 'running')
-            setClosingId(id)
-          else state.closeFeature(id)
-        }}
-        closeLabel={a.close}
-        label={a.features}
-        stateLabels={{ running: a.states.running, waiting: a.states.waiting, idle: a.idle }}
-      />
-      <CloseFeatureDialog
-        open={closingId !== null}
-        locale={state.source.locale}
-        onOpenChange={(open) => {
-          if (!open) setClosingId(null)
-        }}
-        onConfirm={() => {
-          if (closingId) state.closeFeature(closingId)
-          setClosingId(null)
-        }}
-      />
-    </>
+    <FeatureTabs
+      selectedId={selectedId}
+      panelId={
+        state.view.kind === 'conversation'
+          ? `feature-panel-${state.view.featureId}`
+          : state.view.kind === 'document'
+            ? `document-panel-${state.view.documentId}`
+            : undefined
+      }
+      items={items}
+      onSelect={(id) => {
+        if (state.openDocumentIds.includes(id)) void state.openDocument(id)
+        else if (id === 'settings') state.openSettings()
+        else if (id === 'archived') state.openArchived()
+        else if (id === 'compose') state.startCompose()
+        else if (id === 'authoring') state.navigate({ kind: 'authoring' })
+        else state.selectFeature(id)
+      }}
+      onClose={(id) => {
+        if (state.openDocumentIds.includes(id)) state.closeDocument(id)
+        else if (id === 'settings') state.closeSettings()
+        else if (id === 'archived') state.closeArchived()
+        else if (id === 'compose') state.closeCompose()
+        else if (id === 'authoring') state.closeAuthoring()
+        else state.closeFeature(id)
+      }}
+      closeLabel={a.close}
+      label={a.features}
+      stateLabels={{ running: a.states.running, waiting: a.states.waiting, idle: a.idle }}
+    />
   )
 }

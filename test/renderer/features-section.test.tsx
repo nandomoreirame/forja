@@ -24,7 +24,6 @@ it('lists every feature by attention, reopens a closed tab and drops the Agents 
   fireEvent.click(within(features).getByRole('button', { name: /^(?!Archive )Login with OAuth/ }))
   const history = screen.getByRole('list', { name: 'Conversation' }).textContent
   fireEvent.click(screen.getByRole('button', { name: 'Close Login with OAuth' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Close feature' }))
   fireEvent.click(within(features).getByRole('button', { name: /^(?!Archive )Login with OAuth/ }))
   expect(screen.getByRole('list', { name: 'Conversation' }).textContent).toBe(history)
 })

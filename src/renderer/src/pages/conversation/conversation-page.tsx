@@ -7,7 +7,6 @@ import { FeatureContext, FeatureCycle } from '@/widgets/workbench'
 import { getDictionary } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import { ComposerController } from '@/renderer/src/features/composer'
-import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 export function ConversationPage() {
   const state = useWorkbench((s) => s)
   const [summaryFor, setSummaryFor] = useState<string | null>(null)
@@ -33,7 +32,6 @@ export function ConversationPage() {
   }))
   return (
     <section className="flex min-h-0 flex-1 flex-col">
-      <WorkbenchTabs />
       <div
         role="tabpanel"
         id={`feature-panel-${feature.id}`}

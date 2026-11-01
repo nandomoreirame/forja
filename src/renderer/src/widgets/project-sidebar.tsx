@@ -74,7 +74,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
           <WorkspaceButton
             icon={<Archive />}
             label={a.archived}
-            onClick={() => state.navigate({ kind: 'archived' })}
+            onClick={() => state.openArchived()}
           />
           <WorkspaceButton
             icon={<Plug />}

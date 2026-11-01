@@ -15,16 +15,10 @@ test('starts a focused conversation, creates a feature and closes its last tab',
   await page.keyboard.press('Control+Enter')
   await expect(page.getByRole('tab', { name: /Add OAuth login/ })).toBeVisible()
   await expect(page.getByRole('list', { name: 'Conversation' })).toContainText('Add OAuth login')
-  // The confirmation only appears while the mock reply is still running, which depends on load.
-  const confirm = page
-    .getByRole('dialog', { name: 'Close feature' })
-    .getByRole('button', { name: 'Close feature' })
+  // Closing never asks: a running agent keeps going in the background.
   await page.getByRole('button', { name: 'Close Add OAuth login' }).click()
-  await confirm.waitFor({ timeout: 1_000 }).then(
-    () => confirm.click(),
-    () => undefined,
-  )
-  await expect(page.getByRole('tablist')).toHaveCount(0)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('tab')).toHaveText(['New conversation'])
   await expect(page.getByRole('textbox')).toBeFocused()
 })
 test('opens a focused Research composer from the command bar', async ({ page }) => {

@@ -34,7 +34,6 @@ import {
   type SettingsSnapshot,
   type SettingsTab,
 } from '@/renderer/src/shared/api'
-import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 
 const catalogSkills = ['rpi-implement', 'git', 'git-flow']
 
@@ -159,7 +158,6 @@ export function SettingsPage() {
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-auto">
-      <WorkbenchTabs />
       <div className="mx-auto w-full max-w-4xl flex-1 space-y-5 p-6">
         <header>
           <h1 className="text-lg font-semibold">{a.settingsTitle}</h1>
