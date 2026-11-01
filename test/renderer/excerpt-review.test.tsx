@@ -69,7 +69,7 @@ it('responds to keyboard selection changes and hides on Escape, collapse and out
   const source = createMockSource({ locale: 'en' })
   source.readArtifact = async () => 'Keyboard excerpt'
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
-  fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/SPEC.md/ }))
+  fireEvent.click(await screen.findByRole('button', { name: /^login-oauth\/SPEC.md/ }))
   const paragraph = await screen.findByText('Keyboard excerpt')
   fireEvent.keyDown(paragraph, { key: 'ArrowRight', shiftKey: true })
   selectText(paragraph)
@@ -88,7 +88,7 @@ it('keeps the popover hidden on scroll or resize after Escape or a review', asyn
   const source = createMockSource({ locale: 'en' })
   source.readArtifact = async () => 'Scrolling excerpt'
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
-  fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/SPEC.md/ }))
+  fireEvent.click(await screen.findByRole('button', { name: /^login-oauth\/SPEC.md/ }))
   const paragraph = await screen.findByText('Scrolling excerpt')
   selectText(paragraph)
   fireEvent.keyDown(document, { key: 'Escape' })
@@ -136,7 +136,7 @@ it.each(['missing', 'archived'])(
     }
     source.readArtifact = async () => 'Unlinked excerpt'
     render(<WorkbenchPage source={source} initialProjectId="dev" />)
-    fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/SPEC.md/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^login-oauth\/SPEC.md/ }))
     selectText(await screen.findByText('Unlinked excerpt'))
     expect(screen.queryByRole('button', { name: 'Review with agent' })).toBeNull()
   },

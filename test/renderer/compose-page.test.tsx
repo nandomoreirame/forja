@@ -2,16 +2,18 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
-it('focuses Planner from Add plan, sends a feature and closes back to Research', async () => {
+it('selects Planner in the composer, sends a feature and closes back to Research', async () => {
   render(
     <WorkbenchPage
       source={createMockSource({ locale: 'en' })}
       initialProjectId="nandomoreira.dev"
     />,
   )
-  fireEvent.click(await screen.findByRole('button', { name: '+ Add plan' }))
+  fireEvent.click(await screen.findByRole('button', { name: '+ New conversation' }))
   const field = screen.getByRole('textbox', { name: /Send your prompt/ })
   expect(field).toHaveFocus()
+  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
+  fireEvent.click(screen.getByRole('option', { name: 'Planner' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Planner')
   expect(screen.queryByRole('tablist')).toBeNull()
   expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
@@ -34,7 +36,7 @@ it('focuses Planner from Add plan, sends a feature and closes back to Research',
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
   expect(screen.queryByRole('tablist')).toBeNull()
 })
-it('preselects Research from Add spec and permits changing the recipient', async () => {
+it('preselects Research from New spec and permits changing the recipient', async () => {
   render(
     <WorkbenchPage
       source={createMockSource({ locale: 'en' })}
@@ -45,7 +47,7 @@ it('preselects Research from Add spec and permits changing the recipient', async
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
   fireEvent.click(screen.getByRole('option', { name: 'Tester' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Tester')
-  fireEvent.click(screen.getByRole('button', { name: '+ Add spec' }))
+  fireEvent.click(screen.getByRole('button', { name: '+ New spec' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
   fireEvent.click(screen.getByRole('option', { name: 'Reviewer' }))
@@ -63,7 +65,7 @@ it('reactivates the requested agent and focus without losing the draft', async (
       initialProjectId="nandomoreira.dev"
     />,
   )
-  const add = await screen.findByRole('button', { name: '+ Add spec' })
+  const add = await screen.findByRole('button', { name: '+ New spec' })
   fireEvent.click(add)
   const field = screen.getByRole('textbox')
   fireEvent.change(field, { target: { value: 'Keep draft' } })

@@ -57,6 +57,8 @@ export const en = {
     plans: 'Plans',
     skills: 'Skills',
     editAgents: '+ Edit agents',
+    reviews: 'Reviews',
+    newSpec: '+ New spec',
     addSpec: '+ Add spec',
     addPlan: '+ Add plan',
     addSkill: '+ Add skill',

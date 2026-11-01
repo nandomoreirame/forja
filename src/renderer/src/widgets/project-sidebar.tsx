@@ -1,10 +1,14 @@
 import { ClipboardList, Brain, Plug, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
-import { StatusBadge, type UiState } from '@/shared/ui'
 import { SidebarRow } from '@/widgets/workbench'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-import { FeaturesSection } from '@/renderer/src/features/project-navigator'
+import {
+  FeaturesSection,
+  SpecsSection,
+  PlansSection,
+  ReviewsSection,
+} from '@/renderer/src/features/project-navigator'
 export function ProjectSidebar({ locale }: { locale: Locale }) {
   const state = useWorkbench((s) => s)
   const snapshot = state.snapshot!
@@ -22,73 +26,37 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       >
         <div className="flex min-h-0 flex-1 flex-col gap-3">
           <FeaturesSection locale={locale} />
-          {(['spec', 'plan', 'review', 'skill'] as const).map((kind) => {
-            const items: { id: string; name: string; state?: UiState }[] =
-              kind === 'skill' ? snapshot.skills : snapshot.artifacts.filter((x) => x.kind === kind)
-            return (
-              <section
-                key={kind}
-                className="mx-3 flex min-h-0 shrink flex-col border-t border-border pt-3"
-              >
-                <h2 className="flex justify-between pb-1 text-[11px] uppercase tracking-wider">
-                  <span>
-                    {kind === 'spec'
-                      ? a.specs
-                      : kind === 'plan'
-                        ? a.plans
-                        : kind === 'review'
-                          ? locale === 'en'
-                            ? 'Reviews'
-                            : 'Revisões'
-                          : a.skills}
-                  </span>
-                  <span>{items.length}</span>
-                </h2>
-                <div
-                  data-testid="section-scroll"
-                  className={`max-h-[16.5rem] shrink overflow-y-auto ${items.length ? 'min-h-16' : 'min-h-0'}`}
+          <SpecsSection locale={locale} />
+          <PlansSection locale={locale} />
+          <ReviewsSection locale={locale} />
+          <section className="mx-3 flex min-h-0 shrink flex-col border-t border-border pt-3">
+            <h2 className="flex justify-between pb-1 text-[11px] uppercase tracking-wider">
+              <span>{a.skills}</span>
+              <span>{snapshot.skills.length}</span>
+            </h2>
+            <div
+              data-testid="section-scroll"
+              className={`max-h-[16.5rem] shrink overflow-y-auto ${snapshot.skills.length ? 'min-h-16' : 'min-h-0'}`}
+            >
+              {snapshot.skills.map((item) => (
+                <button
+                  type="button"
+                  key={item.id}
+                  className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring"
+                  onClick={() => state.openSettings({ tab: 'agents' })}
                 >
-                  {items.map((item) => (
-                    <button
-                      type="button"
-                      key={item.id}
-                      className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring"
-                      onClick={() =>
-                        kind === 'skill'
-                          ? state.openSettings({ tab: 'agents' })
-                          : void state.openDocument(item.id)
-                      }
-                    >
-                      <SidebarRow
-                        icon={<ClipboardList />}
-                        title={item.name}
-                        stateLabel={
-                          item.state ? (
-                            <StatusBadge size="sm" state={item.state}>
-                              {a.states[item.state]}
-                            </StatusBadge>
-                          ) : undefined
-                        }
-                      />
-                    </button>
-                  ))}
-                </div>
-                {kind !== 'review' && (
-                  <button
-                    type="button"
-                    className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full py-1 text-left text-muted-foreground hover:text-primary"
-                    onClick={() =>
-                      kind === 'skill'
-                        ? state.openSettings({ tab: 'agents' })
-                        : state.startCompose(kind === 'plan' ? 'planner' : 'research')
-                    }
-                  >
-                    {kind === 'spec' ? a.addSpec : kind === 'plan' ? a.addPlan : a.addSkill}
-                  </button>
-                )}
-              </section>
-            )
-          })}
+                  <SidebarRow icon={<ClipboardList />} title={item.name} />
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full py-1 text-left text-muted-foreground hover:text-primary"
+              onClick={() => state.openSettings({ tab: 'agents' })}
+            >
+              {a.addSkill}
+            </button>
+          </section>
         </div>
       </div>
       <nav

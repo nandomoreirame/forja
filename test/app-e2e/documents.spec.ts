@@ -7,8 +7,8 @@ test('a real sidebar spec opens as a slug-titled tab with rendered Markdown', as
   await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /^dev/ }).click()
   const sidebar = page.getByRole('complementary', { name: 'dev' })
-  await expect(sidebar.getByRole('button', { name: /login-oauth\/SPEC.md/ })).toHaveCount(0)
-  await sidebar.getByRole('button', { name: /document-viewer-screen\/SPEC.md/ }).click()
+  await expect(sidebar.getByRole('button', { name: /^login-oauth\/SPEC.md/ })).toHaveCount(0)
+  await sidebar.getByRole('button', { name: /^document-viewer-screen\/SPEC.md/ }).click()
   await expect(page.getByRole('tab', { name: /^document-viewer-screen\/SPEC.md/ })).toHaveAttribute(
     'aria-selected',
     'true',

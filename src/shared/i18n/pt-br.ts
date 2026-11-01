@@ -57,6 +57,8 @@ export const ptBr = {
     plans: 'Planos',
     skills: 'Habilidades',
     editAgents: '+ Editar agentes',
+    reviews: 'Revisões',
+    newSpec: '+ Nova spec',
     addSpec: '+ Adicionar spec',
     addPlan: '+ Adicionar plano',
     addSkill: '+ Adicionar skill',
