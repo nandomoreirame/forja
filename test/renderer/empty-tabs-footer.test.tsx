@@ -12,9 +12,9 @@ const renderDev = async () => {
 
 it('shows the initial empty state without tabs once every tab is closed', async () => {
   await renderDev()
-  for (const tab of screen.getAllByRole('tab')) {
-    const name = tab.textContent!.split(',')[0]
-    fireEvent.click(screen.getByRole('button', { name: `Close ${name}` }))
+  const strip = document.querySelector('[data-slot="tab-strip"]') as HTMLElement
+  for (const close of within(strip).getAllByRole('button', { name: /^Close / })) {
+    fireEvent.click(close)
   }
   expect(screen.queryByRole('tablist')).toBeNull()
   expect(screen.queryByRole('textbox', { name: /Send your prompt/ })).toBeNull()
@@ -31,10 +31,7 @@ it('adds a new conversation from a + right of the tabs, not from the sidebar', a
   const tabs = within(strip).getAllByRole('tab')
   expect(tabs.at(-1)!.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   fireEvent.click(add)
-  expect(screen.getByRole('tab', { name: /New chat/ })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
+  expect(screen.getByRole('tab', { name: /New chat/ })).toHaveAttribute('aria-selected', 'true')
 })
 
 it('moves the project button to the footer start with the full project path', async () => {

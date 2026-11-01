@@ -38,7 +38,9 @@ it.each(['skill', 'memory'] as const)(
     source.streamReply = (request, onEvent) => streamReply(request, onEvent, { instant: true })
     render(<WorkbenchPage source={source} initialProjectId="dev" />)
     const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-    const features = within(sidebar).getByRole('region', { name: /Features/ }).textContent
+    const features = within(sidebar)
+      .getByRole('region', { name: /Features/ })
+      .textContent?.replace(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/g, '')
     const trigger = within(sidebar).getByRole('button', { name: new RegExp('New ' + kind) })
     trigger.focus()
     await user.keyboard('{Enter}')
@@ -74,7 +76,11 @@ it.each(['skill', 'memory'] as const)(
     await user.keyboard('{Enter}')
     expect(screen.getByRole('log')).toHaveTextContent('Keep examples concise')
     expect(prompt).toHaveValue('')
-    expect(within(sidebar).getByRole('region', { name: /Features/ }).textContent).toBe(features)
+    expect(
+      within(sidebar)
+        .getByRole('region', { name: /Features/ })
+        .textContent?.replace(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/g, ''),
+    ).toBe(features)
   },
 )
 

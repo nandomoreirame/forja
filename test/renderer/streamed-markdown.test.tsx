@@ -23,7 +23,7 @@ it('appends a streamed reply chunk by chunk and renders its code block when comp
   })
   expect((reply().textContent ?? '').length).toBeGreaterThan(partial.length)
   await act(async () => {
-    vi.runAllTimers()
+    vi.advanceTimersByTime(10_000)
   })
   expect(within(reply()).getByRole('button', { name: 'Copy code' })).toBeInTheDocument()
   expect(reply().querySelector('pre code')).toHaveTextContent('export function callbackError')

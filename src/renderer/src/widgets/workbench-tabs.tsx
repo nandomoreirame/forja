@@ -24,8 +24,12 @@ export function WorkbenchTabs() {
       id: feature.id,
       label: feature.name,
       tool: state.agentTools[feature.stage] ?? feature.tool,
-      state:
-        feature.state === 'running' ? 'running' : feature.state === 'waiting' ? 'waiting' : 'idle',
+      state: feature.endState ?? (feature.stalled ? 'stalled' : feature.state),
+      stateLabel: feature.endState
+        ? a.featureNavigator[feature.endState]
+        : feature.stalled
+          ? a.featureNavigator.stalled
+          : a.states[feature.state],
     }))
   for (const id of state.openDocumentIds) {
     const artifact = state.snapshot?.artifacts.find((item) => item.id === id)

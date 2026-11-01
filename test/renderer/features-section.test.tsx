@@ -140,3 +140,19 @@ it('lists finished features after the active ones in the same list', async () =>
   expect(rows.at(-1)).toHaveAccessibleName(new RegExp('^' + finished.name))
   expect(within(section).queryByText(/^Finished/)).toBeNull()
 })
+
+it('keeps the tool icon and state badge visible on every feature row', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  const sidebar = await screen.findByRole('complementary', { name: 'dev' })
+  const features = within(sidebar).getByRole('region', { name: /Features/ })
+  const row = within(features)
+    .getByRole('button', { name: /^(?!Archive )Login with OAuth/ })
+    .closest('[data-slot="pane-row"]') as HTMLElement
+  const trailing = row.querySelector('[data-slot="row-trailing"]') as HTMLElement
+  expect(trailing).not.toBeNull()
+  expect(trailing.closest('[data-slot="row-hover"]')).toBeNull()
+  expect(trailing).toHaveTextContent('Running')
+  expect(trailing.querySelector('svg, img, [data-slot="tool-icon"]')).not.toBeNull()
+  // The archive action stays a hover affordance.
+  expect(within(trailing).queryByRole('button', { name: /^Archive/ })).toBeNull()
+})

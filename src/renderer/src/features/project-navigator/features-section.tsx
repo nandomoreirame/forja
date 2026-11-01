@@ -1,3 +1,4 @@
+import { FeatureStatus } from '@/shared/ui/feature-status'
 import { NavigatorSection, ArchiveAction, PaneRow, rowButton } from './section'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, ToolIcon, toolNames, type UiState } from '@/shared/ui'
@@ -33,16 +34,22 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
             ? a.states[feature.state]
             : a.idle
     const current = state.view.kind === 'conversation' && state.view.featureId === feature.id
+    const badges = (
+      <>
+        <ToolIcon tool={tool} />
+        <StatusBadge size="sm" state={badgeState}>
+          {label}
+        </StatusBadge>
+      </>
+    )
     return (
       <PaneRow
         key={feature.id}
         current={current}
+        trailing={badges}
         hover={
           <>
-            <ToolIcon tool={tool} />
-            <StatusBadge size="sm" state={badgeState}>
-              {label}
-            </StatusBadge>
+            {badges}
             <ArchiveAction
               name={feature.name}
               locale={locale}
@@ -59,9 +66,15 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
           className={cn(rowButton, 'pl-5 text-foreground')}
           onClick={() => state.openFeature(feature.id)}
         >
-          <span
-            aria-hidden="true"
-            className={`ml-1 mr-1 size-1.5 shrink-0 rounded-full ${badgeState === 'running' ? 'bg-primary motion-safe:animate-pulse' : badgeState === 'failed' ? 'bg-destructive' : badgeState === 'completed' ? 'bg-success' : 'bg-muted-foreground'}`}
+          <FeatureStatus
+            state={feature.endState ?? (feature.stalled ? 'stalled' : feature.state)}
+            label={
+              feature.endState
+                ? copy[feature.endState]
+                : feature.stalled
+                  ? copy.stalled
+                  : (a.states[feature.state] ?? a.idle)
+            }
           />
           <span className="min-w-0 truncate">{feature.name}</span>
         </button>

@@ -174,13 +174,18 @@ export function NavigatorSection({
   )
 }
 
-/** A 22 px tree row whose `hover` content (badges, actions) shows on hover or focus. */
+/**
+ * A 22 px tree row. `trailing` content (badges) stays visible at the end of the row; `hover`
+ * content (badges plus actions) covers it on hover or focus.
+ */
 export function PaneRow({
   children,
+  trailing,
   hover,
   current,
 }: {
   children: ReactNode
+  trailing?: ReactNode
   hover?: ReactNode
   current?: boolean
 }) {
@@ -193,6 +198,16 @@ export function PaneRow({
       )}
     >
       {children}
+      {trailing ? (
+        // Decorative: the row button's accessible name already carries the same facts.
+        <span
+          data-slot="row-trailing"
+          aria-hidden="true"
+          className="flex shrink-0 items-center gap-1 pl-1.5 pr-2"
+        >
+          {trailing}
+        </span>
+      ) : null}
       {hover ? (
         <span
           data-slot="row-hover"

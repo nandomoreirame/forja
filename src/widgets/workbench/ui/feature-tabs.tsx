@@ -1,3 +1,5 @@
+import { FeatureStatus, type FeatureState } from '@/shared/ui/feature-status'
+import { getDictionary } from '@/shared/i18n'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Plus, X } from 'lucide-react'
 import {
@@ -20,7 +22,8 @@ export interface FeatureTabItem {
   id: string
   label: string
   /** Agent state of a feature tab; pages and documents have none. */
-  state?: 'running' | 'waiting' | 'idle'
+  state?: FeatureState
+  stateLabel?: string
   tool?: ToolId
   closable?: boolean
   icon?: ReactNode
@@ -38,13 +41,19 @@ export interface FeatureTabsProps {
   addLabel?: string
   panelId?: string
   label?: string
-  stateLabels?: Record<NonNullable<FeatureTabItem['state']>, string>
+  stateLabels?: Partial<Record<NonNullable<FeatureTabItem['state']>, string>>
 }
 
-const defaultStateLabels: Record<NonNullable<FeatureTabItem['state']>, string> = {
-  running: 'Running',
-  waiting: 'Waiting',
-  idle: 'Idle',
+const copy = getDictionary('en').app
+const defaultStateLabels: Record<FeatureState, string> = {
+  ...copy.states,
+  working: copy.states.running,
+  done: copy.states.completed,
+  idle: copy.idle,
+  stalled: copy.featureNavigator.stalled,
+  integrated: copy.featureNavigator.integrated,
+  abandoned: copy.featureNavigator.abandoned,
+  ended: copy.featureNavigator.abandoned,
 }
 
 export function FeatureTabs({
@@ -107,23 +116,16 @@ export function FeatureTabs({
                   {item.icon}
                   {item.tool ? <ToolIcon tool={item.tool} /> : null}
                   {item.badge || !item.state ? null : (
-                    <span
-                      aria-hidden="true"
-                      data-slot="feature-tab-status"
-                      className={
-                        item.state === 'running'
-                          ? 'size-1.5 rounded-full bg-primary motion-safe:animate-pulse'
-                          : item.state === 'waiting'
-                            ? 'size-1.5 rounded-full border border-primary'
-                            : 'size-1.5 rounded-full bg-muted-foreground/40'
+                    <FeatureStatus
+                      state={item.state}
+                      label={
+                        item.stateLabel ?? stateLabels[item.state] ?? defaultStateLabels[item.state]
                       }
+                      slot="feature-tab-status"
                     />
                   )}
                   {item.label}
-                  {item.badge ??
-                    (item.state ? (
-                      <span className="sr-only">, {stateLabels[item.state]}</span>
-                    ) : null)}
+                  {item.badge ?? null}
                 </TabsTrigger>
               </div>
             ))}
