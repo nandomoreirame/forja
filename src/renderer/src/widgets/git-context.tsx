@@ -1,6 +1,7 @@
 import { PanelRight } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
+import { isEnabled } from '@/renderer/src/shared/lib/feature-flags'
 import {
   Button,
   ResizableHandle,
@@ -19,6 +20,14 @@ export function GitContext({ locale }: { locale: Locale }) {
   const snapshot = state.snapshot!
   const d = getDictionary(locale)
   const a = d.app
+  const explorer = isEnabled('explorer')
+  const sourceControl = isEnabled('source-control')
+  const panes = [
+    'context-project',
+    ...(explorer ? ['explorer'] : []),
+    ...(sourceControl ? ['changes'] : []),
+    'branches',
+  ]
   const feature = snapshot.features.find(
     (f) => state.view.kind === 'conversation' && state.view.featureId === f.id,
   )
@@ -44,10 +53,7 @@ export function GitContext({ locale }: { locale: Locale }) {
       data-part="context"
       className="flex h-full w-full flex-col overflow-hidden rounded-part border border-border text-xs"
     >
-      <PaneStack
-        id="forja-context-panes"
-        panes={['context-project', 'explorer', 'changes', 'branches']}
-      >
+      <PaneStack id="forja-context-panes" panes={panes}>
         <NavigatorSection section="context-project" title={a.project} defaultSize="20%">
           <dl className="space-y-1.5 py-1 pl-5 pr-3 text-[12px] text-muted-foreground">
             {facts.map(([label, value]) => (
@@ -58,10 +64,18 @@ export function GitContext({ locale }: { locale: Locale }) {
             ))}
           </dl>
         </NavigatorSection>
-        <ResizableHandle className="bg-border" />
-        <ExplorerSection locale={locale} />
-        <ResizableHandle className="bg-border" />
-        <ChangesSection locale={locale} />
+        {explorer && (
+          <>
+            <ResizableHandle className="bg-border" />
+            <ExplorerSection locale={locale} />
+          </>
+        )}
+        {sourceControl && (
+          <>
+            <ResizableHandle className="bg-border" />
+            <ChangesSection locale={locale} />
+          </>
+        )}
         <ResizableHandle className="bg-border" />
         <NavigatorSection
           section="branches"

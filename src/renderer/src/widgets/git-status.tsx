@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { GitBranch, RefreshCw } from 'lucide-react'
 import { useWorkbench } from '@/renderer/src/entities/feature'
+import { isEnabled } from '@/renderer/src/shared/lib/feature-flags'
 import { getDictionary } from '@/shared/i18n'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui'
 
@@ -20,13 +21,18 @@ export function GitStatus() {
   const ahead = String(feature?.ahead ?? 0)
   const d = getDictionary(state.source.locale)
   const g = d.app.gitStatus
+  const sourceControl = isEnabled('source-control')
   return (
     <span
       role="status"
-      aria-label={g.label
-        .replace('{branch}', branch)
-        .replace('{behind}', behind)
-        .replace('{ahead}', ahead)}
+      aria-label={
+        sourceControl
+          ? g.label
+              .replace('{branch}', branch)
+              .replace('{behind}', behind)
+              .replace('{ahead}', ahead)
+          : `${d.product.branch} ${branch}`
+      }
       className="flex shrink-0 items-center gap-1"
     >
       <GitItem
@@ -45,14 +51,16 @@ export function GitStatus() {
         <GitBranch aria-hidden="true" className="size-3.5" />
         {branch}
       </GitItem>
-      <GitItem
-        tip={g.sync.replace('{behind}', behind).replace('{ahead}', ahead).replace('{base}', base)}
-      >
-        <RefreshCw aria-hidden="true" className="size-3.5" />
-        <span className="tabular-nums">
-          {behind}↓ {ahead}↑
-        </span>
-      </GitItem>
+      {sourceControl && (
+        <GitItem
+          tip={g.sync.replace('{behind}', behind).replace('{ahead}', ahead).replace('{base}', base)}
+        >
+          <RefreshCw aria-hidden="true" className="size-3.5" />
+          <span className="tabular-nums">
+            {behind}↓ {ahead}↑
+          </span>
+        </GitItem>
+      )}
     </span>
   )
 }
