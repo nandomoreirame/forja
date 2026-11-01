@@ -12,7 +12,7 @@ The [functional MVP spec](docs/specs/functional-mvp/SPEC.md) is approved. The im
 
 The existing Electron welcome-screen scaffold is already implemented. It is the starting point, not evidence that the planned RPI workflow, shared shadcn components or CLI integrations are complete.
 
-Combined documentation and implementation progress is **46%**: an approved SPEC contributes 10%, a ready PLAN contributes 10%, and validated implementation tasks contribute the remaining 80% per feature. The task counts below track implementation only; web foundation review and user visual acceptance remain separate.
+Combined documentation and implementation progress is **45%**: an approved SPEC contributes 10%, a ready PLAN contributes 10%, and validated implementation tasks contribute the remaining 80% per feature. The task counts below track implementation only; web foundation review and user visual acceptance remain separate.
 
 ## Execution Order
 
@@ -34,7 +34,7 @@ The order below is the recommended sequential queue. Dependencies are explicit i
 | 01g   | [project-sidebar-navigator](docs/specs/project-sidebar-navigator/SPEC.md)                 | [Implementation plan](docs/plans/2026-10-31-project-sidebar-navigator.md)         | 6/6             | Approved / ready | Implemented                          | Passed / passed (Claude only)   |
 | 01h   | [conversation-agent-identity](docs/specs/conversation-agent-identity/SPEC.md)             | [Implementation plan](docs/plans/2026-10-31-conversation-agent-identity.md)       | 5/5             | Approved / ready | Implemented                          | Passed / pending                |
 | 01i   | [workbench-ui-refresh](docs/specs/workbench-ui-refresh/SPEC.md)                           | [Implementation plan](docs/plans/2026-11-01-workbench-ui-refresh.md)              | 0/5             | Approved / ready | Implemented (evidence tasks open)    | Passed / not started            |
-| 01j   | [ui-quick-adjustments](docs/specs/ui-quick-adjustments/SPEC.md)                           | [Implementation plan](docs/plans/2026-11-01-ui-quick-adjustments.md)              | 0/8             | Approved / ready | Planned                              | Not run / not started           |
+| 01j   | [ui-quick-adjustments](docs/specs/ui-quick-adjustments/SPEC.md)                           | [Implementation plan](docs/plans/2026-11-01-ui-quick-adjustments.md)              | 0/14            | Approved / ready | Planned                              | Not run / not started           |
 | 02    | [cli-capability-contracts](docs/specs/cli-capability-contracts/SPEC.md)                   | [Implementation plan](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/4             | Approved / ready | Planned                              | Not run / not started           |
 | 03    | [project-feature-state](docs/specs/project-feature-state/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-project-feature-state.md)             | 0/4             | Approved / ready | Planned                              | Not run / not started           |
 | 04    | [agent-settings-skills](docs/specs/agent-settings-skills/SPEC.md)                         | [Implementation plan](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/6             | Approved / ready | Planned                              | Not run / not started           |
