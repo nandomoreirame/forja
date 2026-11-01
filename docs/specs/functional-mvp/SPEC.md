@@ -128,6 +128,14 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 80. **[REQ-080]** WHEN a feature conversation shows agent replies or user messages THEN the system SHALL render them as sanitized Markdown with copyable code blocks, collapsible command runs (command, exit status and output), log excerpts and image attachments on user messages, and the mock data SHALL include examples of each in both locales.
 81. **[REQ-081]** WHEN a project is open THEN the left sidebar SHALL end with a menu holding "Usage and limits", "Memory", "Connectors" and "Settings" (the Settings entry moves out of the topbar); Memory and Connectors SHALL open their own tabs in the Settings area with mock content (project memories with source and date; MCP connectors with status and a mock enable switch).
 82. **[REQ-082]** WHEN the user activates "Usage and limits" THEN the system SHALL show a popover with one tab per AI tool (claude, codex, opencode, agy, grok) and, for the selected tool, the plan, account, last update and one card per window (5-hour session and weekly) with the used percentage, a progress bar, a pace marker, the time until reset and a pace label; a tool without usage data SHALL show it as unavailable instead of estimating (REQ-060), and the mock data SHALL come from `WorkbenchSource`.
+83. **[REQ-083]** WHEN a project is open THEN the sidebar SHALL start with a Features section listing every non-archived feature of the project, open tab or not, each row showing the state dot, the feature name and the current stage as the agent icon and label with a state badge; features needing the user (awaiting approval, needs fix, stalled) SHALL come first, then running, then idle, each group by most recent activity; finished features (integrated or abandoned) SHALL sit in a "Finished" subgroup collapsed by default; activating a row SHALL open or focus that feature's tab (reopening a closed tab with its history); "+ New conversation" SHALL open the centered composer; the Agents menu and its "Edit agents" link SHALL be removed.
+84. **[REQ-084]** WHEN the project has specs or plans THEN the Specs and Plans sections SHALL list them with a state badge (draft, approved, stale), each spec showing its feature and each plan its spec as a subtitle; artifacts of the selected feature SHALL be highlighted and the others dimmed; activating a row SHALL open it in a document tab; "+ New spec" SHALL open the centered composer with Research; there SHALL be no "+ Add plan" action, because plans come from an approved spec inside a feature.
+85. **[REQ-085]** WHEN the project is open THEN the Skills and Memories sections SHALL list project and global entries with a "project" or "global" label; activating an entry SHALL open its Markdown in a document tab with an "Edit with agent" action that starts an authoring conversation with the matching specialist (mock reply); "+ New skill" and "+ New memory" SHALL ask for the scope and then start that authoring conversation; the workspace menu SHALL no longer contain Memory and Settings SHALL drop its Memory tab.
+86. **[REQ-086]** WHEN the user activates a section header THEN the section SHALL collapse or expand, showing its item count, with the choice remembered per viewer across restarts.
+87. **[REQ-087]** WHEN the user archives a feature, spec or plan from its row action THEN the system SHALL hide it from the sidebar, tabs and command bar without deleting any file; archiving a feature SHALL also archive its spec and plans and close its tab; a feature with a running agent SHALL NOT be archivable (the action is disabled with a tooltip saying to interrupt first); the workspace menu SHALL offer "Archived", listing archived items by kind with a Restore action that puts them back where they were.
+88. **[REQ-088]** WHEN a feature tab is shown THEN each stage of the feature cycle SHALL show the icon of the AI tool configured for that agent before its name, with a tooltip "<role> · <tool>", and the feature tab icon SHALL show the tool of the agent of the current stage; both SHALL update after Settings are saved.
+89. **[REQ-089]** WHEN an agent reply is shown THEN the system SHALL show that agent's mascot (one distinct 12×12 pixel-art sprite per role, decorative) with the configured tool as a corner badge, and the reply's accessible author SHALL read "<role> (<tool>)"; user messages and workflow events SHALL have no avatar.
+90. **[REQ-090]** WHEN the conversation is shown THEN agent replies SHALL sit on a gray surface without a border, distinct from the page background and from the user messages, and code, command and log blocks inside a reply SHALL keep a darker background so they still stand out.
 
 ### P2 (Should Have)
 
@@ -324,6 +332,14 @@ None in this delivery; deferred items are explicit below.
 | REQ-080 | Rich mock conversation content | P1 | Approved 2026-10-31; not implemented |
 | REQ-081 | Sidebar menu with Memory and Connectors | P1 | Approved 2026-10-31; not implemented |
 | REQ-082 | Usage and limits widget | P1 | Approved 2026-10-31; not implemented |
+| REQ-083 | Features section replaces the Agents menu | P1 | Approved 2026-10-31; not implemented |
+| REQ-084 | Linked specs and plans | P1 | Approved 2026-10-31; not implemented |
+| REQ-085 | Skills and memories with scope | P1 | Approved 2026-10-31; not implemented |
+| REQ-086 | Collapsible remembered sections | P1 | Approved 2026-10-31; not implemented |
+| REQ-087 | Archive and restore | P1 | Approved 2026-10-31; not implemented |
+| REQ-088 | Tool icons in the feature cycle and tab | P1 | Approved 2026-10-31; not implemented |
+| REQ-089 | Agent mascots with tool badge | P1 | Approved 2026-10-31; not implemented |
+| REQ-090 | Gray surface for agent replies | P1 | Approved 2026-10-31; not implemented |
 
 ## Implementation Sequence
 
