@@ -49,8 +49,9 @@ it('keeps usage scrollable in the footer and the workspace menu outside its scro
   const panel = await screen.findByRole('region', { name: 'Plan usage' })
   const menu = screen.getByRole('navigation', { name: 'Workspace' })
   expect(panel.parentElement).toBe(menu.parentElement)
-  expect(panel.parentElement).toHaveClass('min-h-0', 'max-h-full')
-  expect(panel).toHaveClass('overflow-y-auto', 'min-h-0')
+  // The footer and the usage panel are capped so the sidebar panes keep their minimum heights.
+  expect(panel.parentElement).toHaveClass('min-h-0', 'max-h-[45%]')
+  expect(panel).toHaveClass('overflow-y-auto', 'min-h-0', 'max-h-36')
   expect(menu).toHaveClass('shrink-0')
 })
 

@@ -40,13 +40,14 @@ test('collapsed sections sit at the bottom while any section is open', async ({ 
   const sidebar = page.getByRole('complementary', { name: 'dev' })
   const header = (name: RegExp) => sidebar.getByRole('button', { name, expanded: true })
   for (const name of [/^Specs/, /^Plans/, /^Reviews/]) await header(name).click()
-  const nav = sidebar.getByRole('navigation', { name: 'Workspace' })
+  // The footer starts at the always-open plan usage panel, above the Workspace menu.
+  const nav = sidebar.getByRole('region', { name: 'Plan usage' })
   const memories = sidebar.getByRole('button', { name: /^Memories/ })
-  // Only Features is open: it takes the free height and the rest stack above the menu.
+  // Only Chats is open: it takes the free height and the rest stack above the menu.
   await expect
     .poll(async () => (await nav.boundingBox())!.y - (await memories.boundingBox())!.y)
     .toBeLessThan(40)
-  await sidebar.getByRole('button', { name: /^Features/ }).click()
+  await sidebar.getByRole('button', { name: /^Chats/ }).click()
   // All collapsed: every header stacks at the top again.
   await expect
     .poll(async () => (await nav.boundingBox())!.y - (await memories.boundingBox())!.y)

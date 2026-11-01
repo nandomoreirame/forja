@@ -6,7 +6,7 @@ test('home shell and panel toggles work', async ({ page }) => {
   await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /nandomoreira.dev/ }).click()
   // Pane actions show on hover, as in VS Code.
-  await page.getByRole('region', { name: /^Features/ }).hover()
+  await page.getByRole('region', { name: /^Chats/ }).hover()
   await page.getByRole('button', { name: 'Collapse sidebar' }).click()
   await expect(page.getByRole('complementary', { name: 'nandomoreira.dev' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Expand sidebar' }).click()

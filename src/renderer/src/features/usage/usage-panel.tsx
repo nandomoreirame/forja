@@ -76,7 +76,7 @@ export function UsagePanel({
       </Tooltip>
     )
   return (
-    <section aria-label={d.title} className="min-h-0 overflow-y-auto p-2 text-xs">
+    <section aria-label={d.title} className="max-h-36 min-h-0 overflow-y-auto p-2 text-xs">
       <div className="mb-2 flex flex-wrap items-baseline justify-between gap-1">
         <h2 className="font-medium">{d.title}</h2>
         <span className="text-muted-foreground">{updateLabel}</span>

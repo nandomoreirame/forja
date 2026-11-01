@@ -43,7 +43,8 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
         <ResizableHandle className="bg-border" />
         <MemoriesSection locale={locale} />
       </PaneStack>
-      <div className="flex min-h-0 max-h-full flex-col border-t border-border">
+      {/* The footer never takes more than 45% of the height, so the panes keep room. */}
+      <div className="flex max-h-[45%] min-h-0 shrink-0 flex-col border-t border-border">
         <UsagePanel source={state.source} />
         <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
           <div className="space-y-0.5">

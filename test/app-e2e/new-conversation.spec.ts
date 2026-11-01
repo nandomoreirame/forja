@@ -10,7 +10,7 @@ test('starts a focused conversation, creates a feature and closes its last tab',
     .getByRole('button', { name: /New chat/ })
     .click()
   await expect(page.getByRole('textbox')).toBeFocused()
-  await expect(page.getByRole('combobox', { name: 'Recipient' })).toHaveText('Research')
+  await expect(page.getByRole('combobox', { name: 'Recipient' })).toHaveText('Smith')
   await page.keyboard.type('Add OAuth login')
   await page.keyboard.press('Control+Enter')
   await expect(page.getByRole('tab', { name: /Add OAuth login/ })).toBeVisible()
@@ -22,7 +22,7 @@ test('starts a focused conversation, creates a feature and closes its last tab',
   await expect(page.getByRole('tablist')).toHaveCount(0)
   await expect(page.getByRole('textbox')).toHaveCount(0)
 })
-test('opens a focused Research composer from the command bar', async ({ page }) => {
+test('opens a focused Ferreiro composer from the command bar', async ({ page }) => {
   await page.goto('/')
   await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /nandomoreira.dev/ }).click()
@@ -30,7 +30,7 @@ test('opens a focused Research composer from the command bar', async ({ page }) 
   await page.getByRole('combobox').fill('New chat')
   await page.keyboard.press('Enter')
   await expect(page.getByRole('textbox')).toBeFocused()
-  await expect(page.getByRole('combobox', { name: 'Recipient' })).toHaveText('Research')
+  await expect(page.getByRole('combobox', { name: 'Recipient' })).toHaveText('Smith')
 })
 
 test('Ctrl+R in the prompt preserves the draft without reloading', async ({ page }) => {

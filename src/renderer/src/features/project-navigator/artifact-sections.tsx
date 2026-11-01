@@ -32,7 +32,8 @@ function ArtifactSection({ locale, kind }: { locale: Locale; kind: Artifact['kin
       section={kind === 'spec' ? 'specs' : kind === 'plan' ? 'plans' : 'reviews'}
       title={title}
       count={items.length}
-      defaultSize={kind === 'review' ? '10%' : '20%'}
+      // 15% keeps Reviews above the collapse snap point (between header and min size) on short sidebars.
+      defaultSize={kind === 'review' ? '15%' : '20%'}
       empty={kind === 'spec' ? a.specsEmpty : kind === 'plan' ? a.plansEmpty : a.reviewsEmpty}
       actions={
         kind === 'spec' ? (
