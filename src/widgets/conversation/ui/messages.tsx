@@ -26,6 +26,9 @@ export interface ConversationMessage {
   tool?: ToolId
   toolLabel?: string
   speaking?: boolean
+  /** Preformatted time label and its machine-readable value. */
+  time?: string
+  dateTime?: string
 }
 
 export interface MessagesProps {
@@ -39,6 +42,14 @@ const rowProps = (item: ConversationMessage) => ({
   'data-message-id': item.id,
   'data-highlighted': item.highlighted ? 'true' : undefined,
 })
+
+function MessageTime({ item }: { item: ConversationMessage }) {
+  return item.time ? (
+    <time dateTime={item.dateTime} className="text-[11px] text-muted-foreground">
+      {item.time}
+    </time>
+  ) : null
+}
 
 const highlightClass = 'ring-2 ring-primary/70 ring-offset-2 ring-offset-background'
 
@@ -96,8 +107,14 @@ export function Messages({
               item.highlighted && highlightClass,
             )}
           >
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="font-medium text-foreground">{item.author}</span>
+            <div className="flex items-baseline gap-2">
+              <span
+                data-slot="message-author"
+                className="text-[13px] font-semibold text-foreground"
+              >
+                {item.author}
+              </span>
+              <MessageTime item={item} />
             </div>
             <MessageBody
               text={item.text}
@@ -127,11 +144,15 @@ export function Messages({
                 />
               ) : null}
               <div className="flex items-center justify-between text-[11px]">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-primary">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    data-slot="message-author"
+                    className="text-[13px] font-semibold text-primary"
+                  >
                     {item.author}
-                    {item.toolLabel ? <span className="sr-only"> ({item.toolLabel})</span> : null}
                   </span>
+                  {item.toolLabel ? <span className="sr-only"> ({item.toolLabel})</span> : null}
+                  <MessageTime item={item} />
                   {item.status ? (
                     <span className="rounded-[2px] border border-primary/30 bg-primary/10 px-1.5 py-px text-[10px] text-primary">
                       {item.status}

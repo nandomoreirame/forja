@@ -27,6 +27,8 @@ export interface ChatMessage {
   author?: RoleId
   parts?: MessagePart[]
   attachments?: ImageAttachment[]
+  /** ISO timestamp of when the message was sent or the reply started. */
+  createdAt?: string
 }
 export interface MockTerminal {
   id: string

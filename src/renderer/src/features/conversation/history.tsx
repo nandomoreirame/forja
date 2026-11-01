@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Messages } from '@/widgets/conversation'
-import { getDictionary, type Locale } from '@/shared/i18n'
+import { formatMessageTime, getDictionary, type Locale } from '@/shared/i18n'
 import type { ChatMessage, RoleId } from '@/renderer/src/shared/api'
 import { toolNames, type ToolId } from '@/shared/ui'
 import { HandoffLink } from './handoff-link'
@@ -76,6 +76,8 @@ export function History({
             tool,
             toolLabel: tool ? toolNames[tool] : undefined,
             speaking: m.role === 'agent' && m.status === 'running',
+            time: m.createdAt ? formatMessageTime(m.createdAt, locale) : undefined,
+            dateTime: m.createdAt,
             role: m.role,
             text: m.text,
             parts: m.parts,

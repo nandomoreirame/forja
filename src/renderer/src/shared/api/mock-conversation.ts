@@ -3,6 +3,9 @@ import type { ChatMessage } from './workbench-source'
 
 const fence = '`'.repeat(3)
 
+// Seeded conversation starts on 2026-10-31 at 23:20 local time, a few minutes per message.
+const seededAt = (minutes: number) => new Date(2026, 9, 31, 23, 20 + minutes).toISOString()
+
 function screenshot(title: string, body: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="270" viewBox="0 0 480 270">
 <rect width="480" height="270" fill="#111113"/>
@@ -22,6 +25,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
   return [
     {
       id: 'oauth-request',
+      createdAt: seededAt(0),
       role: 'user',
       text: en
         ? 'Add OAuth login with clear error feedback.'
@@ -39,6 +43,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-research',
+      createdAt: seededAt(3),
       role: 'agent',
       author: 'research',
       text: en
@@ -47,6 +52,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-plan',
+      createdAt: seededAt(6),
       role: 'agent',
       author: 'planner',
       text: en
@@ -55,6 +61,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-implementation',
+      createdAt: seededAt(9),
       role: 'agent',
       author: 'implementer',
       text: en
@@ -80,6 +87,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-log',
+      createdAt: seededAt(12),
       role: 'agent',
       author: 'tester',
       text: en
@@ -111,6 +119,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-handoff',
+      createdAt: seededAt(15),
       role: 'event',
       author: 'tester',
       linkTo: 'oauth-request',
@@ -118,6 +127,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-fix',
+      createdAt: seededAt(18),
       role: 'agent',
       author: 'implementer',
       text: en

@@ -522,6 +522,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         get().interrupt(id)
         const role = get().recipients[id] ?? feature.stage
         const messageId = `${id}:agent-${feature.messages.length + 2}`
+        const createdAt = new Date().toISOString()
         set((state) => ({
           snapshot: {
             ...state.snapshot!,
@@ -532,7 +533,12 @@ export function createWorkbenchStore(source: WorkbenchSource) {
                     state: 'running',
                     messages: [
                       ...item.messages,
-                      { id: `${id}:user-${item.messages.length + 1}`, role: 'user', text: prompt },
+                      {
+                        id: `${id}:user-${item.messages.length + 1}`,
+                        role: 'user',
+                        text: prompt,
+                        createdAt,
+                      },
                       {
                         id: messageId,
                         role: 'agent',
@@ -540,6 +546,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
                         tool: state.agentTools[role] ?? feature.tool,
                         text: '',
                         status: 'running',
+                        createdAt,
                       },
                     ],
                   }
