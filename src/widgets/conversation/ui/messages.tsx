@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/ui/utils'
 import {
-  AgentMascot,
+  AgentFace,
+  faceColors,
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -162,18 +163,13 @@ export function Messages({
           ) : (
             <li key={item.id} {...rowProps(item)} className="flex items-start gap-3">
               {item.agent && item.tool ? (
-                <AgentMascot
-                  role={item.agent}
-                  tool={item.tool}
-                  size={56}
-                  speaking={item.speaking}
-                />
+                <AgentFace agent={item.agent} tool={item.tool} size={56} speaking={item.speaking} />
               ) : null}
-              {/* Speech bubble: the tail points at the mascot on the left. */}
+              {/* Speech bubble: plain border, the tail points at the face. */}
               <div
                 data-surface="reply"
                 className={cn(
-                  'relative min-w-0 flex-1 space-y-1 rounded-md bg-secondary p-3',
+                  'relative min-w-0 flex-1 space-y-1 rounded-md border border-border p-3',
                   item.highlighted && highlightClass,
                 )}
               >
@@ -181,7 +177,7 @@ export function Messages({
                   <span
                     aria-hidden="true"
                     data-slot="reply-tail"
-                    className="absolute top-5 -left-1.5 size-3 rotate-45 bg-secondary"
+                    className="absolute top-5 -left-[7px] size-3 rotate-45 border-b border-l border-border bg-background"
                   />
                 ) : null}
                 <div className="flex items-center justify-between text-[11px]">
@@ -192,6 +188,8 @@ export function Messages({
                           tabIndex={0}
                           aria-label={item.authorLabel}
                           data-slot="message-author"
+                          // Only the author name carries the agent color.
+                          style={item.agent ? { color: faceColors[item.agent] } : undefined}
                           className="rounded-sm text-[13px] font-semibold text-primary focus-visible:outline-2 focus-visible:outline-ring"
                         >
                           {item.author}

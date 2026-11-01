@@ -1,5 +1,6 @@
 import { ToolIcon, type ToolId } from './tool-icon'
-import type { AgentRole } from './agent-mascot'
+
+export type AgentRole = 'smith' | 'research' | 'planner' | 'implementer' | 'tester' | 'reviewer'
 
 /** Face color per agent; the Ferreiro shares the amber and is told apart by its mark. */
 export const faceColors: Record<AgentRole, string> = {
@@ -26,6 +27,7 @@ export function AgentFace({
   size?: number
   speaking?: boolean
 }) {
+  const badge = Math.max(12, Math.round(size * 0.32))
   return (
     <span
       data-slot="agent-face-frame"
@@ -87,8 +89,12 @@ export function AgentFace({
           />
         ) : null}
       </svg>
-      <span className="absolute -right-1 -bottom-1 inline-flex rounded-full border border-border bg-secondary p-px">
-        <ToolIcon tool={tool} className="size-2.5" />
+      {/* The tool badge grows with the face (18 px at 56 px), never under 12 px. */}
+      <span
+        className="absolute -right-1 -bottom-1 inline-flex rounded-full border border-border bg-secondary p-px"
+        style={{ width: badge, height: badge }}
+      >
+        <ToolIcon tool={tool} className="size-full" />
       </span>
     </span>
   )

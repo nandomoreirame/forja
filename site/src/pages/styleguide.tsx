@@ -1,7 +1,7 @@
 import { Code, FileText, MessageCircle, Pencil, TriangleAlert, Zap } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { cn } from '@/shared/ui/utils'
-import { AgentFace, AgentMascot, ForjaMark, toolIds, type AgentRole } from '@/shared/ui'
+import { AgentFace, ForjaMark, toolIds, type AgentRole } from '@/shared/ui'
 import { Button } from '@/shared/ui'
 import {
   AppStatusbar,
@@ -604,26 +604,6 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
         </div>
       </Section>
 
-      <Section id="gallery-mascots" title={x.mascotsTitle} code="agent-mascot.tsx">
-        <div className="grid grid-cols-5 gap-4">
-          {(['research', 'planner', 'implementer', 'tester', 'reviewer'] as AgentRole[]).map(
-            (role, index) => (
-              <div
-                key={role}
-                className="flex flex-col items-center gap-3 rounded-[3px] border border-border bg-card p-4"
-              >
-                <div className="flex items-end gap-4">
-                  <AgentMascot role={role} tool={toolIds[index]} />
-                  <AgentMascot role={role} tool={toolIds[index]} size={56} />
-                </div>
-                <span className="text-[12px]">{roles[index]}</span>
-              </div>
-            ),
-          )}
-        </div>
-        <p className="text-[12px] text-muted-foreground">{x.mascotsNote}</p>
-      </Section>
-
       <Section id="gallery-faces" title={x.facesTitle} code="agent-face.tsx">
         <div className="grid grid-cols-3 gap-4 lg:grid-cols-6">
           {(
@@ -635,7 +615,6 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
               className="flex flex-col items-center gap-3 rounded-[3px] border border-border bg-card p-4"
             >
               <div className="flex items-end gap-3">
-                <AgentMascot role={role} tool={toolIds[index % toolIds.length]} size={56} />
                 <AgentFace agent={role} tool={toolIds[index % toolIds.length]} />
                 <AgentFace agent={role} tool={toolIds[index % toolIds.length]} size={56} />
               </div>

@@ -13,7 +13,7 @@ it('keeps past replies on their stamped tool and draws new ones with the configu
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
   const conversation = await screen.findByRole('list', { name: 'Conversation' })
   const past = conversation.querySelectorAll('[data-surface="reply"]')[0].closest('li')!
-  expect(past.querySelector('[data-slot="agent-mascot"]')).not.toBeNull()
+  expect(past.querySelector('[data-slot="agent-face"]')).not.toBeNull()
   expect(within(past).getByRole('img', { name: 'Claude' })).toBeInTheDocument()
   expect(past.querySelector('.sr-only')).toHaveTextContent('(Claude)')
   fireEvent.change(screen.getByRole('textbox', { name: /Send your prompt/ }), {
