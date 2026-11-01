@@ -47,6 +47,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 14. **[REQ-055]** WHEN a Git target is bound THEN the system SHALL detect candidate validation commands and test-file patterns from repository manifests, require human confirmation, store them per target repository and run them itself through the managed executor as the only authoritative validation evidence.
 15. **[REQ-056]** WHEN a role requests a handoff or a human rejects an approval THEN the system SHALL allow only Tester/Reviewer to Implementer (correction), Implementer to Planner (infeasible plan) and Planner to Research (ambiguous spec); returning to Planner or Research SHALL invalidate downstream approvals and evidence, and a human rejection SHALL return its reason to the owning role.
 16. **[REQ-057]** WHEN the user waives a blocking review finding THEN the system SHALL require a reason, an extra confirmation for Critical, record actor, time and finding revision, and keep the finding visible as waived; agents SHALL NOT waive findings.
+17. **[REQ-100]** WHEN the Implementer delegates a subtask through the Forja MCP THEN the system SHALL run it with a configured agent CLI sequentially in the same feature worktree while the Implementer turn waits, allow at most three subtasks per Implementer turn and one level (a subtask SHALL NOT delegate), apply the Implementer restrictions without approvals or its own commit (the REQ-025 turn commit includes the subtask delta), and show each subtask with its CLI, state and result under the Implementer turn.
 
 ### P2 (Should Have)
 
@@ -72,6 +73,7 @@ Inherit the parent spec's complete edge-case list. The plan additionally enumera
 | --- | --- | --- | --- |
 | 1 | Slice scope | Derived from the approved parent spec and user decisions | Avoid repeating resolved questions. |
 | 2 | Delivery order | Use the ordered plan index and explicit dependencies | Do not implement dependent features against missing APIs. |
+| 3 | 2026-11-01 improvements | REQ-100 (sequential implementer subtasks) | Added 2026-11-01 from the 2026-11-01 improvement review, approved by the user. |
 
 ## Constraints
 
@@ -105,3 +107,4 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-055 | Repository gates | P1 | Approved 2026-10-31; not implemented |
 | REQ-056 | Handoff matrix | P1 | Approved 2026-10-31; not implemented |
 | REQ-057 | Finding waivers | P1 | Approved 2026-10-31; not implemented |
+| REQ-100 | Sequential Implementer subtasks | P1 | Approved 2026-11-01; not implemented |

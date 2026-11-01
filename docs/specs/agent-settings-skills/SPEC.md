@@ -31,15 +31,17 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 
 ### P1 (MVP)
 
-1. **[REQ-014]** WHEN agent settings are opened THEN the system SHALL offer exactly Research, Planner, Implementer, Tester and Reviewer, without creating, renaming or deleting roles.
-2. **[REQ-015]** WHEN an agent is configured THEN the system SHALL target claude, codex, opencode, agy and grok with verified version/capability records, native authentication reuse and no credential copying or persistent user configuration edits.
+1. **[REQ-014]** WHEN agent settings are opened THEN the system SHALL offer exactly six fixed agents, the general Ferreiro and the RPI roles Research, Planner, Implementer, Tester and Reviewer, each with an editable display name (REQ-110), without creating, deleting or changing roles.
+2. **[REQ-015]** WHEN an agent is configured THEN the system SHALL target claude, codex, opencode, agy and grok with verified version/capability records, native authentication reuse and no credential copying or persistent user configuration edits; a stored CLI login MAY be read, read-only and in memory, only for opted-in plan usage (REQ-102).
 3. **[REQ-016]** WHEN the user saves a profile THEN the system SHALL persist CLI, optional model, supported effort, additional instructions, selected skills and the default-off next-agent auto-invocation switch.
-4. **[REQ-017]** WHEN the skills catalog is loaded or refreshed THEN the system SHALL read SKILL.md files from a configurable folder defaulting to ~/.skills, preserve source files, handle symlinks safely and report malformed or unreadable entries.
+4. **[REQ-017]** WHEN the skills catalog is loaded or refreshed THEN the system SHALL read SKILL.md files from a configurable folder defaulting to ~/.skills, preserve source files, handle symlinks safely and report malformed or unreadable entries; skill files SHALL be created or changed only through a user-confirmed Ferreiro draft (REQ-109).
 5. **[REQ-046]** WHEN settings are opened or refreshed THEN the system SHALL detect executable/version/capabilities with bounded local probes, distinguish installation from authentication and defer model-network calls to explicit smoke tests.
 6. **[REQ-047]** WHEN the user views settings THEN the system SHALL keep the global composer available but separate from manual form saves; agents SHALL NOT read or alter settings merely because the screen is visible.
 7. **[REQ-051]** WHEN native configuration, skills or documents enter context THEN the system SHALL treat their content as data subject to role/tool constraints and adapt RPI state instructions for the current invocation without editing user skill/config files.
 8. **[REQ-053]** WHEN agent configuration changes while work is active THEN the system SHALL apply it to future turns; preserve the current turn settings snapshot and explicit recipient context.
 9. **[REQ-059]** WHEN an agent turn emits no events for the configurable inactivity window (default 10 minutes) THEN the system SHALL mark it unresponsive and let the user keep waiting or stop it; a forced stop SHALL always be available and release the feature lease only after the owned process group terminates.
+10. **[REQ-101]** WHEN the skills catalog is loaded or refreshed THEN the system SHALL also read, read-only, the native skill folders of the supported CLIs (`~/.claude/skills`, `~/.codex/skills`, `~/.agents/skills` and the project `.agents/skills`), mark each skill with its origin, keep the configured folder first on name collisions and let any role use any listed skill without copying or installing it.
+11. **[REQ-102]** WHEN plan usage is enabled for a tool in Settings (off by default, showing the file read and the endpoint called before enabling) THEN the system SHALL read that CLI stored login read-only and only in memory to query its usage endpoint (agy through its own `/quota` command), never write, copy, cache, log or refresh credentials, and show an expired login as an action to sign in again; a disabled or failing tool SHALL show usage as unavailable (REQ-082).
 
 ### P2 (Should Have)
 
@@ -65,6 +67,7 @@ Inherit the parent spec's complete edge-case list. The plan additionally enumera
 | --- | --- | --- | --- |
 | 1 | Slice scope | Derived from the approved parent spec and user decisions | Avoid repeating resolved questions. |
 | 2 | Delivery order | Use the ordered plan index and explicit dependencies | Do not implement dependent features against missing APIs. |
+| 3 | 2026-11-01 improvements | REQ-101 (native cli skill folders in the catalog), REQ-102 (opt-in plan usage from stored cli logins) | Added 2026-11-01 from the 2026-11-01 improvement review, approved by the user. |
 
 ## Constraints
 
@@ -91,3 +94,5 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-051 | Untrusted context | P1 | Approved; not implemented |
 | REQ-053 | Settings snapshots | P1 | Approved; not implemented |
 | REQ-059 | Stalled turns | P1 | Approved 2026-10-31; not implemented |
+| REQ-101 | Native CLI skill folders in the catalog | P1 | Approved 2026-11-01; not implemented |
+| REQ-102 | Opt-in plan usage from stored CLI logins | P1 | Approved 2026-11-01; not implemented |

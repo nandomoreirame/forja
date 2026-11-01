@@ -41,6 +41,8 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 8. **[REQ-050]** WHEN Git or file operations encounter external changes THEN the system SHALL preserve unrelated changes, fail safely on conflicts and require re-evaluation rather than force reset, auto-delete or silently including user work.
 9. **[REQ-055]** WHEN a Git target is bound THEN the system SHALL detect candidate validation commands and test-file patterns from repository manifests, require human confirmation, store them per target repository and run them itself through the managed executor as the only authoritative validation evidence.
 10. **[REQ-058]** WHEN a feature is integrated or abandoned THEN the system SHALL move it to a read-only terminal state preserving history; after integration it SHALL offer explicit worktree/branch removal, and abandoning SHALL require confirmation, stop owned processes and keep branch/worktree until explicit cleanup.
+11. **[REQ-097]** WHEN a Git target is bound THEN the system SHALL propose git-ignored local files to copy into new feature worktrees (defaulting to `.env*` at the repository root), require human confirmation stored per target repository, copy only confirmed files that are git-ignored and inside the repository when a worktree is created, and never include them in feature commits or the integration merge.
+12. **[REQ-098]** WHEN two active features of the same target repository change the same file THEN the system SHALL mark the overlapping files in both features (Git panel and feature context) and repeat the warning before final approval, without blocking integration; merge conflicts stay governed by REQ-026 and REQ-050.
 
 ### P2 (Should Have)
 
@@ -66,6 +68,7 @@ Inherit the parent spec's complete edge-case list. The plan additionally enumera
 | --- | --- | --- | --- |
 | 1 | Slice scope | Derived from the approved parent spec and user decisions | Avoid repeating resolved questions. |
 | 2 | Delivery order | Use the ordered plan index and explicit dependencies | Do not implement dependent features against missing APIs. |
+| 3 | 2026-11-01 improvements | REQ-097 (ignored local files copied into worktrees), REQ-098 (cross-feature file overlap warning) | Added 2026-11-01 from the 2026-11-01 improvement review, approved by the user. |
 
 ## Constraints
 
@@ -93,3 +96,5 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-050 | User work preservation | P1 | Approved; not implemented |
 | REQ-055 | Repository gates | P1 | Approved 2026-10-31; not implemented |
 | REQ-058 | Feature end states | P1 | Approved 2026-10-31; not implemented |
+| REQ-097 | Ignored local files copied into worktrees | P1 | Approved 2026-11-01; not implemented |
+| REQ-098 | Cross-feature file overlap warning | P1 | Approved 2026-11-01; not implemented |

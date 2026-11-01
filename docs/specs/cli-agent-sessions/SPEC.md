@@ -33,7 +33,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 
 1. **[REQ-006]** WHEN a message targets a busy feature agent THEN the system SHALL interrupt and await foreground termination by default, or enqueue in order when interruption is disabled, without concurrent duplicate turns.
 2. **[REQ-007]** WHEN multiple features run THEN the system SHALL allow execution across features while enforcing one agent turn per feature and separate session, process and Git ownership.
-3. **[REQ-015]** WHEN an agent is configured THEN the system SHALL target claude, codex, opencode, agy and grok with verified version/capability records, native authentication reuse and no credential copying or persistent user configuration edits.
+3. **[REQ-015]** WHEN an agent is configured THEN the system SHALL target claude, codex, opencode, agy and grok with verified version/capability records, native authentication reuse and no credential copying or persistent user configuration edits; a stored CLI login MAY be read, read-only and in memory, only for opted-in plan usage (REQ-102).
 4. **[REQ-018]** WHEN a CLI produces output THEN the system SHALL normalize versioned structured events for session identity, text, tool activity, permissions, completion and errors while retaining bounded diagnostic context.
 5. **[REQ-019]** WHEN a CLI enters controlled mode THEN the system SHALL verify Forja MCP attachment and effective native-shell restrictions; unsupported tools SHALL remain unavailable for controlled execution instead of silently bypassing permissions.
 6. **[REQ-023]** WHEN an interrupted conversation resumes THEN the system SHALL use the matching feature/agent/CLI native session when supported; ask before reconstructing context in a new session when native resume is unavailable.
@@ -46,6 +46,8 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 13. **[REQ-053]** WHEN agent configuration changes while work is active THEN the system SHALL apply it to future turns; preserve the current turn settings snapshot and explicit recipient context.
 14. **[REQ-059]** WHEN an agent turn emits no events for the configurable inactivity window (default 10 minutes) THEN the system SHALL mark it unresponsive and let the user keep waiting or stop it; a forced stop SHALL always be available and release the feature lease only after the owned process group terminates.
 15. **[REQ-060]** WHEN a CLI reports token or cost usage THEN the system SHALL record and display it per turn and per feature; when a CLI does not report usage the system SHALL show it as unavailable instead of estimating.
+16. **[REQ-095]** WHEN a CLI structured stream does not report waiting for approval or turn completion THEN the system SHALL derive those states from the secondary signal recorded in that CLI capability contract (per-invocation hook settings, notify command, OSC 7501 or window title), record only the event type and time, never prompt, command or output content, and SHALL NOT edit user configuration files.
+17. **[REQ-102]** WHEN plan usage is enabled for a tool in Settings (off by default, showing the file read and the endpoint called before enabling) THEN the system SHALL read that CLI stored login read-only and only in memory to query its usage endpoint (agy through its own `/quota` command), never write, copy, cache, log or refresh credentials, and show an expired login as an action to sign in again; a disabled or failing tool SHALL show usage as unavailable (REQ-082).
 
 ### P2 (Should Have)
 
@@ -71,6 +73,7 @@ Inherit the parent spec's complete edge-case list. The plan additionally enumera
 | --- | --- | --- | --- |
 | 1 | Slice scope | Derived from the approved parent spec and user decisions | Avoid repeating resolved questions. |
 | 2 | Delivery order | Use the ordered plan index and explicit dependencies | Do not implement dependent features against missing APIs. |
+| 3 | 2026-11-01 improvements | REQ-095 (fallback agent status signals), REQ-102 (opt-in plan usage from stored cli logins) | Added 2026-11-01 from the 2026-11-01 improvement review, approved by the user. |
 
 ## Constraints
 
@@ -103,3 +106,5 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-053 | Settings snapshots | P1 | Approved; not implemented |
 | REQ-059 | Stalled turns | P1 | Approved 2026-10-31; not implemented |
 | REQ-060 | Usage visibility | P1 | Approved 2026-10-31; not implemented |
+| REQ-095 | Fallback agent status signals | P1 | Approved 2026-11-01; not implemented |
+| REQ-102 | Opt-in plan usage from stored CLI logins | P1 | Approved 2026-11-01; not implemented |

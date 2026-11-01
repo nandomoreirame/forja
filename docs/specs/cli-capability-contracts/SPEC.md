@@ -31,7 +31,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 
 ### P1 (MVP)
 
-1. **[REQ-015]** WHEN an agent is configured THEN the system SHALL target claude, codex, opencode, agy and grok with verified version/capability records, native authentication reuse and no credential copying or persistent user configuration edits.
+1. **[REQ-015]** WHEN an agent is configured THEN the system SHALL target claude, codex, opencode, agy and grok with verified version/capability records, native authentication reuse and no credential copying or persistent user configuration edits; a stored CLI login MAY be read, read-only and in memory, only for opted-in plan usage (REQ-102).
 2. **[REQ-018]** WHEN a CLI produces output THEN the system SHALL normalize versioned structured events for session identity, text, tool activity, permissions, completion and errors while retaining bounded diagnostic context.
 3. **[REQ-019]** WHEN a CLI enters controlled mode THEN the system SHALL verify Forja MCP attachment and effective native-shell restrictions; unsupported tools SHALL remain unavailable for controlled execution instead of silently bypassing permissions.
 4. **[REQ-023]** WHEN an interrupted conversation resumes THEN the system SHALL use the matching feature/agent/CLI native session when supported; ask before reconstructing context in a new session when native resume is unavailable.
@@ -39,6 +39,7 @@ This slice derives from the [approved functional MVP](../functional-mvp/SPEC.md)
 6. **[REQ-048]** WHEN IPC or MCP receives input THEN the system SHALL validate schemas, project/feature ownership, canonical paths and tool grants; never rely on connector annotations or model-supplied IDs as authorization.
 7. **[REQ-051]** WHEN native configuration, skills or documents enter context THEN the system SHALL treat their content as data subject to role/tool constraints and adapt RPI state instructions for the current invocation without editing user skill/config files.
 8. **[REQ-052]** WHEN a dependency, permission, port, process or file operation fails THEN the system SHALL show an actionable non-secret error and a truthful stopped/failed state without fabricating completion or automatically weakening controls.
+9. **[REQ-095]** WHEN a CLI structured stream does not report waiting for approval or turn completion THEN the system SHALL derive those states from the secondary signal recorded in that CLI capability contract (per-invocation hook settings, notify command, OSC 7501 or window title), record only the event type and time, never prompt, command or output content, and SHALL NOT edit user configuration files.
 
 ### P2 (Should Have)
 
@@ -64,6 +65,7 @@ Inherit the parent spec's complete edge-case list. The plan additionally enumera
 | --- | --- | --- | --- |
 | 1 | Slice scope | Derived from the approved parent spec and user decisions | Avoid repeating resolved questions. |
 | 2 | Delivery order | Use the ordered plan index and explicit dependencies | Do not implement dependent features against missing APIs. |
+| 3 | 2026-11-01 improvements | REQ-095 (fallback agent status signals) | Added 2026-11-01 from the 2026-11-01 improvement review, approved by the user. |
 
 ## Constraints
 
@@ -89,3 +91,4 @@ Unit, integration, E2E and visual validation are specified in the [plan](../../p
 | REQ-048 | Scoped boundaries | P1 | Approved; not implemented |
 | REQ-051 | Untrusted context | P1 | Approved; not implemented |
 | REQ-052 | Operational errors | P1 | Approved; not implemented |
+| REQ-095 | Fallback agent status signals | P1 | Approved 2026-11-01; not implemented |
