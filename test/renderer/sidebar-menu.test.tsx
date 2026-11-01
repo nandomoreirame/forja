@@ -19,3 +19,25 @@ it('opens Memory, Connectors and Settings from the workspace menu', async () => 
   expect(await screen.findByRole('tab', { name: 'Memory' })).toHaveAttribute('aria-selected', 'true')
   expect(screen.getByRole('tab', { name: /Settings/ })).toHaveAttribute('aria-selected', 'true')
 })
+
+it('keeps the Settings tab open when switching to a feature and closes it only from its X', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  const sidebar = await screen.findByRole('complementary', { name: 'dev' })
+  fireEvent.click(
+    within(within(sidebar).getByRole('navigation', { name: 'Workspace' })).getByRole('button', {
+      name: 'Settings',
+    }),
+  )
+  expect(await screen.findByRole('tab', { name: /Settings/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  fireEvent.click(screen.getByRole('tab', { name: /Login with OAuth/ }))
+  expect(screen.getByRole('tab', { name: /Login with OAuth/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  expect(screen.getByRole('tab', { name: /Settings/ })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Close Settings' }))
+  expect(screen.queryByRole('tab', { name: /Settings/ })).toBeNull()
+})

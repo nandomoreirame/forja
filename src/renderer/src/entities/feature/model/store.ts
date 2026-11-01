@@ -34,6 +34,8 @@ export interface WorkbenchState {
   pickingDirectory: boolean
   loadProjects(): Promise<void>
   openFeatureIds: string[]
+  settingsOpen: boolean
+  lastSettings: { tab?: SettingsTab; role?: RoleId }
   recipients: Record<string, RoleId>
   focusComposer(): void
   composerFocusPending: boolean
@@ -42,6 +44,7 @@ export interface WorkbenchState {
   setRecipient(id: string, role: RoleId): void
   startCompose(role?: RoleId): void
   openSettings(options?: { tab?: SettingsTab; role?: RoleId }): void
+  closeSettings(): void
   createFeatureFromPrompt(prompt: string, role: RoleId): string
   selectFeature(id: string): void
   closeFeature(id: string): void
@@ -156,6 +159,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         }
       },
       openFeatureIds: [],
+      settingsOpen: false,
+      lastSettings: {},
       recipients: {},
       composeActivation: 0,
       focusComposer() {
@@ -178,7 +183,33 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         set((state) => ({ composeActivation: state.composeActivation + 1 }))
       },
       openSettings(options = {}) {
-        get().navigate({ kind: 'settings', ...options })
+        const next = { ...get().lastSettings, ...options }
+        set({ settingsOpen: true, lastSettings: next })
+        get().navigate({ kind: 'settings', ...next })
+      },
+      closeSettings() {
+        const state = get()
+        if (!state.settingsOpen) return
+        const history: View[] = []
+        let historyIndex = -1
+        state.history.forEach((entry, index) => {
+          if (entry.kind === 'settings') return
+          history.push(entry)
+          if (index <= state.historyIndex) historyIndex = history.length - 1
+        })
+        let view = state.view
+        if (view.kind === 'settings') {
+          view =
+            history[historyIndex] ??
+            (state.openFeatureIds.length
+              ? { kind: 'conversation', featureId: state.openFeatureIds[0] }
+              : { kind: 'home' })
+          if (historyIndex < 0) {
+            history.push(view)
+            historyIndex = history.length - 1
+          }
+        }
+        set({ settingsOpen: false, view, history, historyIndex })
       },
       createFeatureFromPrompt(prompt, role) {
         const snapshot = get().snapshot

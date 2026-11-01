@@ -80,7 +80,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
           <button
             type="button"
             className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full px-3 py-1 text-left text-muted-foreground hover:bg-accent hover:text-primary"
-            onClick={() => state.navigate({ kind: 'settings' })}
+            onClick={() => state.openSettings({ tab: 'agents' })}
           >
             {a.editAgents}
           </button>
@@ -101,7 +101,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                   className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring"
                   onClick={() =>
                     kind === 'skill'
-                      ? state.navigate({ kind: 'settings' })
+                      ? state.openSettings({ tab: 'agents' })
                       : state.navigate({ kind: 'document', artifactId: item.id })
                   }
                 >
@@ -121,7 +121,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                 className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full py-1 text-left text-muted-foreground hover:text-primary"
                 onClick={() =>
                   kind === 'skill'
-                    ? state.navigate({ kind: 'settings' })
+                    ? state.openSettings({ tab: 'agents' })
                     : state.startCompose(kind === 'plan' ? 'planner' : 'research')
                 }
               >

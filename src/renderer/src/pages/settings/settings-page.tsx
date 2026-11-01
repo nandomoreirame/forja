@@ -23,7 +23,7 @@ import type { AgentProfile } from '@/renderer/src/features/agent-settings/model'
 import { effortOptions, inactivityError, isDirty, normalizeProfile } from '@/renderer/src/features/agent-settings/model'
 import { UnsavedDialog } from '@/renderer/src/features/agent-settings/unsaved-dialog'
 import { roleIds, type ConnectorSnapshot, type MemoryRecord, type RoleId, type SettingsSnapshot, type SettingsTab } from '@/renderer/src/shared/api'
-import { FeatureTabs } from '@/widgets/workbench'
+import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 
 const catalogSkills = ['rpi-implement', 'git', 'git-flow']
 
@@ -127,28 +127,7 @@ export function SettingsPage() {
 
   return (
     <section className="flex min-h-0 flex-1 flex-col overflow-auto">
-      {feature ? (
-        <FeatureTabs
-            selectedId={state.view.kind === 'settings' ? 'settings' : feature.id}
-            panelId="settings-panel"
-            items={[
-              ...state.openFeatureIds
-              .map((id) => state.snapshot?.features.find((item) => item.id === id))
-              .filter(Boolean)
-              .map((item) => ({ id: item!.id, label: item!.name, tool: item!.tool, state: 'idle' as const })),
-              { id: 'settings', label: a.settings, state: 'idle' as const },
-            ]}
-            onSelect={(id) =>
-              id === 'settings'
-                ? state.openSettings({ tab, role: activeRole })
-                : state.selectFeature(id)
-            }
-            onClose={(id) => id === 'settings' && state.back()}
-            closeLabel={a.close}
-            label={a.features}
-            stateLabels={{ running: a.states.running, waiting: a.states.waiting, idle: a.idle }}
-          />
-      ) : null}
+      <WorkbenchTabs />
       <div className="mx-auto w-full max-w-4xl flex-1 space-y-5 p-6">
         <header>
           <h1 className="text-lg font-semibold">{a.settingsTitle}</h1>

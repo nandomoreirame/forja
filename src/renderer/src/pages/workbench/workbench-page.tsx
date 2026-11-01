@@ -120,7 +120,7 @@ function WorkbenchShell() {
     'ctrl+r': () => s.openPalette('recent'),
     'ctrl+,': () => {
       s.closePalette()
-      s.navigate({ kind: 'settings' })
+      s.openSettings()
     },
     'ctrl+shift+p': () => s.openPalette('all'),
     'alt+arrowleft': s.back,
@@ -133,7 +133,7 @@ function WorkbenchShell() {
     }
     if (id === 'open-project') void s.openDirectory()
     if (id === 'recent-projects') s.openPalette('recent')
-    if (id === 'settings') s.navigate({ kind: 'settings' })
+    if (id === 'settings') s.openSettings()
     if (id === 'toggle-terminals' && s.snapshot) s.toggleTerminals(terminalScope?.id)
   }
   return (

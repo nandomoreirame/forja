@@ -1,13 +1,11 @@
-import { useState } from 'react'
 import { History } from '@/renderer/src/features/conversation'
-import { CloseFeatureDialog } from '@/renderer/src/features/feature-tabs'
 import { roleIds } from '@/renderer/src/shared/api'
-import { FeatureContext, FeatureTabs } from '@/widgets/workbench'
+import { FeatureContext } from '@/widgets/workbench'
 import { getDictionary } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import { ComposerController } from '@/renderer/src/features/composer'
+import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 export function ConversationPage() {
-  const [closingId, setClosingId] = useState<string | null>(null)
   const state = useWorkbench((s) => s)
   const d = getDictionary(state.source.locale),
     a = d.app
@@ -17,27 +15,7 @@ export function ConversationPage() {
   if (!feature) return null
   return (
     <section className="flex min-h-0 flex-1 flex-col">
-      <FeatureTabs
-        selectedId={feature.id}
-        panelId={`feature-panel-${feature.id}`}
-        items={state
-          .snapshot!.features.filter((f) => state.openFeatureIds.includes(f.id))
-          .map((f) => ({
-            id: f.id,
-            label: f.name,
-            tool: f.tool,
-            state: f.state === 'running' ? 'running' : f.state === 'waiting' ? 'waiting' : 'idle',
-          }))}
-        onSelect={state.selectFeature}
-        onClose={(id) => {
-          if (state.snapshot?.features.find((f) => f.id === id)?.state === 'running')
-            setClosingId(id)
-          else state.closeFeature(id)
-        }}
-        closeLabel={a.close}
-        label={a.features}
-        stateLabels={{ running: a.states.running, waiting: a.states.waiting, idle: a.idle }}
-      />
+      <WorkbenchTabs />
       <div
         role="tabpanel"
         id={`feature-panel-${feature.id}`}
@@ -75,17 +53,6 @@ export function ConversationPage() {
           <ComposerController key={feature.id} featureId={feature.id} />
         </div>
       </div>
-      <CloseFeatureDialog
-        open={closingId !== null}
-        locale={state.source.locale}
-        onOpenChange={(open) => {
-          if (!open) setClosingId(null)
-        }}
-        onConfirm={() => {
-          if (closingId) state.closeFeature(closingId)
-          setClosingId(null)
-        }}
-      />
     </section>
   )
 }
