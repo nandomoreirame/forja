@@ -73,6 +73,18 @@ export const en = {
     pickerUnavailable: 'Use the desktop app to select a folder in this browser.',
     features: 'Features',
     archived: 'Archived',
+    board: {
+      title: 'Board',
+      columns: {
+        backlog: 'Backlog',
+        research: 'Research',
+        plan: 'Plan',
+        implement: 'Implement',
+        testing: 'Testing',
+        review: 'Review',
+        done: 'Done',
+      },
+    },
     backlog: {
       title: 'Backlog',
       empty: 'No demands yet. Add one to start research later.',

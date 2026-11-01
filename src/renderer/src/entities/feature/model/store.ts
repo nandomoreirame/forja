@@ -30,6 +30,7 @@ export type View =
   | { kind: 'home' }
   | { kind: 'archived' }
   | { kind: 'backlog' }
+  | { kind: 'board' }
   | { kind: 'compose'; role: AgentId; id: string }
   | { kind: 'conversation'; featureId: string }
   | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
@@ -113,6 +114,9 @@ export interface WorkbenchState {
   /** Pages other than features and documents open as tabs too, like Settings. */
   archivedOpen: boolean
   backlogOpen: boolean
+  boardOpen: boolean
+  openBoard(): void
+  closeBoard(): void
   openBacklog(): void
   closeBacklog(): void
   addDemand(demand: { title: string; description?: string }): void
@@ -199,12 +203,14 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         ? { archivedOpen: true }
         : view.kind === 'backlog'
           ? { backlogOpen: true }
-          : view.kind === 'settings'
-            ? { settingsOpen: true }
-            : {}
+          : view.kind === 'board'
+            ? { boardOpen: true }
+            : view.kind === 'settings'
+              ? { settingsOpen: true }
+              : {}
     // Drops a page's entries from history and, when it is showing, moves to the previous view.
     const leavePage = (
-      kind: 'settings' | 'archived' | 'backlog' | 'authoring' | ((view: View) => boolean),
+      kind: 'settings' | 'archived' | 'backlog' | 'board' | 'authoring' | ((view: View) => boolean),
     ) => {
       const matches = (view: View) => (typeof kind === 'function' ? kind(view) : view.kind === kind)
       const state = get()
@@ -559,6 +565,16 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       settingsOpen: false,
       archivedOpen: false,
       backlogOpen: false,
+      boardOpen: false,
+      openBoard() {
+        if (!get().snapshot || !isEnabled('backlog-board')) return
+        set({ boardOpen: true })
+        get().navigate({ kind: 'board' })
+      },
+      closeBoard() {
+        if (!get().boardOpen) return
+        set({ boardOpen: false, ...leavePage('board') })
+      },
       openBacklog() {
         if (!get().snapshot || !isEnabled('backlog-board')) return
         set({ backlogOpen: true })
@@ -705,6 +721,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         else if (view.kind === 'settings') get().closeSettings()
         else if (view.kind === 'archived') get().closeArchived()
         else if (view.kind === 'backlog') get().closeBacklog()
+        else if (view.kind === 'board') get().closeBoard()
         else if (view.kind === 'compose') get().closeCompose(view.id)
         else if (view.kind === 'authoring') get().closeAuthoring()
       },
@@ -1029,6 +1046,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             fileTabs: [],
             fileContents: {},
             backlogOpen: false,
+            boardOpen: false,
             drafts: {},
             summaries: {},
           })

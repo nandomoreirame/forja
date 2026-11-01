@@ -73,6 +73,18 @@ export const ptBr = {
     pickerUnavailable: 'Use o aplicativo desktop para selecionar uma pasta neste navegador.',
     features: 'Features',
     archived: 'Arquivados',
+    board: {
+      title: 'Quadro',
+      columns: {
+        backlog: 'Backlog',
+        research: 'Pesquisa',
+        plan: 'Plano',
+        implement: 'Implementação',
+        testing: 'Testes',
+        review: 'Revisão',
+        done: 'Concluído',
+      },
+    },
     backlog: {
       title: 'Backlog',
       empty: 'Nenhuma demanda ainda. Adicione uma para pesquisar depois.',

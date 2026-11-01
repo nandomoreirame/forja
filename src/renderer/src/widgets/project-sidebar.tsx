@@ -1,5 +1,5 @@
 import { UsagePanel } from '@/renderer/src/features/usage/usage-panel'
-import { Archive, ListTodo, Plug, Settings } from 'lucide-react'
+import { Archive, KanbanSquare, ListTodo, Plug, Settings } from 'lucide-react'
 import { isEnabled } from '@/renderer/src/shared/lib/feature-flags'
 import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
@@ -48,11 +48,18 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
         <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
           <div className="space-y-0.5">
             {isEnabled('backlog-board') ? (
-              <WorkspaceButton
-                icon={<ListTodo />}
-                label={a.backlog.title}
-                onClick={() => state.openBacklog()}
-              />
+              <>
+                <WorkspaceButton
+                  icon={<ListTodo />}
+                  label={a.backlog.title}
+                  onClick={() => state.openBacklog()}
+                />
+                <WorkspaceButton
+                  icon={<KanbanSquare />}
+                  label={a.board.title}
+                  onClick={() => state.openBoard()}
+                />
+              </>
             ) : null}
             <WorkspaceButton
               icon={<Archive />}

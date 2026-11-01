@@ -2,6 +2,7 @@ import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
 import { ArchivedPage } from '@/renderer/src/pages/archived'
 import { FileViewPage } from '@/renderer/src/pages/file-view'
 import { BacklogPage } from '@/renderer/src/pages/backlog'
+import { BoardPage } from '@/renderer/src/pages/board'
 import { DocumentPage, AuthoringPage } from '@/renderer/src/pages/document'
 import { ComposePage } from '@/renderer/src/pages/compose'
 import { ConversationPage } from '@/renderer/src/pages/conversation'
@@ -192,6 +193,8 @@ function WorkbenchShell() {
                             <ArchivedPage />
                           ) : s.view.kind === 'backlog' ? (
                             <BacklogPage />
+                          ) : s.view.kind === 'board' ? (
+                            <BoardPage />
                           ) : s.view.kind === 'authoring' ? (
                             <AuthoringPage />
                           ) : s.view.kind === 'home' ? (

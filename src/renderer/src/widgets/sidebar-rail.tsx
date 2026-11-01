@@ -6,6 +6,7 @@ import {
   Brain,
   ClipboardList,
   GitPullRequest,
+  KanbanSquare,
   ListChecks,
   ListTodo,
   ListTree,
@@ -85,7 +86,10 @@ export function SidebarRail() {
   ]
   const workspace: Item[] = [
     ...(isEnabled('backlog-board')
-      ? [{ label: a.backlog.title, icon: ListTodo, run: () => state.openBacklog() }]
+      ? [
+          { label: a.backlog.title, icon: ListTodo, run: () => state.openBacklog() },
+          { label: a.board.title, icon: KanbanSquare, run: () => state.openBoard() },
+        ]
       : []),
     { label: a.archived, icon: Archive, run: () => state.openArchived() },
     { label: 'Connectors', icon: Plug, run: () => state.openSettings({ tab: 'connectors' }) },
