@@ -53,7 +53,8 @@ export function NavigatorSection({
 }: {
   section: string
   title: string
-  count: number
+  /** Item count in the header; omitted for panes that are not lists. */
+  count?: number
   children: ReactNode
   /** Header actions, shown while the pointer or focus is inside the pane. */
   actions?: ReactNode
@@ -138,12 +139,14 @@ export function NavigatorSection({
                 <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
               )}
               <span className="truncate">{title}</span>{' '}
-              <span
-                data-slot="pane-count"
-                className="ml-auto min-w-6 pl-2 text-right font-normal tabular-nums"
-              >
-                {count}
-              </span>
+              {count === undefined ? null : (
+                <span
+                  data-slot="pane-count"
+                  className="ml-auto min-w-6 pl-2 text-right font-normal tabular-nums"
+                >
+                  {count}
+                </span>
+              )}
             </button>
           </h2>
           {actions ? (

@@ -118,3 +118,29 @@ test('the prompt composer is 25% shorter than its original 192 px', async ({ pag
     .filter({ has: page.getByRole('textbox', { name: /Send your prompt/ }) })
   expect(Math.abs((await height(form)) - 144)).toBeLessThanOrEqual(2)
 })
+
+test('the project panel resizes within its limits, resets on double click and is remembered', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await openProject(page)
+  const panel = page.getByRole('complementary', { name: 'Project' })
+  const separator = page.getByRole('separator', { name: 'Resize project panel' })
+  expect(Math.abs((await width(panel)) - (260 - frameInset))).toBeLessThanOrEqual(2)
+  await dragBy(page, separator, -80, 0)
+  expect(Math.abs((await width(panel)) - (340 - frameInset))).toBeLessThanOrEqual(2)
+  await dragBy(page, separator, 1000, 0)
+  expect(Math.abs((await width(panel)) - (200 - frameInset))).toBeLessThanOrEqual(2)
+  await dragBy(page, separator, -1000, 0)
+  expect(Math.abs((await width(panel)) - (480 - frameInset))).toBeLessThanOrEqual(2)
+  await separator.dblclick()
+  expect(Math.abs((await width(panel)) - (260 - frameInset))).toBeLessThanOrEqual(2)
+  await dragBy(page, separator, -40, 0)
+  await page.reload()
+  await openProject(page)
+  expect(
+    Math.abs(
+      (await width(page.getByRole('complementary', { name: 'Project' }))) - (300 - frameInset),
+    ),
+  ).toBeLessThanOrEqual(2)
+})

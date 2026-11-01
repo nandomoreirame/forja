@@ -1,6 +1,6 @@
 import type { Locale } from '@/shared/i18n'
 import { oauthConversation } from './mock-conversation'
-import { roleIds, type ProjectSnapshot } from './workbench-source'
+import { roleIds, type FileNode, type ProjectSnapshot } from './workbench-source'
 export function mockProjects(locale: Locale): ProjectSnapshot[] {
   const names =
     locale === 'en'
@@ -98,7 +98,8 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
             ]
           : [],
       branches: ['main'],
-      changes: [],
+      changes: id === 'dev' ? devChanges : [],
+      files: id === 'dev' ? devFiles : undefined,
       features:
         id !== 'dev'
           ? []
@@ -240,3 +241,52 @@ ${feature.name}`,
     '```typescript\nconst expired = expiresAt <= now\nif (expired) throw new Error("Expired callback")\n```',
   ].join('\n\n')
 }
+
+// Sample working tree for the dev project: what Explorer and Changes show.
+const devChanges: ProjectSnapshot['changes'] = [
+  { path: 'CLAUDE.md', status: 'M' },
+  { path: 'docs/specs/context-panel/SPEC.md', status: 'A' },
+  { path: 'scripts/old-deploy.sh', status: 'D' },
+  { path: 'src/renderer/src/widgets/git-context.tsx', status: 'M' },
+  { path: 'src/renderer/src/widgets/explorer-section.tsx', status: 'U' },
+  { path: 'src/shared/i18n/en.ts', status: 'M' },
+  { path: 'src/shared/i18n/pt-br.ts', status: 'M' },
+  { path: 'test/renderer/context-panel.test.tsx', status: 'U' },
+]
+
+const file = (name: string) => ({ name })
+const folder = (name: string, children: FileNode[], ignored?: boolean) => ({
+  name,
+  children,
+  ignored,
+})
+const devFiles: FileNode[] = [
+  folder('.github', [folder('workflows', [file('ci.yml')])]),
+  folder('coverage', [file('index.html')], true),
+  folder('docs', [
+    folder('plans', [file('2026-11-01-context-panel.md')]),
+    folder('specs', [folder('context-panel', [file('SPEC.md'), file('STATE.md')])]),
+  ]),
+  folder('out', [folder('renderer', [file('index.html')])], true),
+  folder('scripts', [file('build-icons.mjs')]),
+  folder('src', [
+    folder('main', [file('index.ts'), file('app-menu.ts')]),
+    folder('renderer', [
+      folder('src', [
+        folder('widgets', [file('explorer-section.tsx'), file('git-context.tsx')]),
+        file('main.tsx'),
+      ]),
+      file('index.html'),
+    ]),
+    folder('shared', [folder('i18n', [file('en.ts'), file('pt-br.ts')])]),
+  ]),
+  folder('test', [folder('renderer', [file('context-panel.test.tsx')])]),
+  { name: '.env', ignored: true },
+  file('.gitignore'),
+  file('AGENTS.md'),
+  file('CLAUDE.md'),
+  file('README.md'),
+  file('package.json'),
+  file('tsconfig.json'),
+  file('vite.config.ts'),
+]

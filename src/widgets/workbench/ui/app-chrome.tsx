@@ -17,6 +17,8 @@ export interface AppTopbarProps {
   /** Project switcher shown next to the brand. */
   project?: ReactNode
   usage?: ReactNode
+  /** Controls at the far right, such as the right panel toggle. */
+  end?: ReactNode
   commandText: string
   onBack?: () => void
   onForward?: () => void
@@ -33,6 +35,7 @@ export function AppTopbar({
   brand,
   project,
   usage,
+  end,
   commandText,
   onBack,
   onForward,
@@ -109,6 +112,7 @@ export function AppTopbar({
                 terminalOpen,
               )
             : null}
+          {end}
         </div>
       </header>
     </TooltipProvider>

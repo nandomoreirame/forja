@@ -67,6 +67,13 @@ export interface FeatureSnapshot {
   messages: ChatMessage[]
   terminals: MockTerminal[]
 }
+export type GitStatus = 'M' | 'U' | 'A' | 'D'
+export interface FileNode {
+  name: string
+  children?: FileNode[]
+  /** Ignored by git (dimmed in Explorer, like build output). */
+  ignored?: boolean
+}
 export interface ProjectSnapshot {
   project: ProjectSummary
   agents: { id: RoleId; state: UiState }[]
@@ -82,7 +89,10 @@ export interface ProjectSnapshot {
   }[]
   skills: { id: string; name: string; scope: 'project' | 'global' }[]
   branches: string[]
-  changes: { path: string; status: string }[]
+  /** Working tree changes, with git's short status: M modified, U untracked, A added, D deleted. */
+  changes: { path: string; status: GitStatus }[]
+  /** Project file tree for Explorer; folders have children. */
+  files?: FileNode[]
   features: FeatureSnapshot[]
   /** Shells opened while no feature is selected; they run in the project folder. */
   terminals?: MockTerminal[]

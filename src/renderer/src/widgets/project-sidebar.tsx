@@ -1,15 +1,8 @@
 import { Archive, Plug, Settings } from 'lucide-react'
-import { useRef, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  useDefaultLayout,
-  useGroupRef,
-} from '@/shared/ui'
-import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
+import { ResizableHandle } from '@/shared/ui'
 import {
   FeaturesSection,
   SpecsSection,
@@ -18,27 +11,12 @@ import {
   SkillsSection,
   MemoriesSection,
 } from '@/renderer/src/features/project-navigator'
-import { stackPanes } from '@/renderer/src/features/project-navigator/stack-panes'
-import { paneHeaderSize } from '@/renderer/src/features/project-navigator/section'
+import { PaneStack } from '@/renderer/src/features/project-navigator/pane-stack'
 export function ProjectSidebar({ locale }: { locale: Locale }) {
   const state = useWorkbench((s) => s)
   const snapshot = state.snapshot!
   const d = getDictionary(locale)
   const a = d.app
-  const paneLayout = useDefaultLayout({
-    id: 'forja-sidebar-panes',
-    storage: layoutStorage,
-    panelIds: ['features', 'specs', 'plans', 'reviews', 'skills', 'memories', 'pane-filler'],
-  })
-  const group = useGroupRef()
-  const groupElement = useRef<HTMLDivElement | null>(null)
-  const onLayoutChanged: typeof paneLayout.onLayoutChanged = (layout, meta) => {
-    paneLayout.onLayoutChanged(layout, meta)
-    const height = groupElement.current?.clientHeight
-    if (!height) return
-    const next = stackPanes(layout, (paneHeaderSize / height) * 100, 'pane-filler')
-    if (next) group.current?.setLayout(next)
-  }
   return (
     <aside
       aria-label={snapshot.project.name}
@@ -47,13 +25,9 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       className="flex h-full w-full flex-col overflow-hidden rounded-part border border-border text-xs"
     >
       {/* VS Code style panes: each one resizes from the sash above it and collapses to its header. */}
-      <ResizablePanelGroup
-        orientation="vertical"
-        className="min-h-0 flex-1"
-        {...paneLayout}
-        groupRef={group}
-        elementRef={groupElement}
-        onLayoutChanged={onLayoutChanged}
+      <PaneStack
+        id="forja-sidebar-panes"
+        panes={['features', 'specs', 'plans', 'reviews', 'skills', 'memories']}
       >
         <FeaturesSection locale={locale} />
         <ResizableHandle className="bg-border" />
@@ -66,9 +40,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
         <SkillsSection locale={locale} />
         <ResizableHandle className="bg-border" />
         <MemoriesSection locale={locale} />
-        {/* Holds the free height only while every pane is collapsed (see stackPanes). */}
-        <ResizablePanel id="pane-filler" minSize={0} defaultSize={0} data-slot="pane-filler" />
-      </ResizablePanelGroup>
+      </PaneStack>
       <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
         <div className="space-y-0.5">
           <WorkspaceButton

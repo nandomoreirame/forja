@@ -26,14 +26,12 @@ import {
   useGroupRef,
 } from '@/shared/ui'
 import { getDictionary } from '@/shared/i18n'
-import { ChevronLeft } from 'lucide-react'
 import { ProjectSidebar } from '@/renderer/src/widgets/project-sidebar'
 import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 import { SidebarRail, SidebarToggle } from '@/renderer/src/widgets/sidebar-rail'
-import { GitContext } from '@/renderer/src/widgets/git-context'
+import { ContextPanelToggle, GitContext } from '@/renderer/src/widgets/git-context'
 import { GitStatus } from '@/renderer/src/widgets/git-status'
 import { ProjectSwitcher } from '@/renderer/src/widgets/project-switcher'
-import { IconButton } from '@/renderer/src/shared/ui/icon-button'
 import { TerminalFooterToolbar, TerminalPanel } from '@/renderer/src/features/terminal'
 import { UsagePopover } from '@/renderer/src/features/usage/usage-popover'
 const mainLayoutKey = 'react-resizable-panels:forja-main:content:terminal'
@@ -68,7 +66,11 @@ function WorkbenchShell() {
   const workbenchLayout = useDefaultLayout({
     id: 'forja-workbench',
     storage: layoutStorage,
-    panelIds: s.snapshot && s.panels.left ? ['sidebar', 'main'] : ['main'],
+    panelIds: [
+      ...(s.snapshot && s.panels.left ? ['sidebar'] : []),
+      'main',
+      ...(s.snapshot && s.panels.right ? ['context'] : []),
+    ],
   })
   const mainGroup = useGroupRef()
   const mainLayout = useDefaultLayout({
@@ -124,6 +126,7 @@ function WorkbenchShell() {
       <AppTopbar
         brand="FORJA"
         project={s.snapshot ? <SidebarToggle /> : undefined}
+        end={s.snapshot ? <ContextPanelToggle /> : undefined}
         usage={
           <UsagePopover
             source={s.source}
@@ -253,20 +256,23 @@ function WorkbenchShell() {
               </ResizablePanelGroup>
             </main>
           </ResizablePanel>
+          {s.snapshot && s.panels.right ? (
+            <>
+              <ResizableHandle aria-label={a.resizeProjectPanel} />
+              <ResizablePanel
+                id="context"
+                minSize={200}
+                maxSize={480}
+                defaultSize={260}
+                groupResizeBehavior="preserve-pixel-size"
+              >
+                <div className="h-full p-1">
+                  <GitContext locale={s.source.locale} />
+                </div>
+              </ResizablePanel>
+            </>
+          ) : null}
         </ResizablePanelGroup>
-        {s.snapshot ? (
-          s.panels.right ? (
-            <div className="flex shrink-0 p-1">
-              <GitContext locale={s.source.locale} />
-            </div>
-          ) : (
-            <div className="p-1">
-              <IconButton label={a.expandRight} onClick={() => s.togglePanel('right')}>
-                <ChevronLeft />
-              </IconButton>
-            </div>
-          )
-        ) : null}
       </div>
       <CommandPalette
         open={s.palette.open}
