@@ -34,6 +34,7 @@ Os componentes genéricos ficam na camada compartilhada. Composições específi
 | Item | Regra para implementação |
 | --- | --- |
 | Horário e avatares nas mensagens | Não copiar iniciais ou avatares inventados. Por decisão do usuário em 01/11/2026, cada mensagem mostra o horário real de envio ao lado do autor (só a hora no mesmo dia; dia, mês e hora em outro dia), com o nome do autor em 13 px. |
+| Sidebar em painéis (VS Code) | Por decisão do usuário em 01/11/2026, a sidebar segue o paneview do VS Code: cada seção redimensiona pela divisória e recolhe ao cabeçalho de 22 px (tamanhos e estado salvos por usuário), linhas de 22 px com texto de 13 px e ícones de 16 px, badges e ações das linhas e dos cabeçalhos só no hover ou foco, scrollbar sobreposta que aparece no hover, seções vazias com mensagem. Documentos abrem em largura total. |
 | Mascotes nas respostas de agentes | Por decisão do usuário em 31/10/2026, respostas de agentes mostram o mascote em pixel-art do papel com a ferramenta como selo, sobre superfície cinza sem borda; o mascote anima enquanto a resposta é transmitida e fica parado com movimento reduzido. Mensagens do usuário continuam sem avatar e sem horário. Os logos das ferramentas vêm de `@lobehub/icons-static-svg`. |
 | Modelos preenchidos | Não transformar exemplos inventados pelo Stitch em modelos fixos, listas oficiais ou configuração padrão. O campo vazio usa o padrão da CLI. |
 | Contador de skills | Não exigir o contador inventado na tela de configurações. |
