@@ -39,6 +39,10 @@ export interface MockTerminal {
   shell?: string
 }
 export interface FeatureSnapshot {
+  lastActivityAt: string
+  endState?: 'integrated' | 'abandoned'
+  stalled?: boolean
+  archived?: boolean
   id: string
   slug: string
   name: string
@@ -60,10 +64,13 @@ export interface ProjectSnapshot {
     id: string
     name: string
     kind: 'spec' | 'plan' | 'review'
+    featureId: string
+    specId?: string
+    archived?: boolean
     state: UiState
     author: RoleId
   }[]
-  skills: { id: string; name: string }[]
+  skills: { id: string; name: string; scope: 'project' | 'global' }[]
   branches: string[]
   changes: { path: string; status: string }[]
   features: FeatureSnapshot[]
@@ -90,6 +97,7 @@ export interface SettingsSnapshot {
 }
 export type SettingsTab = 'agents' | 'general' | 'memory' | 'connectors'
 export interface MemoryRecord {
+  scope: 'project' | 'global'
   id: string
   title: string
   kind: string

@@ -23,9 +23,15 @@ it('serves isolated localized snapshots for both projects', async () => {
     'reviewer',
   ])
   const dev = await source.loadProject('dev')
-  expect(dev.features.map((f) => f.name)).toEqual(['Login com OAuth', 'Busca no catálogo'])
+  expect(dev.features.map((f) => f.name)).toEqual([
+    'Login com OAuth',
+    'Busca no catálogo',
+    'Retentativa de pagamento',
+    'Configurações de perfil',
+    'Importação legada',
+  ])
   dev.features.length = 0
-  expect((await source.loadProject('dev')).features).toHaveLength(2)
+  expect((await source.loadProject('dev')).features).toHaveLength(5)
   await expect(source.loadProject('missing')).rejects.toThrow('Unknown project')
 })
 

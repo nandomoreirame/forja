@@ -85,6 +85,7 @@ export const projectTerminalScopeId = (projectId: string) => `project:${projectI
 export function projectTerminalScope(snapshot: ProjectSnapshot): FeatureSnapshot {
   return {
     id: projectTerminalScopeId(snapshot.project.id),
+    lastActivityAt: snapshot.project.lastOpenedAt,
     slug: snapshot.project.id,
     name: snapshot.project.name,
     state: 'draft',
@@ -324,6 +325,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           slug,
           name,
           state: 'running' as const,
+          lastActivityAt: new Date().toISOString(),
           mode: 'guided' as const,
           tool: 'claude' as const,
           destination: snapshot.project.path,

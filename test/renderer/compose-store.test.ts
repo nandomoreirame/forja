@@ -46,7 +46,13 @@ it('requires an open project and defaults new conversations to Research', async 
   store.getState().startCompose()
   expect(store.getState().view).toEqual({ kind: 'home' })
   await store.getState().openProject('dev')
-  expect(store.getState().openFeatureIds).toEqual(['feature-1', 'feature-2'])
+  expect(store.getState().openFeatureIds).toEqual([
+    'feature-1',
+    'feature-2',
+    'feature-3',
+    'feature-4',
+    'feature-5',
+  ])
   store.getState().startCompose()
   expect(store.getState().view).toEqual({ kind: 'compose', role: 'research' })
   expect(() => store.getState().createFeatureFromPrompt('  ', 'research')).toThrow('Empty prompt')
@@ -84,4 +90,17 @@ it('keeps the history cursor and forward entries when an inactive feature closes
   expect(store.getState().history).toHaveLength(3)
   store.getState().forward()
   expect(store.getState().view).toEqual({ kind: 'document', documentId: 'spec' })
+})
+
+it('assigns activity timestamps to newly composed features and the project terminal scope', async () => {
+  const { projectTerminalScope } =
+    await import('../../src/renderer/src/entities/feature/model/store')
+  const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
+  await store.getState().openProject('nandomoreira.dev')
+  const id = store.getState().createFeatureFromPrompt('Timestamp', 'research')
+  const snapshot = store.getState().snapshot!
+  expect(
+    Number.isFinite(Date.parse(snapshot.features.find((f) => f.id === id)!.lastActivityAt)),
+  ).toBe(true)
+  expect(projectTerminalScope(snapshot).lastActivityAt).toBe(snapshot.project.lastOpenedAt)
 })

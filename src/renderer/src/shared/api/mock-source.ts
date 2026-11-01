@@ -59,7 +59,11 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
     async readArtifact(id) {
       const artifact = fixtures.flatMap((item) => item.artifacts).find((item) => item.id === id)
       if (!artifact) throw new Error('Unknown artifact')
-      return mockArtifactMarkdown(locale, artifact.kind)
+      const feature = fixtures
+        .flatMap((item) => item.features)
+        .find((item) => item.id === artifact.featureId)
+      if (!feature) throw new Error('Unknown artifact feature')
+      return mockArtifactMarkdown(locale, artifact, feature)
     },
     streamReply(request, onEvent, options = {}) {
       const script = mockReplies[locale][request.role]
@@ -108,14 +112,16 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
       return [
         {
           id: 'memory-1',
-          title: 'OAuth callback decision',
+          title: locale === 'en' ? 'OAuth callback decision' : 'Decisão sobre callback OAuth',
+          scope: 'project',
           kind: 'decision',
           author: 'research',
           date: '2026-10-31',
         },
         {
           id: 'memory-2',
-          title: 'Regression test requested',
+          title: locale === 'en' ? 'Regression test requested' : 'Teste de regressão solicitado',
+          scope: 'global',
           kind: 'reference',
           author: 'reviewer',
           date: '2026-10-30',

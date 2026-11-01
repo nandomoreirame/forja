@@ -34,7 +34,7 @@ it('streams independent features without changing selection or recipients', asyn
   store.getState().sendMessage('feature-1', 'Implement')
   store.getState().sendMessage('feature-2', 'Test')
   vi.advanceTimersByTime(250)
-  for (const feature of store.getState().snapshot!.features) {
+  for (const feature of store.getState().snapshot!.features.slice(0, 2)) {
     expect(feature.state).toBe('running')
     expect(feature.messages.at(-1)?.text).not.toBe('')
     expect(streamed(feature)[0]?.state).toBe('running')

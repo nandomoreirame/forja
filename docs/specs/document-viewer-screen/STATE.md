@@ -1,6 +1,6 @@
 ---
 feature: document-viewer-screen
-phase: none
+phase: implement
 started_at: 2026-10-31
 approved_at: 2026-10-31
 spec_path: docs/specs/document-viewer-screen/SPEC.md

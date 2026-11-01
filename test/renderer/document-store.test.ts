@@ -21,9 +21,9 @@ it.each(['en', 'pt-br'] as const)(
   async (locale) => {
     const source = createMockSource({ locale })
     const { artifacts } = await source.loadProject('dev')
-    expect(artifacts).toHaveLength(3)
+    expect(artifacts).toHaveLength(11)
     const bodies = await Promise.all(artifacts.map((a) => source.readArtifact(a.id)))
-    expect(new Set(bodies).size).toBe(3)
+    expect(new Set(bodies).size).toBe(11)
     for (const body of bodies) expect(body).not.toMatch(/<\/?[a-z][^>]*>/i)
     expect(bodies[0]).toContain(locale === 'en' ? 'Objective' : 'Objetivo')
     expect(bodies[0]).toContain('- [ ]')
@@ -51,7 +51,10 @@ it('selects a neighbor when closing and restores the previous view after the las
   const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
   await store.getState().openProject('dev')
   const previous = store.getState().view
-  const ids = store.getState().snapshot!.artifacts.map((a) => a.id)
+  const ids = store
+    .getState()
+    .snapshot!.artifacts.slice(0, 3)
+    .map((a) => a.id)
   for (const id of ids) await store.getState().openDocument(id)
   store.getState().closeDocument(ids[1])
   expect(store.getState().view).toEqual({ kind: 'document', documentId: ids[2] })
@@ -104,7 +107,10 @@ it('returns to the latest non-document view, skipping a feature closed meanwhile
   const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
   await store.getState().openProject('dev')
   const [first, second] = store.getState().openFeatureIds
-  const ids = store.getState().snapshot!.artifacts.map((a) => a.id)
+  const ids = store
+    .getState()
+    .snapshot!.artifacts.slice(0, 3)
+    .map((a) => a.id)
   await store.getState().openDocument(ids[0])
   store.getState().selectFeature(second)
   await store.getState().openDocument(ids[1])
@@ -117,3 +123,16 @@ it('returns to the latest non-document view, skipping a feature closed meanwhile
   store.getState().closeDocument(ids[0])
   expect(store.getState().view).toEqual({ kind: 'conversation', featureId: first })
 })
+
+it.each(['en', 'pt-br'] as const)(
+  'reads Markdown for the actual feature and kind in %s',
+  async (locale) => {
+    const source = createMockSource({ locale })
+    const project = await source.loadProject('dev')
+    const spec = project.artifacts.find((a) => a.kind === 'spec' && a.featureId === 'feature-2')!
+    const body = await source.readArtifact(spec.id)
+    expect(body).toContain('catalog-search/SPEC.md')
+    expect(body).toContain(locale === 'en' ? 'Catalog search' : 'Busca no catálogo')
+    expect(body).not.toContain('OAuth')
+  },
+)

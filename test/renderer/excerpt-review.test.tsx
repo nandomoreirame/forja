@@ -100,3 +100,44 @@ it('keeps the popover hidden on scroll or resize after Escape or a review', asyn
   fireEvent.scroll(document)
   expect(screen.queryByRole('button', { name: 'Review with agent' })).toBeNull()
 })
+
+it('uses the explicit feature link even when the artifact name points elsewhere', async () => {
+  const source = createMockSource({ locale: 'en' })
+  const load = source.loadProject
+  source.loadProject = async (id) => {
+    const snapshot = await load(id)
+    snapshot.artifacts[1] = { ...snapshot.artifacts[1], featureId: 'feature-2' }
+    return snapshot
+  }
+  source.readArtifact = async () => 'Explicit feature excerpt'
+  render(<WorkbenchPage source={source} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/PLAN.md/ }))
+  selectText(await screen.findByText('Explicit feature excerpt'))
+  fireEvent.click(screen.getByRole('button', { name: 'Review with agent' }))
+  fireEvent.click(screen.getByRole('tab', { name: /Catalog search/ }))
+  expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveValue(
+    'Review login-oauth/PLAN.md:\n> Explicit feature excerpt',
+  )
+})
+
+it.each(['missing', 'archived'])(
+  'hides review for an artifact linked to a %s feature',
+  async (link) => {
+    const source = createMockSource({ locale: 'en' })
+    const load = source.loadProject
+    source.loadProject = async (id) => {
+      const snapshot = await load(id)
+      snapshot.artifacts[0] = {
+        ...snapshot.artifacts[0],
+        featureId: link === 'missing' ? 'unknown' : 'feature-1',
+      }
+      if (link === 'archived') snapshot.features[0] = { ...snapshot.features[0], archived: true }
+      return snapshot
+    }
+    source.readArtifact = async () => 'Unlinked excerpt'
+    render(<WorkbenchPage source={source} initialProjectId="dev" />)
+    fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/SPEC.md/ }))
+    selectText(await screen.findByText('Unlinked excerpt'))
+    expect(screen.queryByRole('button', { name: 'Review with agent' })).toBeNull()
+  },
+)

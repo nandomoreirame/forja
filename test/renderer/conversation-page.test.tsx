@@ -7,7 +7,13 @@ import { createWorkbenchStore } from '../../src/renderer/src/entities/feature'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
 
 it('confirms closing a running feature and ends on the centered composer', async () => {
-  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  const source = createMockSource({ locale: 'en' })
+  const loadProject = source.loadProject
+  source.loadProject = async (id) => {
+    const snapshot = await loadProject(id)
+    return { ...snapshot, features: snapshot.features.slice(0, 2) }
+  }
+  render(<WorkbenchPage source={source} initialProjectId="dev" />)
   fireEvent.click(await screen.findByRole('button', { name: 'Close Catalog search' }))
   expect(screen.getByRole('tab', { name: /Login with OAuth/ })).toHaveAttribute(
     'aria-selected',

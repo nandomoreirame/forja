@@ -1,11 +1,11 @@
 ---
 feature: project-sidebar-navigator
-phase: plan-complete
+phase: implement
 started_at: 2026-10-31
 approved_at: 2026-10-31
 spec_path: docs/specs/project-sidebar-navigator/SPEC.md
 plan_path: docs/plans/2026-10-31-project-sidebar-navigator.md
-implementation_status: not-started
+implementation_status: in-progress
 validation_status: not-run
 review_status: not-started
 ---
