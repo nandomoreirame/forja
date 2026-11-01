@@ -239,72 +239,41 @@ export function createMockSource({
         : `${feature.name}: o usuário pediu login OAuth com mensagens de erro claras. A pesquisa mapeou os erros do provedor, o Planejador dividiu o trabalho, o Implementador alterou o callback e o Testador pediu uma correção na mensagem de login cancelado (${count} mensagens).`
     },
     async loadUsage() {
+      const now = Date.now()
+      const at = (minutes: number) => new Date(now + minutes * 60_000).toISOString()
       return [
         {
           tool: 'claude' as const,
           plan: 'Pro',
           account: 'dev@example.com',
-          updatedLabel: 'updated now',
+          fetchedAt: at(0),
           windows: [
-            {
-              id: 'session',
-              label: 'Session (5h)',
-              usedPercent: 35,
-              pacePercent: 30,
-              resetLabel: 'resets in 3h16m',
-              paceLabel: 'on pace',
-            },
-            {
-              id: 'week',
-              label: 'Weekly',
-              usedPercent: 11,
-              pacePercent: 20,
-              resetLabel: 'resets in 6d5h',
-              paceLabel: 'on pace',
-            },
+            { id: 'session' as const, usedPercent: 71, pacePercent: 50, resetsAt: at(149) },
+            { id: 'week' as const, usedPercent: 70, pacePercent: 27, resetsAt: at(5 * 1440 + 120) },
           ],
         },
         {
           tool: 'codex' as const,
           plan: 'Plus',
           account: 'dev@example.com',
-          updatedLabel: 'updated 2 min ago',
+          fetchedAt: at(-2),
           windows: [
-            {
-              id: 'session',
-              label: 'Session',
-              usedPercent: 22,
-              pacePercent: 25,
-              resetLabel: 'resets in 2h',
-              paceLabel: 'on pace',
-            },
+            { id: 'session' as const, usedPercent: 22, pacePercent: 25, resetsAt: at(120) },
           ],
         },
         { tool: 'opencode' as const, windows: [] },
         {
           tool: 'agy' as const,
+          fetchedAt: at(-1),
           windows: [
-            {
-              id: 'week',
-              label: 'Weekly',
-              usedPercent: 18,
-              pacePercent: 20,
-              resetLabel: 'resets in 5d',
-              paceLabel: 'on pace',
-            },
+            { id: 'week' as const, usedPercent: 18, pacePercent: 20, resetsAt: at(5 * 1440) },
           ],
         },
         {
           tool: 'grok' as const,
+          fetchedAt: at(0),
           windows: [
-            {
-              id: 'week',
-              label: 'Weekly',
-              usedPercent: 42,
-              pacePercent: 35,
-              resetLabel: 'resets in 4d',
-              paceLabel: 'on pace',
-            },
+            { id: 'week' as const, usedPercent: 42, pacePercent: 35, resetsAt: at(4 * 1440) },
           ],
         },
       ]

@@ -1,4 +1,3 @@
-import { UsagePanel } from '@/renderer/src/features/usage/usage-panel'
 import type { ComponentType } from 'react'
 import {
   Archive,
@@ -120,10 +119,7 @@ export function SidebarRail() {
         className="h-full w-(--sidebar-width-icon) rounded-part border border-border bg-transparent py-1"
       >
         <SidebarContent>{menu(sections)}</SidebarContent>
-        <SidebarFooter className="p-0">
-          <UsagePanel source={state.source} collapsed onExpand={() => setOpen(true)} />
-          {menu(workspace)}
-        </SidebarFooter>
+        <SidebarFooter className="p-0">{menu(workspace)}</SidebarFooter>
       </Sidebar>
     </nav>
   )

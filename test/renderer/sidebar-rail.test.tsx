@@ -40,7 +40,6 @@ it('toggles the sidebar with Ctrl+B and shows a section icon rail while collapse
     'Reviews',
     'Skills',
     'Memories',
-    'Plan usage',
     'Backlog',
     'Board',
     'Archived',

@@ -1,4 +1,3 @@
-import { UsagePanel } from '@/renderer/src/features/usage/usage-panel'
 import { Archive, KanbanSquare, ListTodo, Plug, Settings } from 'lucide-react'
 import { isEnabled } from '@/renderer/src/shared/lib/feature-flags'
 import type { ReactNode } from 'react'
@@ -45,7 +44,6 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       </PaneStack>
       {/* The footer never takes more than 45% of the height, so the panes keep room. */}
       <div className="flex max-h-[45%] min-h-0 shrink-0 flex-col border-t border-border">
-        <UsagePanel source={state.source} />
         <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
           <div className="space-y-0.5">
             {isEnabled('backlog-board') ? (

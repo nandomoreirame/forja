@@ -1,14 +1,21 @@
 export const ptBr = {
   app: {
     planUsage: {
-      title: 'Uso do plano',
+      title: 'Uso de IA',
       unavailable: 'Uso indisponível',
-      week: 'semana',
-      session: '5h',
-      updated: 'atualizado {time}',
-      reset: 'reinicia em {time}',
-      now: 'agora',
-      ago: 'há {time} min',
+      toolUnavailable: 'Uso indisponível para esta ferramenta',
+      session: 'Sessão (5h)',
+      week: 'Semanal',
+      updatedNow: 'atualizado agora',
+      updatedAgo: 'atualizado há {minutes} min',
+      resetsIn: 'reinicia em {time}',
+      resetsNow: 'reinicia agora',
+      ahead: '{points} pts à frente',
+      behind: '{points} pts atrás',
+      onPace: 'no ritmo',
+      refresh: 'Atualizar',
+      settings: 'Configurações de uso',
+      close: 'Fechar',
     },
     gitStatus: {
       label: 'Branch {branch}, {behind} atrás, {ahead} à frente',

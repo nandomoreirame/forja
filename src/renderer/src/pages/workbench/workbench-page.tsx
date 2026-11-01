@@ -33,6 +33,7 @@ import { ProjectSidebar } from '@/renderer/src/widgets/project-sidebar'
 import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 import { SidebarRail, SidebarToggle } from '@/renderer/src/widgets/sidebar-rail'
 import { ContextPanelToggle, GitContext } from '@/renderer/src/widgets/git-context'
+import { UsageMenu } from '@/renderer/src/features/usage/usage-panel'
 import { GitStatus } from '@/renderer/src/widgets/git-status'
 import { ProjectSwitcher } from '@/renderer/src/widgets/project-switcher'
 import { TerminalFooterToolbar, TerminalPanel } from '@/renderer/src/features/terminal'
@@ -128,6 +129,11 @@ function WorkbenchShell() {
       <AppTopbar
         brand="FORJA"
         project={s.snapshot ? <SidebarToggle /> : undefined}
+        usage={
+          s.snapshot ? (
+            <UsageMenu source={s.source} onSettings={() => s.openSettings({ tab: 'general' })} />
+          ) : undefined
+        }
         end={s.snapshot ? <ContextPanelToggle /> : undefined}
         commandText={s.snapshot?.project.name ?? 'Forja'}
         onCommand={() => s.openPalette('all')}

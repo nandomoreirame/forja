@@ -158,19 +158,21 @@ export interface ConnectorSnapshot {
   status: 'connected' | 'available' | 'offline'
   enabled: boolean
 }
+/** One plan usage window as structured values; the renderer formats labels per locale. */
 export interface UsageWindow {
-  id: string
-  label: string
+  id: 'session' | 'week'
   usedPercent: number
+  /** Share of the window already elapsed, for the pace bar. */
   pacePercent: number
-  resetLabel: string
-  paceLabel: string
+  /** ISO time when the window resets. */
+  resetsAt: string
 }
 export interface ToolUsage {
   tool: ToolId
   plan?: string
   account?: string
-  updatedLabel?: string
+  /** ISO time the usage was fetched. */
+  fetchedAt?: string
   windows: readonly UsageWindow[]
 }
 export type ReplyEvent =

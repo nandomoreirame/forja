@@ -72,7 +72,7 @@ it('clamps percentages and marks high usage with the danger tone', () => {
             {
               id: 'week',
               label: 'Weekly',
-              usedPercent: 85,
+              usedPercent: 92,
               pacePercent: 60,
               resetLabel: 'resets in 2d',
               paceLabel: 'ahead of pace',
@@ -86,12 +86,19 @@ it('clamps percentages and marks high usage with the danger tone', () => {
     'aria-valuenow',
     '100',
   )
-  expect(screen.getByText('85%')).toHaveAttribute('data-tone', 'danger')
+  // Like the AIBar, bars stay amber until 90% and turn destructive from there.
+  expect(screen.getByText('92%')).toHaveAttribute('data-tone', 'danger')
 })
 
-it('offers refresh and close actions when handlers are given', () => {
+it('keeps usage under 90% in the accent tone', () => {
+  render(<UsageLimits title="AI usage" usage={[...usage]} unavailableLabel="Unavailable" />)
+  expect(screen.getByText('35%')).toHaveAttribute('data-tone', 'accent')
+})
+
+it('offers refresh, settings and close actions when handlers are given', () => {
   const onRefresh = vi.fn()
   const onClose = vi.fn()
+  const onSettings = vi.fn()
   render(
     <UsageLimits
       title="AI usage"
@@ -99,12 +106,49 @@ it('offers refresh and close actions when handlers are given', () => {
       unavailableLabel="Unavailable"
       onRefresh={onRefresh}
       onClose={onClose}
+      onSettings={onSettings}
       refreshLabel="Refresh"
+      settingsLabel="Usage settings"
       closeLabel="Close"
     />,
   )
   fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Usage settings' }))
   fireEvent.click(screen.getByRole('button', { name: 'Close' }))
   expect(onRefresh).toHaveBeenCalledOnce()
+  expect(onSettings).toHaveBeenCalledOnce()
   expect(onClose).toHaveBeenCalledOnce()
+})
+
+it('lets the tool tabs wrap instead of clipping a second row', () => {
+  render(<UsageLimits title="AI usage" usage={[...usage]} unavailableLabel="Unavailable" />)
+  const list = screen.getByRole('tablist', { name: 'AI usage' })
+  expect(list).toHaveClass('flex-wrap', 'group-data-horizontal/tabs:h-auto', 'justify-start')
+})
+
+it('shows only the pace when there is no reset text', () => {
+  render(
+    <UsageLimits
+      title="AI usage"
+      unavailableLabel="Unavailable"
+      usage={[
+        {
+          tool: 'claude',
+          windows: [
+            {
+              id: 'session',
+              label: 'Session (5h)',
+              usedPercent: 35,
+              pacePercent: 30,
+              resetLabel: '',
+              paceLabel: 'on pace',
+            },
+          ],
+        },
+      ]}
+    />,
+  )
+  const card = screen.getByRole('meter', { name: 'Session (5h)' }).closest('section')!
+  expect(within(card).getByText('on pace')).toBeInTheDocument()
+  expect(card).not.toHaveTextContent('·')
 })

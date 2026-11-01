@@ -19,9 +19,8 @@ it('splits the sidebar into resizable panes that scroll on their own', async () 
     expect(pane.closest('[data-slot="resizable-panel"]')).not.toBeNull()
     expect(pane.querySelector('[data-slot="scroll-area"]')).not.toBeNull()
   }
-  const usage = within(sidebar).getByRole('region', { name: 'Plan usage' })
-  expect(sidebar.querySelectorAll('.overflow-y-auto')).toHaveLength(1)
-  expect(usage).toHaveClass('overflow-y-auto')
+  // Panes scroll on their own; nothing else in the sidebar adds a scroll area.
+  expect(sidebar.querySelectorAll('.overflow-y-auto')).toHaveLength(0)
   for (const pane of panes) {
     expect(pane.querySelector('[class*="max-h-"]')).toBeNull()
     expect(pane.querySelector('.overflow-y-auto')).toBeNull()

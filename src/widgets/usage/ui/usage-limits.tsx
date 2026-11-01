@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { BarChart3, RefreshCw, X } from 'lucide-react'
+import { BarChart3, RefreshCw, Settings, X } from 'lucide-react'
 import {
   Button,
   Tabs,
@@ -37,14 +37,19 @@ export interface UsageLimitsProps {
   title: string
   usage: ToolUsageView[]
   unavailableLabel: string
+  /** Shown instead of the tabs when no tool reports usage or loading failed. */
+  emptyLabel?: string
   onRefresh?: () => void
+  onSettings?: () => void
   onClose?: () => void
   refreshLabel?: string
+  settingsLabel?: string
   closeLabel?: string
   className?: string
 }
 
-const dangerAt = 80
+// Bars stay in the accent color until 90%, like the AIBar.
+const dangerAt = 90
 const clamp = (value: number) => Math.round(Math.min(100, Math.max(0, value)))
 
 function UsageCard({ window }: { window: UsageWindowView }) {
@@ -85,7 +90,7 @@ function UsageCard({ window }: { window: UsageWindowView }) {
         </div>
       </div>
       <p className="text-[11px] text-muted-foreground">
-        {window.resetLabel} · {window.paceLabel}
+        {[window.resetLabel, window.paceLabel].filter(Boolean).join(' · ')}
       </p>
     </section>
   )
@@ -95,9 +100,12 @@ export function UsageLimits({
   title,
   usage,
   unavailableLabel,
+  emptyLabel,
   onRefresh,
+  onSettings,
   onClose,
   refreshLabel = 'Refresh',
+  settingsLabel = 'Settings',
   closeLabel = 'Close',
   className,
 }: UsageLimitsProps) {
@@ -123,12 +131,18 @@ export function UsageLimits({
           <BarChart3 className="size-4 text-primary" aria-hidden="true" />
           <h2 className="flex-1 text-sm font-semibold">{title}</h2>
           {action(refreshLabel, <RefreshCw />, onRefresh)}
+          {action(settingsLabel, <Settings />, onSettings)}
           {action(closeLabel, <X />, onClose)}
         </header>
+        {usage.length === 0 ? (
+          <p className="rounded-md border border-border bg-card p-3 text-[12px] text-muted-foreground">
+            {emptyLabel ?? unavailableLabel}
+          </p>
+        ) : null}
         <Tabs value={current?.tool ?? ''} onValueChange={(value) => setSelected(value as ToolId)}>
           <TabsList
             aria-label={title}
-            className="flex h-auto w-full flex-wrap gap-1 overflow-hidden bg-transparent p-0"
+            className="flex h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0 group-data-horizontal/tabs:h-auto"
           >
             {usage.map((item) => (
               <TabsTrigger

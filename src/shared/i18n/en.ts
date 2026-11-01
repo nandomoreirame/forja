@@ -1,14 +1,21 @@
 export const en = {
   app: {
     planUsage: {
-      title: 'Plan usage',
+      title: 'AI usage',
       unavailable: 'Usage unavailable',
-      week: 'week',
-      session: '5h',
-      updated: 'updated {time}',
-      reset: 'resets in {time}',
-      now: 'now',
-      ago: '{time} min ago',
+      toolUnavailable: 'Usage unavailable for this tool',
+      session: 'Session (5h)',
+      week: 'Weekly',
+      updatedNow: 'updated now',
+      updatedAgo: 'updated {minutes} min ago',
+      resetsIn: 'resets in {time}',
+      resetsNow: 'resets now',
+      ahead: '{points} pts ahead',
+      behind: '{points} pts behind',
+      onPace: 'on pace',
+      refresh: 'Refresh',
+      settings: 'Usage settings',
+      close: 'Close',
     },
     gitStatus: {
       label: 'Branch {branch}, {behind} behind, {ahead} ahead',

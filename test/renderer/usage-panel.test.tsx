@@ -1,90 +1,80 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
 
-it('shows plan usage above Archived for tools with data', async () => {
+// AI usage lives in a topbar dropdown laid out like the AIBar: tool tabs and one card per window.
+const openUsage = async (name = 'AI usage') => {
+  const [header] = await screen.findAllByRole('banner')
+  fireEvent.click(await within(header).findByRole('button', { name }))
+  return screen.findByRole('dialog')
+}
+
+it('opens AI usage from a topbar button and keeps it out of the sidebar and rail', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-  const usage = await within(sidebar).findByRole('region', { name: 'Plan usage' })
-  const archived = within(sidebar).getByRole('button', { name: 'Archived' })
-  expect(usage.compareDocumentPosition(archived) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(within(usage).getAllByRole('meter').length).toBeGreaterThan(0)
-  expect(document.querySelector('header')).not.toHaveTextContent('Usage')
-})
-
-it('labels meters and switches colors exactly at the thresholds', async () => {
-  const source = createMockSource({ locale: 'en' })
-  const usage = await source.loadUsage()
-  const base = usage[0].windows[0]
-  source.loadUsage = async () => [
-    {
-      ...usage[0],
-      windows: [69, 70, 89, 90].map((usedPercent) => ({
-        ...base,
-        id: String(usedPercent),
-        usedPercent,
-      })),
-    },
-  ]
-  render(<WorkbenchPage source={source} initialProjectId="dev" />)
-  const panel = await screen.findByRole('region', { name: 'Plan usage' })
-  for (const [value, color] of [
-    [69, 'success'],
-    [70, 'warning'],
-    [89, 'warning'],
-    [90, 'destructive'],
-  ] as const) {
-    const meter = await within(panel).findByRole('meter', { name: `claude 5h, ${value}%` })
-    expect(meter).toHaveAttribute('aria-valuenow', String(value))
-    expect(meter.firstElementChild).toHaveClass(`bg-${color}`)
-  }
+  expect(within(sidebar).queryByText('AI usage')).toBeNull()
+  const trigger = within(screen.getAllByRole('banner')[0]).getByRole('button', { name: 'AI usage' })
+  expect(trigger).toHaveAttribute('aria-expanded', 'false')
+  const panel = await openUsage()
+  expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  // Opening focuses the panel itself, so no action tooltip pops up on its own.
+  expect(within(panel).getByRole('button', { name: 'Refresh' })).not.toHaveFocus()
+  expect(screen.queryByRole('tooltip')).toBeNull()
+  expect(within(panel).getByRole('heading', { name: 'AI usage' })).toBeInTheDocument()
+  expect(within(panel).getByRole('tab', { name: 'Claude' })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+  const session = await within(panel).findByRole('meter', { name: 'Session (5h)' })
+  expect(within(session.closest('section')!).getByText(/resets in \d+h\d+m · /)).toBeVisible()
+  expect(within(panel).getByRole('meter', { name: 'Weekly' })).toBeInTheDocument()
   expect(panel).toHaveTextContent('updated now')
-  expect(panel).toHaveTextContent('3h16m')
-  expect(panel).not.toHaveTextContent('OpenCode')
+  fireEvent.click(within(panel).getByRole('button', { name: 'Close' }))
+  expect(screen.queryByRole('dialog')).toBeNull()
+  // Reopening with data already loaded still focuses the panel, not its first action.
+  const again = await openUsage()
+  expect(within(again).getByRole('button', { name: 'Refresh' })).not.toHaveFocus()
+  expect(again).toHaveFocus()
+  fireEvent.keyDown(again, { key: 'Escape' })
+  fireEvent.click(screen.getByRole('button', { name: /Collapse.*sidebar/i }))
+  const rail = await screen.findByRole('navigation', { name: 'Sidebar sections' })
+  expect(within(rail).queryByRole('button', { name: 'AI usage' })).toBeNull()
 })
 
-it('keeps usage scrollable in the footer and the workspace menu outside its scroll area', async () => {
-  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
-  const panel = await screen.findByRole('region', { name: 'Plan usage' })
-  const menu = screen.getByRole('navigation', { name: 'Workspace' })
-  expect(panel.parentElement).toBe(menu.parentElement)
-  // The footer and the usage panel are capped so the sidebar panes keep their minimum heights.
-  expect(panel.parentElement).toHaveClass('min-h-0', 'max-h-[45%]')
-  expect(panel).toHaveClass('overflow-y-auto', 'min-h-0', 'max-h-36')
-  expect(menu).toHaveClass('shrink-0')
+it('formats the panel in Portuguese and shows tools without data as unavailable', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'pt-br' })} initialProjectId="dev" />)
+  const panel = await openUsage('Uso de IA')
+  const session = await within(panel).findByRole('meter', { name: 'Sessão (5h)' })
+  expect(within(session.closest('section')!).getByText(/reinicia em \d+h\d+m · /)).toBeVisible()
+  expect(panel).toHaveTextContent('atualizado agora')
+  fireEvent.click(within(panel).getByRole('tab', { name: 'OpenCode' }))
+  expect(within(panel).getByText('Uso indisponível para esta ferramenta')).toBeInTheDocument()
 })
 
-it('shows one unavailable line when no tool reports windows or loading fails', async () => {
+it('refreshes on demand and opens Settings from the panel', async () => {
+  const source = createMockSource({ locale: 'en' })
+  const load = vi.spyOn(source, 'loadUsage')
+  render(<WorkbenchPage source={source} initialProjectId="dev" />)
+  const panel = await openUsage()
+  await within(panel).findByRole('meter', { name: 'Session (5h)' })
+  const before = load.mock.calls.length
+  fireEvent.click(within(panel).getByRole('button', { name: 'Refresh' }))
+  expect(load.mock.calls.length).toBe(before + 1)
+  fireEvent.click(within(panel).getByRole('button', { name: 'Usage settings' }))
+  expect(await screen.findByRole('tab', { name: /Settings/ })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
+})
+
+it('shows the panel unavailable when usage cannot load', async () => {
   const source = createMockSource({ locale: 'en' })
   source.loadUsage = async () => {
     throw new Error('offline')
   }
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
-  const panel = await screen.findByRole('region', { name: 'Plan usage' })
+  const panel = await openUsage()
   expect(await within(panel).findByText('Usage unavailable')).toBeInTheDocument()
   expect(within(panel).queryByRole('meter')).toBeNull()
-})
-
-it('omits tools without windows and localizes the unavailable state', async () => {
-  const source = createMockSource({ locale: 'pt-br' })
-  source.loadUsage = async () => [{ tool: 'claude', windows: [] }]
-  render(<WorkbenchPage source={source} initialProjectId="dev" />)
-  const panel = await screen.findByRole('region', { name: 'Uso do plano' })
-  expect(await within(panel).findByText('Uso indisponível')).toBeInTheDocument()
-  expect(panel).not.toHaveTextContent('Claude')
-})
-
-it('shows the highest window per tool in the collapsed rail tooltip and expands on click', async () => {
-  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
-  await screen.findByRole('region', { name: 'Plan usage' })
-  fireEvent.click(screen.getByRole('button', { name: /Collapse.*sidebar/i }))
-  const gauge = await screen.findByRole('button', { name: 'Plan usage' })
-  fireEvent.focus(gauge)
-  const tooltip = await screen.findByRole('tooltip')
-  expect(tooltip).toHaveTextContent('Claude 5h: 35%')
-  expect(tooltip).toHaveTextContent('Grok week: 42%')
-  expect(tooltip).not.toHaveTextContent('OpenCode')
-  fireEvent.click(gauge)
-  expect(await screen.findByRole('region', { name: 'Plan usage' })).toBeInTheDocument()
 })
