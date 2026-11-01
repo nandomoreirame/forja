@@ -13,3 +13,14 @@ it('shows an overlay scrollbar only on hover, like VS Code', () => {
   expect(root).toHaveClass('relative', 'overflow-hidden')
   expect(container.querySelector('[data-slot="scroll-area-viewport"]')).toHaveTextContent('content')
 })
+
+it('lets rows truncate by keeping the viewport content as a block, not a table', () => {
+  const { container } = render(
+    <ScrollArea className="h-20">
+      <div>row</div>
+    </ScrollArea>,
+  )
+  expect(container.querySelector('[data-slot="scroll-area-viewport"]')).toHaveClass(
+    '[&>div]:!block',
+  )
+})
