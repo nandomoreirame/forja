@@ -43,6 +43,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-research',
+      tool: 'claude',
       model: 'Opus',
       durationMs: 48000,
       usage: { input: 6200, cached: 0, output: 410 },
@@ -55,6 +56,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-plan',
+      tool: 'claude',
       model: 'Opus',
       durationMs: 36000,
       usage: { input: 8100, cached: 4300, output: 520 },
@@ -67,6 +69,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-implementation',
+      tool: 'claude',
       model: 'Sonnet',
       durationMs: 95000,
       usage: { input: 12400, cached: 6100, output: 880 },
@@ -96,6 +99,7 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-log',
+      tool: 'claude',
       model: 'Sonnet',
       durationMs: 22000,
       usage: { input: 9800, cached: 7200, output: 240 },

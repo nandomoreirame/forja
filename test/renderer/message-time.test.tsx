@@ -30,3 +30,9 @@ it('shows the model, tokens and duration under seeded agent replies in pt-BR', a
   const trigger = within(conversation).getAllByRole('button', { name: /Detalhes da resposta/ })[0]
   expect(trigger).toHaveTextContent(/^.+ · [\d,]+k? tokens · \d+s$/)
 })
+
+it('keeps seeded replies on the tool that answered them, matching their model', async () => {
+  const { oauthConversation } = await import('../../src/renderer/src/shared/api/mock-conversation')
+  for (const message of oauthConversation('en').filter((m) => m.model))
+    expect(message.tool).toBe('claude')
+})
