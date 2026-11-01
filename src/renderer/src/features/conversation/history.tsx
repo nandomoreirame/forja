@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Messages } from '@/widgets/conversation'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import type { ChatMessage, RoleId } from '@/renderer/src/shared/api'
+import { toolNames, type ToolId } from '@/shared/ui'
 import { HandoffLink } from './handoff-link'
 
 const highlightMs = 2000
@@ -10,11 +11,14 @@ export function History({
   messages,
   locale,
   stage,
+  toolFor,
   onViewRequest,
 }: {
   messages: ChatMessage[]
   locale: Locale
   stage: RoleId
+  /** Configured tool of a role, used when a reply has no stamped tool. */
+  toolFor?: (role: RoleId) => ToolId | undefined
   onViewRequest?: (id: string) => void
 }) {
   const viewport = useRef<HTMLDivElement>(null)
@@ -63,23 +67,31 @@ export function History({
           openImage: d.app.openImage,
           exit: d.app.exitCode,
         }}
-        items={messages.map((m) => ({
-          id: m.id,
-          role: m.role,
-          text: m.text,
-          parts: m.parts,
-          attachments: m.attachments,
-          highlighted: m.id === highlightedId,
-          author: m.role === 'user' ? d.app.you : d.product[m.author ?? stage],
-          action:
-            m.role === 'event' && m.linkTo ? (
-              <HandoffLink
-                linkTo={m.linkTo}
-                label={d.app.viewRequest}
-                onViewRequest={viewRequest}
-              />
-            ) : undefined,
-        }))}
+        items={messages.map((m) => {
+          const agent = m.role === 'agent' ? (m.author ?? stage) : undefined
+          const tool = agent ? (m.tool ?? toolFor?.(agent)) : undefined
+          return {
+            id: m.id,
+            agent,
+            tool,
+            toolLabel: tool ? toolNames[tool] : undefined,
+            speaking: m.role === 'agent' && m.status === 'running',
+            role: m.role,
+            text: m.text,
+            parts: m.parts,
+            attachments: m.attachments,
+            highlighted: m.id === highlightedId,
+            author: m.role === 'user' ? d.app.you : d.product[m.author ?? stage],
+            action:
+              m.role === 'event' && m.linkTo ? (
+                <HandoffLink
+                  linkTo={m.linkTo}
+                  label={d.app.viewRequest}
+                  onViewRequest={viewRequest}
+                />
+              ) : undefined,
+          }
+        })}
       />
     </div>
   )

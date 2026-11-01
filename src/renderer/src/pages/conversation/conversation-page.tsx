@@ -48,6 +48,7 @@ export function ConversationPage() {
           messages={feature.messages}
           locale={state.source.locale}
           stage={feature.stage}
+          toolFor={(role) => state.agentTools[role] ?? feature.tool}
           onViewRequest={state.focusComposer}
         />
         <div className="p-4">

@@ -14,7 +14,7 @@ Inside a feature tab the user cannot see which AI tool each agent runs on: the c
 
 **Product objective:** An opinionated AI agent development environment built around the RPI workflow, from specification to review, with you in control of every stage.
 
-Frontend-only mock slice (01h), decided with the user on 2026-10-31. The tool per agent comes from the agent profiles served by `WorkbenchSource.loadSettings()`; an empty model keeps the tool default. Mascots are drawn in code as 12×12 pixel-art SVG sprites with Terminal Noir tokens, no external asset or tool.
+Frontend-only mock slice (01h), decided with the user on 2026-10-31. The tool per agent comes from the agent profiles served by `WorkbenchSource.loadSettings()`; an empty model keeps the tool default. Mascots are drawn in code as 12×12 pixel-art SVG sprites with Terminal Noir tokens, no external asset or tool. AI tool marks come from the `@lobehub/icons-static-svg` library and are never hand-drawn (user decision, 2026-11-01).
 
 This reverses the recorded Stitch exception "no avatars in messages" for agent replies only: user messages still have no avatar, and timestamps stay out. `docs/design/forja-2.0/component-fidelity.md` records the change.
 
@@ -38,7 +38,7 @@ None.
 
 - A tool without a brand mark (Codex, Grok) uses its neutral glyph from `ToolIcon`.
 - Two agents on the same tool show the same badge but different mascots.
-- Reduced motion: mascots are static; there is no idle animation.
+- A mascot animates (a small bob and a moving mouth) only while its reply streams; with reduced motion it stays static, and there is no idle animation (user decision, 2026-11-01).
 - Settings saved while a reply streams update the badge of later replies only; past replies keep the tool that answered them (stored on the message).
 
 ## Architecture Decisions
@@ -51,7 +51,6 @@ None.
 | Item | Reason |
 | --- | --- |
 | User avatars | The user is always "You"; not requested. |
-| Mascot animation | Kept static; can come later. |
 
 ## Test Strategy
 

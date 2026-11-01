@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/ui/utils'
+import { AgentMascot, type AgentRole, type ToolId } from '@/shared/ui'
 import {
   defaultMessageLabels,
   MessageBody,
@@ -20,6 +21,11 @@ export interface ConversationMessage {
   highlighted?: boolean
   parts?: MessagePart[]
   attachments?: ImageAttachment[]
+  /** Agent replies only: the role drawn as a mascot and the tool that answered. */
+  agent?: AgentRole
+  tool?: ToolId
+  toolLabel?: string
+  speaking?: boolean
 }
 
 export interface MessagesProps {
@@ -86,7 +92,7 @@ export function Messages({
             key={item.id}
             {...rowProps(item)}
             className={cn(
-              'space-y-1 rounded-[3px] border border-border bg-secondary p-3',
+              'space-y-1 rounded-[3px] border border-border bg-card p-3',
               item.highlighted && highlightClass,
             )}
           >
@@ -101,43 +107,58 @@ export function Messages({
             />
           </li>
         ) : (
-          <li
-            key={item.id}
-            {...rowProps(item)}
-            className={cn(
-              'space-y-1 rounded-[3px] border border-border bg-background p-3',
-              item.highlighted && highlightClass,
-            )}
-          >
-            <div className="flex items-center justify-between text-[11px]">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-primary">{item.author}</span>
-                {item.status ? (
-                  <span className="rounded-[2px] border border-primary/30 bg-primary/10 px-1.5 py-px text-[10px] text-primary">
-                    {item.status}
+          <li key={item.id} {...rowProps(item)} className="flex items-start gap-3">
+            {item.agent && item.tool ? (
+              <AgentMascot role={item.agent} tool={item.tool} size={56} speaking={item.speaking} />
+            ) : null}
+            {/* Speech bubble: the tail points at the mascot on the left. */}
+            <div
+              data-surface="reply"
+              className={cn(
+                'relative min-w-0 flex-1 space-y-1 rounded-md bg-secondary p-3',
+                item.highlighted && highlightClass,
+              )}
+            >
+              {item.agent && item.tool ? (
+                <span
+                  aria-hidden="true"
+                  data-slot="reply-tail"
+                  className="absolute top-5 -left-1.5 size-3 rotate-45 bg-secondary"
+                />
+              ) : null}
+              <div className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-primary">
+                    {item.author}
+                    {item.toolLabel ? <span className="sr-only"> ({item.toolLabel})</span> : null}
                   </span>
+                  {item.status ? (
+                    <span className="rounded-[2px] border border-primary/30 bg-primary/10 px-1.5 py-px text-[10px] text-primary">
+                      {item.status}
+                    </span>
+                  ) : null}
+                </div>
+                {item.action ? (
+                  typeof item.action !== 'string' ? (
+                    item.action
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={item.onAction}
+                      className="text-[11px] text-muted-foreground hover:text-[#ff4d4f]"
+                    >
+                      {item.action}
+                    </button>
+                  )
                 ) : null}
               </div>
-              {item.action ? (
-                typeof item.action !== 'string' ? (
-                  item.action
-                ) : (
-                  <button
-                    type="button"
-                    onClick={item.onAction}
-                    className="text-[11px] text-muted-foreground hover:text-[#ff4d4f]"
-                  >
-                    {item.action}
-                  </button>
-                )
-              ) : null}
+              <MessageBody
+                text={item.text}
+                parts={item.parts}
+                attachments={item.attachments}
+                labels={messageLabels}
+              />
             </div>
-            <MessageBody
-              text={item.text}
-              parts={item.parts}
-              attachments={item.attachments}
-              labels={messageLabels}
-            />
           </li>
         ),
       )}

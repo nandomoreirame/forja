@@ -114,10 +114,13 @@ export function AgentMascot({
   role,
   tool,
   size = 28,
+  speaking = false,
 }: {
   role: AgentRole
   tool: ToolId
   size?: number
+  /** Bobs and moves the mouth while the agent streams; reduced motion keeps it still. */
+  speaking?: boolean
 }) {
   const { rows, palette } = agentSprites[role]
   return (
@@ -131,12 +134,30 @@ export function AgentMascot({
         aria-hidden="true"
         viewBox="0 0 12 12"
         shapeRendering="crispEdges"
-        className="size-full"
+        data-speaking={speaking ? 'true' : undefined}
+        className={
+          speaking
+            ? 'size-full motion-safe:animate-[mascot-bob_0.6s_ease-in-out_infinite]'
+            : 'size-full'
+        }
       >
         {rows.flatMap((row, y) =>
           [...row].map((char, x) =>
             char === '.' ? null : (
-              <rect key={`${x}-${y}`} x={x} y={y} width={1} height={1} fill={palette[char]} />
+              <rect
+                key={`${x}-${y}`}
+                x={x}
+                y={y}
+                width={1}
+                height={1}
+                fill={palette[char]}
+                data-part={char === 'm' ? 'mouth' : undefined}
+                className={
+                  speaking && char === 'm'
+                    ? 'motion-safe:animate-[mascot-mouth_0.3s_steps(1)_infinite]'
+                    : undefined
+                }
+              />
             ),
           ),
         )}
