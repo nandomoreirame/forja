@@ -1,8 +1,8 @@
-import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
-it('selects Planner in the composer, sends a feature and closes back to Research', async () => {
+it('selects Planner in the composer, sends a feature and closes back to the empty state', async () => {
   render(
     <WorkbenchPage
       source={createMockSource({ locale: 'en' })}
@@ -10,10 +10,9 @@ it('selects Planner in the composer, sends a feature and closes back to Research
     />,
   )
   fireEvent.click(
-    within(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).getByRole(
-      'button',
-      { name: 'New conversation' },
-    ),
+    within(await screen.findByRole('main')).getAllByRole('button', {
+      name: /^New conversation/,
+    })[0],
   )
   const field = screen.getByRole('textbox', { name: /Send your prompt/ })
   expect(field).toHaveFocus()
@@ -36,11 +35,9 @@ it('selects Planner in the composer, sends a feature and closes back to Research
   // The new feature replaced the New conversation tab.
   expect(screen.queryByRole('tab', { name: /New conversation/ })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Close Rate limit public endpoints' }))
-  await waitFor(() =>
-    expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveFocus(),
-  )
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
-  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['New conversation'])
+  // Closing the last tab returns to the initial empty state, with no tabs.
+  expect(screen.queryByRole('tablist')).toBeNull()
+  expect(screen.queryByRole('textbox', { name: /Send your prompt/ })).toBeNull()
 })
 it('preselects Research from New spec and permits changing the recipient', async () => {
   render(
@@ -50,10 +47,9 @@ it('preselects Research from New spec and permits changing the recipient', async
     />,
   )
   fireEvent.click(
-    within(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).getByRole(
-      'button',
-      { name: 'New conversation' },
-    ),
+    within(await screen.findByRole('main')).getAllByRole('button', {
+      name: /^New conversation/,
+    })[0],
   )
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
   fireEvent.click(screen.getByRole('option', { name: 'Tester' }))

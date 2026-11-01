@@ -26,8 +26,9 @@ it('opens Archived as a tab and keeps the open tabs', async () => {
 })
 
 it('opens a new conversation as a tab beside the open features', async () => {
-  const sidebar = await renderDev()
-  fireEvent.click(within(sidebar).getByRole('button', { name: 'New conversation' }))
+  await renderDev()
+  const strip = document.querySelector('[data-slot="tab-strip"]') as HTMLElement
+  fireEvent.click(within(strip).getByRole('button', { name: 'New conversation' }))
   expect(screen.getByRole('tab', { name: /New conversation/ })).toHaveAttribute(
     'aria-selected',
     'true',

@@ -753,7 +753,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
                       Math.min(state.openFeatureIds.indexOf(id), openFeatureIds.length - 1)
                     ],
                 }
-              : { kind: 'compose', role: 'research' }
+              : { kind: 'home' }
             : state.view
         let historyIndex = -1
         let history: View[] = []
@@ -772,7 +772,6 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           view,
           history,
           historyIndex,
-          composeOpen: state.composeOpen || view.kind === 'compose',
         })
       },
       projects: [],

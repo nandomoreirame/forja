@@ -116,6 +116,8 @@ export function WorkbenchTabs() {
         else state.closeFeature(id)
       }}
       closeLabel={a.close}
+      onAdd={() => state.startCompose()}
+      addLabel={a.newConversation}
       label={a.features}
       stateLabels={{ running: a.states.running, waiting: a.states.waiting, idle: a.idle }}
     />

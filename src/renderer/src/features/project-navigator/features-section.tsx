@@ -1,5 +1,5 @@
 import { NavigatorSection, ArchiveAction, PaneAction, PaneRow, rowButton } from './section'
-import { ChevronLeft, Plus } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, ToolIcon, toolNames, type UiState } from '@/shared/ui'
 import { useWorkbench } from '@/renderer/src/entities/feature'
@@ -77,9 +77,6 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
       empty={copy.empty}
       actions={
         <>
-          <PaneAction label={a.newConversation} onClick={() => state.startCompose()}>
-            <Plus aria-hidden="true" />
-          </PaneAction>
           <PaneAction label={a.collapseLeft} onClick={() => state.togglePanel('left')}>
             <ChevronLeft aria-hidden="true" />
           </PaneAction>

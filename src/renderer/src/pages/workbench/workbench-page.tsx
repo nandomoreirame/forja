@@ -20,7 +20,6 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-  ForjaMark,
   TooltipProvider,
   useDefaultLayout,
   useGroupRef,
@@ -118,7 +117,6 @@ function WorkbenchShell() {
     >
       <AppTopbar
         brand="FORJA"
-        project={s.snapshot ? <ProjectSwitcher /> : undefined}
         usage={
           <UsagePopover
             source={s.source}
@@ -289,7 +287,7 @@ function WorkbenchShell() {
         }}
       />
       <AppStatusbar
-        start={<ForjaMark className="size-3.5 text-primary" />}
+        start={<ProjectSwitcher />}
         end={
           s.snapshot ? (
             <>

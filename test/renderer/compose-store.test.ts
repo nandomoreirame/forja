@@ -35,7 +35,7 @@ it('creates immutable unique features with their selected recipient and first me
   store.getState().closeFeature(id)
   expect(store.getState().view).toEqual({ kind: 'conversation', featureId: second })
   store.getState().closeFeature(second)
-  expect(store.getState().view).toEqual({ kind: 'compose', role: 'research' })
+  expect(store.getState().view).toEqual({ kind: 'home' })
   expect(store.getState().openFeatureIds).toHaveLength(0)
 })
 it('requires an open project and defaults new conversations to Research', async () => {

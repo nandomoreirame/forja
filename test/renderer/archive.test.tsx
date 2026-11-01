@@ -79,7 +79,7 @@ it('keeps archived source records, restores a plan with its spec and keeps resto
   expect(store.getState().openFeatureIds).toContain(feature.id)
 })
 
-it('blocks running features in the store and falls back to compose after the last tab is archived', async () => {
+it('blocks running features in the store and falls back to the empty state after the last tab is archived', async () => {
   const store = createWorkbenchStore(createMockSource({ locale: 'en' }))
   await store.getState().openProject('dev')
   const initial = store.getState().snapshot!
@@ -92,7 +92,7 @@ it('blocks running features in the store and falls back to compose after the las
   }
   store.getState().openFeature(target.id)
   store.getState().archiveItem({ kind: 'feature', id: target.id })
-  expect(store.getState().view).toEqual({ kind: 'compose', role: 'research' })
+  expect(store.getState().view).toEqual({ kind: 'home' })
 })
 
 it('archives unlinked artifacts without inventing a slug cascade', async () => {

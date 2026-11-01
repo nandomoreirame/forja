@@ -5,15 +5,16 @@ import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
 
 const footer = () => document.querySelector('footer') as HTMLElement
 
-it('shows the Forja mark on the left, no project path, and git info before terminals', async () => {
+it('shows the project path on the left and git info after the terminals', async () => {
   const source = createMockSource({ locale: 'en' })
   const snapshot = await source.loadProject('dev')
   const feature = snapshot.features[0]
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
   await screen.findByRole('tab', { name: /Login with OAuth/ })
   const bar = footer()
-  expect(bar.firstElementChild?.querySelector('svg')).not.toBeNull()
-  expect(bar).not.toHaveTextContent(snapshot.project.path)
+  expect(
+    within(bar.firstElementChild as HTMLElement).getByRole('button', { name: /switch project/ }),
+  ).toHaveTextContent(snapshot.project.path)
   const git = within(bar).getByRole('status', { name: /Branch/ })
   expect(git).toHaveTextContent(feature.branch)
   expect(git).toHaveTextContent(`${feature.behind ?? 0}↓ ${feature.ahead ?? 0}↑`)

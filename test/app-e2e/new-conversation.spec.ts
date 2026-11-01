@@ -18,8 +18,9 @@ test('starts a focused conversation, creates a feature and closes its last tab',
   // Closing never asks: a running agent keeps going in the background.
   await page.getByRole('button', { name: 'Close Add OAuth login' }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.getByRole('tab')).toHaveText(['New conversation'])
-  await expect(page.getByRole('textbox')).toBeFocused()
+  // With every tab closed the editor shows the initial empty state again.
+  await expect(page.getByRole('tablist')).toHaveCount(0)
+  await expect(page.getByRole('textbox')).toHaveCount(0)
 })
 test('opens a focused Research composer from the command bar', async ({ page }) => {
   await page.goto('/')

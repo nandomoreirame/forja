@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import {
   Tooltip,
   TooltipTrigger,
@@ -33,6 +33,9 @@ export interface FeatureTabsProps {
   onSelect: (id: string) => void
   onClose?: (id: string) => void
   closeLabel?: string
+  /** Opens a new tab from a + right of the tabs, like VS Code's new editor. */
+  onAdd?: () => void
+  addLabel?: string
   panelId?: string
   label?: string
   stateLabels?: Record<NonNullable<FeatureTabItem['state']>, string>
@@ -47,6 +50,8 @@ const defaultStateLabels: Record<NonNullable<FeatureTabItem['state']>, string> =
 export function FeatureTabs({
   onClose,
   closeLabel = 'Close',
+  onAdd,
+  addLabel = 'New',
   panelId,
   selectedId,
   items,
@@ -151,6 +156,23 @@ export function FeatureTabs({
                 ),
               )
             : null}
+          {onAdd ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  style={{ gridColumn: items.length + 1, gridRow: 1 }}
+                  className="mx-1 size-6 self-center"
+                  aria-label={addLabel}
+                  onClick={onAdd}
+                >
+                  <Plus className="size-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{addLabel}</TooltipContent>
+            </Tooltip>
+          ) : null}
         </div>
       </Tabs>
     </TooltipProvider>

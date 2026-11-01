@@ -56,11 +56,11 @@ it('shows finished end states and lets Tab reach every visible feature row', asy
     await user.tab()
     expect(target).toHaveFocus()
   }
-  fireEvent.click(within(section).getByRole('button', { name: 'New conversation' }))
-  expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveFocus()
+  // New conversations start from the + right of the tabs, not from the sidebar.
+  expect(within(section).queryByRole('button', { name: 'New conversation' })).toBeNull()
 })
 
-it('keeps only the new conversation action in an empty feature list', async () => {
+it('leaves the empty feature list without actions and starts conversations from the empty state', async () => {
   const source = createMockSource({ locale: 'en' })
   const snapshot = await source.loadProject('dev')
   render(
@@ -73,7 +73,10 @@ it('keeps only the new conversation action in an empty feature list', async () =
   const section = within(sidebar).getByRole('region', { name: /Features/ })
   expect(within(section).getByRole('heading', { name: 'Features 0' })).toBeInTheDocument()
   expect(within(section).queryByRole('button', { name: /·/ })).toBeNull()
-  fireEvent.click(within(section).getByRole('button', { name: 'New conversation' }))
+  expect(within(section).queryByRole('button', { name: 'New conversation' })).toBeNull()
+  fireEvent.click(
+    within(screen.getByRole('main')).getAllByRole('button', { name: /^New conversation/ })[0],
+  )
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
 })
 
@@ -91,7 +94,7 @@ it('localizes feature states and finished entries in Portuguese', async () => {
   expect(
     within(section).getByRole('button', { name: new RegExp('^(?!Arquivar )' + integrated.name) }),
   ).toHaveAccessibleName(/Integrada/)
-  expect(within(section).getByRole('button', { name: 'Nova conversa' })).toBeInTheDocument()
+  expect(within(section).queryByRole('button', { name: 'Nova conversa' })).toBeNull()
 })
 
 it('shows integrated features as completed and abandoned ones as interrupted', async () => {

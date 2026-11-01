@@ -6,7 +6,7 @@ import { createMockSource } from '../../src/renderer/src/shared/api'
 import { createWorkbenchStore } from '../../src/renderer/src/entities/feature'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
 
-it('closes a running feature without asking and ends on the New conversation tab', async () => {
+it('closes a running feature without asking and ends on the empty state', async () => {
   const source = createMockSource({ locale: 'en' })
   const loadProject = source.loadProject
   source.loadProject = async (id) => {
@@ -21,8 +21,8 @@ it('closes a running feature without asking and ends on the New conversation tab
   )
   fireEvent.click(screen.getByRole('button', { name: 'Close Login with OAuth' }))
   expect(screen.queryByRole('dialog')).toBeNull()
-  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['New conversation'])
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
+  expect(screen.queryByRole('tablist')).toBeNull()
+  expect(screen.queryByRole('combobox', { name: 'Recipient' })).toBeNull()
 })
 
 it('selects the right neighbor, otherwise the left, preserving feature history', async () => {

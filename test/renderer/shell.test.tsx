@@ -15,7 +15,7 @@ it('renders the shell and toggles both sidebars and terminal', async () => {
   expect(screen.getByRole('complementary', { name: 'Project' })).toHaveTextContent('main')
   expect(screen.getByRole('banner')).toBeInTheDocument()
   expect(screen.getByRole('main')).toBeInTheDocument()
-  expect(screen.getByRole('contentinfo')).not.toHaveTextContent('~/dev/projects/nandomoreira.dev')
+  expect(screen.getByRole('contentinfo')).toHaveTextContent('~/dev/projects/nandomoreira.dev')
   expect(screen.getByRole('contentinfo')).toHaveTextContent('main')
   fireEvent.click(screen.getByRole('button', { name: 'Collapse sidebar' }))
   expect(screen.queryByRole('complementary', { name: 'nandomoreira.dev' })).toBeNull()
@@ -43,14 +43,16 @@ it('renders the localized shell', async () => {
   expect(screen.getByRole('complementary', { name: 'Projeto' })).toBeInTheDocument()
 })
 
-it('shows the project switcher in the topbar next to the brand', async () => {
+it('shows the project switcher at the start of the footer, not in the topbar', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
   const header = screen.getByText('FORJA').closest('header')!
-  const switcher = within(header).getByRole('button', { name: 'dev, switch project' })
-  expect(within(header).queryByRole('button', { name: 'Project actions' })).toBeNull()
+  expect(within(header).queryByRole('button', { name: 'dev, switch project' })).toBeNull()
+  const switcher = within(screen.getByRole('contentinfo')).getByRole('button', {
+    name: 'dev, switch project',
+  })
   fireEvent.focus(switcher)
-  expect(await screen.findByRole('tooltip')).toHaveTextContent('Project actions')
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('Recent projects (Ctrl+R)')
   expect(within(sidebar).queryByRole('button', { name: 'dev, switch project' })).toBeNull()
   expect(within(sidebar).getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument()
   fireEvent.click(switcher)
