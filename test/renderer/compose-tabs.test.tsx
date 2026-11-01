@@ -7,9 +7,9 @@ beforeEach(() => localStorage.clear())
 
 const add = () => {
   const strip = document.querySelector('[data-slot="tab-strip"]') as HTMLElement
-  fireEvent.click(within(strip).getByRole('button', { name: 'New conversation' }))
+  fireEvent.click(within(strip).getByRole('button', { name: 'New chat' }))
 }
-const composeTabs = () => screen.queryAllByRole('tab', { name: /New conversation/ })
+const composeTabs = () => screen.queryAllByRole('tab', { name: /New chat/ })
 const field = () => screen.getByRole('textbox', { name: /Send your prompt/ })
 
 it('opens a new conversation tab on every +, each with its own draft', async () => {
@@ -34,7 +34,7 @@ it('closes one conversation tab and keeps the others', async () => {
   await screen.findByRole('tab', { name: /Login with OAuth/ })
   add()
   add()
-  fireEvent.click(screen.getAllByRole('button', { name: 'Close New conversation' })[1])
+  fireEvent.click(screen.getAllByRole('button', { name: 'Close New chat' })[1])
   expect(composeTabs()).toHaveLength(1)
 })
 

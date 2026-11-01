@@ -9,13 +9,13 @@ it('starts without a project and opens a selected recent project', async () => {
   const footer = screen.getByRole('contentinfo')
   const noProject = within(footer).getByRole('button', { name: /No project/ })
   expect(footer.firstElementChild).toContainElement(noProject)
-  expect(screen.queryByRole('button', { name: /New conversation/ })).toBeNull()
+  expect(screen.queryByRole('button', { name: /New chat/ })).toBeNull()
   fireEvent.click(noProject)
   fireEvent.click(await screen.findByRole('option', { name: /nandomoreira.dev/ }))
   expect(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
   fireEvent.click(
-    within(screen.getByRole('main')).getByRole('button', { name: /New conversation/ }),
+    within(screen.getByRole('main')).getByRole('button', { name: /New chat/ }),
   )
   expect(screen.getByRole('textbox')).toHaveFocus()
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')

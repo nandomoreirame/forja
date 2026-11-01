@@ -3,7 +3,7 @@ import { getDictionary } from '@/shared/i18n'
 import type { RoleId } from '@/renderer/src/shared/api'
 import { roleIds } from '@/renderer/src/shared/api'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-/** Composer of one New conversation tab; its agent and prompt live in the store per tab. */
+/** Composer of one New chat tab; its agent and prompt live in the store per tab. */
 export function FeatureComposer({ id, autoFocus = false }: { id: string; autoFocus?: boolean }) {
   const state = useWorkbench((s) => s)
   const activation = state.composeActivation

@@ -28,14 +28,14 @@ it('opens Archived as a tab and keeps the open tabs', async () => {
 it('opens a new conversation as a tab beside the open features', async () => {
   await renderDev()
   const strip = document.querySelector('[data-slot="tab-strip"]') as HTMLElement
-  fireEvent.click(within(strip).getByRole('button', { name: 'New conversation' }))
-  expect(screen.getByRole('tab', { name: /New conversation/ })).toHaveAttribute(
+  fireEvent.click(within(strip).getByRole('button', { name: 'New chat' }))
+  expect(screen.getByRole('tab', { name: /New chat/ })).toHaveAttribute(
     'aria-selected',
     'true',
   )
   expect(screen.getByRole('tab', { name: /Login with OAuth/ })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Close New conversation' }))
-  expect(screen.queryByRole('tab', { name: /New conversation/ })).toBeNull()
+  fireEvent.click(screen.getByRole('button', { name: 'Close New chat' }))
+  expect(screen.queryByRole('tab', { name: /New chat/ })).toBeNull()
 })
 
 it('keeps a running agent going in the background when its tab closes', async () => {

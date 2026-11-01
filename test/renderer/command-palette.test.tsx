@@ -73,7 +73,7 @@ it('offers only localized commands and opens the folder picker, and shows no mat
   expect(document.querySelector('[data-slot=command-input-wrapper] svg')).toBeNull()
   fireEvent.click(screen.getByRole('option', { name: /Abrir projeto/ }))
   expect(command).toHaveBeenCalledWith('open-project')
-  fireEvent.click(screen.getByRole('option', { name: /Nova conversa/ }))
+  fireEvent.click(screen.getByRole('option', { name: /Novo chat/ }))
   expect(command).toHaveBeenCalledWith('new-conversation')
   fireEvent.change(screen.getByRole('combobox'), { target: { value: 'zzzzzz' } })
   expect(screen.getByText('Nenhum resultado encontrado.')).toBeInTheDocument()
@@ -92,7 +92,7 @@ it('disables project-only commands before a project is opened', () => {
       onCommand={() => {}}
     />,
   )
-  expect(screen.getByRole('option', { name: /New conversation/ })).toHaveAttribute(
+  expect(screen.getByRole('option', { name: /New chat/ })).toHaveAttribute(
     'aria-disabled',
     'true',
   )

@@ -23,7 +23,7 @@ test('preserves Tailwind disabled button styling', async ({ page }) => {
   await page.getByRole('option', { name: /nandomoreira.dev/ }).click()
   await page
     .getByRole('main')
-    .getByRole('button', { name: /New conversation/ })
+    .getByRole('button', { name: /New chat/ })
     .click()
   const send = page.getByRole('button', { name: 'Send', exact: true })
   await expect(send).toBeDisabled()

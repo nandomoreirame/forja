@@ -11,7 +11,7 @@ it('selects Planner in the composer, sends a feature and closes back to the empt
   )
   fireEvent.click(
     within(await screen.findByRole('main')).getAllByRole('button', {
-      name: /^New conversation/,
+      name: /^New chat/,
     })[0],
   )
   const field = screen.getByRole('textbox', { name: /Send your prompt/ })
@@ -19,7 +19,7 @@ it('selects Planner in the composer, sends a feature and closes back to the empt
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
   fireEvent.click(screen.getByRole('option', { name: 'Planner' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Planner')
-  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['New conversation'])
+  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['New chat'])
   expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
   fireEvent.change(field, { target: { value: '   ' } })
   expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
@@ -32,8 +32,8 @@ it('selects Planner in the composer, sends a feature and closes back to the empt
   expect(screen.getByRole('list', { name: 'Conversation' })).toHaveTextContent(
     'Rate limit public endpoints',
   )
-  // The new feature replaced the New conversation tab.
-  expect(screen.queryByRole('tab', { name: /New conversation/ })).toBeNull()
+  // The new feature replaced the New chat tab.
+  expect(screen.queryByRole('tab', { name: /New chat/ })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: 'Close Rate limit public endpoints' }))
   // Closing the last tab returns to the initial empty state, with no tabs.
   expect(screen.queryByRole('tablist')).toBeNull()
@@ -48,7 +48,7 @@ it('preselects Research from New spec and permits changing the recipient', async
   )
   fireEvent.click(
     within(await screen.findByRole('main')).getAllByRole('button', {
-      name: /^New conversation/,
+      name: /^New chat/,
     })[0],
   )
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
@@ -83,7 +83,7 @@ it('opens another focused conversation tab and keeps the first draft and agent',
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
   expect(screen.getByRole('textbox')).toHaveFocus()
   expect(screen.getByRole('textbox')).toHaveValue('')
-  fireEvent.click(screen.getAllByRole('tab', { name: /New conversation/ })[0])
+  fireEvent.click(screen.getAllByRole('tab', { name: /New chat/ })[0])
   expect(screen.getByRole('textbox')).toHaveValue('Keep draft')
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Reviewer')
 })

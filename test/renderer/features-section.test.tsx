@@ -55,8 +55,8 @@ it('shows finished end states and lets Tab reach every visible feature row', asy
     await user.tab()
     expect(target).toHaveFocus()
   }
-  // New conversations start from the + right of the tabs, not from the sidebar.
-  expect(within(section).queryByRole('button', { name: 'New conversation' })).toBeNull()
+  // New chats start from the + right of the tabs, not from the sidebar.
+  expect(within(section).queryByRole('button', { name: 'New chat' })).toBeNull()
 })
 
 it('leaves the empty feature list without actions and starts conversations from the empty state', async () => {
@@ -72,9 +72,9 @@ it('leaves the empty feature list without actions and starts conversations from 
   const section = within(sidebar).getByRole('region', { name: /Features/ })
   expect(within(section).getByRole('heading', { name: 'Features 0' })).toBeInTheDocument()
   expect(within(section).queryByRole('button', { name: /·/ })).toBeNull()
-  expect(within(section).queryByRole('button', { name: 'New conversation' })).toBeNull()
+  expect(within(section).queryByRole('button', { name: 'New chat' })).toBeNull()
   fireEvent.click(
-    within(screen.getByRole('main')).getAllByRole('button', { name: /^New conversation/ })[0],
+    within(screen.getByRole('main')).getAllByRole('button', { name: /^New chat/ })[0],
   )
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
 })
@@ -93,7 +93,7 @@ it('localizes feature states and finished entries in Portuguese', async () => {
   expect(
     within(section).getByRole('button', { name: new RegExp('^(?!Arquivar )' + integrated.name) }),
   ).toHaveAccessibleName(/Integrada/)
-  expect(within(section).queryByRole('button', { name: 'Nova conversa' })).toBeNull()
+  expect(within(section).queryByRole('button', { name: 'Novo chat' })).toBeNull()
 })
 
 it('shows integrated features as completed and abandoned ones as interrupted', async () => {

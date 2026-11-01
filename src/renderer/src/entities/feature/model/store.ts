@@ -96,7 +96,7 @@ export interface WorkbenchState {
   archivedOpen: boolean
   openArchived(): void
   closeArchived(): void
-  /** New conversation tabs, each with its own agent and unsent prompt. */
+  /** New chat tabs, each with its own agent and unsent prompt. */
   composeTabs: ComposeTab[]
   selectCompose(id: string): void
   setComposeDraft(id: string, draft: Partial<Pick<ComposeTab, 'role' | 'prompt'>>): void
@@ -605,7 +605,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           openFeatureIds: [...state.openFeatureIds, id],
           recipients: { ...state.recipients, [id]: role },
         }))
-        // The new feature takes the place of the New conversation tab it was sent from.
+        // The new feature takes the place of the New chat tab it was sent from.
         const from = get().view
         if (from.kind === 'compose') get().closeCompose(from.id)
         get().navigate({ kind: 'conversation', featureId: id })

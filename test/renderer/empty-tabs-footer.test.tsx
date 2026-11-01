@@ -24,14 +24,14 @@ it('shows the initial empty state without tabs once every tab is closed', async 
 it('adds a new conversation from a + right of the tabs, not from the sidebar', async () => {
   await renderDev()
   const sidebar = screen.getByRole('complementary', { name: 'dev' })
-  expect(within(sidebar).queryByRole('button', { name: 'New conversation' })).toBeNull()
+  expect(within(sidebar).queryByRole('button', { name: 'New chat' })).toBeNull()
   const strip = document.querySelector('[data-slot="tab-strip"]') as HTMLElement
-  const add = within(strip).getByRole('button', { name: 'New conversation' })
+  const add = within(strip).getByRole('button', { name: 'New chat' })
   expect(add.closest('[role="tablist"]')).toBeNull()
   const tabs = within(strip).getAllByRole('tab')
   expect(tabs.at(-1)!.compareDocumentPosition(add) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
   fireEvent.click(add)
-  expect(screen.getByRole('tab', { name: /New conversation/ })).toHaveAttribute(
+  expect(screen.getByRole('tab', { name: /New chat/ })).toHaveAttribute(
     'aria-selected',
     'true',
   )

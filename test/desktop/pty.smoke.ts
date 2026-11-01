@@ -30,7 +30,7 @@ try {
   await expect(page.getByRole('complementary', { name: 'pty-project' })).toBeVisible()
   await page
     .getByRole('main')
-    .getByRole('button', { name: /New conversation|Nova conversa/ })
+    .getByRole('button', { name: /New chat|Novo chat/ })
     .click()
   await page.keyboard.type('Check the shell')
   await page.keyboard.press('Control+Enter')
