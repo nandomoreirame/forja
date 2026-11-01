@@ -44,14 +44,15 @@ function ScrollBar({
       orientation={orientation}
       className={cn(
         'z-10 flex touch-none select-none transition-opacity duration-100 data-[state=hidden]:opacity-0 data-[state=hidden]:duration-700 motion-reduce:transition-none',
-        'data-[orientation=horizontal]:h-2.5 data-[orientation=horizontal]:flex-col data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2.5',
+        // Same look as the native scrollbars in theme.css: 8 px track, 4 px rounded thumb.
+        'p-0.5 data-[orientation=horizontal]:h-2 data-[orientation=horizontal]:flex-col data-[orientation=vertical]:h-full data-[orientation=vertical]:w-2',
         className,
       )}
       {...props}
     >
       <ScrollAreaPrimitive.ScrollAreaThumb
         data-slot="scroll-area-thumb"
-        className="relative flex-1 bg-muted-foreground/35 hover:bg-muted-foreground/55 active:bg-muted-foreground/70"
+        className="relative flex-1 rounded-full bg-(--scrollbar-thumb) hover:bg-primary active:bg-primary"
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
   )

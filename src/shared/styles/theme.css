@@ -130,6 +130,10 @@
 }
 
 @layer base {
+  :root {
+    /* One thumb color for native scrollbars and the ScrollArea primitive. */
+    --scrollbar-thumb: #3a3a3d;
+  }
   * {
     @apply border-border outline-ring/50;
   }
@@ -139,7 +143,7 @@
     scrollbar-width: thin;
   }
   *:hover {
-    scrollbar-color: #3a3a3d transparent;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
   }
   *::-webkit-scrollbar {
     width: 8px;
@@ -155,7 +159,7 @@
     background-clip: padding-box;
   }
   *:hover::-webkit-scrollbar-thumb {
-    background: #3a3a3d;
+    background: var(--scrollbar-thumb);
     background-clip: padding-box;
   }
   *::-webkit-scrollbar-thumb:hover {
