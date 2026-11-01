@@ -32,7 +32,7 @@ it('keeps malformed Mermaid failures inline in English', async () => {
 })
 it('uses an English size limit fallback on the English route', async () => {
   const source = createMockSource({ locale: 'en' })
-  source.readArtifact = async () => 'x'.repeat(20_001)
+  source.readArtifact = async () => 'x'.repeat(200_001)
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
   fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/SPEC.md/ }))
   expect(await screen.findByText('Content exceeds the preview limit.')).toBeInTheDocument()
@@ -51,4 +51,41 @@ it('approves a draft plan and keeps the approved action unavailable', async () =
   fireEvent.click(screen.getByRole('button', { name: /login-oauth\/REVIEW.md/ }))
   expect(await screen.findByRole('tab', { name: /REVIEW.md/ })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /^Approve / })).toBeNull()
+})
+
+it('opens a library document without a feature or a review selection popover', async () => {
+  const source = createMockSource({
+    locale: 'en',
+    library: {
+      documents: [
+        {
+          slug: 'real',
+          kind: 'spec',
+          name: 'real/SPEC.md',
+          markdown: '# Library content',
+          state: 'draft',
+        },
+      ],
+    },
+  })
+  render(<WorkbenchPage source={source} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: /real\/SPEC.md/ }))
+  expect(await screen.findByRole('heading', { name: 'Library content' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Review with agent' })).toBeNull()
+  expect(document.querySelector('[data-document-selection]')).toBeNull()
+})
+
+it('renders long real documents instead of the preview limit notice', async () => {
+  const markdown = `# Long plan\n\n${'Task line with enough words to grow the file.\n\n'.repeat(700)}`
+  expect(markdown.length).toBeGreaterThan(30_000)
+  const source = createMockSource({
+    locale: 'en',
+    library: {
+      documents: [{ slug: 'long', kind: 'plan', name: 'long/PLAN.md', markdown, state: 'draft' }],
+    },
+  })
+  render(<WorkbenchPage source={source} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: /long\/PLAN.md/ }))
+  expect(await screen.findByRole('heading', { name: 'Long plan' })).toBeInTheDocument()
+  expect(screen.queryByText('Content exceeds the preview limit.')).toBeNull()
 })

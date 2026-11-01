@@ -64,7 +64,7 @@ export interface ProjectSnapshot {
     id: string
     name: string
     kind: 'spec' | 'plan' | 'review'
-    featureId: string
+    featureId?: string
     specId?: string
     archived?: boolean
     state: UiState
@@ -144,6 +144,7 @@ export interface WorkbenchSource {
   addProject(project: ProjectSummary): Promise<ProjectSnapshot>
   listProjects(): Promise<ProjectSummary[]>
   loadProject(id: string): Promise<ProjectSnapshot>
+  scanSkills(root: string): Promise<ProjectSnapshot['skills']>
   readArtifact(id: string): Promise<string>
   streamReply(
     request: { featureId: string; role: RoleId; prompt: string },

@@ -1,3 +1,4 @@
+import type { MockLibrary } from './mock-library'
 import type { Locale } from '@/shared/i18n'
 import { mockReplies } from './mock-replies'
 import { mockArtifactMarkdown, mockProjects } from './mock-data'
@@ -6,10 +7,35 @@ import {
   type ReplyEvent,
   type ReplyTimer,
   type SettingsSnapshot,
+  type ProjectSnapshot,
   type WorkbenchSource,
 } from './workbench-source'
-export function createMockSource({ locale }: { locale: Locale }): WorkbenchSource {
+export function createMockSource({
+  locale,
+  library,
+  loadSkills,
+}: {
+  locale: Locale
+  library?: MockLibrary
+  loadSkills?: (root: string) => Promise<{ id: string; name: string; markdown: string }[]>
+}): WorkbenchSource {
   const fixtures = mockProjects(locale)
+  const libraryMarkdown = new Map<string, string>()
+  const dev = fixtures.find((item) => item.project.id === 'dev')
+  if (library && dev) {
+    for (const document of library.documents) {
+      const id = `library:${document.kind}:${document.slug}`
+      dev.artifacts.push({
+        id,
+        name: document.name,
+        kind: document.kind,
+        state: document.state,
+        author: document.kind === 'spec' ? 'research' : 'planner',
+      })
+      libraryMarkdown.set(id, document.markdown)
+    }
+  }
+  const mockSkills = structuredClone(dev?.skills ?? [])
   let settings: SettingsSnapshot = {
     agents: roleIds.map((id, index) => ({
       id,
@@ -21,15 +47,31 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
       autoInvoke: false,
     })),
     general: {
-      skillsRoot: '~/.claude/skills',
+      skillsRoot: '~/.skills',
       interruptPolicy: 'interrupt' as const,
       guidedMode: true as const,
       correctionRounds: 3 as const,
       inactivityMinutes: 30,
     },
   }
+  const scanSkills = async (root: string): Promise<ProjectSnapshot['skills']> => {
+    if (!loadSkills) return structuredClone(mockSkills)
+    const skills = await loadSkills(root).catch(() => [])
+    for (const id of libraryMarkdown.keys()) {
+      if (id.startsWith('library:skill:')) libraryMarkdown.delete(id)
+    }
+    return [
+      ...structuredClone(mockSkills),
+      ...skills.map((skill) => {
+        const id = `library:skill:${skill.id}`
+        libraryMarkdown.set(id, skill.markdown)
+        return { id, name: skill.name, scope: 'global' as const }
+      }),
+    ]
+  }
   return {
     locale,
+    scanSkills,
     async addProject(project) {
       const existing = fixtures.find((item) => item.project.id === project.id)
       if (existing) {
@@ -54,9 +96,12 @@ export function createMockSource({ locale }: { locale: Locale }): WorkbenchSourc
     async loadProject(id) {
       const snapshot = fixtures.find((item) => item.project.id === id)
       if (!snapshot) throw new Error('Unknown project')
+      if (id === 'dev' && loadSkills)
+        snapshot.skills = await scanSkills(settings.general!.skillsRoot)
       return structuredClone(snapshot)
     },
     async readArtifact(id) {
+      if (libraryMarkdown.has(id)) return libraryMarkdown.get(id)!
       const artifact = fixtures.flatMap((item) => item.artifacts).find((item) => item.id === id)
       if (!artifact) throw new Error('Unknown artifact')
       const feature = fixtures

@@ -1,3 +1,4 @@
+import { mockLibrary } from './scripts/mock-library/vite-plugin'
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -15,5 +16,8 @@ export default defineConfig({
       },
     },
   },
-  renderer: { plugins: [react(), tailwindcss()], resolve: { alias: { '@': resolve('src') } } },
+  renderer: {
+    plugins: [mockLibrary(), react(), tailwindcss()],
+    resolve: { alias: { '@': resolve('src') } },
+  },
 })

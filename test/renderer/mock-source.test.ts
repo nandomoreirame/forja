@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
 import { createMockSource, type ChatMessage } from '../../src/renderer/src/shared/api'
 it('serves isolated localized snapshots for both projects', async () => {
   const source = createMockSource({ locale: 'pt-br' })
@@ -108,4 +108,55 @@ it('adds selected projects once and keeps returned metadata and snapshots isolat
   await source.addProject({ ...project, name: 'selected again' })
   expect((await source.listProjects()).filter((p) => p.id === project.id)).toHaveLength(1)
   expect((await source.loadProject(project.id)).project.name).toBe('selected again')
+})
+
+it('appends library documents and readable global skills without changing deterministic fixtures', async () => {
+  const baseline = await createMockSource({ locale: 'en' }).loadProject('dev')
+  const source = createMockSource({
+    locale: 'en',
+    library: {
+      documents: [
+        { slug: 'x', kind: 'spec', name: 'x/SPEC.md', markdown: '# Real spec', state: 'draft' },
+        { slug: 'x', kind: 'plan', name: 'x/PLAN.md', markdown: '# Real plan', state: 'approved' },
+      ],
+    },
+    loadSkills: vi
+      .fn()
+      .mockResolvedValue([{ id: 'real', name: 'Real skill', markdown: '# Real skill' }]),
+  })
+  const dev = await source.loadProject('dev')
+  expect(dev.artifacts.slice(0, baseline.artifacts.length)).toEqual(baseline.artifacts)
+  expect(dev.artifacts.slice(baseline.artifacts.length)).toEqual([
+    { id: 'library:spec:x', kind: 'spec', name: 'x/SPEC.md', state: 'draft', author: 'research' },
+    { id: 'library:plan:x', kind: 'plan', name: 'x/PLAN.md', state: 'approved', author: 'planner' },
+  ])
+  expect(dev.artifacts.at(-1)?.featureId).toBeUndefined()
+  expect(dev.skills.at(-1)).toEqual({
+    id: 'library:skill:real',
+    name: 'Real skill',
+    scope: 'global',
+  })
+  expect(await source.readArtifact('library:spec:x')).toBe('# Real spec')
+  expect(await source.readArtifact('library:skill:real')).toBe('# Real skill')
+  expect((await source.loadProject('nandomoreira.dev')).artifacts).toEqual([])
+  expect((await createMockSource({ locale: 'en' }).loadProject('dev')).artifacts).toEqual(
+    baseline.artifacts,
+  )
+})
+
+it('loads skills from current settings and tolerates rejected readers', async () => {
+  const loadSkills = vi.fn().mockResolvedValue([])
+  const source = createMockSource({ locale: 'en', loadSkills })
+  const baseline = await createMockSource({ locale: 'en' }).loadProject('dev')
+  expect(await source.loadProject('dev')).toEqual(baseline)
+  expect(loadSkills).toHaveBeenLastCalledWith('~/.skills')
+  const settings = await source.loadSettings()
+  settings.general!.skillsRoot = '/edited'
+  await source.saveSettings(settings)
+  await source.loadProject('dev')
+  expect(loadSkills).toHaveBeenLastCalledWith('/edited')
+  loadSkills.mockRejectedValue(new Error('Unavailable'))
+  expect((await source.loadProject('dev')).skills).toEqual(baseline.skills)
+  expect(await source.scanSkills('/other')).toEqual(baseline.skills)
+  expect(await createMockSource({ locale: 'en' }).scanSkills('/ignored')).toEqual(baseline.skills)
 })

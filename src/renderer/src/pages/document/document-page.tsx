@@ -5,6 +5,9 @@ import { getDictionary } from '@/shared/i18n'
 import { DocumentSelection } from '@/renderer/src/features/document-reader'
 import { ComposerController } from '@/renderer/src/features/composer'
 
+// Matches the per-file cap of the mock library so real specs and plans render in full.
+const documentPreviewLimit = 200_000
+
 export function DocumentPage() {
   const state = useWorkbench((s) => s)
   const artifact = state.snapshot?.artifacts.find(
@@ -20,6 +23,7 @@ export function DocumentPage() {
   const preview = (
     <MarkdownPreview
       source={state.documents[artifact.id] ?? ''}
+      maxLength={documentPreviewLimit}
       tooLargeLabel={t.tooLarge}
       diagramErrorLabel={t.diagramError}
       diagramLoadingLabel={t.diagramLoading}

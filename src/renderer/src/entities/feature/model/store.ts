@@ -18,6 +18,7 @@ export type View =
   | { kind: 'document'; documentId: string }
 export interface WorkbenchState {
   source: WorkbenchSource
+  refreshSkills(root?: string): Promise<void>
   projects: ProjectSummary[]
   snapshot: ProjectSnapshot | null
   loading: boolean
@@ -106,6 +107,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
   const documentReads = new Map<string, Promise<string>>()
   let previousDocumentView: View = { kind: 'home' }
   let request = 0
+  let skillsRequest = 0
   let failedOperation:
     { kind: 'projects' } | { kind: 'project'; id: string } | { kind: 'directory' } | null = null
   return createStore<WorkbenchState>((set, get) => {
@@ -138,6 +140,31 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       )
     return {
       source,
+      async refreshSkills(root) {
+        const currentRequest = ++skillsRequest
+        const projectId = get().snapshot?.project.id
+        const folder = root ?? (await source.loadSettings()).general?.skillsRoot ?? '~/.skills'
+        const skills = await source.scanSkills(folder)
+        set((state) =>
+          // Mock loadProject includes library skills only for the dev fixture.
+          currentRequest === skillsRequest &&
+          projectId === 'dev' &&
+          state.snapshot &&
+          state.snapshot.project.id === projectId
+            ? {
+                snapshot: {
+                  ...state.snapshot,
+                  skills: [
+                    ...state.snapshot.skills.filter(
+                      (skill) => !skill.id.startsWith('library:skill:'),
+                    ),
+                    ...skills.filter((skill) => skill.id.startsWith('library:skill:')),
+                  ],
+                },
+              }
+            : {},
+        )
+      },
       pickingDirectory: false,
       async openDirectory() {
         if (get().pickingDirectory) return

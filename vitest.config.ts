@@ -3,7 +3,12 @@ import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
 export default defineConfig({
   plugins: [react()],
-  resolve: { alias: { '@': resolve('src') } },
+  resolve: {
+    alias: {
+      '@': resolve('src'),
+      'virtual:forja-mock-library': resolve('test/fixtures/mock-library.ts'),
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['test/setup.ts'],
