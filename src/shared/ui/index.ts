@@ -47,3 +47,13 @@ export {
 export { AgentMascot, agentSprites, type AgentRole, type AgentSprite } from './agent-mascot'
 export { ScrollArea, ScrollBar } from './scroll-area'
 export { tabClassName, tabStripClassName } from './tab-strip'
+export {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  useSidebar,
+} from './sidebar'

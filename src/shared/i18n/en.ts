@@ -129,6 +129,7 @@ export const en = {
     noChanges: 'No changes',
     branches: 'Branches',
     collapseLeft: 'Collapse sidebar',
+    sidebarSections: 'Sidebar sections',
     expandLeft: 'Expand sidebar',
     collapseRight: 'Collapse project panel',
     expandRight: 'Expand project panel',

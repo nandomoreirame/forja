@@ -129,6 +129,7 @@ export const ptBr = {
     noChanges: 'Sem alterações',
     branches: 'Branches',
     collapseLeft: 'Recolher barra lateral',
+    sidebarSections: 'Seções da barra lateral',
     expandLeft: 'Expandir barra lateral',
     collapseRight: 'Recolher painel do projeto',
     expandRight: 'Expandir painel do projeto',

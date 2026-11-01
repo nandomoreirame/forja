@@ -54,7 +54,7 @@ it('shows the project switcher at the start of the footer, not in the topbar', a
   fireEvent.focus(switcher)
   expect(await screen.findByRole('tooltip')).toHaveTextContent('Recent projects (Ctrl+R)')
   expect(within(sidebar).queryByRole('button', { name: 'dev, switch project' })).toBeNull()
-  expect(within(sidebar).getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument()
+  expect(within(header).getByRole('button', { name: 'Collapse sidebar' })).toBeInTheDocument()
   fireEvent.click(switcher)
   expect(screen.getByRole('dialog', { name: 'Recent projects' })).toBeInTheDocument()
 })

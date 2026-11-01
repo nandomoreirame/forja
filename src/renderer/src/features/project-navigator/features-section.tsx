@@ -1,5 +1,4 @@
-import { NavigatorSection, ArchiveAction, PaneAction, PaneRow, rowButton } from './section'
-import { ChevronLeft } from 'lucide-react'
+import { NavigatorSection, ArchiveAction, PaneRow, rowButton } from './section'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, ToolIcon, toolNames, type UiState } from '@/shared/ui'
 import { useWorkbench } from '@/renderer/src/entities/feature'
@@ -75,13 +74,6 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
       count={active.length + groups.finished.length}
       defaultSize="25%"
       empty={copy.empty}
-      actions={
-        <>
-          <PaneAction label={a.collapseLeft} onClick={() => state.togglePanel('left')}>
-            <ChevronLeft aria-hidden="true" />
-          </PaneAction>
-        </>
-      }
     >
       {[...active, ...groups.finished].map(row)}
     </NavigatorSection>

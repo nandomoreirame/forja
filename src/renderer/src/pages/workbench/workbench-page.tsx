@@ -20,14 +20,16 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  SidebarProvider,
   TooltipProvider,
   useDefaultLayout,
   useGroupRef,
 } from '@/shared/ui'
 import { getDictionary } from '@/shared/i18n'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
 import { ProjectSidebar } from '@/renderer/src/widgets/project-sidebar'
 import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
+import { SidebarRail, SidebarToggle } from '@/renderer/src/widgets/sidebar-rail'
 import { GitContext } from '@/renderer/src/widgets/git-context'
 import { GitStatus } from '@/renderer/src/widgets/git-status'
 import { ProjectSwitcher } from '@/renderer/src/widgets/project-switcher'
@@ -111,12 +113,16 @@ function WorkbenchShell() {
     if (id === 'toggle-terminals' && s.snapshot) s.toggleTerminals(terminalScope?.id)
   }
   return (
-    <div
-      className="flex h-full min-h-0 flex-col bg-background text-foreground"
+    // shadcn's SidebarProvider owns the open state (mirrored in the store) and Ctrl+B.
+    <SidebarProvider
+      open={s.panels.left}
+      onOpenChange={(open) => s.setPanel('left', open)}
+      className="h-full min-h-0 flex-col bg-background text-foreground"
       lang={s.source.locale === 'pt-br' ? 'pt-BR' : 'en'}
     >
       <AppTopbar
         brand="FORJA"
+        project={s.snapshot ? <SidebarToggle /> : undefined}
         usage={
           <UsagePopover
             source={s.source}
@@ -136,9 +142,7 @@ function WorkbenchShell() {
       <div className="flex min-h-0 flex-1 overflow-hidden px-1">
         {s.snapshot && !s.panels.left ? (
           <div className="p-1">
-            <IconButton label={a.expandLeft} onClick={() => s.togglePanel('left')}>
-              <ChevronRight />
-            </IconButton>
+            <SidebarRail />
           </div>
         ) : null}
         <ResizablePanelGroup
@@ -300,6 +304,6 @@ function WorkbenchShell() {
           ) : undefined
         }
       />
-    </div>
+    </SidebarProvider>
   )
 }

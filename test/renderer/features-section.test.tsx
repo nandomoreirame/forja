@@ -46,13 +46,12 @@ it('shows finished end states and lets Tab reach every visible feature row', asy
       within(section).getByRole('button', { name: new RegExp('^(?!Archive )' + feature.name) }),
     ).toHaveAccessibleName(/Integrated|Abandoned/)
   }
-  within(section).getByRole('button', { name: 'Collapse sidebar' }).focus()
+  const header = within(section).getByRole('button', { name: /^Features/ })
+  header.focus()
   const buttons = Array.from(
     section.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]'),
   ).filter((element) => !element.closest('[hidden]'))
-  for (const target of buttons.slice(
-    buttons.findIndex((button) => button.getAttribute('aria-label') === 'Collapse sidebar') + 1,
-  )) {
+  for (const target of buttons.slice(buttons.indexOf(header) + 1)) {
     await user.tab()
     expect(target).toHaveFocus()
   }
