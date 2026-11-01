@@ -94,6 +94,8 @@ export interface WorkbenchState {
   composeOpen: boolean
   closeCompose(): void
   closeAuthoring(): void
+  /** Closes whatever tab is showing (Ctrl+W); does nothing on the empty state. */
+  closeActiveTab(): void
   createFeatureFromPrompt(prompt: string, role: RoleId): string
   openFeature(id: string): void
   selectFeature(id: string): void
@@ -532,6 +534,15 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       closeCompose() {
         if (!get().composeOpen) return
         set({ composeOpen: false, ...leavePage('compose') })
+      },
+      closeActiveTab() {
+        const view = get().view
+        if (view.kind === 'conversation') get().closeFeature(view.featureId)
+        else if (view.kind === 'document') get().closeDocument(view.documentId)
+        else if (view.kind === 'settings') get().closeSettings()
+        else if (view.kind === 'archived') get().closeArchived()
+        else if (view.kind === 'compose') get().closeCompose()
+        else if (view.kind === 'authoring') get().closeAuthoring()
       },
       closeAuthoring() {
         if (!get().authoring) return

@@ -4,7 +4,8 @@ import { createPtyService, resolveDefaultShell } from '../core/terminals/pty-ser
 import { spawn as spawnPty } from 'node-pty'
 import { accessSync, constants } from 'node:fs'
 import { userInfo } from 'node:os'
-import { app, BrowserWindow, utilityProcess, type UtilityProcess } from 'electron'
+import { app, BrowserWindow, Menu, utilityProcess, type UtilityProcess } from 'electron'
+import { appMenuTemplate } from './app-menu'
 import { join } from 'node:path'
 
 let core: UtilityProcess | undefined
@@ -51,6 +52,7 @@ function createWindow(): void {
 }
 
 void app.whenReady().then(() => {
+  Menu.setApplicationMenu(Menu.buildFromTemplate(appMenuTemplate(process.platform)))
   registerProjectDirectoryPicker()
   terminals = registerTerminals((callbacks) =>
     createPtyService({

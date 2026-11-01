@@ -99,6 +99,7 @@ function WorkbenchShell() {
       s.openSettings()
     },
     'ctrl+shift+p': () => s.openPalette('all'),
+    'ctrl+w': () => s.closeActiveTab(),
     'alt+arrowleft': s.back,
     'alt+arrowright': s.forward,
   })
