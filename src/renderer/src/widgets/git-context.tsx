@@ -14,7 +14,7 @@ export function GitContext({ locale }: { locale: Locale }) {
   return (
     <aside
       aria-label={a.project}
-      className="w-[230px] shrink-0 space-y-4 overflow-y-auto border-l border-border bg-sidebar p-3 text-[11px] text-muted-foreground"
+      className="flex w-[230px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-border bg-sidebar p-3 text-[11px] text-muted-foreground"
     >
       <section>
         <div className="mb-2 flex items-center justify-between">
@@ -57,37 +57,40 @@ export function GitContext({ locale }: { locale: Locale }) {
             : null}
         </dl>
       </section>
-      <section className="border-t border-border pt-4">
-        <h2 className="mb-2 flex justify-between uppercase tracking-wider">
-          <span>Git</span>
-          <span>{snapshot.changes.length}</span>
-        </h2>
-        {snapshot.changes.length ? (
-          snapshot.changes.map((c) => (
-            <p key={c.path}>
-              {c.status} {c.path}
-            </p>
-          ))
-        ) : (
-          <p>{a.noChanges}</p>
-        )}
-      </section>
-      <details open className="group border-t border-border pt-4">
-        <summary className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 flex cursor-pointer list-none items-center justify-between uppercase tracking-wider">
-          {a.branches}
-          <ChevronDown className="size-3 group-open:rotate-180 motion-reduce:transition-none" />
-        </summary>
-        <ul className="mt-2 space-y-1">
-          {snapshot.branches.map((branch) => (
-            <li
-              key={branch}
-              className="rounded-sm border border-border bg-secondary px-2 py-1 text-foreground"
-            >
-              • {branch}
-            </li>
-          ))}
-        </ul>
-      </details>
+      {/* Git and Branches stay at the bottom, like VS Code's lower views. */}
+      <div className="mt-auto space-y-4">
+        <section className="border-t border-border pt-4">
+          <h2 className="mb-2 flex justify-between uppercase tracking-wider">
+            <span>Git</span>
+            <span>{snapshot.changes.length}</span>
+          </h2>
+          {snapshot.changes.length ? (
+            snapshot.changes.map((c) => (
+              <p key={c.path}>
+                {c.status} {c.path}
+              </p>
+            ))
+          ) : (
+            <p>{a.noChanges}</p>
+          )}
+        </section>
+        <details open className="group border-t border-border pt-4">
+          <summary className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 flex cursor-pointer list-none items-center justify-between uppercase tracking-wider">
+            {a.branches}
+            <ChevronDown className="size-3 group-open:rotate-180 motion-reduce:transition-none" />
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {snapshot.branches.map((branch) => (
+              <li
+                key={branch}
+                className="rounded-sm border border-border bg-secondary px-2 py-1 text-foreground"
+              >
+                • {branch}
+              </li>
+            ))}
+          </ul>
+        </details>
+      </div>
     </aside>
   )
 }

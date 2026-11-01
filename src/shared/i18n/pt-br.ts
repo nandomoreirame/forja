@@ -2,6 +2,7 @@ export const ptBr = {
   app: {
     gitStatus: {
       label: 'Branch {branch}, {behind} atrás, {ahead} à frente',
+      sync: '{behind} commits atrás e {ahead} à frente de {base}',
     },
     flow: {
       toggle: 'Fluxo',

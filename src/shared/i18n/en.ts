@@ -2,6 +2,7 @@ export const en = {
   app: {
     gitStatus: {
       label: 'Branch {branch}, {behind} behind, {ahead} ahead',
+      sync: '{behind} commits behind and {ahead} ahead of {base}',
     },
     flow: {
       toggle: 'Flow',
