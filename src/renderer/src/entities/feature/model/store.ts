@@ -8,6 +8,7 @@ import { selectProjectDirectory } from '@/renderer/src/shared/lib/directory-pick
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { saveLocale } from '@/renderer/src/shared/lib/locale'
 import { featureIdentity } from './feature-name'
+import type { AgentId } from './agent-names'
 import { createStore } from 'zustand/vanilla'
 import type {
   FeatureSnapshot,
@@ -49,6 +50,8 @@ export interface WorkbenchState {
   source: WorkbenchSource
   agentTools: Partial<Record<RoleId, ToolId>>
   agentModels: Partial<Record<RoleId, string>>
+  agentNames: Partial<Record<AgentId, string>>
+  setAgentName(id: AgentId, name: string): Promise<void>
   summaries: Record<string, { text: string; createdAt: string }>
   summarize(featureId: string): Promise<void>
   refreshAgentTools(): Promise<void>
@@ -227,6 +230,16 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       source,
       agentTools: {},
       agentModels: {},
+      agentNames: {},
+      async setAgentName(id, name) {
+        const settings = await source.loadSettings()
+        const agentNames = { ...settings.agentNames }
+        const trimmed = name.trim()
+        if (trimmed) agentNames[id] = trimmed
+        else delete agentNames[id]
+        await source.saveSettings({ ...settings, agentNames })
+        set({ agentNames })
+      },
       summaries: {},
       async summarize(featureId) {
         const projectId = get().snapshot?.project.id
@@ -243,6 +256,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         try {
           const settings = await source.loadSettings()
           set({
+            agentNames: settings.agentNames ?? {},
             agentTools: Object.fromEntries(settings.agents.map((agent) => [agent.id, agent.tool])),
             agentModels: Object.fromEntries(
               settings.agents.flatMap((agent) => (agent.model ? [[agent.id, agent.model]] : [])),

@@ -98,6 +98,7 @@ export interface ProjectSnapshot {
   terminals?: MockTerminal[]
 }
 export interface SettingsSnapshot {
+  agentNames?: Partial<Record<'smith' | RoleId, string>>
   agents: {
     id: RoleId
     tool: ToolId

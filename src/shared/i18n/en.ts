@@ -303,6 +303,14 @@ export const en = {
     source: 'Source',
     issues: 'Issues',
   },
+  agentNames: {
+    smith: 'Smith',
+    research: 'Miner',
+    planner: 'Moldmaker',
+    implementer: 'Anvilsmith',
+    tester: 'Temperer',
+    reviewer: 'Polisher',
+  },
   product: {
     feature: 'Feature',
     target: 'Target',

@@ -303,6 +303,14 @@ export const ptBr = {
     source: 'Código-fonte',
     issues: 'Issues',
   },
+  agentNames: {
+    smith: 'Ferreiro',
+    research: 'Minerador',
+    planner: 'Moldador',
+    implementer: 'Bigorneiro',
+    tester: 'Temperador',
+    reviewer: 'Polidor',
+  },
   product: {
     feature: 'Feature',
     target: 'Destino',
