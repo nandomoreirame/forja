@@ -133,9 +133,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  /* Like VS Code, native scrollbars stay hidden until the pointer is over their area. */
   * {
-    scrollbar-color: #3a3a3d transparent;
+    scrollbar-color: transparent transparent;
     scrollbar-width: thin;
+  }
+  *:hover {
+    scrollbar-color: #3a3a3d transparent;
   }
   *::-webkit-scrollbar {
     width: 8px;
@@ -145,9 +149,13 @@
     background: transparent;
   }
   *::-webkit-scrollbar-thumb {
-    background: #3a3a3d;
+    background: transparent;
     border: 2px solid transparent;
     border-radius: 999px;
+    background-clip: padding-box;
+  }
+  *:hover::-webkit-scrollbar-thumb {
+    background: #3a3a3d;
     background-clip: padding-box;
   }
   *::-webkit-scrollbar-thumb:hover {
