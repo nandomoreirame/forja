@@ -1,4 +1,7 @@
-import { History } from '@/renderer/src/features/conversation'
+import { useState } from 'react'
+import { NotebookText } from 'lucide-react'
+import { ConversationSummary, History } from '@/renderer/src/features/conversation'
+import { Button } from '@/shared/ui'
 import { roleIds } from '@/renderer/src/shared/api'
 import { FeatureContext } from '@/widgets/workbench'
 import { getDictionary } from '@/shared/i18n'
@@ -7,12 +10,14 @@ import { ComposerController } from '@/renderer/src/features/composer'
 import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 export function ConversationPage() {
   const state = useWorkbench((s) => s)
+  const [summaryFor, setSummaryFor] = useState<string | null>(null)
   const d = getDictionary(state.source.locale),
     a = d.app
   const feature = state.snapshot?.features.find(
     (f) => state.view.kind === 'conversation' && f.id === state.view.featureId,
   )
   if (!feature) return null
+  const summaryOpen = summaryFor === feature.id
   return (
     <section className="flex min-h-0 flex-1 flex-col">
       <WorkbenchTabs />
@@ -30,6 +35,18 @@ export function ConversationPage() {
               { label: a.destination, value: feature.destination },
               { label: d.product.branch, value: feature.branch },
             ]}
+            actions={
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1.5 px-2 text-[11px]"
+                aria-expanded={summaryOpen}
+                onClick={() => setSummaryFor(summaryOpen ? null : feature.id)}
+              >
+                <NotebookText aria-hidden="true" />
+                {a.summary.toggle}
+              </Button>
+            }
             cycleLabel={a.cycle}
             cycle={roleIds.map((role, index) => ({
               label: d.product[role],
@@ -42,6 +59,18 @@ export function ConversationPage() {
                     : 'pending',
             }))}
           />
+          {summaryOpen ? (
+            <div className="mt-3">
+              <ConversationSummary
+                key={feature.id}
+                locale={state.source.locale}
+                messageCount={feature.messages.length}
+                summary={state.summaries[feature.id]}
+                onSummarize={() => state.summarize(feature.id)}
+                onClose={() => setSummaryFor(null)}
+              />
+            </div>
+          ) : null}
         </div>
         <History
           key={feature.id}

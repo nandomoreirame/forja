@@ -1,5 +1,17 @@
 export const ptBr = {
   app: {
+    summary: {
+      toggle: 'Resumo',
+      title: 'Resumo da conversa',
+      empty: 'ainda não há',
+      summarizeNow: 'Resumir agora',
+      close: 'Fechar resumo',
+      explain:
+        'Quando passar de {limit} mensagens, o que sair da janela vira um resumo aqui, e os agentes recebem o resumo mais as mensagens recentes.',
+      context: 'Os agentes recebem as {count} mensagens da conversa.',
+      contextWindow: 'Os agentes recebem o resumo mais as últimas {limit} mensagens.',
+      updated: 'atualizado {time}',
+    },
     response: {
       details: 'Detalhes da resposta',
       engine: 'Motor',

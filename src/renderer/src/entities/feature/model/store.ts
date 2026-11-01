@@ -43,6 +43,8 @@ export interface WorkbenchState {
   source: WorkbenchSource
   agentTools: Partial<Record<RoleId, ToolId>>
   agentModels: Partial<Record<RoleId, string>>
+  summaries: Record<string, { text: string; createdAt: string }>
+  summarize(featureId: string): Promise<void>
   refreshAgentTools(): Promise<void>
   refreshSkills(root?: string): Promise<void>
   projects: ProjectSummary[]
@@ -172,6 +174,18 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       source,
       agentTools: {},
       agentModels: {},
+      summaries: {},
+      async summarize(featureId) {
+        const projectId = get().snapshot?.project.id
+        const text = await source.summarizeConversation(featureId)
+        if (get().snapshot?.project.id !== projectId) return
+        set((state) => ({
+          summaries: {
+            ...state.summaries,
+            [featureId]: { text, createdAt: new Date().toISOString() },
+          },
+        }))
+      },
       async refreshAgentTools() {
         try {
           const settings = await source.loadSettings()
@@ -781,6 +795,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             openDocumentIds: [],
             documents: {},
             drafts: {},
+            summaries: {},
           })
           await get().refreshAgentTools()
         } catch {

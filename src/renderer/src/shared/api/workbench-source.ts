@@ -172,4 +172,6 @@ export interface WorkbenchSource {
   loadMemories(): Promise<MemoryRecord[]>
   loadConnectors(): Promise<ConnectorSnapshot[]>
   loadUsage(): Promise<ToolUsage[]>
+  /** Summarizes the conversation of a feature (mock: deterministic text). */
+  summarizeConversation(featureId: string): Promise<string>
 }

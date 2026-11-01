@@ -214,6 +214,14 @@ export function createMockSource({
         },
       ]
     },
+    async summarizeConversation(featureId) {
+      const feature = fixtures.flatMap((item) => item.features).find((f) => f.id === featureId)
+      if (!feature) throw new Error('Unknown feature')
+      const count = feature.messages.length
+      return locale === 'en'
+        ? `${feature.name}: the user asked for OAuth login with clear error feedback. Research mapped the provider errors, the Planner split the work, the Implementer changed the callback and the Tester requested a fix for the cancelled login message (${count} messages).`
+        : `${feature.name}: o usuário pediu login OAuth com mensagens de erro claras. A pesquisa mapeou os erros do provedor, o Planejador dividiu o trabalho, o Implementador alterou o callback e o Testador pediu uma correção na mensagem de login cancelado (${count} mensagens).`
+    },
     async loadUsage() {
       return [
         {

@@ -145,6 +145,8 @@ export interface FeatureContextProps {
   mode?: string
   cycle?: FeatureCycleStage[]
   cycleLabel?: string
+  /** Extra controls at the end of the header, such as the summary toggle. */
+  actions?: ReactNode
 }
 
 export function FeatureContext({
@@ -153,6 +155,7 @@ export function FeatureContext({
   mode,
   cycle,
   cycleLabel = 'Cycle',
+  actions,
 }: FeatureContextProps) {
   return (
     <section aria-label={title} className="grid gap-2.5 text-[12px]">
@@ -171,6 +174,7 @@ export function FeatureContext({
               {row.label}: <span className="text-foreground/90">{row.value}</span>
             </span>
           ))}
+          {actions}
         </div>
       </div>
       {cycle?.length ? (

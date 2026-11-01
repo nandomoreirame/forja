@@ -1,5 +1,17 @@
 export const en = {
   app: {
+    summary: {
+      toggle: 'Summary',
+      title: 'Conversation summary',
+      empty: 'none yet',
+      summarizeNow: 'Summarize now',
+      close: 'Close summary',
+      explain:
+        'Past {limit} messages, what leaves the window becomes a summary here, and agents receive the summary plus the recent messages.',
+      context: 'Agents receive the {count} messages of the conversation.',
+      contextWindow: 'Agents receive the summary plus the last {limit} messages.',
+      updated: 'updated {time}',
+    },
     response: {
       details: 'Response details',
       engine: 'Engine',
