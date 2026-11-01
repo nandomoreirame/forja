@@ -1,5 +1,15 @@
 export const ptBr = {
   app: {
+    response: {
+      details: 'Detalhes da resposta',
+      engine: 'Motor',
+      model: 'Modelo',
+      defaultModel: 'modelo padrão',
+      input: 'Entrada',
+      cached: 'Do cache',
+      output: 'Saída',
+      duration: 'Duração',
+    },
     document: {
       reviewWithAgent: 'Revisar com o agente',
       reviewPrefix: 'Revisar',

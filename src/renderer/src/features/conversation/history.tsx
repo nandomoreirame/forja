@@ -1,11 +1,38 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Messages } from '@/widgets/conversation'
-import { formatMessageTime, getDictionary, type Locale } from '@/shared/i18n'
+import {
+  formatDuration,
+  formatMessageTime,
+  formatTokens,
+  getDictionary,
+  type Locale,
+} from '@/shared/i18n'
 import type { ChatMessage, RoleId } from '@/renderer/src/shared/api'
 import { toolNames, type ToolId } from '@/shared/ui'
 import { HandoffLink } from './handoff-link'
 
 const highlightMs = 2000
+
+function responseMeta(message: ChatMessage, tool: ToolId, locale: Locale) {
+  const { usage, durationMs } = message
+  if (!usage || durationMs === undefined) return undefined
+  const r = getDictionary(locale).app.response
+  const model = message.model ?? r.defaultModel
+  const rows: [string, string][] = [
+    [r.engine, toolNames[tool]],
+    [r.model, model],
+    [r.input, formatTokens(usage.input, locale)],
+    [r.cached, formatTokens(usage.cached, locale)],
+    [r.output, formatTokens(usage.output, locale)],
+    [r.duration, formatDuration(durationMs)],
+  ]
+  const tokens = formatTokens(usage.input + usage.output, locale)
+  return {
+    label: r.details,
+    summary: `${model} · ${tokens} tokens · ${formatDuration(durationMs)}`,
+    rows,
+  }
+}
 
 export function History({
   messages,
@@ -78,6 +105,7 @@ export function History({
             speaking: m.role === 'agent' && m.status === 'running',
             time: m.createdAt ? formatMessageTime(m.createdAt, locale) : undefined,
             dateTime: m.createdAt,
+            response: tool ? responseMeta(m, tool, locale) : undefined,
             role: m.role,
             text: m.text,
             parts: m.parts,

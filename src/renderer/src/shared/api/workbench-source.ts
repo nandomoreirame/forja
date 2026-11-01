@@ -29,6 +29,10 @@ export interface ChatMessage {
   attachments?: ImageAttachment[]
   /** ISO timestamp of when the message was sent or the reply started. */
   createdAt?: string
+  /** Agent replies: configured model, wall time and token usage of the turn. */
+  model?: string
+  durationMs?: number
+  usage?: { input: number; cached: number; output: number }
 }
 export interface MockTerminal {
   id: string

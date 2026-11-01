@@ -1,6 +1,13 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/shared/ui/utils'
-import { AgentMascot, type AgentRole, type ToolId } from '@/shared/ui'
+import {
+  AgentMascot,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  type AgentRole,
+  type ToolId,
+} from '@/shared/ui'
 import {
   defaultMessageLabels,
   MessageBody,
@@ -29,6 +36,8 @@ export interface ConversationMessage {
   /** Preformatted time label and its machine-readable value. */
   time?: string
   dateTime?: string
+  /** Completed agent replies: compact summary and the detail rows behind it. */
+  response?: { summary: string; label: string; rows: [string, string][] }
 }
 
 export interface MessagesProps {
@@ -49,6 +58,27 @@ function MessageTime({ item }: { item: ConversationMessage }) {
       {item.time}
     </time>
   ) : null
+}
+
+function ResponseMeta({ response }: { response: NonNullable<ConversationMessage['response']> }) {
+  return (
+    <Popover>
+      <PopoverTrigger
+        aria-label={`${response.label}: ${response.summary}`}
+        className="rounded-sm text-[11px] text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring"
+      >
+        {response.summary}
+      </PopoverTrigger>
+      <PopoverContent align="start" aria-label={response.label} className="w-60 gap-1 text-[12px]">
+        {response.rows.map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-4">
+            <span className="text-muted-foreground">{label}</span>
+            <span className="font-mono">{value}</span>
+          </div>
+        ))}
+      </PopoverContent>
+    </Popover>
+  )
 }
 
 const highlightClass = 'ring-2 ring-primary/70 ring-offset-2 ring-offset-background'
@@ -179,6 +209,7 @@ export function Messages({
                 attachments={item.attachments}
                 labels={messageLabels}
               />
+              {item.response ? <ResponseMeta response={item.response} /> : null}
             </div>
           </li>
         ),

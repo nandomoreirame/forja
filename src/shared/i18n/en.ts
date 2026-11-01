@@ -1,5 +1,15 @@
 export const en = {
   app: {
+    response: {
+      details: 'Response details',
+      engine: 'Engine',
+      model: 'Model',
+      defaultModel: 'default model',
+      input: 'Input',
+      cached: 'From cache',
+      output: 'Output',
+      duration: 'Duration',
+    },
     document: {
       reviewWithAgent: 'Review with agent',
       reviewPrefix: 'Review',

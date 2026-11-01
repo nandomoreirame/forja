@@ -42,6 +42,7 @@ export interface WorkbenchState {
   sendAuthoring(text: string): void
   source: WorkbenchSource
   agentTools: Partial<Record<RoleId, ToolId>>
+  agentModels: Partial<Record<RoleId, string>>
   refreshAgentTools(): Promise<void>
   refreshSkills(root?: string): Promise<void>
   projects: ProjectSummary[]
@@ -170,11 +171,15 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     return {
       source,
       agentTools: {},
+      agentModels: {},
       async refreshAgentTools() {
         try {
           const settings = await source.loadSettings()
           set({
             agentTools: Object.fromEntries(settings.agents.map((agent) => [agent.id, agent.tool])),
+            agentModels: Object.fromEntries(
+              settings.agents.flatMap((agent) => (agent.model ? [[agent.id, agent.model]] : [])),
+            ),
           })
         } catch {
           // Keep the previous mapping when settings are temporarily unavailable.
@@ -522,7 +527,12 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         get().interrupt(id)
         const role = get().recipients[id] ?? feature.stage
         const messageId = `${id}:agent-${feature.messages.length + 2}`
-        const createdAt = new Date().toISOString()
+        const startedAt = Date.now()
+        const createdAt = new Date(startedAt).toISOString()
+        // Mock usage: about four characters per token over the visible context.
+        const contextChars =
+          feature.messages.reduce((total, message) => total + message.text.length, 0) +
+          prompt.length
         set((state) => ({
           snapshot: {
             ...state.snapshot!,
@@ -547,6 +557,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
                         text: '',
                         status: 'running',
                         createdAt,
+                        model: state.agentModels[role],
                       },
                     ],
                   }
@@ -613,6 +624,21 @@ export function createWorkbenchStore(source: WorkbenchSource) {
                                 ? [...(message.parts ?? []), event.part]
                                 : message.parts,
                             status: finalStatus ?? message.status,
+                            ...(finalStatus
+                              ? {
+                                  durationMs: Date.now() - startedAt,
+                                  usage: {
+                                    input: Math.ceil(contextChars / 4),
+                                    cached: 0,
+                                    output: Math.ceil(
+                                      (event.type === 'text'
+                                        ? message.text + event.chunk
+                                        : message.text
+                                      ).length / 4,
+                                    ),
+                                  },
+                                }
+                              : {}),
                           }
                         : message,
                     ),

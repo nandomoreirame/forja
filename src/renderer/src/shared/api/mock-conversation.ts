@@ -43,6 +43,9 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-research',
+      model: 'Opus',
+      durationMs: 48000,
+      usage: { input: 6200, cached: 0, output: 410 },
       createdAt: seededAt(3),
       role: 'agent',
       author: 'research',
@@ -52,6 +55,9 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-plan',
+      model: 'Opus',
+      durationMs: 36000,
+      usage: { input: 8100, cached: 4300, output: 520 },
       createdAt: seededAt(6),
       role: 'agent',
       author: 'planner',
@@ -61,6 +67,9 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-implementation',
+      model: 'Sonnet',
+      durationMs: 95000,
+      usage: { input: 12400, cached: 6100, output: 880 },
       createdAt: seededAt(9),
       role: 'agent',
       author: 'implementer',
@@ -87,6 +96,9 @@ export function oauthConversation(locale: Locale): ChatMessage[] {
     },
     {
       id: 'oauth-log',
+      model: 'Sonnet',
+      durationMs: 22000,
+      usage: { input: 9800, cached: 7200, output: 240 },
       createdAt: seededAt(12),
       role: 'agent',
       author: 'tester',
