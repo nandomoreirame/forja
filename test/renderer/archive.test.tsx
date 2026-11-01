@@ -120,7 +120,7 @@ it('collapses each section with the keyboard while preserving the heading count'
   const user = userEvent.setup()
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-  for (const title of ['Features', 'Specs', 'Plans', 'Reviews', 'Skills', 'Memories']) {
+  for (const title of ['Chats', 'Specs', 'Plans', 'Reviews', 'Skills', 'Memories']) {
     const section = within(sidebar).getByRole('region', { name: new RegExp('^' + title) })
     const header = within(section).getByRole('button', { name: new RegExp('^' + title) })
     const name = header.textContent
@@ -132,7 +132,9 @@ it('collapses each section with the keyboard while preserving the heading count'
     const body = document.getElementById(header.getAttribute('aria-controls')!)
     if (wasOpen) await waitFor(() => expect(body).not.toBeVisible())
     else expect(body).toBeVisible()
-    expect(localStorage.getItem('forja.sidebar.' + title.toLowerCase())).toBe(String(!wasOpen))
+    // Chats keeps the `features` storage key so remembered layouts survive the rename.
+    const key = title === 'Chats' ? 'features' : title.toLowerCase()
+    expect(localStorage.getItem('forja.sidebar.' + key)).toBe(String(!wasOpen))
   }
 })
 

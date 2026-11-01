@@ -9,7 +9,7 @@ it('lists every feature by attention, reopens a closed tab and drops the Agents 
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
   expect(within(sidebar).queryByText('Agents')).toBeNull()
   expect(within(sidebar).queryByRole('button', { name: /Edit agents/ })).toBeNull()
-  const features = within(sidebar).getByRole('region', { name: /Features/ })
+  const features = within(sidebar).getByRole('region', { name: /Chats/ })
   const rows = within(features).getAllByRole('button', { name: /·/ })
   expect(rows[0]).toHaveAccessibleName(/Catalog search/)
   fireEvent.click(screen.getByRole('button', { name: 'Close Catalog search' }))
@@ -34,10 +34,10 @@ it('shows finished end states and lets Tab reach every visible feature row', asy
   const snapshot = await source.loadProject('dev')
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-  const section = within(sidebar).getByRole('region', { name: /Features/ })
+  const section = within(sidebar).getByRole('region', { name: /Chats/ })
   const visible = snapshot.features.filter((f) => !f.archived)
   expect(
-    within(section).getByRole('heading', { name: `Features ${visible.length}` }),
+    within(section).getByRole('heading', { name: `Chats ${visible.length}` }),
   ).toBeInTheDocument()
   const rows = within(section).getAllByRole('button', { name: /·/ })
   expect(rows).toHaveLength(visible.length)
@@ -46,7 +46,7 @@ it('shows finished end states and lets Tab reach every visible feature row', asy
       within(section).getByRole('button', { name: new RegExp('^(?!Archive )' + feature.name) }),
     ).toHaveAccessibleName(/Integrated|Abandoned/)
   }
-  const header = within(section).getByRole('button', { name: /^Features/ })
+  const header = within(section).getByRole('button', { name: /^Chats/ })
   header.focus()
   const buttons = Array.from(
     section.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]'),
@@ -69,8 +69,8 @@ it('leaves the empty feature list without actions and starts conversations from 
     />,
   )
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-  const section = within(sidebar).getByRole('region', { name: /Features/ })
-  expect(within(section).getByRole('heading', { name: 'Features 0' })).toBeInTheDocument()
+  const section = within(sidebar).getByRole('region', { name: /Chats/ })
+  expect(within(section).getByRole('heading', { name: 'Chats 0' })).toBeInTheDocument()
   expect(within(section).queryByRole('button', { name: /·/ })).toBeNull()
   expect(within(section).queryByRole('button', { name: 'New chat' })).toBeNull()
   fireEvent.click(within(screen.getByRole('main')).getAllByRole('button', { name: /^New chat/ })[0])
@@ -82,7 +82,7 @@ it('localizes feature states and finished entries in Portuguese', async () => {
   const snapshot = await source.loadProject('dev')
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-  const section = within(sidebar).getByRole('region', { name: /Features/ })
+  const section = within(sidebar).getByRole('region', { name: /Chats/ })
   const stalled = snapshot.features.find((feature) => feature.stalled)!
   expect(
     within(section).getByRole('button', { name: new RegExp('^(?!Arquivar )' + stalled.name) }),
@@ -114,7 +114,7 @@ it('shows integrated features as completed and abandoned ones as interrupted', a
     />,
   )
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-  const section = within(sidebar).getByRole('region', { name: /Features/ })
+  const section = within(sidebar).getByRole('region', { name: /Chats/ })
   const integratedRow = within(section).getByRole('button', {
     name: new RegExp('^(?!Archive )' + finished.name),
   })
@@ -134,7 +134,7 @@ it('lists finished features after the active ones in the same list', async () =>
   const snapshot = await source.loadProject('dev')
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-  const section = within(sidebar).getByRole('region', { name: /Features/ })
+  const section = within(sidebar).getByRole('region', { name: /Chats/ })
   const rows = within(section).getAllByRole('button', { name: /·/ })
   const finished = snapshot.features.find((f) => f.endState && !f.archived)!
   expect(rows.at(-1)).toHaveAccessibleName(new RegExp('^' + finished.name))
@@ -144,7 +144,7 @@ it('lists finished features after the active ones in the same list', async () =>
 it('keeps the tool icon and state badge visible on every feature row', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
-  const features = within(sidebar).getByRole('region', { name: /Features/ })
+  const features = within(sidebar).getByRole('region', { name: /Chats/ })
   const row = within(features)
     .getByRole('button', { name: /^(?!Archive )Login with OAuth/ })
     .closest('[data-slot="pane-row"]') as HTMLElement

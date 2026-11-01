@@ -34,7 +34,7 @@ it('toggles the sidebar with Ctrl+B and shows a section icon rail while collapse
     .getAllByRole('button')
     .map((button) => button.getAttribute('aria-label'))
   expect(names).toEqual([
-    'Features',
+    'Chats',
     'Specs',
     'Plans',
     'Reviews',

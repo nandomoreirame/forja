@@ -139,7 +139,7 @@ it('separates panes with a border and leaves a filler so collapsed panes stack o
 
 it('starts Skills and Memories collapsed, like VS Code secondary views', async () => {
   const sidebar = await renderSidebar()
-  for (const title of ['Features', 'Specs', 'Plans', 'Reviews'])
+  for (const title of ['Chats', 'Specs', 'Plans', 'Reviews'])
     expect(within(sidebar).getByRole('button', { name: new RegExp('^' + title) })).toHaveAttribute(
       'aria-expanded',
       'true',

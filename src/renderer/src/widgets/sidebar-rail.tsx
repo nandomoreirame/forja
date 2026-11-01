@@ -77,7 +77,7 @@ export function SidebarRail() {
     setOpen(true)
   }
   const sections: Item[] = [
-    { label: a.features, icon: ListTree, run: section('features') },
+    { label: a.chats, icon: ListTree, run: section('features') },
     { label: a.specs, icon: ClipboardList, run: section('specs') },
     { label: a.plans, icon: ListChecks, run: section('plans') },
     { label: a.reviews, icon: GitPullRequest, run: section('reviews') },

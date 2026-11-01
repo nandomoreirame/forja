@@ -39,7 +39,7 @@ it.each(['skill', 'memory'] as const)(
     render(<WorkbenchPage source={source} initialProjectId="dev" />)
     const sidebar = await screen.findByRole('complementary', { name: 'dev' })
     const features = within(sidebar)
-      .getByRole('region', { name: /Features/ })
+      .getByRole('region', { name: /Chats/ })
       .textContent?.replace(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/g, '')
     const trigger = within(sidebar).getByRole('button', { name: new RegExp('New ' + kind) })
     trigger.focus()
@@ -78,7 +78,7 @@ it.each(['skill', 'memory'] as const)(
     expect(prompt).toHaveValue('')
     expect(
       within(sidebar)
-        .getByRole('region', { name: /Features/ })
+        .getByRole('region', { name: /Chats/ })
         .textContent?.replace(/[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏]/g, ''),
     ).toBe(features)
   },

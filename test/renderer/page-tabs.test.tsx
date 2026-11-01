@@ -47,7 +47,7 @@ it('keeps a running agent going in the background when its tab closes', async ()
 
 it('shows the running AI tool instead of the agent name in the feature row', async () => {
   const sidebar = await renderDev()
-  const features = within(sidebar).getByRole('region', { name: /Features/ })
+  const features = within(sidebar).getByRole('region', { name: /Chats/ })
   expect(within(features).queryByText('Research')).toBeNull()
   const row = within(features).getByRole('button', { name: /^Login with OAuth/ }).parentElement!
   expect(row.querySelector('[data-slot="row-hover"] [data-slot="tool-icon"]')).not.toBeNull()

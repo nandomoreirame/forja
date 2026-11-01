@@ -10,7 +10,7 @@ it('renders the shell and toggles both sidebars and terminal', async () => {
     />,
   )
   expect(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).toHaveTextContent(
-    'Features 0',
+    'Chats 0',
   )
   expect(screen.getByRole('complementary', { name: 'Project' })).toHaveTextContent('main')
   expect(screen.getByRole('banner')).toBeInTheDocument()
@@ -38,7 +38,7 @@ it('renders the localized shell', async () => {
     />,
   )
   expect(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).toHaveTextContent(
-    'Features 0',
+    'Chats 0',
   )
   expect(screen.getByRole('complementary', { name: 'Projeto' })).toBeInTheDocument()
 })

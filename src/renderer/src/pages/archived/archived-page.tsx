@@ -11,7 +11,7 @@ export function ArchivedPage() {
   const groups = [
     {
       kind: 'feature' as const,
-      title: a.features,
+      title: a.chats,
       items: snapshot.features.filter((f) => f.archived),
     },
     {

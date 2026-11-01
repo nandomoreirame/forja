@@ -1,3 +1,4 @@
+import { Hammer } from 'lucide-react'
 import { FeatureStatus } from '@/shared/ui/feature-status'
 import { NavigatorSection, ArchiveAction, PaneRow, rowButton } from './section'
 import { getDictionary, type Locale } from '@/shared/i18n'
@@ -76,6 +77,13 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
                   : (a.states[feature.state] ?? a.idle)
             }
           />
+          {feature.stage === 'smith' ? (
+            <Hammer
+              aria-hidden="true"
+              data-slot="smith-mark"
+              className="size-3.5 shrink-0 text-primary"
+            />
+          ) : null}
           <span className="min-w-0 truncate">{feature.name}</span>
         </button>
       </PaneRow>
@@ -84,7 +92,7 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
   return (
     <NavigatorSection
       section="features"
-      title={a.features}
+      title={a.chats}
       count={active.length + groups.finished.length}
       defaultSize="25%"
       empty={copy.empty}
