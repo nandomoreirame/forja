@@ -5,12 +5,24 @@ import { WebglAddon } from '@xterm/addon-webgl'
 import '@xterm/xterm/css/xterm.css'
 import type { PtySessions } from './pty-sessions'
 
-// Mirrors the user's VS Code terminal: a Nerd Font first so prompt glyphs render.
-export const terminalFont = {
-  fontFamily:
-    "'FiraCode Nerd Font', 'JetBrainsMono Nerd Font', 'FiraMono Nerd Font Propo', 'Symbols Nerd Font Mono', 'JetBrains Mono', ui-monospace, monospace",
-  fontSize: 12,
-  lineHeight: 1.4,
+// Mirrors the user's VS Code terminal: a Nerd Font first so prompt glyphs render,
+// then the design token so the terminal follows --font-mono.
+const nerdFonts =
+  "'FiraCode Nerd Font', 'JetBrainsMono Nerd Font', 'FiraMono Nerd Font Propo', 'Symbols Nerd Font Mono'"
+const fallbackMono = "'JetBrains Mono', ui-monospace, monospace"
+
+function monoFontStack(): string {
+  if (typeof document === 'undefined') return fallbackMono
+  const token = getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim()
+  return token || fallbackMono
+}
+
+export function terminalFont() {
+  return {
+    fontFamily: `${nerdFonts}, ${monoFontStack()}`,
+    fontSize: 12,
+    lineHeight: 1.4,
+  }
 }
 
 const theme = {
@@ -56,7 +68,7 @@ export function XtermView({
     const node = host.current
     if (!node) return
     const terminal = new Terminal({
-      ...terminalFont,
+      ...terminalFont(),
       customGlyphs: true,
       rescaleOverlappingGlyphs: true,
       cursorBlink: true,
