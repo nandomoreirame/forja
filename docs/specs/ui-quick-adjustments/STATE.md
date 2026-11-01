@@ -5,8 +5,8 @@ started_at: 2026-11-01
 approved_at: 2026-11-01
 spec_path: docs/specs/ui-quick-adjustments/SPEC.md
 plan_path: docs/plans/2026-11-01-ui-quick-adjustments.md
-implementation_status: 13-of-14 (Task 8 waits for the user to pick a face direction)
-validation_status: passed except C6 (Task 8); unit 462/462, e2e 24/24, lint, typecheck, build
+implementation_status: complete (14 of 14)
+validation_status: passed; proofs 11/11, unit 466/466, e2e 24/24, lint, typecheck, build
 review_status: pending (agy quota, Grok 402, Codex limit until 2026-11-04; no independent reviewer)
 ---
 
@@ -24,3 +24,4 @@ Created on 2026-11-01 from the review of the interface changes of 2026-10-31 and
 - Task 8: Stitch board "Agent faces trial — Comparison Board" generated in project 9281162402489678867; implementation waits for the user's direction.
 - Final validation: e2e exposed that the always-open usage panel plus the Backlog/Board entries shrank the sidebar panes so Reviews snapped collapsed (default 10% fell under the collapse snap point). Fixed with a 15% Reviews default, a 144 px usage cap and a 45% footer cap.
 - Plan checks used `PASS` as the proof marker, but Vitest verbose prints `✓`; the markers were corrected.
+- Task 8: user picked the minimal faces on 2026-11-01; idle faces have no mouth and speaking faces move one. `AgentFace` is in the styleguide beside `AgentMascot`; swapping the app mascots is a follow-up after the preview is approved.
