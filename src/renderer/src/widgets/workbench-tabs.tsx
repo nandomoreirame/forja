@@ -1,5 +1,13 @@
 import type { ReactNode } from 'react'
-import { Archive, BookOpen, FileDiff, FileText, MessageSquarePlus, Settings } from 'lucide-react'
+import {
+  Archive,
+  BookOpen,
+  FileDiff,
+  FileText,
+  ListTodo,
+  MessageSquarePlus,
+  Settings,
+} from 'lucide-react'
 import { StatusBadge } from '@/shared/ui'
 import { fileTabId, useWorkbench } from '@/renderer/src/entities/feature'
 import { getDictionary } from '@/shared/i18n'
@@ -13,7 +21,7 @@ import { FeatureTabs, type FeatureTabItem } from '@/widgets/workbench'
  * that renders them, so navigating elsewhere keeps them open; only their close button removes
  * them. Closing a feature tab never stops its agent.
  */
-type PageId = 'settings' | 'archived' | 'authoring'
+type PageId = 'settings' | 'archived' | 'backlog' | 'authoring'
 
 export function WorkbenchTabs() {
   const state = useWorkbench((s) => s)
@@ -81,6 +89,12 @@ export function WorkbenchTabs() {
       icon: <Archive aria-hidden="true" className={icon} />,
     },
     {
+      id: 'backlog',
+      label: a.backlog.title,
+      open: state.backlogOpen,
+      icon: <ListTodo aria-hidden="true" className={icon} />,
+    },
+    {
       id: 'authoring',
       icon: <BookOpen aria-hidden="true" className={icon} />,
       label:
@@ -130,6 +144,7 @@ export function WorkbenchTabs() {
         else if (state.openDocumentIds.includes(id)) void state.openDocument(id)
         else if (id === 'settings') state.openSettings()
         else if (id === 'archived') state.openArchived()
+        else if (id === 'backlog') state.openBacklog()
         else if (composeIds.includes(id)) state.selectCompose(id)
         else if (id === 'authoring') state.navigate({ kind: 'authoring' })
         else state.selectFeature(id)
@@ -140,6 +155,7 @@ export function WorkbenchTabs() {
         else if (state.openDocumentIds.includes(id)) state.closeDocument(id)
         else if (id === 'settings') state.closeSettings()
         else if (id === 'archived') state.closeArchived()
+        else if (id === 'backlog') state.closeBacklog()
         else if (composeIds.includes(id)) state.closeCompose(id)
         else if (id === 'authoring') state.closeAuthoring()
         else state.closeFeature(id)

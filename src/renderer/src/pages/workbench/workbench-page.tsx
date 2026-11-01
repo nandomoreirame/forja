@@ -1,6 +1,7 @@
 import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
 import { ArchivedPage } from '@/renderer/src/pages/archived'
 import { FileViewPage } from '@/renderer/src/pages/file-view'
+import { BacklogPage } from '@/renderer/src/pages/backlog'
 import { DocumentPage, AuthoringPage } from '@/renderer/src/pages/document'
 import { ComposePage } from '@/renderer/src/pages/compose'
 import { ConversationPage } from '@/renderer/src/pages/conversation'
@@ -189,6 +190,8 @@ function WorkbenchShell() {
                         <div className="flex min-h-0 flex-1 flex-col overflow-auto">
                           {s.view.kind === 'archived' ? (
                             <ArchivedPage />
+                          ) : s.view.kind === 'backlog' ? (
+                            <BacklogPage />
                           ) : s.view.kind === 'authoring' ? (
                             <AuthoringPage />
                           ) : s.view.kind === 'home' ? (

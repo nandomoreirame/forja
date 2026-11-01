@@ -41,6 +41,7 @@ it('toggles the sidebar with Ctrl+B and shows a section icon rail while collapse
     'Skills',
     'Memories',
     'Plan usage',
+    'Backlog',
     'Archived',
     'Connectors',
     'Settings',

@@ -29,6 +29,7 @@ export type View =
   | { kind: 'authoring' }
   | { kind: 'home' }
   | { kind: 'archived' }
+  | { kind: 'backlog' }
   | { kind: 'compose'; role: AgentId; id: string }
   | { kind: 'conversation'; featureId: string }
   | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
@@ -111,6 +112,14 @@ export interface WorkbenchState {
   closeSettings(): void
   /** Pages other than features and documents open as tabs too, like Settings. */
   archivedOpen: boolean
+  backlogOpen: boolean
+  openBacklog(): void
+  closeBacklog(): void
+  addDemand(demand: { title: string; description?: string }): void
+  updateDemand(id: string, demand: { title: string; description?: string }): void
+  removeDemand(id: string): void
+  /** Turns a demand into a feature with Research; the caller confirms with the user first. */
+  startDemand(id: string): void
   openArchived(): void
   closeArchived(): void
   /** New chat tabs, each with its own agent and unsent prompt. */
@@ -177,6 +186,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
   const documentReads = new Map<string, Promise<string>>()
   let authoringCancel: (() => void) | undefined
   let composeSequence = 0
+  let demandSequence = 0
   let previousDocumentView: View = { kind: 'home' }
   let request = 0
   let skillsRequest = 0
@@ -187,11 +197,15 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     const pageFlags = (view: View): Partial<WorkbenchState> =>
       view.kind === 'archived'
         ? { archivedOpen: true }
-        : view.kind === 'settings'
-          ? { settingsOpen: true }
-          : {}
+        : view.kind === 'backlog'
+          ? { backlogOpen: true }
+          : view.kind === 'settings'
+            ? { settingsOpen: true }
+            : {}
     // Drops a page's entries from history and, when it is showing, moves to the previous view.
-    const leavePage = (kind: 'settings' | 'archived' | 'authoring' | ((view: View) => boolean)) => {
+    const leavePage = (
+      kind: 'settings' | 'archived' | 'backlog' | 'authoring' | ((view: View) => boolean),
+    ) => {
       const matches = (view: View) => (typeof kind === 'function' ? kind(view) : view.kind === kind)
       const state = get()
       const history: View[] = []
@@ -544,6 +558,64 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       openFeatureIds: [],
       settingsOpen: false,
       archivedOpen: false,
+      backlogOpen: false,
+      openBacklog() {
+        if (!get().snapshot || !isEnabled('backlog-board')) return
+        set({ backlogOpen: true })
+        get().navigate({ kind: 'backlog' })
+      },
+      closeBacklog() {
+        if (!get().backlogOpen) return
+        set({ backlogOpen: false, ...leavePage('backlog') })
+      },
+      addDemand({ title, description = '' }) {
+        const snapshot = get().snapshot
+        if (!snapshot || !title.trim()) return
+        const demand = {
+          id: `demand-${Date.now()}-${++demandSequence}`,
+          title: title.trim(),
+          description: description.trim(),
+          createdAt: new Date().toISOString(),
+        }
+        set({ snapshot: { ...snapshot, demands: [...(snapshot.demands ?? []), demand] } })
+      },
+      updateDemand(id, { title, description }) {
+        const snapshot = get().snapshot
+        if (!snapshot || !title.trim()) return
+        set({
+          snapshot: {
+            ...snapshot,
+            demands: (snapshot.demands ?? []).map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    title: title.trim(),
+                    description: description?.trim() ?? item.description,
+                  }
+                : item,
+            ),
+          },
+        })
+      },
+      removeDemand(id) {
+        const snapshot = get().snapshot
+        if (!snapshot) return
+        set({
+          snapshot: {
+            ...snapshot,
+            demands: (snapshot.demands ?? []).filter((item) => item.id !== id),
+          },
+        })
+      },
+      startDemand(id) {
+        const demand = get().snapshot?.demands?.find((item) => item.id === id)
+        if (!demand) return
+        get().removeDemand(id)
+        const prompt = demand.description
+          ? `${demand.title}\n\n${demand.description}`
+          : demand.title
+        get().createFeatureFromPrompt(prompt, 'research')
+      },
       composeTabs: [],
       lastSettings: {},
       drafts: {},
@@ -632,6 +704,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         else if (view.kind === 'file') get().closeFile(view.path, view.mode)
         else if (view.kind === 'settings') get().closeSettings()
         else if (view.kind === 'archived') get().closeArchived()
+        else if (view.kind === 'backlog') get().closeBacklog()
         else if (view.kind === 'compose') get().closeCompose(view.id)
         else if (view.kind === 'authoring') get().closeAuthoring()
       },
@@ -955,6 +1028,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             documents: {},
             fileTabs: [],
             fileContents: {},
+            backlogOpen: false,
             drafts: {},
             summaries: {},
           })

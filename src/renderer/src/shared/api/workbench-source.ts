@@ -94,6 +94,8 @@ export interface ProjectSnapshot {
   branches: string[]
   /** Working tree changes, with git's short status: M modified, U untracked, A added, D deleted. */
   changes: { path: string; status: GitStatus }[]
+  /** Demands waiting in the backlog; starting one turns it into a feature with Research. */
+  demands?: Demand[]
   /** Project file tree for Explorer; folders have children. */
   files?: FileNode[]
   features: FeatureSnapshot[]
@@ -143,6 +145,12 @@ export type FileContent =
   { kind: 'text'; text: string } | { kind: 'binary' } | { kind: 'too-large' }
 /** Base (HEAD) and working tree text of a changed file; an empty side means added or deleted. */
 export type FileDiff = { kind: 'text'; base: string; working: string } | { kind: 'binary' }
+export interface Demand {
+  id: string
+  title: string
+  description: string
+  createdAt: string
+}
 export interface ConnectorSnapshot {
   id: string
   name: string

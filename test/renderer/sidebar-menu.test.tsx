@@ -11,7 +11,7 @@ it('opens Connectors and Settings from the workspace menu', async () => {
     within(menu)
       .getAllByRole('button')
       .map((button) => button.textContent),
-  ).toEqual(['Archived', 'Connectors', 'Settings'])
+  ).toEqual(['Backlog', 'Archived', 'Connectors', 'Settings'])
   fireEvent.click(within(menu).getByRole('button', { name: 'Connectors' }))
   expect(await screen.findByRole('tab', { name: 'Connectors' })).toHaveAttribute(
     'aria-selected',

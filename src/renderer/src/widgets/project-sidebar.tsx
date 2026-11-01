@@ -1,5 +1,6 @@
 import { UsagePanel } from '@/renderer/src/features/usage/usage-panel'
-import { Archive, Plug, Settings } from 'lucide-react'
+import { Archive, ListTodo, Plug, Settings } from 'lucide-react'
+import { isEnabled } from '@/renderer/src/shared/lib/feature-flags'
 import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
@@ -46,6 +47,13 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
         <UsagePanel source={state.source} />
         <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
           <div className="space-y-0.5">
+            {isEnabled('backlog-board') ? (
+              <WorkspaceButton
+                icon={<ListTodo />}
+                label={a.backlog.title}
+                onClick={() => state.openBacklog()}
+              />
+            ) : null}
             <WorkspaceButton
               icon={<Archive />}
               label={a.archived}

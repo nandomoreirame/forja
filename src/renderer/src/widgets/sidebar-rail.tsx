@@ -7,6 +7,7 @@ import {
   ClipboardList,
   GitPullRequest,
   ListChecks,
+  ListTodo,
   ListTree,
   PanelLeft,
   Plug,
@@ -29,6 +30,7 @@ import {
 } from '@/shared/ui'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
+import { isEnabled } from '@/renderer/src/shared/lib/feature-flags'
 
 type Item = { label: string; icon: ComponentType<{ className?: string }>; run: () => void }
 
@@ -82,6 +84,9 @@ export function SidebarRail() {
     { label: a.memories, icon: Brain, run: section('memories') },
   ]
   const workspace: Item[] = [
+    ...(isEnabled('backlog-board')
+      ? [{ label: a.backlog.title, icon: ListTodo, run: () => state.openBacklog() }]
+      : []),
     { label: a.archived, icon: Archive, run: () => state.openArchived() },
     { label: 'Connectors', icon: Plug, run: () => state.openSettings({ tab: 'connectors' }) },
     { label: a.settings, icon: Settings, run: () => state.openSettings({ tab: 'general' }) },

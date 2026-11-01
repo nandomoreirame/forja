@@ -99,6 +99,17 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
           : [],
       branches: ['main'],
       changes: id === 'dev' ? devChanges : [],
+      demands:
+        id === 'dev'
+          ? [
+              {
+                id: 'demand-1',
+                title: locale === 'en' ? 'Dark mode for exports' : 'Modo escuro nas exportações',
+                description: '',
+                createdAt: '2026-10-30T12:00:00.000Z',
+              },
+            ]
+          : [],
       files: id === 'dev' ? devFiles : undefined,
       features:
         id !== 'dev'
