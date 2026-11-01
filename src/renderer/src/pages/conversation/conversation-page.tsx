@@ -41,10 +41,8 @@ export function ConversationPage() {
         <div className="border-b border-border p-4">
           <FeatureContext
             title={feature.name}
-            rows={[
-              { label: a.destination, value: feature.destination },
-              { label: d.product.branch, value: feature.branch },
-            ]}
+            // Destination and branch live in the right panel (GitContext).
+            rows={[]}
             actions={
               <>
                 <Button
