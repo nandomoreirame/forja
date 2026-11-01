@@ -1,0 +1,94 @@
+# Spec: Quick Interface Adjustments
+
+## Problem Statement
+
+The workbench mock grew features that the functional MVP cannot back yet, the agents still carry generic role names and pixel mascots the user did not like, and plan usage hides in a topbar popover. These are frontend-only changes the user wants to implement right away.
+
+## Goals
+
+- Unfinished features disappear from production builds while staying visible in development.
+- Agents have their forge names, editable, and the Ferreiro answers New chats with mock replies.
+- Plan usage is always visible in the sidebar, and new avatars are tried visually before replacing the mascots.
+
+## Context
+
+**Product objective:** An opinionated AI agent development environment built around the RPI workflow, from specification to review, with you in control of every stage.
+
+Frontend-only slice decided on 2026-11-01. The renderer mock layer (`WorkbenchSource`, `createMockSource`) keeps all data; no core, IPC or CLI change is part of this slice. The real Ferreiro sessions, summary turns and confirmed skill writes live in [ferreiro-agent](../ferreiro-agent/SPEC.md); Explorer and Changes become [project-explorer](../project-explorer/SPEC.md) and [source-control-changes](../source-control-changes/SPEC.md).
+
+## Verified Claims
+
+| Claim | Source (file:line) | Verified |
+| --- | --- | --- |
+| The right panel renders Explorer and Changes sections | `src/renderer/src/widgets/git-context.tsx` | yes |
+| The statusbar shows behind/ahead counts | `src/renderer/src/widgets/git-status.tsx` | yes |
+| The topbar shows a usage popover | `src/renderer/src/pages/workbench/workbench-page.tsx` (`UsagePopover`) | yes |
+| Agent mascots are 12×12 pixel sprites | `src/shared/ui/agent-mascot.tsx` | yes |
+
+## Requirements
+
+### P1 (MVP)
+
+1. **[REQ-106]** WHEN a feature is not ready for the functional MVP THEN its interface SHALL be gated by a single typed feature flag registry that turns it off in production builds and on in development and mock builds; a disabled feature SHALL not render at all (not merely hidden), and its tests SHALL cover both states.
+2. **[REQ-110]** WHEN agents are shown THEN the system SHALL use each agent's display name, editable in Settings › Agents, defaulting to Ferreiro, Minerador, Moldador, Bigorneiro, Temperador and Polidor in Portuguese and Smith, Miner, Moldmaker, Anvilsmith, Temperer and Polisher in English, with the fixed role in the tooltip and accessible name.
+3. **[REQ-107]** WHEN the user opens a New chat THEN the conversation SHALL be with the Ferreiro, the general agent for discussion outside the RPI flow; the Ferreiro SHALL start a feature (handing the request to Research) only after the user confirms, and RPI agents SHALL NOT do work outside their role (REQ-022).
+4. **[REQ-108]** WHEN the user requests a feature conversation summary THEN the Ferreiro SHALL produce it in a tool-less turn, the system SHALL store it with its date and author, and its usage SHALL be recorded per turn (REQ-060).
+5. **[REQ-082]** WHEN a project is open THEN the left sidebar SHALL show an always-open plan usage panel above Archived with the time since the last update and, for each tool with usage data only, one row per window (5-hour and weekly) with a progress bar (success under 70%, warning from 70%, destructive from 90%), the used percentage and the time until reset; tools without data SHALL be omitted (REQ-060, REQ-102), the collapsed rail SHALL show it as an icon, and the mock data SHALL come from `WorkbenchSource`.
+6. **[REQ-114]** WHEN new agent avatars are evaluated THEN the system SHALL present minimal faces in a minimal style (a rounded square in the agent color with two eyes that move while it speaks, and a distinct anvil-and-hammer mark for the Ferreiro, keeping the tool corner badge) first as a Stitch layout and a styleguide preview beside the current mascots, and SHALL replace REQ-089 mascots in the app only after the user approves the preview.
+
+### P2 (Should Have)
+
+None.
+
+### P3 (Nice to Have)
+
+None.
+
+## Edge Cases
+
+- A flag read in tests can be forced on or off; production defaults never depend on localStorage.
+- An empty or whitespace display name falls back to the default name for the active language.
+- Switching language keeps a user-edited name and translates only default names.
+- With no tool reporting usage the panel shows a one-line unavailable state instead of disappearing.
+- The mascot trial never changes the app until the user approves the preview.
+
+## Architecture Decisions
+
+- A pure `feature-flags` module in `src/renderer/src/shared/lib` exposes `isEnabled(flag)` from `import.meta.env` (on in development and mock, off in production); flagged components return null when off.
+- Agent identity (id, role, default names per locale, display name) lives in one module used by the store, conversation, cycle, tabs and Settings.
+- The Ferreiro is a seventh recipient id `smith` outside `roleIds`, so RPI cycle logic stays unchanged.
+- The usage panel reuses the REQ-082 data shape from `WorkbenchSource` and the Terminal Noir tokens.
+- Mascot faces are drafted in Stitch first, then built as a styleguide-only component; the app keeps `AgentMascot` until approval.
+
+## Grilling Log
+
+| # | Decision | Resolution | Rationale |
+| --- | --- | --- | --- |
+| 1 | Scope | Feature flags, agent names, Ferreiro mock chat, usage panel and a mascot trial, frontend only | User decision on 2026-11-01. |
+| 2 | Mascots | Minimal faces as a visual trial, Stitch layout before code | The user wants to see them before deciding. |
+| 3 | Usage panel | Always open above Archived, tools with data only, rail icon when collapsed | A compact, always visible usage summary. |
+
+## Constraints
+
+No scope beyond the listed requirements. No implementation, commits, deployment or paid API calls during planning. During later implementation follow TDD and the repository's current Git authorization.
+
+## Out of Scope
+
+- Real CLI sessions for the Ferreiro, real summaries and file writes (ferreiro-agent).
+- Real usage numbers (REQ-102 in cli-agent-sessions).
+- Backlog demands and custom agents.
+
+## Test Strategy
+
+RTL tests per requirement with the mock source, a flag test in both states, and Playwright checks in dev:web. See the [plan](../../plans/2026-11-01-ui-quick-adjustments.md).
+
+## Requirement Traceability
+
+| ID | Description | Priority | Status |
+| --- | --- | --- | --- |
+| REQ-106 | Feature flags for unfinished features | P1 | Approved 2026-11-01; not implemented |
+| REQ-110 | Agent display names | P1 | Approved 2026-11-01; not implemented |
+| REQ-107 | Ferreiro general chat | P1 | Approved 2026-11-01; not implemented |
+| REQ-108 | Conversation summary by the Ferreiro | P1 | Approved 2026-11-01; not implemented |
+| REQ-082 | Plan usage panel in the sidebar | P1 | Approved 2026-11-01; not implemented |
+| REQ-114 | Minimal agent faces trial | P1 | Approved 2026-11-01; not implemented |
