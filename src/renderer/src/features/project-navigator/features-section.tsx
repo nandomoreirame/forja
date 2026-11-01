@@ -89,7 +89,7 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
     )
   }
   return (
-    <section aria-labelledby={headingId}>
+    <section aria-labelledby={headingId} className="flex shrink-0 flex-col">
       <div className="flex items-center gap-2 px-3 pb-1">
         <h2
           id={headingId}
@@ -105,28 +105,30 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
           <ChevronLeft className="size-3" />
         </IconButton>
       </div>
-      {active.map(row)}
-      {groups.finished.length > 0 && (
-        <>
-          <button
-            type="button"
-            aria-expanded={finishedOpen}
-            aria-controls={finishedId}
-            onClick={() => setFinishedOpen(!finishedOpen)}
-            className={`flex w-full items-center gap-1 px-3 py-1 text-muted-foreground hover:bg-accent ${focus}`}
-          >
-            {finishedOpen ? (
-              <ChevronDown aria-hidden="true" className="size-3" />
-            ) : (
-              <ChevronRight aria-hidden="true" className="size-3" />
-            )}
-            {copy.finished} <span className="ml-auto">{groups.finished.length}</span>
-          </button>
-          <div id={finishedId} hidden={!finishedOpen}>
-            {groups.finished.map(row)}
-          </div>
-        </>
-      )}
+      <div data-testid="section-scroll" className="max-h-[22rem] overflow-y-auto">
+        {active.map(row)}
+        {groups.finished.length > 0 && (
+          <>
+            <button
+              type="button"
+              aria-expanded={finishedOpen}
+              aria-controls={finishedId}
+              onClick={() => setFinishedOpen(!finishedOpen)}
+              className={`flex w-full items-center gap-1 px-3 py-1 text-muted-foreground hover:bg-accent ${focus}`}
+            >
+              {finishedOpen ? (
+                <ChevronDown aria-hidden="true" className="size-3" />
+              ) : (
+                <ChevronRight aria-hidden="true" className="size-3" />
+              )}
+              {copy.finished} <span className="ml-auto">{groups.finished.length}</span>
+            </button>
+            <div id={finishedId} hidden={!finishedOpen}>
+              {groups.finished.map(row)}
+            </div>
+          </>
+        )}
+      </div>
       <button
         type="button"
         onClick={() => state.startCompose()}

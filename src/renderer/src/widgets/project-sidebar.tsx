@@ -15,14 +15,21 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       aria-label={snapshot.project.name}
       className="flex h-full w-full flex-col border-r border-border bg-sidebar text-xs"
     >
-      <div className="min-h-0 flex-1 overflow-y-auto py-2">
-        <div className="space-y-3">
+      {/* Sections scroll on their own (up to 8 rows each) and shrink when the sidebar is short. */}
+      <div
+        data-slot="sidebar-sections"
+        className="flex min-h-0 flex-1 flex-col overflow-hidden py-2"
+      >
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
           <FeaturesSection locale={locale} />
           {(['spec', 'plan', 'review', 'skill'] as const).map((kind) => {
             const items: { id: string; name: string; state?: UiState }[] =
               kind === 'skill' ? snapshot.skills : snapshot.artifacts.filter((x) => x.kind === kind)
             return (
-              <section key={kind} className="mx-3 border-t border-border pt-3">
+              <section
+                key={kind}
+                className="mx-3 flex min-h-0 shrink flex-col border-t border-border pt-3"
+              >
                 <h2 className="flex justify-between pb-1 text-[11px] uppercase tracking-wider">
                   <span>
                     {kind === 'spec'
@@ -37,30 +44,35 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                   </span>
                   <span>{items.length}</span>
                 </h2>
-                {items.map((item) => (
-                  <button
-                    type="button"
-                    key={item.id}
-                    className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring"
-                    onClick={() =>
-                      kind === 'skill'
-                        ? state.openSettings({ tab: 'agents' })
-                        : void state.openDocument(item.id)
-                    }
-                  >
-                    <SidebarRow
-                      icon={<ClipboardList />}
-                      title={item.name}
-                      stateLabel={
-                        item.state ? (
-                          <StatusBadge size="sm" state={item.state}>
-                            {a.states[item.state]}
-                          </StatusBadge>
-                        ) : undefined
+                <div
+                  data-testid="section-scroll"
+                  className={`max-h-[16.5rem] shrink overflow-y-auto ${items.length ? 'min-h-16' : 'min-h-0'}`}
+                >
+                  {items.map((item) => (
+                    <button
+                      type="button"
+                      key={item.id}
+                      className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring"
+                      onClick={() =>
+                        kind === 'skill'
+                          ? state.openSettings({ tab: 'agents' })
+                          : void state.openDocument(item.id)
                       }
-                    />
-                  </button>
-                ))}
+                    >
+                      <SidebarRow
+                        icon={<ClipboardList />}
+                        title={item.name}
+                        stateLabel={
+                          item.state ? (
+                            <StatusBadge size="sm" state={item.state}>
+                              {a.states[item.state]}
+                            </StatusBadge>
+                          ) : undefined
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
                 {kind !== 'review' && (
                   <button
                     type="button"
