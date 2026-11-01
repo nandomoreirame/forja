@@ -46,9 +46,9 @@ Shared decisions for the six screen slices (`project-home-screen`, `command-pale
 ### P1 (MVP)
 
 1. **[REQ-061]** WHEN the renderer starts THEN the system SHALL load projects, features, conversations and terminals through a `WorkbenchSource` interface, using a deterministic mock implementation until core IPC replaces it, without importing mock modules in screens.
-2. **[REQ-062]** WHEN a project is open THEN the system SHALL render the workbench shell (40 px topbar with back/forward, command bar trigger, terminal and settings icons; project sidebar with agents, specs, plans and skills; right project/Git/branches panel; 32 px statusbar with the project path and encoding) using shared shadcn/Tailwind components in the system language.
+2. **[REQ-062]** WHEN a project is open THEN the system SHALL render the workbench shell on the Terminal Noir `surface.base` background: a 40 px topbar with the brand, the sidebar toggle, the command bar trigger and the right panel toggle (no back/forward buttons; Alt+Left/Right keep the view history); the left sidebar, editor area, terminal panel and right panel as separate parts with an 8 px rounded border and a small gap; and a 32 px statusbar with the project button showing the `~`-relative path, the background terminals and the current branch.
 3. **[REQ-063]** WHEN an open project has no feature tabs THEN the system SHALL show the project home with the Forja mark and the actions New conversation (Ctrl+N), Recent projects (Ctrl+R) and Show all commands (Ctrl+Shift+P), each clickable, focusable and triggered by its shortcut.
-4. **[REQ-072]** WHEN the user activates the topbar terminal icon, the back/forward arrows or a side panel chevron THEN the system SHALL toggle the terminal panel, move through the window's view history (home, new conversation, conversation, settings, document) or collapse and expand that side panel, keeping the choice for the session.
+4. **[REQ-072]** WHEN the user activates the topbar sidebar or right panel toggle, presses Ctrl+B, activates the statusbar terminal toggle or presses Alt+Left/Right THEN the system SHALL show or hide that part (the collapsed sidebar becomes an icon rail) or move through the window view history, keeping the choice for the session.
 
 ### P2 (Should Have)
 

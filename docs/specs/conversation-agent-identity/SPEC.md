@@ -67,7 +67,7 @@ RTL tests for the cycle icons, the tab icon following the stage, the reply autho
 
 ## User Decisions After Approval (2026-11-01)
 
-Inspired by the user's Tucano project, without new requirement IDs (frontend mock only):
+Additional details, without new requirement IDs (frontend mock only):
 
 - Author names ("You" and agent roles) render at 13 px semibold, with the real send time beside them: `HH:mm` on the same day, `<day> <month> · HH:mm` on other days. This reverses the earlier "no timestamps in messages" exception for real times; invented times and avatars stay out.
 - Each completed agent reply ends with "<model> · <tokens> tokens · <duration>"; activating it opens the details (engine, model, input, cached and output tokens, duration). Mock usage is estimated at four characters per token. No API price is shown.
