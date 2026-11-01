@@ -23,6 +23,7 @@ export interface ChatMessage {
   text: string
   status?: 'running' | 'completed' | 'interrupted'
   linkTo?: string
+  tool?: ToolId
   author?: RoleId
   parts?: MessagePart[]
   attachments?: ImageAttachment[]

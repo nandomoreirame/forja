@@ -1,3 +1,4 @@
+import type { ToolId } from '@/shared/ui'
 import {
   archiveCascade,
   restoreCascade,
@@ -40,6 +41,8 @@ export interface WorkbenchState {
   startAuthoring(kind: LibraryKind, scope: LibraryScope, name?: string): void
   sendAuthoring(text: string): void
   source: WorkbenchSource
+  agentTools: Partial<Record<RoleId, ToolId>>
+  refreshAgentTools(): Promise<void>
   refreshSkills(root?: string): Promise<void>
   projects: ProjectSummary[]
   snapshot: ProjectSnapshot | null
@@ -166,6 +169,17 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       )
     return {
       source,
+      agentTools: {},
+      async refreshAgentTools() {
+        try {
+          const settings = await source.loadSettings()
+          set({
+            agentTools: Object.fromEntries(settings.agents.map((agent) => [agent.id, agent.tool])),
+          })
+        } catch {
+          // Keep the previous mapping when settings are temporarily unavailable.
+        }
+      },
       memories: [],
       libraryDocuments: {},
       authoring: null,
@@ -519,7 +533,14 @@ export function createWorkbenchStore(source: WorkbenchSource) {
                     messages: [
                       ...item.messages,
                       { id: `${id}:user-${item.messages.length + 1}`, role: 'user', text: prompt },
-                      { id: messageId, role: 'agent', author: role, text: '', status: 'running' },
+                      {
+                        id: messageId,
+                        role: 'agent',
+                        author: role,
+                        tool: state.agentTools[role] ?? feature.tool,
+                        text: '',
+                        status: 'running',
+                      },
                     ],
                   }
                 : item,
@@ -728,6 +749,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             documents: {},
             drafts: {},
           })
+          await get().refreshAgentTools()
         } catch {
           if (token === request) {
             failedOperation = { kind: 'project', id }

@@ -125,6 +125,7 @@ export function SettingsPage() {
       ),
     }
     await state.source.saveSettings(next)
+    await state.refreshAgentTools()
     if (next.general?.skillsRoot !== lastScannedRoot.current)
       await refreshSkills(next.general?.skillsRoot)
     setSaved(structuredClone(next))
