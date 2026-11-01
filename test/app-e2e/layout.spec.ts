@@ -109,3 +109,12 @@ test('opening and closing the terminal panel keeps the composer draft', async ({
     'Keep this draft',
   )
 })
+
+test('the prompt composer is 25% shorter than its original 192 px', async ({ page }) => {
+  await page.goto('/')
+  await openProject(page)
+  const form = page
+    .locator('form')
+    .filter({ has: page.getByRole('textbox', { name: /Send your prompt/ }) })
+  expect(Math.abs((await height(form)) - 144)).toBeLessThanOrEqual(2)
+})

@@ -66,7 +66,7 @@ export function Composer({
 
   return (
     <form
-      className="space-y-2.5 rounded-part border border-border bg-card p-3.5 shadow-2xl shadow-black/40 transition-colors focus-within:border-primary/70 motion-reduce:transition-none"
+      className="space-y-1.5 rounded-part border border-border bg-card p-2.5 shadow-2xl shadow-black/40 transition-colors focus-within:border-primary/70 motion-reduce:transition-none"
       onSubmit={(event) => {
         event.preventDefault()
         if (value.trim()) onSend()
@@ -106,8 +106,8 @@ export function Composer({
         aria-label={placeholder}
         value={value}
         placeholder={placeholder}
-        rows={3}
-        className="min-h-[72px] resize-none border-0 bg-transparent p-0 text-[13px] leading-5 text-foreground shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0 dark:bg-transparent"
+        rows={2}
+        className="min-h-10 resize-none border-0 bg-transparent p-0 text-[13px] leading-5 text-foreground shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0 dark:bg-transparent"
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === 'Enter' && (event.ctrlKey || event.metaKey) && value.trim()) {
