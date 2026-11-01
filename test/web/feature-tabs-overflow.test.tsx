@@ -16,7 +16,7 @@ it('scrolls the tab strip horizontally and reveals the selected tab', () => {
   const { container, rerender } = render(
     <FeatureTabs items={items} selectedId="tab-0" onSelect={() => {}} />,
   )
-  expect(container.querySelector('[data-slot="feature-tab-strip"]')).toHaveClass('overflow-x-auto')
+  expect(container.querySelector('[data-slot="tab-strip"]')).toHaveClass('overflow-x-auto')
   scrollIntoView.mockClear()
   rerender(<FeatureTabs items={items} selectedId="tab-11" onSelect={() => {}} />)
   expect(scrollIntoView).toHaveBeenCalledTimes(1)

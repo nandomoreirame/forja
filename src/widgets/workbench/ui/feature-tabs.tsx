@@ -10,6 +10,8 @@ import {
   TabsList,
   TabsTrigger,
   ToolIcon,
+  tabClassName,
+  tabStripClassName,
   type ToolId,
 } from '@/shared/ui'
 import { cn } from '@/shared/ui/utils'
@@ -66,53 +68,60 @@ export function FeatureTabs({
   return (
     <TooltipProvider>
       <Tabs value={selectedId} onValueChange={select}>
+        {/* Close buttons share each tab's grid cell but stay outside the tablist. */}
         <div
           ref={strip}
-          data-slot="feature-tab-strip"
-          className="grid h-9 auto-cols-max grid-flow-col items-end justify-start overflow-x-auto overflow-y-hidden border-b border-border px-3 [scrollbar-width:none]"
+          data-slot="tab-strip"
+          className={cn(
+            tabStripClassName,
+            'grid auto-cols-max grid-flow-col justify-start overflow-x-auto overflow-y-hidden [scrollbar-width:none]',
+          )}
         >
           <TabsList aria-label={label} className="contents">
             {items.map((item, index) => (
-              <TabsTrigger
+              <div
                 key={item.id}
+                data-slot="tab"
+                data-hovered={hoveredId === item.id && item.id !== selectedId ? 'true' : undefined}
                 style={{ gridColumn: index + 1, gridRow: 1 }}
                 onMouseEnter={() => setHoveredId(item.id)}
                 onMouseLeave={() => setHoveredId(null)}
-                id={`feature-tab-${item.id}`}
-                aria-controls={item.id === selectedId ? panelId : undefined}
-                value={item.id}
-                onClick={() => select(item.id)}
-                className={cn(
-                  '-mb-px h-7 flex-none gap-2 rounded-none rounded-t-[2px] border-t border-r border-b-0 border-l-0 border-border first:border-l px-2.5 text-[11px] font-normal shadow-none after:hidden focus-visible:ring-1 focus-visible:ring-inset',
-                  'bg-transparent text-muted-foreground hover:text-foreground',
-                  'data-active:border-r-border data-active:border-t-2 data-active:border-t-primary data-active:bg-background data-active:font-medium data-active:text-foreground dark:data-active:border-r-border dark:data-active:border-t-primary dark:data-active:bg-background',
-                  onClose && item.closable !== false && 'pr-8',
-                )}
+                className={tabClassName(item.id === selectedId)}
               >
-                {item.icon}
-                {item.tool ? <ToolIcon tool={item.tool} /> : null}
-                {item.badge ? null : (
-                  <span
-                    aria-hidden="true"
-                    data-slot="feature-tab-status"
-                    className={
-                      item.state === 'running'
-                        ? 'size-1.5 rounded-full bg-primary motion-safe:animate-pulse'
-                        : item.state === 'waiting'
-                          ? 'size-1.5 rounded-full border border-primary'
-                          : 'size-1.5 rounded-full bg-muted-foreground/40'
-                    }
-                  />
-                )}
-                {item.label}
-                {item.badge ?? <span className="sr-only">, {stateLabels[item.state]}</span>}
-              </TabsTrigger>
+                <TabsTrigger
+                  id={`feature-tab-${item.id}`}
+                  aria-controls={item.id === selectedId ? panelId : undefined}
+                  value={item.id}
+                  onClick={() => select(item.id)}
+                  className={cn(
+                    'h-full flex-none gap-2 rounded-none border-0 bg-transparent px-2.5 text-[11px] font-[inherit] text-inherit shadow-none after:hidden hover:text-inherit focus-visible:ring-1 focus-visible:ring-inset data-active:bg-transparent data-active:text-inherit data-active:shadow-none dark:data-active:border-transparent dark:data-active:bg-transparent dark:data-active:text-inherit',
+                    onClose && item.closable !== false && 'pr-8',
+                  )}
+                >
+                  {item.icon}
+                  {item.tool ? <ToolIcon tool={item.tool} /> : null}
+                  {item.badge ? null : (
+                    <span
+                      aria-hidden="true"
+                      data-slot="feature-tab-status"
+                      className={
+                        item.state === 'running'
+                          ? 'size-1.5 rounded-full bg-primary motion-safe:animate-pulse'
+                          : item.state === 'waiting'
+                            ? 'size-1.5 rounded-full border border-primary'
+                            : 'size-1.5 rounded-full bg-muted-foreground/40'
+                      }
+                    />
+                  )}
+                  {item.label}
+                  {item.badge ?? <span className="sr-only">, {stateLabels[item.state]}</span>}
+                </TabsTrigger>
+              </div>
             ))}
           </TabsList>
           {onClose
-            ? items
-                .filter((item) => item.closable !== false)
-                .map((item, index) => (
+            ? items.map((item, index) =>
+                item.closable === false ? null : (
                   <Tooltip key={item.id}>
                     <TooltipTrigger asChild>
                       <Button
@@ -121,7 +130,10 @@ export function FeatureTabs({
                         style={{ gridColumn: index + 1, gridRow: 1 }}
                         onMouseEnter={() => setHoveredId(item.id)}
                         onMouseLeave={() => setHoveredId(null)}
-                        className={`z-10 mr-1 mb-1 size-5 self-end justify-self-end hover:opacity-100 focus-visible:opacity-100 ${item.id === selectedId || item.id === hoveredId ? 'opacity-100' : 'opacity-0'}`}
+                        className={cn(
+                          'z-10 mr-1.5 size-5 self-center justify-self-end opacity-0 hover:opacity-100 focus-visible:opacity-100',
+                          (item.id === selectedId || item.id === hoveredId) && 'opacity-100',
+                        )}
                         aria-label={`${closeLabel} ${item.label}`}
                         onClick={() => onClose(item.id)}
                       >
@@ -132,7 +144,8 @@ export function FeatureTabs({
                       {closeLabel} {item.label}
                     </TooltipContent>
                   </Tooltip>
-                ))
+                ),
+              )
             : null}
         </div>
       </Tabs>

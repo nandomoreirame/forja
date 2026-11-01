@@ -1,5 +1,13 @@
 import { Maximize2, Minimize2, Plus, SquareTerminal, X } from 'lucide-react'
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/ui'
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  tabClassName,
+  tabStripClassName,
+} from '@/shared/ui'
 import { cn } from '@/shared/ui/utils'
 
 export interface TerminalTab {
@@ -74,9 +82,10 @@ export function TerminalPreview({
         <div
           role="tablist"
           aria-label={tabsLabel}
-          className="flex h-9 items-end justify-between gap-2 border-b border-border px-3"
+          data-slot="tab-strip"
+          className={cn(tabStripClassName, 'flex justify-between gap-2')}
         >
-          <div className="flex min-w-0 items-end">
+          <div className="flex min-w-0 items-stretch">
             {tabs.map((tab) => {
               const active = tab.id === activeId
               const tip = [tab.label, tab.stateLabel, tab.detail].filter(Boolean).join(' · ')
@@ -84,13 +93,9 @@ export function TerminalPreview({
                 <div
                   key={tab.id}
                   role="presentation"
-                  className={cn(
-                    'group/tab -mb-px flex h-7 min-w-0 items-center whitespace-nowrap rounded-t-[2px] border-t border-r border-border text-[11px] first:border-l',
-                    active
-                      ? 'border-t-2 border-t-primary bg-background font-medium text-foreground'
-                      : 'bg-transparent text-muted-foreground hover:text-foreground',
-                    tab.hovered && !active && 'text-foreground',
-                  )}
+                  data-slot="tab"
+                  data-hovered={tab.hovered && !active ? 'true' : undefined}
+                  className={tabClassName(active)}
                 >
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -150,7 +155,7 @@ export function TerminalPreview({
               )
             })}
           </div>
-          <div className="flex shrink-0 items-center gap-1 self-center">
+          <div className="flex shrink-0 items-center gap-1 self-center pr-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon-xs" aria-label={addLabel} onClick={onAdd}>
