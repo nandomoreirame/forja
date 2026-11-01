@@ -252,6 +252,17 @@
   }
 }
 
+/* Minimal agent faces: the mouth opens and closes while a reply streams (agent-face.tsx). */
+@keyframes face-talk {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
 @keyframes mascot-mouth {
   0%,
   49% {

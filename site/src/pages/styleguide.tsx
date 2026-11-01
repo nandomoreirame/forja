@@ -1,7 +1,7 @@
 import { Code, FileText, MessageCircle, Pencil, TriangleAlert, Zap } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { cn } from '@/shared/ui/utils'
-import { AgentMascot, ForjaMark, toolIds, type AgentRole } from '@/shared/ui'
+import { AgentFace, AgentMascot, ForjaMark, toolIds, type AgentRole } from '@/shared/ui'
 import { Button } from '@/shared/ui'
 import {
   AppStatusbar,
@@ -625,6 +625,32 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
           )}
         </div>
         <p className="text-[12px] text-muted-foreground">{x.mascotsNote}</p>
+      </Section>
+
+      <Section id="gallery-faces" title={x.facesTitle} code="agent-face.tsx">
+        <div className="grid grid-cols-3 gap-4 lg:grid-cols-6">
+          {(
+            ['smith', 'research', 'planner', 'implementer', 'tester', 'reviewer'] as AgentRole[]
+          ).map((role, index) => (
+            <div
+              key={role}
+              data-slot="face-card"
+              className="flex flex-col items-center gap-3 rounded-[3px] border border-border bg-card p-4"
+            >
+              <div className="flex items-end gap-3">
+                <AgentMascot role={role} tool={toolIds[index % toolIds.length]} size={56} />
+                <AgentFace agent={role} tool={toolIds[index % toolIds.length]} />
+                <AgentFace agent={role} tool={toolIds[index % toolIds.length]} size={56} />
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                <AgentFace agent={role} tool={toolIds[index % toolIds.length]} size={56} speaking />
+                <span>{x.facesSpeaking}</span>
+              </div>
+              <span className="text-[12px]">{index === 0 ? x.smithName : roles[index - 1]}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[12px] text-muted-foreground">{x.facesNote}</p>
       </Section>
 
       <Section id="gallery-notes" title={`${w} 7: ${x.notesTitle}`} code="fidelity.rules.md">

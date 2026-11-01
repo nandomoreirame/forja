@@ -105,6 +105,11 @@ const copy = {
       mascotsTitle: 'Agent mascots',
       mascotsNote:
         'One sprite per agent, with the configured tool as a corner badge. Decorative: the reply author carries the name.',
+      facesTitle: 'Agent faces (trial)',
+      facesNote:
+        'Proposal beside the current mascots: a rounded square in the agent color with two eyes; the mouth appears and moves only while the agent speaks. The Ferreiro carries an anvil-and-hammer mark. The app keeps the mascots until this is approved.',
+      facesSpeaking: 'Speaking',
+      smithName: 'Ferreiro',
       notesTitle: 'Fidelity notes',
       notes: [
         'Reuse these components in the screens.',
@@ -219,6 +224,11 @@ const copy = {
       mascotsTitle: 'Mascotes dos agentes',
       mascotsNote:
         'Um sprite por agente, com a ferramenta configurada como selo no canto. Decorativo: o autor da resposta leva o nome.',
+      facesTitle: 'Rostos dos agentes (teste)',
+      facesNote:
+        'Proposta ao lado dos mascotes atuais: um quadrado arredondado na cor do agente com dois olhos; a boca só aparece e se mexe enquanto o agente fala. O Ferreiro leva a marca de bigorna e martelo. O app mantém os mascotes até a aprovação.',
+      facesSpeaking: 'Falando',
+      smithName: 'Ferreiro',
       notesTitle: 'Notas de fidelidade',
       notes: [
         'Reutilizar estes componentes nas telas.',

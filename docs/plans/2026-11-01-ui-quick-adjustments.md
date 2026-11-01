@@ -44,7 +44,7 @@
 - C3 (REQ-107): the first prompt of a New chat opens the chat with the Ferreiro directly. Proof: run quick | ✓ opens the chat with the Ferreiro as soon as the first prompt is sent
 - C4 (REQ-108): summaries are attributed to the Ferreiro. Proof: run quick | ✓ shows the Ferreiro as the author of a summary
 - C5 (REQ-082): plan usage sits above Archived for tools with data. Proof: run quick | ✓ shows plan usage above Archived for tools with data
-- C6 (REQ-114): minimal faces exist for preview with a distinct Ferreiro mark. Proof: run quick | ✓ draws a face per agent with a distinct Ferreiro mark and moving eyes while speaking
+- C6 (REQ-114): minimal faces exist for preview with a distinct Ferreiro mark. Proof: run quick | ✓ draws a face per agent with a distinct Ferreiro mark and a mouth only while speaking
 - C7 (REQ-115): each feature state has a distinct glyph and working animates. Proof: run quick | ✓ maps each feature state to a distinct glyph and an animated spinner while working
 - C8 (REQ-116): Explorer files open as previews and changes as diffs. Proof: run quick | ✓ opens a file preview from Explorer and a diff from Changes as tabs
 - C9 (REQ-117): demands are added and start only after confirmation. Proof: run quick | ✓ adds a demand and starts it only after confirmation

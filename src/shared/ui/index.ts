@@ -45,6 +45,7 @@ export {
   usePanelRef,
 } from './resizable'
 export { AgentMascot, agentSprites, type AgentRole, type AgentSprite } from './agent-mascot'
+export { AgentFace, faceColors } from './agent-face'
 export { ScrollArea, ScrollBar } from './scroll-area'
 export { tabClassName, tabStripClassName } from './tab-strip'
 export {
