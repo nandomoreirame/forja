@@ -22,7 +22,9 @@ export function createMockSource({
   const fixtures = mockProjects(locale)
   const libraryMarkdown = new Map<string, string>()
   const dev = fixtures.find((item) => item.project.id === 'dev')
-  if (library && dev) {
+  if (library?.documents.length && dev) {
+    // Real repository documents replace the sample artifacts so previews show only real files.
+    dev.artifacts = []
     for (const document of library.documents) {
       const id = `library:${document.kind}:${document.slug}`
       dev.artifacts.push({

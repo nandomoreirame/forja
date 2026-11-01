@@ -110,7 +110,7 @@ it('adds selected projects once and keeps returned metadata and snapshots isolat
   expect((await source.loadProject(project.id)).project.name).toBe('selected again')
 })
 
-it('appends library documents and readable global skills without changing deterministic fixtures', async () => {
+it('replaces mock documents with library documents and appends readable global skills', async () => {
   const baseline = await createMockSource({ locale: 'en' }).loadProject('dev')
   const source = createMockSource({
     locale: 'en',
@@ -125,8 +125,7 @@ it('appends library documents and readable global skills without changing determ
       .mockResolvedValue([{ id: 'real', name: 'Real skill', markdown: '# Real skill' }]),
   })
   const dev = await source.loadProject('dev')
-  expect(dev.artifacts.slice(0, baseline.artifacts.length)).toEqual(baseline.artifacts)
-  expect(dev.artifacts.slice(baseline.artifacts.length)).toEqual([
+  expect(dev.artifacts).toEqual([
     { id: 'library:spec:x', kind: 'spec', name: 'x/SPEC.md', state: 'draft', author: 'research' },
     { id: 'library:plan:x', kind: 'plan', name: 'x/PLAN.md', state: 'approved', author: 'planner' },
   ])
@@ -159,4 +158,10 @@ it('loads skills from current settings and tolerates rejected readers', async ()
   expect((await source.loadProject('dev')).skills).toEqual(baseline.skills)
   expect(await source.scanSkills('/other')).toEqual(baseline.skills)
   expect(await createMockSource({ locale: 'en' }).scanSkills('/ignored')).toEqual(baseline.skills)
+})
+
+it('keeps the mock documents when the library has no documents', async () => {
+  const baseline = await createMockSource({ locale: 'en' }).loadProject('dev')
+  const source = createMockSource({ locale: 'en', library: { documents: [] } })
+  expect((await source.loadProject('dev')).artifacts).toEqual(baseline.artifacts)
 })
