@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { X } from 'lucide-react'
 import {
   Tooltip,
@@ -20,6 +20,8 @@ export interface FeatureTabItem {
   state: 'running' | 'waiting' | 'idle'
   tool?: ToolId
   closable?: boolean
+  icon?: ReactNode
+  badge?: ReactNode
 }
 
 export interface FeatureTabsProps {
@@ -75,20 +77,23 @@ export function FeatureTabs({
                   onClose && item.closable !== false && 'pr-8',
                 )}
               >
+                {item.icon}
                 {item.tool ? <ToolIcon tool={item.tool} /> : null}
-                <span
-                  aria-hidden="true"
-                  data-slot="feature-tab-status"
-                  className={
-                    item.state === 'running'
-                      ? 'size-1.5 rounded-full bg-primary motion-safe:animate-pulse'
-                      : item.state === 'waiting'
-                        ? 'size-1.5 rounded-full border border-primary'
-                        : 'size-1.5 rounded-full bg-muted-foreground/40'
-                  }
-                />
+                {item.badge ? null : (
+                  <span
+                    aria-hidden="true"
+                    data-slot="feature-tab-status"
+                    className={
+                      item.state === 'running'
+                        ? 'size-1.5 rounded-full bg-primary motion-safe:animate-pulse'
+                        : item.state === 'waiting'
+                          ? 'size-1.5 rounded-full border border-primary'
+                          : 'size-1.5 rounded-full bg-muted-foreground/40'
+                    }
+                  />
+                )}
                 {item.label}
-                <span className="sr-only">, {stateLabels[item.state]}</span>
+                {item.badge ?? <span className="sr-only">, {stateLabels[item.state]}</span>}
               </TabsTrigger>
             ))}
           </TabsList>

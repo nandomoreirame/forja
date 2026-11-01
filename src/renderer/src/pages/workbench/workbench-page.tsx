@@ -1,3 +1,4 @@
+import { DocumentPage } from '@/renderer/src/pages/document'
 import { ComposePage } from '@/renderer/src/pages/compose'
 import { ConversationPage } from '@/renderer/src/pages/conversation'
 import { SettingsPage } from '@/renderer/src/pages/settings'
@@ -143,8 +144,17 @@ function WorkbenchShell() {
     >
       <AppTopbar
         brand="FORJA"
-          project={s.snapshot ? <ProjectSwitcher /> : undefined}
-          usage={<UsagePopover source={s.source} compact label={s.source.locale === 'pt-br' ? 'Uso' : 'Usage'} unavailableLabel={s.source.locale === 'pt-br' ? 'Uso indisponível' : 'Usage unavailable'} />}
+        project={s.snapshot ? <ProjectSwitcher /> : undefined}
+        usage={
+          <UsagePopover
+            source={s.source}
+            compact
+            label={s.source.locale === 'pt-br' ? 'Uso' : 'Usage'}
+            unavailableLabel={
+              s.source.locale === 'pt-br' ? 'Uso indisponível' : 'Usage unavailable'
+            }
+          />
+        }
         commandText={s.snapshot?.project.name ?? 'Forja'}
         onCommand={() => s.openPalette('all')}
         onBack={s.back}
@@ -207,7 +217,11 @@ function WorkbenchShell() {
                         <ComposePage />
                       ) : s.view.kind === 'conversation' ? (
                         <ConversationPage />
-                      ) : s.view.kind === 'settings' ? <SettingsPage /> : null}
+                      ) : s.view.kind === 'document' ? (
+                        <DocumentPage />
+                      ) : s.view.kind === 'settings' ? (
+                        <SettingsPage />
+                      ) : null}
                     </div>
                   </ResizablePanel>
                 )}

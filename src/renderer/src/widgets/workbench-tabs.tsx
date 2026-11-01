@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { FileText } from 'lucide-react'
+import { StatusBadge } from '@/shared/ui'
 import { CloseFeatureDialog } from '@/renderer/src/features/feature-tabs'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import { getDictionary } from '@/shared/i18n'
@@ -24,23 +26,48 @@ export function WorkbenchTabs() {
       state:
         feature.state === 'running' ? 'running' : feature.state === 'waiting' ? 'waiting' : 'idle',
     }))
+  for (const id of state.openDocumentIds) {
+    const artifact = state.snapshot?.artifacts.find((item) => item.id === id)
+    if (artifact)
+      items.push({
+        id,
+        label: artifact.name.split('/').pop()!,
+        state: 'idle',
+        icon: <FileText aria-hidden="true" className="size-3" />,
+        badge: <StatusBadge state={artifact.state}>{a.states[artifact.state]}</StatusBadge>,
+      })
+  }
   if (state.settingsOpen) items.push({ id: 'settings', label: a.settings, state: 'idle' })
   const selectedId =
     state.view.kind === 'settings'
       ? 'settings'
       : state.view.kind === 'conversation'
         ? state.view.featureId
-        : ''
+        : state.view.kind === 'document'
+          ? state.view.documentId
+          : ''
   return (
     <>
       <FeatureTabs
         selectedId={selectedId}
         panelId={
-          state.view.kind === 'conversation' ? `feature-panel-${state.view.featureId}` : undefined
+          state.view.kind === 'conversation'
+            ? `feature-panel-${state.view.featureId}`
+            : state.view.kind === 'document'
+              ? `document-panel-${state.view.documentId}`
+              : undefined
         }
         items={items}
-        onSelect={(id) => (id === 'settings' ? state.openSettings() : state.selectFeature(id))}
+        onSelect={(id) => {
+          if (state.openDocumentIds.includes(id)) void state.openDocument(id)
+          else if (id === 'settings') state.openSettings()
+          else state.selectFeature(id)
+        }}
         onClose={(id) => {
+          if (state.openDocumentIds.includes(id)) {
+            state.closeDocument(id)
+            return
+          }
           if (id === 'settings') {
             state.closeSettings()
             return

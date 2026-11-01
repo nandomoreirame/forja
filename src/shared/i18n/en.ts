@@ -1,5 +1,14 @@
 export const en = {
   app: {
+    document: {
+      approveSpec: 'Approve spec',
+      approvePlan: 'Approve plan',
+      approvalNotice: 'Human approval required. This action updates mock state only.',
+      approvedNotice: 'Document approved.',
+      tooLarge: 'Content exceeds the preview limit.',
+      diagramError: 'Diagram could not be rendered.',
+      diagramLoading: 'Rendering diagram',
+    },
     closeFeature: 'Close feature',
     keepOpen: 'Keep open',
     closeFeatureDescription:

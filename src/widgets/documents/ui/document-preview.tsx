@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { CircleCheck, Lock } from 'lucide-react'
-import { Badge, Button, type UiState } from '@/shared/ui'
+import { StatusBadge, Button, type UiState } from '@/shared/ui'
 
 export interface DocumentPreviewProps {
   name: string
@@ -16,6 +16,7 @@ export interface DocumentPreviewProps {
 export function DocumentPreview({
   name,
   stateLabel,
+  state = 'draft',
   actionLabel,
   onAction,
   notice,
@@ -26,9 +27,7 @@ export function DocumentPreview({
     <div className="grid gap-3">
       <div className="flex items-center gap-3 rounded-md border border-border bg-background px-4 py-3">
         <h3 className="font-mono text-[13px] text-foreground">{name}</h3>
-        <Badge variant="outline" className="text-[11px] text-muted-foreground">
-          {stateLabel}
-        </Badge>
+        <StatusBadge state={state}>{stateLabel}</StatusBadge>
         {actionLabel ? (
           <Button size="sm" className="ml-auto gap-1.5 rounded-md" onClick={onAction}>
             <CircleCheck />

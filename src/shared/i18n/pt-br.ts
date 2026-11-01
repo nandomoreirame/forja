@@ -1,5 +1,14 @@
 export const ptBr = {
   app: {
+    document: {
+      approveSpec: 'Aprovar spec',
+      approvePlan: 'Aprovar plano',
+      approvalNotice: 'Aprovação humana necessária. Esta ação altera apenas o estado simulado.',
+      approvedNotice: 'Documento aprovado.',
+      tooLarge: 'Conteúdo maior que o limite de visualização.',
+      diagramError: 'Não foi possível renderizar o diagrama.',
+      diagramLoading: 'Renderizando diagrama',
+    },
     closeFeature: 'Fechar feature',
     keepOpen: 'Manter aberta',
     closeFeatureDescription:

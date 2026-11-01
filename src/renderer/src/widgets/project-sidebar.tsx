@@ -34,115 +34,159 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
     >
       <div className="min-h-0 flex-1 overflow-y-auto py-2">
         <div className="space-y-3">
-        <section>
-          <h2 className="flex items-center justify-between gap-2 px-3 pb-1 text-[11px] uppercase tracking-wider">
-            <span>{a.agents}</span>
-            <span className="ml-auto">{snapshot.agents.length}</span>
-            <IconButton
-              className="size-5"
-              label={a.collapseLeft}
-              onClick={() => state.togglePanel('left')}
-            >
-              <ChevronLeft className="size-3" />
-            </IconButton>
-          </h2>
-          {snapshot.agents.map((agent) => {
-            const Icon = icons[agent.id]
-            return (
-              <button
-                type="button"
-                key={agent.id}
-                className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
-                onClick={() => {
-                  if (state.openFeatureIds.length === 0) state.startCompose(agent.id)
-                  else {
-                    const id =
-                      state.view.kind === 'conversation'
-                        ? state.view.featureId
-                        : state.openFeatureIds[state.openFeatureIds.length - 1]
-                    state.setRecipient(id, agent.id)
-                    state.selectFeature(id)
-                    state.focusComposer()
-                  }
-                }}
+          <section>
+            <h2 className="flex items-center justify-between gap-2 px-3 pb-1 text-[11px] uppercase tracking-wider">
+              <span>{a.agents}</span>
+              <span className="ml-auto">{snapshot.agents.length}</span>
+              <IconButton
+                className="size-5"
+                label={a.collapseLeft}
+                onClick={() => state.togglePanel('left')}
               >
-                <SidebarRow
-                  className="h-7 rounded-none border-0 bg-transparent px-3 hover:bg-accent"
-                  icon={<Icon />}
-                  title={d.product[agent.id]}
-                  stateLabel={
-                    <StatusBadge state={agent.state}>{a.states[agent.state]}</StatusBadge>
-                  }
-                />
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full px-3 py-1 text-left text-muted-foreground hover:bg-accent hover:text-primary"
-            onClick={() => state.openSettings({ tab: 'agents' })}
-          >
-            {a.editAgents}
-          </button>
-        </section>
-        {(['spec', 'plan', 'skill'] as const).map((kind) => {
-          const items: { id: string; name: string; state?: UiState }[] =
-            kind === 'skill' ? snapshot.skills : snapshot.artifacts.filter((x) => x.kind === kind)
-          return (
-            <section key={kind} className="mx-3 border-t border-border pt-3">
-              <h2 className="flex justify-between pb-1 text-[11px] uppercase tracking-wider">
-                <span>{kind === 'spec' ? a.specs : kind === 'plan' ? a.plans : a.skills}</span>
-                <span>{items.length}</span>
-              </h2>
-              {items.map((item) => (
+                <ChevronLeft className="size-3" />
+              </IconButton>
+            </h2>
+            {snapshot.agents.map((agent) => {
+              const Icon = icons[agent.id]
+              return (
                 <button
                   type="button"
-                  key={item.id}
-                  className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring"
-                  onClick={() =>
-                    kind === 'skill'
-                      ? state.openSettings({ tab: 'agents' })
-                      : state.navigate({ kind: 'document', documentId: item.id })
-                  }
+                  key={agent.id}
+                  className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2"
+                  onClick={() => {
+                    if (state.openFeatureIds.length === 0) state.startCompose(agent.id)
+                    else {
+                      const id =
+                        state.view.kind === 'conversation'
+                          ? state.view.featureId
+                          : state.openFeatureIds[state.openFeatureIds.length - 1]
+                      state.setRecipient(id, agent.id)
+                      state.selectFeature(id)
+                      state.focusComposer()
+                    }
+                  }}
                 >
                   <SidebarRow
-                    icon={<ClipboardList />}
-                    title={item.name}
+                    className="h-7 rounded-none border-0 bg-transparent px-3 hover:bg-accent"
+                    icon={<Icon />}
+                    title={d.product[agent.id]}
                     stateLabel={
-                      item.state ? (
-                        <StatusBadge state={item.state}>{a.states[item.state]}</StatusBadge>
-                      ) : undefined
+                      <StatusBadge state={agent.state}>{a.states[agent.state]}</StatusBadge>
                     }
                   />
                 </button>
-              ))}
-              <button
-                type="button"
-                className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full py-1 text-left text-muted-foreground hover:text-primary"
-                onClick={() =>
-                  kind === 'skill'
-                    ? state.openSettings({ tab: 'agents' })
-                    : state.startCompose(kind === 'plan' ? 'planner' : 'research')
-                }
-              >
-                {kind === 'spec' ? a.addSpec : kind === 'plan' ? a.addPlan : a.addSkill}
-              </button>
-            </section>
-          )
-        })}
+              )
+            })}
+            <button
+              type="button"
+              className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full px-3 py-1 text-left text-muted-foreground hover:bg-accent hover:text-primary"
+              onClick={() => state.openSettings({ tab: 'agents' })}
+            >
+              {a.editAgents}
+            </button>
+          </section>
+          {(['spec', 'plan', 'review', 'skill'] as const).map((kind) => {
+            const items: { id: string; name: string; state?: UiState }[] =
+              kind === 'skill' ? snapshot.skills : snapshot.artifacts.filter((x) => x.kind === kind)
+            return (
+              <section key={kind} className="mx-3 border-t border-border pt-3">
+                <h2 className="flex justify-between pb-1 text-[11px] uppercase tracking-wider">
+                  <span>
+                    {kind === 'spec'
+                      ? a.specs
+                      : kind === 'plan'
+                        ? a.plans
+                        : kind === 'review'
+                          ? locale === 'en'
+                            ? 'Reviews'
+                            : 'Revisões'
+                          : a.skills}
+                  </span>
+                  <span>{items.length}</span>
+                </h2>
+                {items.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className="block w-full text-left focus-visible:outline-2 focus-visible:outline-ring"
+                    onClick={() =>
+                      kind === 'skill'
+                        ? state.openSettings({ tab: 'agents' })
+                        : void state.openDocument(item.id)
+                    }
+                  >
+                    <SidebarRow
+                      icon={<ClipboardList />}
+                      title={item.name}
+                      stateLabel={
+                        item.state ? (
+                          <StatusBadge state={item.state}>{a.states[item.state]}</StatusBadge>
+                        ) : undefined
+                      }
+                    />
+                  </button>
+                ))}
+                {kind !== 'review' && (
+                  <button
+                    type="button"
+                    className="focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2 w-full py-1 text-left text-muted-foreground hover:text-primary"
+                    onClick={() =>
+                      kind === 'skill'
+                        ? state.openSettings({ tab: 'agents' })
+                        : state.startCompose(kind === 'plan' ? 'planner' : 'research')
+                    }
+                  >
+                    {kind === 'spec' ? a.addSpec : kind === 'plan' ? a.addPlan : a.addSkill}
+                  </button>
+                )}
+              </section>
+            )
+          })}
         </div>
       </div>
-      <nav aria-label={locale === 'pt-br' ? 'Espaço de trabalho' : 'Workspace'} className="shrink-0 border-t border-border p-2">
+      <nav
+        aria-label={locale === 'pt-br' ? 'Espaço de trabalho' : 'Workspace'}
+        className="shrink-0 border-t border-border p-2"
+      >
         <div className="space-y-0.5">
-          <WorkspaceButton icon={<Brain />} label="Memory" onClick={() => state.openSettings({ tab: 'memory' })} />
-          <WorkspaceButton icon={<Plug />} label="Connectors" onClick={() => state.openSettings({ tab: 'connectors' })} />
-          <WorkspaceButton icon={<Settings />} label={a.settings} onClick={() => state.openSettings({ tab: 'agents' })} />
+          <WorkspaceButton
+            icon={<Brain />}
+            label="Memory"
+            onClick={() => state.openSettings({ tab: 'memory' })}
+          />
+          <WorkspaceButton
+            icon={<Plug />}
+            label="Connectors"
+            onClick={() => state.openSettings({ tab: 'connectors' })}
+          />
+          <WorkspaceButton
+            icon={<Settings />}
+            label={a.settings}
+            onClick={() => state.openSettings({ tab: 'agents' })}
+          />
         </div>
       </nav>
     </aside>
   )
 }
 
-function WorkspaceButton({ icon, label, onClick }: { icon: ReactNode; label: string; onClick: () => void }) {
-  return <button type="button" className="flex h-7 w-full items-center gap-2 rounded-sm px-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring [&_svg]:size-3.5 [&_svg]:shrink-0" onClick={onClick}>{icon}<span>{label}</span></button>
+function WorkspaceButton({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      className="flex h-7 w-full items-center gap-2 rounded-sm px-2 text-left text-xs text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-ring [&_svg]:size-3.5 [&_svg]:shrink-0"
+      onClick={onClick}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  )
 }
