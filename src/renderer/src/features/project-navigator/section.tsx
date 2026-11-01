@@ -1,4 +1,4 @@
-import { useEffect, useId, useState, type ReactNode } from 'react'
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { Archive, ChevronDown, ChevronRight } from 'lucide-react'
 import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
 import {
@@ -18,6 +18,21 @@ import { cn } from '@/shared/ui/utils'
 // a 120 px body, VS Code's default minimumBodySize for vertical panes.
 export const paneHeaderSize = 22
 const paneMinSize = paneHeaderSize + 120
+
+// VS Code paneview.ts: the view is "animated" for 200 ms after a toggle (CSS eases the height
+// over 150 ms), and a closing pane keeps its body until then.
+const animationMs = 200
+const animationTimers = new WeakMap<Element, number>()
+
+function animatePanes(group: Element | null | undefined) {
+  if (!group) return
+  window.clearTimeout(animationTimers.get(group))
+  group.setAttribute('data-animated', '')
+  animationTimers.set(
+    group,
+    window.setTimeout(() => group.removeAttribute('data-animated'), animationMs),
+  )
+}
 
 export const rowFocus =
   'focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-ring'
@@ -56,10 +71,21 @@ export function NavigatorSection({
     const stored = layoutStorage.getItem(key)
     return stored === null ? defaultOpen : stored !== 'false'
   })
+  const element = useRef<HTMLElement>(null)
+  const [bodyHidden, setBodyHidden] = useState(!open)
   const toggle = (next: boolean) => {
     layoutStorage.setItem(key, String(next))
+    animatePanes(element.current?.closest('[data-slot="resizable-panel-group"]'))
     setOpen(next)
   }
+  useEffect(() => {
+    if (open) {
+      setBodyHidden(false)
+      return
+    }
+    const timer = window.setTimeout(() => setBodyHidden(true), animationMs)
+    return () => window.clearTimeout(timer)
+  }, [open])
   useEffect(() => {
     const handle = panel.current
     if (!handle) return
@@ -86,6 +112,7 @@ export function NavigatorSection({
       }}
     >
       <section
+        ref={element}
         data-slot="sidebar-pane"
         aria-labelledby={heading}
         className="group/pane flex h-full min-h-0 flex-col"
@@ -129,7 +156,7 @@ export function NavigatorSection({
             </div>
           ) : null}
         </div>
-        <div id={id} data-slot="pane-body" hidden={!open} className="min-h-0 flex-1">
+        <div id={id} data-slot="pane-body" hidden={bodyHidden} className="min-h-0 flex-1">
           <ScrollArea className="h-full">
             {children}
             {count === 0 && empty ? (

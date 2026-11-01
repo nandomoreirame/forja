@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { createWorkbenchStore } from '../../src/renderer/src/entities/feature'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
@@ -130,7 +130,7 @@ it('collapses each section with the keyboard while preserving the heading count'
     expect(header).toHaveAttribute('aria-expanded', String(!wasOpen))
     expect(header.textContent).toBe(name)
     const body = document.getElementById(header.getAttribute('aria-controls')!)
-    if (wasOpen) expect(body).not.toBeVisible()
+    if (wasOpen) await waitFor(() => expect(body).not.toBeVisible())
     else expect(body).toBeVisible()
     expect(localStorage.getItem('forja.sidebar.' + title.toLowerCase())).toBe(String(!wasOpen))
   }

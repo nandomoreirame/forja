@@ -20,3 +20,10 @@
     flex-shrink: 0;
   }
 }
+
+/* Sidebar pane toggles ease their height like VS Code (paneview.css: 0.15s ease-out). */
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot='resizable-panel-group'][data-animated] > [data-panel] {
+    transition: flex-grow 0.15s ease-out;
+  }
+}

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
@@ -81,9 +81,23 @@ it('collapses a pane to its header and expands it again', async () => {
   const header = within(plans).getByRole('button', { name: /^Plans/ })
   fireEvent.click(header)
   expect(header).toHaveAttribute('aria-expanded', 'false')
-  expect(plans.querySelector('[data-slot="pane-body"]')).not.toBeVisible()
+  await waitFor(() => expect(plans.querySelector('[data-slot="pane-body"]')).not.toBeVisible())
   fireEvent.click(header)
   expect(header).toHaveAttribute('aria-expanded', 'true')
+})
+
+it('animates a toggle like VS Code and keeps the body until the pane has closed', async () => {
+  const sidebar = await renderSidebar()
+  const group = sidebar.querySelector('[data-slot="resizable-panel-group"]') as HTMLElement
+  const plans = within(sidebar).getByRole('region', { name: /Plans/ })
+  const body = plans.querySelector('[data-slot="pane-body"]') as HTMLElement
+  expect(group).not.toHaveAttribute('data-animated')
+  fireEvent.click(within(plans).getByRole('button', { name: /^Plans/ }))
+  // paneview.ts: the view is marked animated for 200 ms and the body leaves after it.
+  expect(group).toHaveAttribute('data-animated')
+  expect(body).toBeVisible()
+  await waitFor(() => expect(body).not.toBeVisible())
+  expect(group).not.toHaveAttribute('data-animated')
 })
 
 it('shows no tooltip over rows', async () => {
