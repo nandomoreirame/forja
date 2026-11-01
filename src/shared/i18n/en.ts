@@ -1,5 +1,8 @@
 export const en = {
   app: {
+    gitStatus: {
+      label: 'Branch {branch}, {behind} behind, {ahead} ahead',
+    },
     flow: {
       toggle: 'Flow',
       title: 'Flow',

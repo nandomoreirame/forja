@@ -122,6 +122,9 @@ export function mockProjects(locale: Locale): ProjectSnapshot[] {
               tool: i === 0 ? 'claude' : 'codex',
               destination: path,
               branch: `feature/${slugs[i]}`,
+              // Commits behind and ahead of the base branch, shown in the status bar.
+              behind: [0, 2, 0, 1, 0][i] ?? 0,
+              ahead: [3, 1, 4, 0, 7][i] ?? 0,
               worktree: null,
               target: path,
               stage: 'research',

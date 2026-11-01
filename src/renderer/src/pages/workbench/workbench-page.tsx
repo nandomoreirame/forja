@@ -20,6 +20,7 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  ForjaMark,
   TooltipProvider,
   useDefaultLayout,
   useGroupRef,
@@ -28,6 +29,7 @@ import { getDictionary } from '@/shared/i18n'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { ProjectSidebar } from '@/renderer/src/widgets/project-sidebar'
 import { GitContext } from '@/renderer/src/widgets/git-context'
+import { GitStatus } from '@/renderer/src/widgets/git-status'
 import { ProjectSwitcher } from '@/renderer/src/widgets/project-switcher'
 import { IconButton } from '@/renderer/src/shared/ui/icon-button'
 import { TerminalFooterToolbar, TerminalPanel } from '@/renderer/src/features/terminal'
@@ -264,8 +266,18 @@ function WorkbenchShell() {
         }}
       />
       <AppStatusbar
-        items={[s.snapshot?.project.path ?? a.noProject]}
-        end={s.snapshot ? <TerminalFooterToolbar feature={terminalScope} /> : undefined}
+        start={<ForjaMark className="size-3.5 text-primary" />}
+        end={
+          s.snapshot ? (
+            <>
+              <div className="flex min-w-0 flex-1 items-center justify-end gap-2">
+                <TerminalFooterToolbar feature={terminalScope} />
+              </div>
+              <span role="separator" aria-orientation="vertical" className="h-3.5 w-px bg-border" />
+              <GitStatus />
+            </>
+          ) : undefined
+        }
       />
     </div>
   )

@@ -1,5 +1,8 @@
 export const ptBr = {
   app: {
+    gitStatus: {
+      label: 'Branch {branch}, {behind} atrás, {ahead} à frente',
+    },
     flow: {
       toggle: 'Fluxo',
       title: 'Fluxo',

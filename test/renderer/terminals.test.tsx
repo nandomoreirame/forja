@@ -47,7 +47,8 @@ it('keeps running state when collapsed, stops without losing output and follows 
 
 it('keeps the terminal toggle and collapsed terminals in the status bar instead of the topbar', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
-  const footer = (await screen.findByText('~/dev', { selector: 'footer span' })).closest('footer')!
+  await screen.findByRole('button', { name: 'Toggle terminals' })
+  const footer = screen.getByRole('contentinfo')
   expect(within(footer).getByRole('button', { name: 'Toggle terminals' })).toBeInTheDocument()
   expect(screen.getAllByRole('button', { name: 'Toggle terminals' })).toHaveLength(1)
   expect(footer).not.toHaveTextContent('UTF-8')
@@ -63,7 +64,7 @@ it('keeps the terminal toggle and collapsed terminals in the status bar instead 
 it('keeps footer terminals while the panel is open and closes only idle or finished terminals', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   fireEvent.click(await screen.findByRole('button', { name: 'Toggle terminals' }))
-  const footer = screen.getByText('~/dev', { selector: 'footer span' }).closest('footer')!
+  const footer = screen.getByRole('contentinfo')
   const toolbar = within(footer).getByRole('toolbar', { name: 'Background terminals' })
   fireEvent.click(within(toolbar).getByRole('button', { name: /Implementer · tests/ }))
   expect(screen.getByRole('tab', { name: /Implementer · tests/ })).toHaveAttribute(

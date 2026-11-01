@@ -116,13 +116,16 @@ export function AppTopbar({
 }
 
 export interface AppStatusbarProps {
-  items: string[]
+  /** Leading content, such as the product mark. */
+  start?: ReactNode
+  items?: string[]
   end?: ReactNode
 }
 
-export function AppStatusbar({ items, end }: AppStatusbarProps) {
+export function AppStatusbar({ start, items = [], end }: AppStatusbarProps) {
   return (
     <footer className="flex h-8 shrink-0 items-center gap-4 border-t border-border bg-secondary px-3 text-[11px] text-muted-foreground">
+      {start ? <span className="flex shrink-0 items-center">{start}</span> : null}
       {items.map((item) => (
         <span key={item} className="shrink-0">
           {item}

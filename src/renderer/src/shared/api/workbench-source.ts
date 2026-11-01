@@ -58,6 +58,9 @@ export interface FeatureSnapshot {
   tool: ToolId
   destination: string
   branch: string
+  /** Commits behind and ahead of the base branch. */
+  behind?: number
+  ahead?: number
   worktree: string | null
   target: string
   stage: RoleId

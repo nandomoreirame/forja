@@ -18,7 +18,7 @@ it('opens the selected directory from the home action and Ctrl+O without showing
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} />)
   fireEvent.click(screen.getByRole('button', { name: /Open project/ }))
   expect(await screen.findByRole('complementary', { name: 'actual-app' })).toBeInTheDocument()
-  expect(screen.getByRole('contentinfo')).toHaveTextContent('/projects/actual-app')
+  expect(screen.getByRole('button', { name: /^actual-app, switch project/ })).toBeInTheDocument()
   expect(screen.queryByRole('dialog')).toBeNull()
   picker.mockResolvedValueOnce({ status: 'cancelled' })
   fireEvent.keyDown(window, { key: 'o', ctrlKey: true })
