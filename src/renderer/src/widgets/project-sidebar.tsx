@@ -1,8 +1,14 @@
 import { Archive, Plug, Settings } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { useRef, type ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-import { ResizableHandle, ResizablePanel, ResizablePanelGroup, useDefaultLayout } from '@/shared/ui'
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  useDefaultLayout,
+  useGroupRef,
+} from '@/shared/ui'
 import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
 import {
   FeaturesSection,
@@ -12,6 +18,8 @@ import {
   SkillsSection,
   MemoriesSection,
 } from '@/renderer/src/features/project-navigator'
+import { stackPanes } from '@/renderer/src/features/project-navigator/stack-panes'
+import { paneHeaderSize } from '@/renderer/src/features/project-navigator/section'
 export function ProjectSidebar({ locale }: { locale: Locale }) {
   const state = useWorkbench((s) => s)
   const snapshot = state.snapshot!
@@ -22,13 +30,29 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
     storage: layoutStorage,
     panelIds: ['features', 'specs', 'plans', 'reviews', 'skills', 'memories', 'pane-filler'],
   })
+  const group = useGroupRef()
+  const groupElement = useRef<HTMLDivElement | null>(null)
+  const onLayoutChanged: typeof paneLayout.onLayoutChanged = (layout, meta) => {
+    paneLayout.onLayoutChanged(layout, meta)
+    const height = groupElement.current?.clientHeight
+    if (!height) return
+    const next = stackPanes(layout, (paneHeaderSize / height) * 100, 'pane-filler')
+    if (next) group.current?.setLayout(next)
+  }
   return (
     <aside
       aria-label={snapshot.project.name}
       className="flex h-full w-full flex-col border-r border-border bg-sidebar text-xs"
     >
       {/* VS Code style panes: each one resizes from the sash above it and collapses to its header. */}
-      <ResizablePanelGroup orientation="vertical" className="min-h-0 flex-1" {...paneLayout}>
+      <ResizablePanelGroup
+        orientation="vertical"
+        className="min-h-0 flex-1"
+        {...paneLayout}
+        groupRef={group}
+        elementRef={groupElement}
+        onLayoutChanged={onLayoutChanged}
+      >
         <FeaturesSection locale={locale} />
         <ResizableHandle className="bg-border" />
         <SpecsSection locale={locale} />
@@ -40,7 +64,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
         <SkillsSection locale={locale} />
         <ResizableHandle className="bg-border" />
         <MemoriesSection locale={locale} />
-        {/* Absorbs the free height so collapsed panes stack at the top, as in VS Code. */}
+        {/* Holds the free height only while every pane is collapsed (see stackPanes). */}
         <ResizablePanel id="pane-filler" minSize={0} defaultSize={0} data-slot="pane-filler" />
       </ResizablePanelGroup>
       <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">

@@ -32,3 +32,23 @@ test('the sidebar opens features, archives and restores them and remembers secti
     'false',
   )
 })
+
+test('collapsed sections sit at the bottom while any section is open', async ({ page }) => {
+  await page.goto('/')
+  await page.keyboard.press('Control+r')
+  await page.getByRole('option', { name: /^dev/ }).click()
+  const sidebar = page.getByRole('complementary', { name: 'dev' })
+  const header = (name: RegExp) => sidebar.getByRole('button', { name, expanded: true })
+  for (const name of [/^Specs/, /^Plans/, /^Reviews/]) await header(name).click()
+  const nav = sidebar.getByRole('navigation', { name: 'Workspace' })
+  const memories = sidebar.getByRole('button', { name: /^Memories/ })
+  // Only Features is open: it takes the free height and the rest stack above the menu.
+  await expect
+    .poll(async () => (await nav.boundingBox())!.y - (await memories.boundingBox())!.y)
+    .toBeLessThan(40)
+  await sidebar.getByRole('button', { name: /^Features/ }).click()
+  // All collapsed: every header stacks at the top again.
+  await expect
+    .poll(async () => (await nav.boundingBox())!.y - (await memories.boundingBox())!.y)
+    .toBeGreaterThan(300)
+})
