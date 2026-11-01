@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { X } from 'lucide-react'
 import {
   Tooltip,
@@ -52,13 +52,25 @@ export function FeatureTabs({
   stateLabels = defaultStateLabels,
 }: FeatureTabsProps) {
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const strip = useRef<HTMLDivElement>(null)
+  // Keep the selected tab visible when the strip overflows horizontally.
+  useEffect(() => {
+    const tab = strip.current?.querySelector<HTMLElement>(
+      `#${CSS.escape(`feature-tab-${selectedId}`)}`,
+    )
+    tab?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [selectedId])
   const select = (id: string) => {
     if (id !== selectedId) onSelect(id)
   }
   return (
     <TooltipProvider>
       <Tabs value={selectedId} onValueChange={select}>
-        <div className="grid h-9 auto-cols-max grid-flow-col items-end justify-start border-b border-border bg-secondary px-3">
+        <div
+          ref={strip}
+          data-slot="feature-tab-strip"
+          className="grid h-9 auto-cols-max grid-flow-col items-end justify-start overflow-x-auto overflow-y-hidden border-b border-border bg-secondary px-3 [scrollbar-width:none]"
+        >
           <TabsList aria-label={label} className="contents">
             {items.map((item, index) => (
               <TabsTrigger
