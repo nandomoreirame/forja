@@ -4,6 +4,10 @@ import { featureIdentity } from './feature-name'
 import { createStore } from 'zustand/vanilla'
 import type {
   FeatureSnapshot,
+  LibraryDocument,
+  LibraryKind,
+  LibraryScope,
+  MemoryRecord,
   ProjectSnapshot,
   ProjectSummary,
   RoleId,
@@ -11,12 +15,24 @@ import type {
   WorkbenchSource,
 } from '@/renderer/src/shared/api'
 export type View =
+  | { kind: 'authoring' }
   | { kind: 'home' }
   | { kind: 'compose'; role: RoleId }
   | { kind: 'conversation'; featureId: string }
   | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
   | { kind: 'document'; documentId: string }
 export interface WorkbenchState {
+  memories: MemoryRecord[]
+  libraryDocuments: Record<string, LibraryDocument>
+  authoring: {
+    kind: LibraryKind
+    scope: LibraryScope
+    name?: string
+    messages: string[]
+    running: boolean
+  } | null
+  startAuthoring(kind: LibraryKind, scope: LibraryScope, name?: string): void
+  sendAuthoring(text: string): void
   source: WorkbenchSource
   refreshSkills(root?: string): Promise<void>
   projects: ProjectSummary[]
@@ -106,6 +122,7 @@ export function projectTerminalScope(snapshot: ProjectSnapshot): FeatureSnapshot
 export function createWorkbenchStore(source: WorkbenchSource) {
   const replies = new Map<string, { cancel: () => void }>()
   const documentReads = new Map<string, Promise<string>>()
+  let authoringCancel: (() => void) | undefined
   let previousDocumentView: View = { kind: 'home' }
   let request = 0
   let skillsRequest = 0
@@ -141,6 +158,40 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       )
     return {
       source,
+      memories: [],
+      libraryDocuments: {},
+      authoring: null,
+      startAuthoring(kind, scope, name) {
+        authoringCancel?.()
+        set({ authoring: { kind, scope, name, messages: [], running: false } })
+        get().navigate({ kind: 'authoring' })
+        get().sendAuthoring(getDictionary(source.locale).app.authoringPrompt)
+      },
+      sendAuthoring(text) {
+        const current = get().authoring
+        if (!current || current.running || !text.trim()) return
+        const messages = [...current.messages, text.trim(), '']
+        let conversation = { ...current, messages, running: true }
+        set({ authoring: conversation })
+        authoringCancel = source.streamReply(
+          { featureId: 'authoring', role: 'research', prompt: text, authoring: current.kind },
+          (event) => {
+            if (event.type === 'start' || get().authoring !== conversation) return
+            if (event.type === 'text') messages[messages.length - 1] += event.chunk
+            conversation = {
+              ...conversation,
+              messages: [...messages],
+              running: event.type !== 'completed' && event.type !== 'interrupted',
+            }
+            set({ authoring: conversation })
+          },
+          {
+            instant:
+              typeof matchMedia === 'function' &&
+              matchMedia('(prefers-reduced-motion: reduce)').matches,
+          },
+        )
+      },
       async refreshSkills(root) {
         const currentRequest = ++skillsRequest
         const projectId = get().snapshot?.project.id
@@ -153,6 +204,23 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           state.snapshot &&
           state.snapshot.project.id === projectId
             ? {
+                documents: Object.fromEntries(
+                  Object.entries(state.documents).filter(
+                    ([id]) => !id.startsWith('library:skill:'),
+                  ),
+                ),
+                libraryDocuments: {
+                  ...Object.fromEntries(
+                    Object.entries(state.libraryDocuments).filter(
+                      ([id]) => !id.startsWith('library:skill:'),
+                    ),
+                  ),
+                  ...Object.fromEntries(
+                    skills
+                      .filter((skill) => skill.id.startsWith('library:skill:'))
+                      .map((skill) => [skill.id, { ...skill, kind: 'skill' as const }]),
+                  ),
+                },
                 snapshot: {
                   ...state.snapshot,
                   skills: [
@@ -201,8 +269,19 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       documents: {},
       async openDocument(id) {
         const snapshot = get().snapshot
-        if (!snapshot?.artifacts.some((artifact) => artifact.id === id))
+        const skill = snapshot?.skills.find((item) => item.id === id)
+        const libraryDocument = skill
+          ? { ...skill, kind: 'skill' as const }
+          : get().libraryDocuments[id]
+        if (
+          !snapshot ||
+          (!snapshot.artifacts.some((artifact) => artifact.id === id) && !libraryDocument)
+        )
           throw new Error('Unknown artifact')
+        if (libraryDocument)
+          set((state) => ({
+            libraryDocuments: { ...state.libraryDocuments, [id]: libraryDocument },
+          }))
         const token = request
         let content = get().documents[id]
         if (content === undefined) {
@@ -568,13 +647,15 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         const token = ++request
         set({ loading: true, error: null })
         try {
-          const [projects, snapshot] = await Promise.all([
+          const [projects, snapshot, memories] = await Promise.all([
             source.listProjects(),
             source.loadProject(id),
+            source.loadMemories(),
           ])
           if (token !== request) return
           for (const reply of replies.values()) reply.cancel()
           replies.clear()
+          authoringCancel?.()
           failedOperation = null
           documentReads.clear()
           previousDocumentView = { kind: 'home' }
@@ -584,6 +665,19 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           set({
             projects,
             snapshot,
+            memories,
+            authoring: null,
+            libraryDocuments: Object.fromEntries(
+              memories.map((memory) => [
+                `memory:${memory.id}`,
+                {
+                  id: `memory:${memory.id}`,
+                  name: memory.title,
+                  kind: 'memory' as const,
+                  scope: memory.scope,
+                },
+              ]),
+            ),
             view,
             history: [view],
             historyIndex: 0,

@@ -1,4 +1,4 @@
-import { DocumentPage } from '@/renderer/src/pages/document'
+import { DocumentPage, AuthoringPage } from '@/renderer/src/pages/document'
 import { ComposePage } from '@/renderer/src/pages/compose'
 import { ConversationPage } from '@/renderer/src/pages/conversation'
 import { SettingsPage } from '@/renderer/src/pages/settings'
@@ -211,7 +211,9 @@ function WorkbenchShell() {
                 {terminalMaximized ? null : (
                   <ResizablePanel id="content" minSize={120}>
                     <div className="flex h-full min-h-0 flex-col overflow-auto">
-                      {s.view.kind === 'home' ? (
+                      {s.view.kind === 'authoring' ? (
+                        <AuthoringPage />
+                      ) : s.view.kind === 'home' ? (
                         <HomePage />
                       ) : s.view.kind === 'compose' ? (
                         <ComposePage />

@@ -95,7 +95,15 @@ export interface SettingsSnapshot {
     inactivityMinutes: number
   }
 }
-export type SettingsTab = 'agents' | 'general' | 'memory' | 'connectors'
+export type SettingsTab = 'agents' | 'general' | 'connectors'
+export type LibraryKind = 'skill' | 'memory'
+export type LibraryScope = 'project' | 'global'
+export interface LibraryDocument {
+  id: string
+  name: string
+  kind: LibraryKind
+  scope: LibraryScope
+}
 export interface MemoryRecord {
   scope: 'project' | 'global'
   id: string
@@ -147,7 +155,7 @@ export interface WorkbenchSource {
   scanSkills(root: string): Promise<ProjectSnapshot['skills']>
   readArtifact(id: string): Promise<string>
   streamReply(
-    request: { featureId: string; role: RoleId; prompt: string },
+    request: { featureId: string; role: RoleId; prompt: string; authoring?: LibraryKind },
     onEvent: (event: ReplyEvent) => void,
     options?: ReplyOptions,
   ): () => void

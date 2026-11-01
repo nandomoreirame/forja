@@ -28,6 +28,14 @@ export function WorkbenchTabs() {
     }))
   for (const id of state.openDocumentIds) {
     const artifact = state.snapshot?.artifacts.find((item) => item.id === id)
+    const library = state.libraryDocuments[id]
+    if (library)
+      items.push({
+        id,
+        label: library.name,
+        state: 'idle',
+        icon: <FileText aria-hidden="true" className="size-3" />,
+      })
     if (artifact)
       items.push({
         id,

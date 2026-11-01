@@ -59,3 +59,14 @@ export const mockReplies: Record<Locale, Record<RoleId, MockReply>> = {
     },
   },
 }
+
+export const authoringReplies: Record<Locale, Record<'skill' | 'memory', MockReply>> = {
+  en: {
+    skill: { text: 'Let’s author this skill. What instructions and examples should it contain?' },
+    memory: { text: 'Let’s curate this memory. What decision and context should we preserve?' },
+  },
+  'pt-br': {
+    skill: { text: 'Vamos escrever esta skill. Quais instruções e exemplos ela deve conter?' },
+    memory: { text: 'Vamos organizar esta memória. Qual decisão e contexto devemos preservar?' },
+  },
+}

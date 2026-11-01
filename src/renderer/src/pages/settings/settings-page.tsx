@@ -30,7 +30,6 @@ import { UnsavedDialog } from '@/renderer/src/features/agent-settings/unsaved-di
 import {
   roleIds,
   type ConnectorSnapshot,
-  type MemoryRecord,
   type RoleId,
   type SettingsSnapshot,
   type SettingsTab,
@@ -55,7 +54,6 @@ export function SettingsPage() {
   const [draft, setDraft] = useState<SettingsSnapshot | null>(null)
   const [edited, setEdited] = useState(false)
   const lastScannedRoot = useRef<string | undefined>(undefined)
-  const [memories, setMemories] = useState<MemoryRecord[]>([])
   const [connectors, setConnectors] = useState<ConnectorSnapshot[]>([])
   const [pending, setPending] = useState<(() => void) | null>(null)
   const viewTab = state.view.kind === 'settings' ? state.view.tab : undefined
@@ -64,20 +62,17 @@ export function SettingsPage() {
 
   useEffect(() => {
     let active = true
-    void Promise.all([
-      state.source.loadSettings(),
-      state.source.loadMemories(),
-      state.source.loadConnectors(),
-    ]).then(([value, nextMemories, nextConnectors]) => {
-      if (!active) return
-      const next = { ...value, general: value.general ?? defaultGeneral }
-      lastScannedRoot.current = next.general.skillsRoot
-      setSaved(structuredClone(next))
-      setDraft(structuredClone(next))
-      setEdited(false)
-      setMemories(nextMemories)
-      setConnectors(nextConnectors)
-    })
+    void Promise.all([state.source.loadSettings(), state.source.loadConnectors()]).then(
+      ([value, nextConnectors]) => {
+        if (!active) return
+        const next = { ...value, general: value.general ?? defaultGeneral }
+        lastScannedRoot.current = next.general.skillsRoot
+        setSaved(structuredClone(next))
+        setDraft(structuredClone(next))
+        setEdited(false)
+        setConnectors(nextConnectors)
+      },
+    )
     return () => {
       active = false
     }
@@ -170,9 +165,6 @@ export function SettingsPage() {
               </TabsTrigger>
               <TabsTrigger value="general" onClick={() => selectTab('general')}>
                 {a.generalTab}
-              </TabsTrigger>
-              <TabsTrigger value="memory" onClick={() => selectTab('memory')}>
-                Memory
               </TabsTrigger>
               <TabsTrigger value="connectors" onClick={() => selectTab('connectors')}>
                 Connectors
@@ -370,24 +362,6 @@ export function SettingsPage() {
                   ) : null}
                 </Field>
               </div>
-            </TabsContent>
-            <TabsContent value="memory" className="mt-5 space-y-3">
-              <h2 className="text-sm font-medium">Memory</h2>
-              {memories.length ? (
-                memories.map((memory) => (
-                  <article key={memory.id} className="rounded-md border border-border p-3">
-                    <div className="flex items-center justify-between">
-                      <strong className="text-sm">{memory.title}</strong>
-                      <span className="text-[11px] text-muted-foreground">{memory.date}</span>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {memory.kind} · {d.product[memory.author]}
-                    </p>
-                  </article>
-                ))
-              ) : (
-                <p className="text-xs text-muted-foreground">No project memories.</p>
-              )}
             </TabsContent>
             <TabsContent value="connectors" className="mt-5 space-y-3">
               <h2 className="text-sm font-medium">Connectors</h2>

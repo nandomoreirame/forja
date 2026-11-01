@@ -1,6 +1,6 @@
 import type { MockLibrary } from './mock-library'
-import type { Locale } from '@/shared/i18n'
-import { mockReplies } from './mock-replies'
+import { getDictionary, type Locale } from '@/shared/i18n'
+import { authoringReplies, mockReplies } from './mock-replies'
 import { mockArtifactMarkdown, mockProjects } from './mock-data'
 import {
   roleIds,
@@ -104,6 +104,13 @@ export function createMockSource({
     },
     async readArtifact(id) {
       if (libraryMarkdown.has(id)) return libraryMarkdown.get(id)!
+      const skill = fixtures.flatMap((item) => item.skills).find((item) => item.id === id)
+      if (skill)
+        return `---\nname: ${skill.name}\nscope: ${skill.scope}\n---\n# ${skill.name}\n\n${getDictionary(locale).app.mockSkillInstructions}`
+      if (id.startsWith('memory:')) {
+        const memory = (await this.loadMemories()).find((item) => `memory:${item.id}` === id)
+        if (memory) return `# ${memory.title}\n\n${getDictionary(locale).app.mockMemoryBody}`
+      }
       const artifact = fixtures.flatMap((item) => item.artifacts).find((item) => item.id === id)
       if (!artifact) throw new Error('Unknown artifact')
       const feature = fixtures
@@ -113,7 +120,9 @@ export function createMockSource({
       return mockArtifactMarkdown(locale, artifact, feature)
     },
     streamReply(request, onEvent, options = {}) {
-      const script = mockReplies[locale][request.role]
+      const script = request.authoring
+        ? authoringReplies[locale][request.authoring]
+        : mockReplies[locale][request.role]
       const size = Math.ceil(script.text.length / 12)
       const events: ReplyEvent[] = []
       for (let offset = 0; offset < script.text.length; offset += size) {

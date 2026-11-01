@@ -1,1 +1,1 @@
-export { DocumentPage } from './document-page'
+export { DocumentPage, AuthoringPage } from './document-page'
