@@ -22,4 +22,6 @@ User decisions during the run (2026-11-01): AI tool marks come from `@lobehub/ic
 
 Validation 2026-11-01: typecheck, lint, format:check, Vitest 294/294, coverage 92.82%, build, Playwright test:e2e:app 21/21, desktop pty and picker smokes.
 
+Follow-up user changes (2026-11-01; c284b8d, b0f14ed, 92b55f4, 51b2533): larger authors with message times, reply model/tokens/duration with details, and a per-feature conversation summary panel, recorded in SPEC.md under "User Decisions After Approval". Vitest 306/306 and e2e 21/21 after them.
+
 Independent review pending: agy (quota), Codex (usage limit until 03:49) and Grok (HTTP 402) were all unavailable. Claude implemented most of this slice and must not approve it; run `rpi-review conversation-agent-identity --implementer claude` when a reviewer is back.

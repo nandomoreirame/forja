@@ -65,6 +65,14 @@ RTL tests for the cycle icons, the tab icon following the stage, the reply autho
 | 3 | Created here or with an external tool? | Here, as code-defined pixel-art SVG, reviewed in the styleguide. |
 | 4 | Reply background? | Gray surface like OpenCode, no border; inner code blocks darker. |
 
+## User Decisions After Approval (2026-11-01)
+
+Inspired by the user's Tucano project, without new requirement IDs (frontend mock only):
+
+- Author names ("You" and agent roles) render at 13 px semibold, with the real send time beside them: `HH:mm` on the same day, `<day> <month> · HH:mm` on other days. This reverses the earlier "no timestamps in messages" exception for real times; invented times and avatars stay out.
+- Each completed agent reply ends with "<model> · <tokens> tokens · <duration>"; activating it opens the details (engine, model, input, cached and output tokens, duration). Mock usage is estimated at four characters per token. No API price is shown.
+- A "Summary" toggle in the feature header opens the conversation summary panel per feature: state (none yet or updated time), "Summarize now" (mock text from `WorkbenchSource.summarizeConversation`), the 50-message window explanation, and how many messages agents receive.
+
 ## Requirement Traceability
 
 | ID | Description | Priority | Status |
