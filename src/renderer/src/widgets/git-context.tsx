@@ -14,7 +14,9 @@ export function GitContext({ locale }: { locale: Locale }) {
   return (
     <aside
       aria-label={a.project}
-      className="flex w-[230px] shrink-0 flex-col gap-4 overflow-y-auto border-l border-border bg-sidebar p-3 text-[11px] text-muted-foreground"
+      data-slot="workbench-part"
+      data-part="context"
+      className="flex w-[230px] shrink-0 flex-col gap-4 overflow-y-auto rounded-md border border-border p-3 text-[11px] text-muted-foreground"
     >
       <section>
         <div className="mb-2 flex items-center justify-between">

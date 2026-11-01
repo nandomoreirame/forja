@@ -85,7 +85,7 @@ export function TerminalPanel({ feature }: { feature?: FeatureSnapshot }) {
       className="flex h-full min-h-0 flex-col"
     >
       <TerminalPreview
-        className="flex min-h-0 flex-1 flex-col rounded-none border-0"
+        className="flex min-h-0 flex-1 flex-col rounded-none border-0 bg-transparent"
         tabs={(feature?.terminals ?? []).map((terminal) => ({
           id: terminal.id,
           label: terminal.label,

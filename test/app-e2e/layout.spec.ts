@@ -1,5 +1,8 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 
+// Each workbench part sits inside its panel with a 4 px gap on both sides.
+const frameInset = 8
+
 const openProject = async (page: Page) => {
   await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /^dev/ }).click()
@@ -25,8 +28,9 @@ test('the terminal panel keeps one height across tabs and resizes from its top e
   await page.getByRole('button', { name: 'Toggle terminals' }).click()
   const panel = page.getByRole('region', { name: 'Terminals' })
   const initial = await height(panel)
-  expect(initial).toBeGreaterThanOrEqual(295)
-  expect(initial).toBeLessThanOrEqual(305)
+  // The 300 px panel holds a framed part inset by the 4 px gap on each side.
+  expect(initial).toBeGreaterThanOrEqual(295 - frameInset)
+  expect(initial).toBeLessThanOrEqual(305 - frameInset)
   await panel.getByRole('tab', { name: /Implementer · tests/ }).click()
   expect(await height(panel)).toBe(initial)
   await page.getByRole('button', { name: 'New terminal' }).click()
@@ -45,20 +49,20 @@ test('the sidebar resizes within its limits, resets on double click and is remem
   await openProject(page)
   const sidebar = page.getByRole('complementary', { name: 'dev' })
   const separator = page.getByRole('separator', { name: 'Resize sidebar' })
-  expect(Math.abs((await width(sidebar)) - 240)).toBeLessThanOrEqual(2)
+  expect(Math.abs((await width(sidebar)) - (240 - frameInset))).toBeLessThanOrEqual(2)
   await dragBy(page, separator, 80, 0)
-  expect(Math.abs((await width(sidebar)) - 320)).toBeLessThanOrEqual(2)
+  expect(Math.abs((await width(sidebar)) - (320 - frameInset))).toBeLessThanOrEqual(2)
   await dragBy(page, separator, -1000, 0)
-  expect(Math.abs((await width(sidebar)) - 170)).toBeLessThanOrEqual(2)
+  expect(Math.abs((await width(sidebar)) - (170 - frameInset))).toBeLessThanOrEqual(2)
   await dragBy(page, separator, 1000, 0)
-  expect(Math.abs((await width(sidebar)) - 480)).toBeLessThanOrEqual(2)
+  expect(Math.abs((await width(sidebar)) - (480 - frameInset))).toBeLessThanOrEqual(2)
   await separator.dblclick()
-  expect(Math.abs((await width(sidebar)) - 240)).toBeLessThanOrEqual(2)
+  expect(Math.abs((await width(sidebar)) - (240 - frameInset))).toBeLessThanOrEqual(2)
   await dragBy(page, separator, 60, 0)
   await page.reload()
   await openProject(page)
   expect(
-    Math.abs((await width(page.getByRole('complementary', { name: 'dev' }))) - 300),
+    Math.abs((await width(page.getByRole('complementary', { name: 'dev' }))) - (300 - frameInset)),
   ).toBeLessThanOrEqual(2)
 })
 

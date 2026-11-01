@@ -69,7 +69,7 @@ export function FeatureTabs({
         <div
           ref={strip}
           data-slot="feature-tab-strip"
-          className="grid h-9 auto-cols-max grid-flow-col items-end justify-start overflow-x-auto overflow-y-hidden border-b border-border bg-secondary px-3 [scrollbar-width:none]"
+          className="grid h-9 auto-cols-max grid-flow-col items-end justify-start overflow-x-auto overflow-y-hidden border-b border-border px-3 [scrollbar-width:none]"
         >
           <TabsList aria-label={label} className="contents">
             {items.map((item, index) => (
@@ -84,7 +84,7 @@ export function FeatureTabs({
                 onClick={() => select(item.id)}
                 className={cn(
                   '-mb-px h-7 flex-none gap-2 rounded-none rounded-t-[2px] border-t border-r border-b-0 border-l-0 border-border first:border-l px-2.5 text-[11px] font-normal shadow-none after:hidden focus-visible:ring-1 focus-visible:ring-inset',
-                  'bg-card text-muted-foreground hover:text-foreground',
+                  'bg-transparent text-muted-foreground hover:text-foreground',
                   'data-active:border-r-border data-active:border-t-2 data-active:border-t-primary data-active:bg-background data-active:font-medium data-active:text-foreground dark:data-active:border-r-border dark:data-active:border-t-primary dark:data-active:bg-background',
                   onClose && item.closable !== false && 'pr-8',
                 )}

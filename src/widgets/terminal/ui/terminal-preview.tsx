@@ -74,7 +74,7 @@ export function TerminalPreview({
         <div
           role="tablist"
           aria-label={tabsLabel}
-          className="flex h-9 items-end justify-between gap-2 border-b border-border bg-secondary px-3"
+          className="flex h-9 items-end justify-between gap-2 border-b border-border px-3"
         >
           <div className="flex min-w-0 items-end">
             {tabs.map((tab) => {
@@ -88,7 +88,7 @@ export function TerminalPreview({
                     'group/tab -mb-px flex h-7 min-w-0 items-center whitespace-nowrap rounded-t-[2px] border-t border-r border-border text-[11px] first:border-l',
                     active
                       ? 'border-t-2 border-t-primary bg-background font-medium text-foreground'
-                      : 'bg-card text-muted-foreground hover:text-foreground',
+                      : 'bg-transparent text-muted-foreground hover:text-foreground',
                     tab.hovered && !active && 'text-foreground',
                   )}
                 >

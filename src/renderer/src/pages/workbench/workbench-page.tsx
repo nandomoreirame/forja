@@ -133,9 +133,10 @@ function WorkbenchShell() {
         backLabel={a.back}
         forwardLabel={a.forward}
       />
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      {/* VS Code parts: each area has its own rounded frame, with a small gap around it. */}
+      <div className="flex min-h-0 flex-1 overflow-hidden px-1">
         {s.snapshot && !s.panels.left ? (
-          <div className="border-r border-border bg-sidebar">
+          <div className="p-1">
             <IconButton label={a.expandLeft} onClick={() => s.togglePanel('left')}>
               <ChevronRight />
             </IconButton>
@@ -155,7 +156,9 @@ function WorkbenchShell() {
                 defaultSize={240}
                 groupResizeBehavior="preserve-pixel-size"
               >
-                <ProjectSidebar locale={s.source.locale} />
+                <div className="h-full p-1">
+                  <ProjectSidebar locale={s.source.locale} />
+                </div>
               </ResizablePanel>
               <ResizableHandle aria-label={a.resizeSidebar} />
             </>
@@ -179,22 +182,28 @@ function WorkbenchShell() {
               >
                 {terminalMaximized ? null : (
                   <ResizablePanel id="content" minSize={120}>
-                    <div className="flex h-full min-h-0 flex-col overflow-auto">
-                      {s.view.kind === 'archived' ? (
-                        <ArchivedPage />
-                      ) : s.view.kind === 'authoring' ? (
-                        <AuthoringPage />
-                      ) : s.view.kind === 'home' ? (
-                        <HomePage />
-                      ) : s.view.kind === 'compose' ? (
-                        <ComposePage />
-                      ) : s.view.kind === 'conversation' ? (
-                        <ConversationPage />
-                      ) : s.view.kind === 'document' ? (
-                        <DocumentPage />
-                      ) : s.view.kind === 'settings' ? (
-                        <SettingsPage />
-                      ) : null}
+                    <div className="h-full p-1">
+                      <div
+                        data-slot="workbench-part"
+                        data-part="editor"
+                        className="flex h-full min-h-0 flex-col overflow-auto rounded-md border border-border"
+                      >
+                        {s.view.kind === 'archived' ? (
+                          <ArchivedPage />
+                        ) : s.view.kind === 'authoring' ? (
+                          <AuthoringPage />
+                        ) : s.view.kind === 'home' ? (
+                          <HomePage />
+                        ) : s.view.kind === 'compose' ? (
+                          <ComposePage />
+                        ) : s.view.kind === 'conversation' ? (
+                          <ConversationPage />
+                        ) : s.view.kind === 'document' ? (
+                          <DocumentPage />
+                        ) : s.view.kind === 'settings' ? (
+                          <SettingsPage />
+                        ) : null}
+                      </div>
                     </div>
                   </ResizablePanel>
                 )}
@@ -223,7 +232,15 @@ function WorkbenchShell() {
                     }}
                     groupResizeBehavior={terminalMaximized ? undefined : 'preserve-pixel-size'}
                   >
-                    <TerminalPanel feature={terminalScope} />
+                    <div className="h-full p-1">
+                      <div
+                        data-slot="workbench-part"
+                        data-part="panel"
+                        className="h-full overflow-hidden rounded-md border border-border"
+                      >
+                        <TerminalPanel feature={terminalScope} />
+                      </div>
+                    </div>
                   </ResizablePanel>
                 ) : null}
               </ResizablePanelGroup>
@@ -232,9 +249,11 @@ function WorkbenchShell() {
         </ResizablePanelGroup>
         {s.snapshot ? (
           s.panels.right ? (
-            <GitContext locale={s.source.locale} />
+            <div className="flex shrink-0 p-1">
+              <GitContext locale={s.source.locale} />
+            </div>
           ) : (
-            <div className="border-l border-border bg-sidebar">
+            <div className="p-1">
               <IconButton label={a.expandRight} onClick={() => s.togglePanel('right')}>
                 <ChevronLeft />
               </IconButton>
