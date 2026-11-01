@@ -102,6 +102,9 @@ const copy = {
       tabShell: 'zsh',
       newTerminal: 'New terminal',
       collapseTerminals: 'Close panel',
+      mascotsTitle: 'Agent mascots',
+      mascotsNote:
+        'One sprite per agent, with the configured tool as a corner badge. Decorative: the reply author carries the name.',
       notesTitle: 'Fidelity notes',
       notes: [
         'Reuse these components in the screens.',
@@ -213,6 +216,9 @@ const copy = {
       tabShell: 'zsh',
       newTerminal: 'Novo terminal',
       collapseTerminals: 'Fechar painel',
+      mascotsTitle: 'Mascotes dos agentes',
+      mascotsNote:
+        'Um sprite por agente, com a ferramenta configurada como selo no canto. Decorativo: o autor da resposta leva o nome.',
       notesTitle: 'Notas de fidelidade',
       notes: [
         'Reutilizar estes componentes nas telas.',

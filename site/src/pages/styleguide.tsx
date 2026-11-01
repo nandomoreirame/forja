@@ -1,7 +1,7 @@
 import { Code, FileText, MessageCircle, Pencil, TriangleAlert, Zap } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { cn } from '@/shared/ui/utils'
-import { ForjaMark, toolIds } from '@/shared/ui'
+import { AgentMascot, ForjaMark, toolIds, type AgentRole } from '@/shared/ui'
 import { Button } from '@/shared/ui'
 import {
   AppStatusbar,
@@ -605,6 +605,26 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
             <p className="text-[12px] text-muted-foreground">{x.collapseNote}</p>
           </Card>
         </div>
+      </Section>
+
+      <Section id="gallery-mascots" title={x.mascotsTitle} code="agent-mascot.tsx">
+        <div className="grid grid-cols-5 gap-4">
+          {(['research', 'planner', 'implementer', 'tester', 'reviewer'] as AgentRole[]).map(
+            (role, index) => (
+              <div
+                key={role}
+                className="flex flex-col items-center gap-3 rounded-[3px] border border-border bg-card p-4"
+              >
+                <div className="flex items-end gap-4">
+                  <AgentMascot role={role} tool={toolIds[index]} />
+                  <AgentMascot role={role} tool={toolIds[index]} size={56} />
+                </div>
+                <span className="text-[12px]">{roles[index]}</span>
+              </div>
+            ),
+          )}
+        </div>
+        <p className="text-[12px] text-muted-foreground">{x.mascotsNote}</p>
       </Section>
 
       <Section id="gallery-notes" title={`${w} 7: ${x.notesTitle}`} code="fidelity.rules.md">

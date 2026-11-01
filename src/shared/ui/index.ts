@@ -43,3 +43,4 @@ export {
   useDefaultLayout,
   useGroupRef,
 } from './resizable'
+export { AgentMascot, agentSprites, type AgentRole, type AgentSprite } from './agent-mascot'
