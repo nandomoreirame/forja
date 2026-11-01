@@ -1,1 +1,2 @@
 {"round": 1, "implementer": "codex", "reviewer": "claude", "identities": ["src/renderer/src/shared/api/mock-source.ts:59", "src/renderer/src/pages/document/document-page.tsx:16"], "open_count": 2}
+{"round": 2, "implementer": "codex", "reviewer": "claude", "identities": [], "open_count": 0}

@@ -1,13 +1,13 @@
 ---
 feature: document-viewer-screen
-phase: implement
+phase: none
 started_at: 2026-10-31
 approved_at: 2026-10-31
 spec_path: docs/specs/document-viewer-screen/SPEC.md
 plan_path: docs/plans/2026-10-31-document-viewer-screen.md
 implementation_status: complete
 validation_status: passed
-review_status: findings-open
+review_status: passed-claude-only
 ---
 
 # Planning State
@@ -21,3 +21,5 @@ Tasks 1 to 4 committed (826737e, 8c66248, 1da51b3, 8e7401c). Implemented by Code
 Validation 2026-10-31: typecheck, lint, format:check, Vitest 198/198, coverage 89.68% (run with `--maxWorkers=4`; default workers time out under host load), build, Playwright test:e2e:app 19/19. `prettier --check .` reports 10 pre-existing files outside this slice.
 
 Independent review round 1 (Claude lead; agy returned ERROR and Grok was unavailable): 2 Low findings open in docs/reviews/document-viewer-screen.md. Both depend on the artifact `featureId` link added by project-sidebar-navigator Task 1 and are fixed there, then re-reviewed.
+
+Review round 2 (2026-11-01, Claude lead): the two Low findings were fixed in project-sidebar-navigator Task 1 (2cdb54e: Markdown keyed by artifact and feature; document page uses the explicit `featureId`). Zero open findings. The external second reviewer was unavailable for the whole-feature pass (agy timed out, then quota; Grok HTTP 402); every task was reviewed by agy individually.
