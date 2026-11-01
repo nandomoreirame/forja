@@ -44,7 +44,11 @@ it('approves a draft plan and keeps the approved action unavailable', async () =
   fireEvent.click(await screen.findByRole('button', { name: /^login-oauth\/PLAN.md/ }))
   fireEvent.click(await screen.findByRole('button', { name: 'Approve plan' }))
   expect(screen.queryByRole('button', { name: 'Approve plan' })).toBeNull()
-  expect(screen.getByText('Document approved.')).toBeInTheDocument()
+  // The tab badge already shows the state: no header badge and no approved notice.
+  expect(screen.queryByText('Document approved.')).toBeNull()
+  const panel = screen.getByRole('tabpanel')
+  expect(panel.querySelector('[data-slot="status-badge"]')).toBeNull()
+  expect(screen.getByRole('tab', { name: /^login-oauth\/PLAN.md/ })).toHaveTextContent('Approved')
   fireEvent.click(screen.getByRole('button', { name: /^login-oauth\/SPEC.md/ }))
   expect(await screen.findByRole('tab', { name: /SPEC.md/ })).toBeInTheDocument()
   expect(screen.queryByRole('button', { name: 'Approve spec' })).toBeNull()

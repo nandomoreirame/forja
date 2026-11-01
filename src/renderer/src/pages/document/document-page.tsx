@@ -79,19 +79,11 @@ export function DocumentPage() {
         <div className="w-full">
           <DocumentPreview
             name={artifact.name}
-            state={artifact.state}
-            stateLabel={d.app.states[artifact.state]}
             actionLabel={
               canApprove ? (artifact.kind === 'plan' ? t.approvePlan : t.approveSpec) : undefined
             }
             onAction={canApprove ? () => state.approveDocument(artifact.id) : undefined}
-            notice={
-              canApprove
-                ? t.approvalNotice
-                : artifact.state === 'approved'
-                  ? t.approvedNotice
-                  : undefined
-            }
+            notice={canApprove ? t.approvalNotice : undefined}
           >
             {feature ? (
               <DocumentSelection

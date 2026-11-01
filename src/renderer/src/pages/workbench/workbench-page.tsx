@@ -128,10 +128,6 @@ function WorkbenchShell() {
         }
         commandText={s.snapshot?.project.name ?? 'Forja'}
         onCommand={() => s.openPalette('all')}
-        onBack={s.back}
-        onForward={s.forward}
-        canBack={s.historyIndex > 0}
-        canForward={s.historyIndex < s.history.length - 1}
         backLabel={a.back}
         forwardLabel={a.forward}
       />

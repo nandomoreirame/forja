@@ -168,7 +168,7 @@ export function FeatureContext({
             </span>
           ) : null}
         </div>
-        <div className="flex flex-wrap gap-x-3 text-[11px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-3 text-[11px] text-muted-foreground">
           {rows.map((row) => (
             <span key={row.label} className="min-w-0 break-all">
               {row.label}: <span className="text-foreground/90">{row.value}</span>
@@ -179,7 +179,6 @@ export function FeatureContext({
       </div>
       {cycle?.length ? (
         <div className="flex items-center gap-2 border-t border-border pt-1.5 text-[11px]">
-          <span className="text-muted-foreground">{cycleLabel}:</span>
           <TooltipProvider>
             <ol aria-label={cycleLabel} className="flex flex-wrap items-center gap-2">
               {cycle.map((stage, index) => (

@@ -4,7 +4,8 @@ import { StatusBadge, Button, type UiState } from '@/shared/ui'
 
 export interface DocumentPreviewProps {
   name: string
-  stateLabel: string
+  /** Omit when the state is already shown elsewhere (for example on the document tab). */
+  stateLabel?: string
   state?: UiState
   actionLabel?: string
   onAction?: () => void
@@ -27,7 +28,7 @@ export function DocumentPreview({
     <div className="grid gap-3">
       <div className="flex items-center gap-3 rounded-md border border-border bg-background px-4 py-3">
         <h3 className="font-mono text-[13px] text-foreground">{name}</h3>
-        <StatusBadge state={state}>{stateLabel}</StatusBadge>
+        {stateLabel ? <StatusBadge state={state}>{stateLabel}</StatusBadge> : null}
         {actionLabel ? (
           <Button size="sm" className="ml-auto gap-1.5 rounded-md" onClick={onAction}>
             <CircleCheck />

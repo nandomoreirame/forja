@@ -30,7 +30,6 @@ export function ConversationPage() {
         <div className="border-b border-border p-4">
           <FeatureContext
             title={feature.name}
-            mode={a.guided}
             rows={[
               { label: a.destination, value: feature.destination },
               { label: d.product.branch, value: feature.branch },
@@ -39,7 +38,7 @@ export function ConversationPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 gap-1.5 px-2 text-[11px]"
+                className="h-5 gap-1 px-1.5 text-[11px] [&_svg]:size-3.5"
                 aria-expanded={summaryOpen}
                 onClick={() => setSummaryFor(summaryOpen ? null : feature.id)}
               >
