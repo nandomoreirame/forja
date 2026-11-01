@@ -92,7 +92,7 @@ it('keeps empty section headers and avoids a minimum list height', async () => {
   }
 })
 
-it('uses slug fallbacks for unlinked library artifacts without dimming them', async () => {
+it('keeps unlinked library artifacts on one line without repeating the slug', async () => {
   const { specs, plans } = await setup((snapshot) => ({
     ...snapshot,
     artifacts: [
@@ -102,12 +102,12 @@ it('uses slug fallbacks for unlinked library artifacts without dimming them', as
     ],
   }))
   const spec = within(specs).getByRole('button', { name: /real\/SPEC.md/ })
-  expect(spec).toHaveTextContent('real/SPEC.mdreal')
+  expect(spec).toHaveTextContent(/^real\/SPEC.mdReady$/)
   expect(within(plans).getByRole('button', { name: /real\/PLAN.md/ })).toHaveTextContent(
-    'real/SPEC.md',
+    /^real\/PLAN.mdReady$/,
   )
   expect(within(plans).getByRole('button', { name: /other\/PLAN.md/ })).toHaveTextContent(
-    'other/PLAN.mdother',
+    /^other\/PLAN.mdReady$/,
   )
   for (const row of [spec, ...within(plans).getAllByRole('button')]) {
     expect(row).not.toHaveAttribute('data-current')

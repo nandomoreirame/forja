@@ -41,16 +41,14 @@ function ArtifactSection({ locale, kind }: { locale: Locale; kind: Artifact['kin
         className={`max-h-[16.5rem] shrink overflow-y-auto ${items.length ? 'min-h-16' : 'min-h-0'}`}
       >
         {items.map((item) => {
-          const slug = item.name.split('/')[0]
+          // Only linked artifacts get a subtitle; unlinked library files already carry the slug.
           const feature = snapshot.features.find((feature) => feature.id === item.featureId)
           const spec = item.specId
             ? snapshot.artifacts.find(
                 (artifact) => artifact.kind === 'spec' && artifact.id === item.specId,
               )
-            : snapshot.artifacts.find(
-                (artifact) => artifact.kind === 'spec' && artifact.name === `${slug}/SPEC.md`,
-              )
-          const subtitle = kind === 'plan' ? (spec?.name ?? slug) : (feature?.name ?? slug)
+            : undefined
+          const subtitle = kind === 'plan' ? spec?.name : feature?.name
           const current = Boolean(item.featureId && item.featureId === selectedFeatureId)
           const dimmed = Boolean(item.featureId && selectedFeatureId && !current)
           return (
@@ -63,20 +61,27 @@ function ArtifactSection({ locale, kind }: { locale: Locale; kind: Artifact['kin
                   onClick={() => void state.openDocument(item.id)}
                 >
                   <ClipboardList aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate">{item.name}</span>
-                    <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
-                      <span className="truncate">{subtitle}</span>
-                      <StatusBadge size="sm" state={item.state}>
+                  {subtitle ? (
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{item.name}</span>
+                      <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
+                        <span className="truncate">{subtitle}</span>
+                        <StatusBadge size="sm" state={item.state}>
+                          {a.states[item.state]}
+                        </StatusBadge>
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                      <StatusBadge size="sm" state={item.state} className="shrink-0">
                         {a.states[item.state]}
                       </StatusBadge>
                     </span>
-                  </span>
+                  )}
                 </button>
               </TooltipTrigger>
-              <TooltipContent>
-                {item.name} · {subtitle}
-              </TooltipContent>
+              <TooltipContent>{subtitle ? `${item.name} · ${subtitle}` : item.name}</TooltipContent>
             </Tooltip>
           )
         })}
