@@ -13,7 +13,7 @@ test('home shell, panel toggles and view history work', async ({ page }) => {
     'aria-pressed',
     'true',
   )
-  await page.getByRole('button', { name: /New conversation/ }).click()
+  await page.getByRole('main').getByRole('button', { name: /New conversation/ }).click()
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'FORJA' })).toBeVisible()
 })

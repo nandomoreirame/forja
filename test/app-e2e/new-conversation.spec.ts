@@ -5,18 +5,25 @@ test('starts a focused conversation, creates a feature and closes its last tab',
   await page.goto('/')
   await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /nandomoreira.dev/ }).click()
-  await page.getByRole('button', { name: /New conversation/ }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /New conversation/ })
+    .click()
   await expect(page.getByRole('textbox')).toBeFocused()
   await expect(page.getByRole('combobox', { name: 'Recipient' })).toHaveText('Research')
   await page.keyboard.type('Add OAuth login')
   await page.keyboard.press('Control+Enter')
   await expect(page.getByRole('tab', { name: /Add OAuth login/ })).toBeVisible()
   await expect(page.getByRole('list', { name: 'Conversation' })).toContainText('Add OAuth login')
-  await page.getByRole('button', { name: 'Close Add OAuth login' }).click()
-  await page
+  // The confirmation only appears while the mock reply is still running, which depends on load.
+  const confirm = page
     .getByRole('dialog', { name: 'Close feature' })
     .getByRole('button', { name: 'Close feature' })
-    .click()
+  await page.getByRole('button', { name: 'Close Add OAuth login' }).click()
+  await confirm.waitFor({ timeout: 1_000 }).then(
+    () => confirm.click(),
+    () => undefined,
+  )
   await expect(page.getByRole('tablist')).toHaveCount(0)
   await expect(page.getByRole('textbox')).toBeFocused()
 })
@@ -35,7 +42,10 @@ test('Ctrl+R in the prompt preserves the draft without reloading', async ({ page
   await page.goto('/')
   await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /nandomoreira.dev/ }).click()
-  await page.getByRole('button', { name: /New conversation/ }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /New conversation/ })
+    .click()
   await page.getByRole('textbox').fill('Keep this draft')
   await page.keyboard.press('Control+r')
   await expect(page.getByRole('dialog', { name: 'Recent projects' })).toBeVisible()
