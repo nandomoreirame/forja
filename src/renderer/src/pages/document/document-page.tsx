@@ -29,7 +29,7 @@ export function DocumentPage() {
           aria-labelledby={`feature-tab-${library.id}`}
           className="min-h-0 flex-1 overflow-y-auto p-6"
         >
-          <div className="mx-auto w-full max-w-[760px] space-y-4">
+          <div className="w-full space-y-4">
             <header className="flex items-center gap-3 rounded-md border border-border p-3">
               <h1 className="min-w-0 flex-1 truncate font-mono text-sm">{library.name}</h1>
               <StatusBadge size="sm" state="draft">
@@ -76,7 +76,7 @@ export function DocumentPage() {
         aria-labelledby={`feature-tab-${artifact.id}`}
         className="min-h-0 flex-1 overflow-y-auto p-6"
       >
-        <div className="mx-auto w-full max-w-[760px]">
+        <div className="w-full">
           <DocumentPreview
             name={artifact.name}
             state={artifact.state}
@@ -135,7 +135,7 @@ export function AuthoringPage() {
   return (
     <section className="flex min-h-0 flex-1 flex-col">
       <WorkbenchTabs />
-      <div className="mx-auto flex w-full max-w-[760px] flex-1 flex-col gap-4 overflow-auto p-6">
+      <div className="flex w-full flex-1 flex-col gap-4 overflow-auto p-6">
         <header>
           <h1 className="text-lg font-semibold">{recipient}</h1>
           <p>{conversation.name}</p>

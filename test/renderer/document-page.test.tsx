@@ -89,3 +89,12 @@ it('renders long real documents instead of the preview limit notice', async () =
   expect(await screen.findByRole('heading', { name: 'Long plan' })).toBeInTheDocument()
   expect(screen.queryByText('Content exceeds the preview limit.')).toBeNull()
 })
+
+it('opens documents at full width without a centered reading column', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/SPEC.md/ }))
+  const panel = await screen.findByRole('tabpanel')
+  await screen.findByRole('table')
+  expect(panel.querySelector('[class*="max-w-"]')).toBeNull()
+  expect(panel.querySelector('.mx-auto')).toBeNull()
+})
