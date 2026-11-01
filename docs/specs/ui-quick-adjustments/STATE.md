@@ -5,9 +5,9 @@ started_at: 2026-11-01
 approved_at: 2026-11-01
 spec_path: docs/specs/ui-quick-adjustments/SPEC.md
 plan_path: docs/plans/2026-11-01-ui-quick-adjustments.md
-implementation_status: in-progress
-validation_status: not-run
-review_status: not-started
+implementation_status: 13-of-14 (Task 8 waits for the user to pick a face direction)
+validation_status: passed except C6 (Task 8); unit 462/462, e2e 24/24, lint, typecheck, build
+review_status: pending (agy quota, Grok 402, Codex limit until 2026-11-04; no independent reviewer)
 ---
 
 # Planning State
@@ -21,3 +21,6 @@ Created on 2026-11-01 from the review of the interface changes of 2026-10-31 and
 - Task 5 changed by user decision (2026-11-01): the New chat no longer keeps a Ferreiro exchange with a "Start feature" button; the first prompt opens the Ferreiro chat directly as a conversation tab. Implemented by Claude after the Codex version was discarded.
 - Task 7: `ToolUsage` still carries preformatted English labels (`updatedLabel`, `resetLabel`); the usage panel extracts the numbers by pattern. Replace with structured timestamps when real usage data lands. `features/usage/usage-popover.tsx` is now unused (deletion pending user consent).
 - Codex hit its usage limit during Task 10 (resets 2026-11-04); its files were complete and validated. agy (quota) and Grok (402) are also down, so Tasks 11 to 14 are implemented by Claude and have no independent reviewer until a CLI returns.
+- Task 8: Stitch board "Agent faces trial — Comparison Board" generated in project 9281162402489678867; implementation waits for the user's direction.
+- Final validation: e2e exposed that the always-open usage panel plus the Backlog/Board entries shrank the sidebar panes so Reviews snapped collapsed (default 10% fell under the collapse snap point). Fixed with a 15% Reviews default, a 144 px usage cap and a 45% footer cap.
+- Plan checks used `PASS` as the proof marker, but Vitest verbose prints `✓`; the markers were corrected.

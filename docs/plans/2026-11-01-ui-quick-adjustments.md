@@ -39,17 +39,17 @@
 
 **Run quick**: `npx vitest run test/renderer/feature-flags.test.ts test/renderer/flagged-panels.test.tsx test/renderer/agent-names.test.ts test/renderer/agent-names-settings.test.tsx test/renderer/ferreiro-chat.test.tsx test/renderer/summary-author.test.tsx test/renderer/usage-panel.test.tsx test/web/agent-face.test.tsx test/web/feature-status.test.tsx test/renderer/line-diff.test.ts test/renderer/file-view.test.tsx test/renderer/backlog-page.test.tsx test/renderer/board-page.test.tsx test/renderer/chats-section.test.tsx --reporter=verbose`
 
-- C1 (REQ-106): unfinished features are off in production and their panels do not render. Proof: run quick | PASS renders no Explorer, Changes or sync counts while their flags are off
-- C2 (REQ-110): agents show localized forge names that the user can rename. Proof: run quick | PASS renames an agent in Settings and shows the name with its role in the tooltip
-- C3 (REQ-107): the first prompt of a New chat opens the chat with the Ferreiro directly. Proof: run quick | PASS opens the chat with the Ferreiro as soon as the first prompt is sent
-- C4 (REQ-108): summaries are attributed to the Ferreiro. Proof: run quick | PASS shows the Ferreiro as the author of a summary
-- C5 (REQ-082): plan usage sits above Archived for tools with data. Proof: run quick | PASS shows plan usage above Archived for tools with data
-- C6 (REQ-114): minimal faces exist for preview with a distinct Ferreiro mark. Proof: run quick | PASS draws a face per agent with a distinct Ferreiro mark and moving eyes while speaking
-- C7 (REQ-115): each feature state has a distinct glyph and working animates. Proof: run quick | PASS maps each feature state to a distinct glyph and an animated spinner while working
-- C8 (REQ-116): Explorer files open as previews and changes as diffs. Proof: run quick | PASS opens a file preview from Explorer and a diff from Changes as tabs
-- C9 (REQ-117): demands are added and start only after confirmation. Proof: run quick | PASS adds a demand and starts it only after confirmation
-- C10 (REQ-118): the board shows the RPI columns and opens cards without dragging. Proof: run quick | PASS places features and demands in RPI columns and opens a card
-- C11 (REQ-119): the first section is Chats and keeps Ferreiro chats after their tab closes. Proof: run quick | PASS lists features and Ferreiro chats under Chats
+- C1 (REQ-106): unfinished features are off in production and their panels do not render. Proof: run quick | ✓ renders no Explorer, Changes or sync counts while their flags are off
+- C2 (REQ-110): agents show localized forge names that the user can rename. Proof: run quick | ✓ renames an agent in Settings and shows the name with its role in the tooltip
+- C3 (REQ-107): the first prompt of a New chat opens the chat with the Ferreiro directly. Proof: run quick | ✓ opens the chat with the Ferreiro as soon as the first prompt is sent
+- C4 (REQ-108): summaries are attributed to the Ferreiro. Proof: run quick | ✓ shows the Ferreiro as the author of a summary
+- C5 (REQ-082): plan usage sits above Archived for tools with data. Proof: run quick | ✓ shows plan usage above Archived for tools with data
+- C6 (REQ-114): minimal faces exist for preview with a distinct Ferreiro mark. Proof: run quick | ✓ draws a face per agent with a distinct Ferreiro mark and moving eyes while speaking
+- C7 (REQ-115): each feature state has a distinct glyph and working animates. Proof: run quick | ✓ maps each feature state to a distinct glyph and an animated spinner while working
+- C8 (REQ-116): Explorer files open as previews and changes as diffs. Proof: run quick | ✓ opens a file preview from Explorer and a diff from Changes as tabs
+- C9 (REQ-117): demands are added and start only after confirmation. Proof: run quick | ✓ adds a demand and starts it only after confirmation
+- C10 (REQ-118): the board shows the RPI columns and opens cards without dragging. Proof: run quick | ✓ places features and demands in RPI columns and opens a card
+- C11 (REQ-119): the first section is Chats and keeps Ferreiro chats after their tab closes. Proof: run quick | ✓ lists features and Ferreiro chats under Chats
 
 ## Tasks
 
