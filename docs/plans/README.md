@@ -32,6 +32,7 @@ The CLIs are the execution layer; the opinionated RPI workflow and human control
 | 10 | [document-review-reader](2026-10-30-document-review-reader.md) | 4 | artifact-approval-gates, feature-workbench-composer |
 | 11 | [terminal-panel-footer](2026-10-30-terminal-panel-footer.md) | 5 | web-foundation-landing-styleguide, managed-command-runtime, feature-workbench-composer |
 | 12 | [guided-rpi-orchestration](2026-10-30-guided-rpi-orchestration.md) | 5 | artifact-approval-gates, feature-git-worktrees, cli-agent-sessions, feature-workbench-composer, document-review-reader, terminal-panel-footer |
+| 12a | [loop-harness](2026-10-31-loop-harness.md) | 7 | guided-rpi-orchestration, artifact-approval-gates, agent-settings-skills, managed-command-runtime, document-review-reader, project-sidebar-navigator; framework pilot (rpi-loop-harness) |
 | 13 | [recovery-mvp-acceptance](2026-10-30-recovery-mvp-acceptance.md) | 4 | guided-rpi-orchestration, terminal-panel-footer, document-review-reader, web-foundation-landing-styleguide |
 
 ## Mock Screens (2026-10-31)

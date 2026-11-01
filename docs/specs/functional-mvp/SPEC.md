@@ -136,6 +136,10 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 88. **[REQ-088]** WHEN a feature tab is shown THEN each stage of the feature cycle SHALL show the icon of the AI tool configured for that agent before its name, with a tooltip "<role> · <tool>", and the feature tab icon SHALL show the tool of the agent of the current stage; both SHALL update after Settings are saved.
 89. **[REQ-089]** WHEN an agent reply is shown THEN the system SHALL show that agent's mascot (one distinct 12×12 pixel-art sprite per role, decorative) with the configured tool as a corner badge, and the reply's accessible author SHALL read "<role> (<tool>)"; user messages and workflow events SHALL have no avatar.
 90. **[REQ-090]** WHEN the conversation is shown THEN agent replies SHALL sit on a gray surface without a border, distinct from the page background and from the user messages, and code, command and log blocks inside a reply SHALL keep a darker background so they still stand out.
+91. **[REQ-091]** WHEN a Reviewer publishes a round with zero open findings that closes a feature THEN the system SHALL accept lesson proposals through a scoped Forja MCP tool only when each cites a finding or failed proof of that feature (core-verified, never a model-supplied ID alone), deduplicate by normalized signal and text, count distinct features per project, promote a lesson to confirmed at two features and quarantine it after two penalties, persist lessons in SQLite and atomically publish a rendered `LESSONS.md` in the project's artifact root; confirmed lessons SHALL be injected into Research and Planner turn context as untrusted data (at most 20, filtered by the feature's area) and listed under Memories in the sidebar with their status, where the user can quarantine or restore one.
+92. **[REQ-092]** WHEN a plan is published THEN it SHALL carry a Checks section with one check per P1 requirement and a proof per check (a named run group plus the words its passing line prints, or a lone command judged by exit code); WHEN the last Implementer task commits THEN the system SHALL run each run group and lone proof once, sequentially, through the managed executor on the committed fingerprint, store per-check PASS, FAIL or "no test ran" with the output tail, and block final approval unless every check passes at the reviewed commit.
+93. **[REQ-093]** WHEN a Tester or Reviewer turn runs on a feature with checks THEN its instructions SHALL require, per check, a judgment of whether the selected test would fail if the claim were false, two throwaway examples outside the named cases, and a list of assertions looser than their criterion; the system SHALL reject a review publication missing a judgment for any check and SHALL record a "does not hold" judgment as a High finding linked to the check.
+94. **[REQ-094]** WHEN a spec or plan is published THEN the core SHALL validate it (spec: EARS form, unique ascending IDs, traceability rows match requirements; plan: each task has requirement, files, test and expected result, every P1 requirement covered by a task and a check, every check has a proof, every run proof names an existing run group, every modified path exists) and, while validation fails, SHALL keep the human approve command unavailable, show each problem in the document viewer and return the problems to the publishing role as a correction.
 
 ### P2 (Should Have)
 
@@ -340,6 +344,10 @@ None in this delivery; deferred items are explicit below.
 | REQ-088 | Tool icons in the feature cycle and tab | P1 | Approved 2026-10-31; not implemented |
 | REQ-089 | Agent mascots with tool badge | P1 | Approved 2026-10-31; not implemented |
 | REQ-090 | Gray surface for agent replies | P1 | Approved 2026-10-31; not implemented |
+| REQ-091 | Grounded cross-feature lessons | P1 | Approved 2026-10-31; not implemented |
+| REQ-092 | Checks with proofs at the committed fingerprint | P1 | Approved 2026-10-31; not implemented |
+| REQ-093 | Verifier judgment per check | P1 | Approved 2026-10-31; not implemented |
+| REQ-094 | Spec and plan validators block approval | P1 | Approved 2026-10-31; not implemented |
 
 ## Implementation Sequence
 
