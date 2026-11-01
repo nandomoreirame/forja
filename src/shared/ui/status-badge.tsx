@@ -25,10 +25,12 @@ const dotColor: Partial<Record<UiState, string>> = {
 export interface StatusBadgeProps {
   state: UiState
   children: ReactNode
+  /** `sm` fits dense sidebar rows and tab triggers. */
+  size?: 'default' | 'sm'
   className?: string
 }
 
-export function StatusBadge({ state, children, className }: StatusBadgeProps) {
+export function StatusBadge({ state, children, size = 'default', className }: StatusBadgeProps) {
   const marker = markers[state]
   const tone = statusTone(state)
   const filled = state === 'running' || state === 'failed'
@@ -39,8 +41,10 @@ export function StatusBadge({ state, children, className }: StatusBadgeProps) {
       data-state={state}
       data-tone={tone}
       data-marker={marker}
+      data-size={size}
       className={cn(
-        'inline-flex min-w-0 items-center gap-1.5 rounded-[2px] border px-2 py-1 text-[11px]',
+        'inline-flex min-w-0 items-center rounded-[2px] border',
+        size === 'sm' ? 'gap-1 px-1 py-0 text-[10px] leading-4' : 'gap-1.5 px-2 py-1 text-[11px]',
         filled && tone === 'accent' && 'border-primary/30 bg-primary/10 font-medium text-primary',
         filled && tone === 'danger' && 'border-destructive/30 bg-destructive/10 text-destructive',
         !filled && 'border-border bg-secondary text-muted-foreground',

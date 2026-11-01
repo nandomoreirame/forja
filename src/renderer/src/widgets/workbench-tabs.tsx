@@ -31,10 +31,14 @@ export function WorkbenchTabs() {
     if (artifact)
       items.push({
         id,
-        label: artifact.name.split('/').pop()!,
+        label: artifact.name,
         state: 'idle',
         icon: <FileText aria-hidden="true" className="size-3" />,
-        badge: <StatusBadge state={artifact.state}>{a.states[artifact.state]}</StatusBadge>,
+        badge: (
+          <StatusBadge size="sm" state={artifact.state}>
+            {a.states[artifact.state]}
+          </StatusBadge>
+        ),
       })
   }
   if (state.settingsOpen) items.push({ id: 'settings', label: a.settings, state: 'idle' })

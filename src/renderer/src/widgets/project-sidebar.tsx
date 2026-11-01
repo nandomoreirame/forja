@@ -71,7 +71,9 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                     icon={<Icon />}
                     title={d.product[agent.id]}
                     stateLabel={
-                      <StatusBadge state={agent.state}>{a.states[agent.state]}</StatusBadge>
+                      <StatusBadge size="sm" state={agent.state}>
+                        {a.states[agent.state]}
+                      </StatusBadge>
                     }
                   />
                 </button>
@@ -120,7 +122,9 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
                       title={item.name}
                       stateLabel={
                         item.state ? (
-                          <StatusBadge state={item.state}>{a.states[item.state]}</StatusBadge>
+                          <StatusBadge size="sm" state={item.state}>
+                            {a.states[item.state]}
+                          </StatusBadge>
                         ) : undefined
                       }
                     />

@@ -14,13 +14,13 @@ vi.mock('mermaid', () => ({
 it('opens the spec from the sidebar as a closable tab with rendered content', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/SPEC.md/ }))
-  expect(await screen.findByRole('tab', { name: /SPEC.md/ })).toHaveAttribute(
+  expect(await screen.findByRole('tab', { name: /^login-oauth\/SPEC.md/ })).toHaveAttribute(
     'aria-selected',
     'true',
   )
   expect(screen.getByRole('table')).toBeInTheDocument()
   expect(await screen.findByRole('img', { name: 'Diagram' })).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Close SPEC.md' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Close login-oauth/SPEC.md' }))
   expect(screen.queryByRole('tab', { name: /SPEC.md/ })).toBeNull()
 })
 it('keeps malformed Mermaid failures inline in English', async () => {
