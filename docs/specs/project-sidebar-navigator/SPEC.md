@@ -78,6 +78,11 @@ RTL tests in `test/renderer/` for grouping, ordering, highlight and archive rule
 | 6 | Finished features? | Collapsed "Finished" subgroup at the end of Features. |
 | 7 | Archive? | Features, specs and plans can be archived and restored from "Archived"; nothing is deleted. |
 
+## User Decisions After Approval (2026-11-01)
+
+- REQ-083 change: there is no "Finished" subgroup; finished features (integrated or abandoned) are listed in the same Features list, after the attention, running and idle groups.
+- The sidebar follows VS Code panes: resizable and collapsible sections with 22 px headers and rows, a 120 px minimum body, hover-only row badges and actions, header counts always visible with actions to their left, and Skills and Memories collapsed by default.
+
 ## Requirement Traceability
 
 | ID | Description | Priority | Status |
