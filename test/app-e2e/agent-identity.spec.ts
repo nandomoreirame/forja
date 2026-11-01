@@ -6,6 +6,7 @@ test('agent replies show mascots beside gray speech bubbles and the cycle shows 
   await page.goto('/')
   await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /^dev/ }).click()
+  await page.getByRole('button', { name: 'Flow', exact: true }).click()
   const cycle = page.getByRole('list', { name: 'Cycle' })
   await expect(cycle.locator('[data-slot="tool-icon"]')).toHaveCount(5)
   const bubble = page.locator('[data-surface="reply"]').first()

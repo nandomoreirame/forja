@@ -1,5 +1,10 @@
 export const ptBr = {
   app: {
+    flow: {
+      toggle: 'Fluxo',
+      title: 'Fluxo',
+      close: 'Fechar fluxo',
+    },
     summary: {
       toggle: 'Resumo',
       title: 'Resumo da conversa',

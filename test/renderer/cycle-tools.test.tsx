@@ -12,7 +12,8 @@ it('shows each agent tool in the cycle and the current stage tool on the tab', a
   )
   await source.saveSettings({ ...settings, agents })
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
-  const cycle = await screen.findByRole('list', { name: 'Cycle' })
+  fireEvent.click(await screen.findByRole('button', { name: 'Flow' }))
+  const cycle = screen.getByRole('list', { name: 'Cycle' })
   for (const [index, stage] of within(cycle).getAllByRole('listitem').entries()) {
     expect(
       within(stage).getByRole('img', { name: toolNames[agents[index].tool] }),

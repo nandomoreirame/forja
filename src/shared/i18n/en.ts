@@ -1,5 +1,10 @@
 export const en = {
   app: {
+    flow: {
+      toggle: 'Flow',
+      title: 'Flow',
+      close: 'Close flow',
+    },
     summary: {
       toggle: 'Summary',
       title: 'Conversation summary',

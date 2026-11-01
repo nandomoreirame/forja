@@ -59,6 +59,7 @@ it('shows localized seeded history, a handoff and the selected feature context',
   const history = await screen.findByRole('list', { name: 'Conversation' })
   expect(within(history).getByText('Tester requested a fix')).toBeVisible()
   expect(within(history).getByRole('button', { name: 'View request' })).toBeVisible()
+  fireEvent.click(screen.getByRole('button', { name: 'Flow' }))
   expect(screen.getByRole('list', { name: 'Cycle' })).toHaveTextContent('Research')
   expect(screen.getAllByText('feature/login-oauth').length).toBeGreaterThan(0)
   fireEvent.click(screen.getByRole('tab', { name: /Catalog search/ }))

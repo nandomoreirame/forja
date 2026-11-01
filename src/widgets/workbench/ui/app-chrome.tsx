@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { cn } from '@/shared/ui/utils'
 import {
   Button,
   ForjaMark,
@@ -178,52 +179,73 @@ export function FeatureContext({
         </div>
       </div>
       {cycle?.length ? (
-        <div className="flex items-center gap-2 border-t border-border pt-1.5 text-[11px]">
-          <TooltipProvider>
-            <ol aria-label={cycleLabel} className="flex flex-wrap items-center gap-2">
-              {cycle.map((stage, index) => (
-                <li
-                  key={stage.label}
-                  aria-current={stage.state === 'current' ? 'step' : undefined}
-                  className={
-                    stage.state === 'current'
-                      ? 'flex items-center gap-1 font-medium text-primary'
-                      : stage.state === 'done'
-                        ? 'flex items-center gap-1 text-foreground'
-                        : 'flex items-center gap-1 text-muted-foreground'
-                  }
-                >
-                  {index > 0 ? (
-                    <span aria-hidden="true" className="mr-2 font-normal text-muted-foreground">
-                      →
-                    </span>
-                  ) : null}
-                  {stage.state === 'current' ? (
-                    <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
-                  ) : null}
-                  {stage.tool ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span
-                          tabIndex={0}
-                          className="inline-flex rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
-                        >
-                          <ToolIcon tool={stage.tool} />
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {stage.label} · {stage.toolLabel ?? toolNames[stage.tool]}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : null}
-                  {stage.label}
-                  {stage.state === 'done' ? <span aria-hidden="true"> ✓</span> : null}
-                </li>
-              ))}
-            </ol>
-          </TooltipProvider>
+        <div className="border-t border-border pt-1.5">
+          <FeatureCycle cycle={cycle} label={cycleLabel} />
         </div>
       ) : null}
     </section>
+  )
+}
+
+/** The RPI agent cycle, one stage per agent with its tool icon and a dark tooltip. */
+export function FeatureCycle({
+  cycle,
+  label = 'Cycle',
+  centered = false,
+}: {
+  cycle: FeatureCycleStage[]
+  label?: string
+  centered?: boolean
+}) {
+  return (
+    <TooltipProvider>
+      <ol
+        aria-label={label}
+        className={cn(
+          'flex flex-wrap items-center gap-2 text-[11px]',
+          centered && 'justify-center',
+        )}
+      >
+        {cycle.map((stage, index) => (
+          <li
+            key={stage.label}
+            aria-current={stage.state === 'current' ? 'step' : undefined}
+            className={
+              stage.state === 'current'
+                ? 'flex items-center gap-1 font-medium text-primary'
+                : stage.state === 'done'
+                  ? 'flex items-center gap-1 text-foreground'
+                  : 'flex items-center gap-1 text-muted-foreground'
+            }
+          >
+            {index > 0 ? (
+              <span aria-hidden="true" className="mr-2 font-normal text-muted-foreground">
+                →
+              </span>
+            ) : null}
+            {stage.state === 'current' ? (
+              <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
+            ) : null}
+            {stage.tool ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span
+                    tabIndex={0}
+                    className="inline-flex rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+                  >
+                    <ToolIcon tool={stage.tool} />
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {stage.label} · {stage.toolLabel ?? toolNames[stage.tool]}
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
+            {stage.label}
+            {stage.state === 'done' ? <span aria-hidden="true"> ✓</span> : null}
+          </li>
+        ))}
+      </ol>
+    </TooltipProvider>
   )
 }

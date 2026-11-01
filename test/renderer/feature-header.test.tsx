@@ -1,12 +1,13 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
 
 it('keeps the feature header lean: no mode badge, no cycle label and no history arrows', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
-  const cycle = await screen.findByRole('list', { name: 'Cycle' })
-  const header = screen.getByRole('region', { name: 'Login with OAuth' })
+  const header = await screen.findByRole('region', { name: 'Login with OAuth' })
+  fireEvent.click(within(header).getByRole('button', { name: 'Flow' }))
+  const cycle = screen.getByRole('list', { name: 'Cycle' })
   expect(within(header).queryByText('Guided')).toBeNull()
   expect(within(header).queryByText(/^Cycle:/)).toBeNull()
   expect(cycle).toHaveAccessibleName('Cycle')
