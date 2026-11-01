@@ -19,6 +19,8 @@ The CLIs are the execution layer; the opinionated RPI workflow and human control
 | 01d | [conversation-screen](2026-10-31-conversation-screen.md) | 6 | new-conversation-composer, command-palette |
 | 01e | [settings-screen](2026-10-31-settings-screen.md) | 4 | project-home-screen, conversation-screen |
 | 01f | [document-viewer-screen](2026-10-31-document-viewer-screen.md) | 4 | conversation-screen |
+| 01g | [project-sidebar-navigator](2026-10-31-project-sidebar-navigator.md) | 6 | document-viewer-screen, settings-screen |
+| 01h | [conversation-agent-identity](2026-10-31-conversation-agent-identity.md) | 5 | settings-screen, conversation-screen |
 | 02 | [cli-capability-contracts](2026-10-30-cli-capability-contracts.md) | 3 | scaffold |
 | 03 | [project-feature-state](2026-10-30-project-feature-state.md) | 4 | cli-capability-contracts |
 | 04 | [agent-settings-skills](2026-10-30-agent-settings-skills.md) | 4 | web-foundation-landing-styleguide, project-feature-state |
