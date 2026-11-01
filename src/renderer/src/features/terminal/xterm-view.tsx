@@ -25,29 +25,29 @@ export function terminalFont() {
   }
 }
 
+// Terminal Noir terminal colors (palette.json ansi, as in the theme's VS Code port).
 const theme = {
   background: '#0b0b0c',
-  foreground: '#e4e4e7',
-  cursor: '#F5A623',
+  foreground: '#f4f4f5',
+  cursor: '#f5a623',
   cursorAccent: '#0b0b0c',
-  selectionBackground: '#F5A62355',
-  // VS Code's default integrated terminal palette.
-  black: '#000000',
-  red: '#cd3131',
-  green: '#0dbc79',
-  yellow: '#e5e510',
-  blue: '#2472c8',
-  magenta: '#bc3fbc',
-  cyan: '#11a8cd',
-  white: '#e5e5e5',
-  brightBlack: '#666666',
-  brightRed: '#f14c4c',
-  brightGreen: '#23d18b',
-  brightYellow: '#f5f543',
-  brightBlue: '#3b8eea',
-  brightMagenta: '#d670d6',
-  brightCyan: '#29b8db',
-  brightWhite: '#e5e5e5',
+  selectionBackground: '#52525b',
+  black: '#18181b',
+  red: '#ff7b72',
+  green: '#34d399',
+  yellow: '#f5a623',
+  blue: '#58a6ff',
+  magenta: '#bc8cff',
+  cyan: '#39c5cf',
+  white: '#a1a1aa',
+  brightBlack: '#808089',
+  brightRed: '#ffb7b0',
+  brightGreen: '#56d364',
+  brightYellow: '#facf9e',
+  brightBlue: '#79c0ff',
+  brightMagenta: '#d2a8ff',
+  brightCyan: '#56d4dd',
+  brightWhite: '#f4f4f5',
 }
 
 export function XtermView({
@@ -130,7 +130,7 @@ export function XtermView({
       ref={host}
       role="group"
       aria-label={label}
-      className="min-h-0 flex-1 overflow-hidden bg-[#0b0b0c] px-2 py-1"
+      className="min-h-0 flex-1 overflow-hidden bg-background px-2 py-1"
     />
   )
 }

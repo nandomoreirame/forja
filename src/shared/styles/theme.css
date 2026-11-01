@@ -32,6 +32,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
   --color-muted-foreground: var(--muted-foreground);
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -134,7 +136,7 @@
 @layer base {
   :root {
     /* One thumb color for native scrollbars and the ScrollArea primitive. */
-    --scrollbar-thumb: #3a3a3d;
+    --scrollbar-thumb: #64646b66; /* surface.outline at 40%, as the VS Code port */
   }
   * {
     @apply border-border outline-ring/50;
@@ -186,35 +188,40 @@
 :root,
 .dark {
   color-scheme: dark;
-  /* Terminal Noir surface.base, the window and editor background. */
+  /* Every color is a Terminal Noir dark palette role (terminalnoir.web.app/palette); roles
+     the palette does not name follow the theme's VS Code port. */
+  /* surface.base, the window and editor background. */
   --background: #0b0b0c;
-  --foreground: #e6e6e6;
-  --card: #121214;
-  --card-foreground: #e6e6e6;
-  --popover: #18181b;
-  --popover-foreground: #e6e6e6;
-  --primary: #f5a623;
-  --primary-foreground: #13100a;
-  --secondary: #1c1c1c;
-  --secondary-foreground: #e6e6e6;
-  --muted: #1c1c1c;
-  --muted-foreground: #979797;
-  --accent: #252525;
-  --accent-foreground: #e6e6e6;
-  --destructive: #ff8b8b;
-  --border: #2a2a2a;
-  --input: #2a2a2a;
+  --foreground: #f4f4f5; /* text.primary */
+  --card: #121214; /* surface.raised */
+  --card-foreground: #f4f4f5;
+  --popover: #18181b; /* surface.elevated */
+  --popover-foreground: #f4f4f5;
+  --primary: #f5a623; /* accent.primary */
+  --primary-foreground: #0b0b0c; /* accent.onPrimary */
+  --secondary: #18181b; /* surface.elevated */
+  --secondary-foreground: #f4f4f5;
+  --muted: #18181b; /* surface.elevated */
+  --muted-foreground: #a1a1aa; /* text.muted */
+  /* Hover and selected rows: surface.border stays visible on base, raised and elevated. */
+  --accent: #222226;
+  --accent-foreground: #f4f4f5;
+  --destructive: #ffb7b0; /* accent.error */
+  --border: #222226; /* surface.border */
+  --input: #222226;
   --ring: #f5a623;
   --radius: 0.25rem;
   --sidebar: #121214;
-  --sidebar-foreground: #e6e6e6;
+  --sidebar-foreground: #f4f4f5;
   --sidebar-primary: #f5a623;
-  --sidebar-primary-foreground: #13100a;
-  --sidebar-accent: #252525;
-  --sidebar-accent-foreground: #e6e6e6;
-  --sidebar-border: #2a2a2a;
+  --sidebar-primary-foreground: #0b0b0c;
+  --sidebar-accent: #222226;
+  --sidebar-accent-foreground: #f4f4f5;
+  --sidebar-border: #222226;
   --sidebar-ring: #f5a623;
-  --success: #52c41a;
+  --success: #34d399; /* accent.success */
+  --warning: #facf9e; /* accent.warning */
+  --info: #79c0ff; /* accent.info */
 }
 @layer base {
   body {

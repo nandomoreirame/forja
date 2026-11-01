@@ -196,7 +196,7 @@ export function Messages({
                     <button
                       type="button"
                       onClick={item.onAction}
-                      className="text-[11px] text-muted-foreground hover:text-[#ff4d4f]"
+                      className="text-[11px] text-muted-foreground hover:text-destructive"
                     >
                       {item.action}
                     </button>

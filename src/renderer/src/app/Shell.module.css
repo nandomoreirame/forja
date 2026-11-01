@@ -92,7 +92,7 @@
   display: grid;
   place-items: center;
   color: var(--color-accent);
-  background: linear-gradient(140deg, #1e1e1e, #171717);
+  background: linear-gradient(140deg, #18181b, #121214);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-small);
   box-shadow: 0 2px 6px #0003;
