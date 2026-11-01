@@ -20,7 +20,6 @@ it('opens the chat with the Ferreiro as soon as the first prompt is sent', async
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   await screen.findByRole('tab', { name: /Login with OAuth/ })
   newChat()
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Smith')
   send('Discuss API limits')
   expect(screen.getByRole('tab', { name: /Discuss API limits/ })).toHaveAttribute(
     'aria-selected',
@@ -34,21 +33,20 @@ it('opens the chat with the Ferreiro as soon as the first prompt is sent', async
     await within(conversation).findByText(/scripted mock reply/, {}, { timeout: 3000 }),
   ).toBeInTheDocument()
   expect(within(conversation).getByText('Smith')).toBeInTheDocument()
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Smith')
 })
 
-it('still starts a feature directly when an RPI agent is picked', async () => {
+it('hands the first turn to an RPI agent mentioned with @', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   await screen.findByRole('tab', { name: /Login with OAuth/ })
   newChat()
-  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
-  fireEvent.click(screen.getByRole('option', { name: 'Miner, Research' }))
-  send('Rate limit public endpoints')
+  send('@miner Rate limit public endpoints')
   expect(screen.getByRole('tab', { name: /Rate limit public endpoints/ })).toHaveAttribute(
     'aria-selected',
     'true',
   )
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Miner')
+  expect(
+    within(screen.getByRole('list', { name: 'Conversation' })).getAllByText('Miner').length,
+  ).toBeGreaterThan(0)
 })
 
 it('keeps the Ferreiro outside the RPI Flow cycle', async () => {

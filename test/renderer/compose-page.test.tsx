@@ -2,7 +2,12 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
-it('selects Planner in the composer, sends a feature and closes back to the empty state', async () => {
+
+const lastAuthor = () =>
+  within(screen.getByRole('list', { name: 'Conversation' }))
+    .getAllByText(/./, { selector: '[data-slot="message-author"]' })
+    .at(-1)?.textContent
+it('hands the first turn to a mentioned Planner and closes back to the empty state', async () => {
   render(
     <WorkbenchPage
       source={createMockSource({ locale: 'en' })}
@@ -16,56 +21,50 @@ it('selects Planner in the composer, sends a feature and closes back to the empt
   )
   const field = screen.getByRole('textbox', { name: /Send your prompt/ })
   expect(field).toHaveFocus()
-  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
-  fireEvent.click(screen.getByRole('option', { name: 'Moldmaker, Planner' }))
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Moldmaker')
   expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['New chat'])
   expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
   fireEvent.change(field, { target: { value: '   ' } })
   expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
-  fireEvent.change(field, { target: { value: 'Rate limit public endpoints' } })
+  fireEvent.change(field, { target: { value: '@moldmaker Rate limit public endpoints' } })
   fireEvent.keyDown(field, { key: 'Enter', ctrlKey: true })
   expect(screen.getByRole('tab', { name: /Rate limit public endpoints/ })).toHaveAttribute(
     'aria-selected',
     'true',
   )
+  expect(lastAuthor()).toBe('Moldmaker')
   expect(screen.getByRole('list', { name: 'Conversation' })).toHaveTextContent(
     'Rate limit public endpoints',
   )
   // The new feature replaced the New chat tab.
   expect(screen.queryByRole('tab', { name: /New chat/ })).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: 'Close Rate limit public endpoints' }))
+  fireEvent.click(screen.getByRole('button', { name: /^Close .*Rate limit public endpoints/ }))
   // Closing the last tab returns to the initial empty state, with no tabs.
   expect(screen.queryByRole('tablist')).toBeNull()
   expect(screen.queryByRole('textbox', { name: /Send your prompt/ })).toBeNull()
 })
-it('preselects Research from New spec and permits changing the recipient', async () => {
+it('opens New spec with the Miner and lets a mention take one turn', async () => {
   render(
     <WorkbenchPage
       source={createMockSource({ locale: 'en' })}
       initialProjectId="nandomoreira.dev"
     />,
   )
-  fireEvent.click(
-    within(await screen.findByRole('main')).getAllByRole('button', {
-      name: /^New chat/,
-    })[0],
-  )
-  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
-  fireEvent.click(screen.getByRole('option', { name: 'Temperer, Tester' }))
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Temperer')
-  fireEvent.click(screen.getByRole('button', { name: 'New spec' }))
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Miner')
-  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
-  fireEvent.click(screen.getByRole('option', { name: 'Polisher, Reviewer' }))
-  fireEvent.change(screen.getByRole('textbox', { name: /Send your prompt/ }), {
-    target: { value: 'Review auth' },
-  })
-  fireEvent.click(screen.getByRole('button', { name: 'Send' }))
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Polisher')
+  fireEvent.click(await screen.findByRole('button', { name: 'New spec' }))
+  const send = (text: string) => {
+    fireEvent.change(screen.getByRole('textbox', { name: /Send your prompt/ }), {
+      target: { value: text },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Send' }))
+  }
+  send('Spec the auth flow')
+  expect(lastAuthor()).toBe('Miner')
+  send('@polisher Review auth')
+  expect(lastAuthor()).toBe('Polisher')
+  send('Next question')
+  expect(lastAuthor()).toBe('Miner')
 })
 
-it('opens another focused conversation tab and keeps the first draft and agent', async () => {
+it('opens another focused conversation tab and keeps the first draft', async () => {
   render(
     <WorkbenchPage
       source={createMockSource({ locale: 'en' })}
@@ -76,24 +75,18 @@ it('opens another focused conversation tab and keeps the first draft and agent',
   fireEvent.click(add)
   const field = screen.getByRole('textbox')
   fireEvent.change(field, { target: { value: 'Keep draft' } })
-  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
-  fireEvent.click(screen.getByRole('option', { name: 'Polisher, Reviewer' }))
   add.focus()
   fireEvent.click(add)
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Miner')
   expect(screen.getByRole('textbox')).toHaveFocus()
   expect(screen.getByRole('textbox')).toHaveValue('')
   fireEvent.click(screen.getAllByRole('tab', { name: /New chat/ })[0])
   expect(screen.getByRole('textbox')).toHaveValue('Keep draft')
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Polisher')
 })
-it('changes the agent within the current feature and keeps valid tab relationships', async () => {
+it('keeps valid tab relationships in a chat without an agent selector', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const tab = await screen.findByRole('tab', { name: /Login with OAuth/ })
-  fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
-  fireEvent.click(screen.getByRole('option', { name: 'Moldmaker, Planner' }))
   expect(tab).toHaveAttribute('aria-selected', 'true')
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Moldmaker')
+  expect(screen.queryByRole('combobox', { name: 'Recipient' })).toBeNull()
   for (const item of screen.getAllByRole('tab')) {
     const target = item.getAttribute('aria-controls')
     if (target) expect(document.getElementById(target)).not.toBeNull()

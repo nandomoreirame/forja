@@ -12,7 +12,6 @@ it('creates immutable unique features with their selected recipient and first me
   const id = store.getState().createFeatureFromPrompt('Rate limit public endpoints', 'planner')
   expect(store.getState().view).toEqual({ kind: 'conversation', featureId: id })
   expect(store.getState().openFeatureIds).toEqual([id])
-  expect(store.getState().recipients[id]).toBe('planner')
   const feature = store.getState().snapshot?.features.find((f) => f.id === id)
   expect(feature).toMatchObject({
     state: 'running',
@@ -68,7 +67,8 @@ it('appends follow-up prompts to the selected mock feature without changing fixt
   expect(
     store.getState().snapshot?.features[0].messages.filter((message) => message.role === 'user'),
   ).toHaveLength(2)
-  expect(store.getState().recipients[id]).toBe('planner')
+  expect(store.getState().snapshot?.features[0].messages.at(-1)?.author).toBe('planner')
+  expect(store.getState().snapshot?.features[0].stage).toBe('research')
   store.getState().appendPrompt(id, '   ', 'planner')
   store.getState().appendPrompt('missing', 'Ignored', 'research')
   expect(

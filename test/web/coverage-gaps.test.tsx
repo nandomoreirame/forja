@@ -91,9 +91,6 @@ it('sends from the composer with Ctrl+Enter only when there is text', () => {
   const onSend = vi.fn()
   render(
     <Composer
-      recipients={[{ id: 'a', label: 'Implementer' }]}
-      recipientId="a"
-      onRecipientChange={() => {}}
       featureLabel="Login"
       targetLabel="~/dev"
       value="fix the token"

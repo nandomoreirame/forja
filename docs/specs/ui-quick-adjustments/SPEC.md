@@ -81,6 +81,7 @@ None.
 | 4 | Status, previews and board | Clear animated status glyphs; file preview and side-by-side diff behind the Explorer and source control flags; Backlog and Board pages as tabs behind a new `backlog-board` flag, opened from the sidebar below the usage panel (REQ-115 to REQ-118) | User request on 2026-11-01; backlog persistence does not exist in core yet, so both pages stay flagged until it does. |
 | 5 | Section name | Rename Features to Chats (same word in English and Portuguese) and list Ferreiro chats after their first message (REQ-119) | Matches the New chat button, avoids the CLI session meaning of sessions, and covers features, bugs and backlog conversations. |
 | 6 | Face direction | Minimal faces approved from the Stitch board; idle faces have no mouth, speaking faces move a mouth (reduced motion keeps it still) | User decision on 2026-11-01 after the Stitch trial; the app swap stays a follow-up after the styleguide preview is approved. |
+| 7 | Chat is the unit | A chat holds the whole history from the first idea (a backlog item) to the merge of the reviewed worktree; features, bugs, skills, specs and plans are outputs of a chat. The composer has no agent selector: an `@` mention hands that one turn to an agent, otherwise the agent of the chat phase answers, and a New chat starts with the Ferreiro | User decision on 2026-11-01; renaming the Feature entity to Chat across core, storage and specs is a separate planned change. |
 
 ## Constraints
 

@@ -439,9 +439,6 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
         </Card>
         <Card label={sc.composerLabel} code="composer.tsx">
           <Composer
-            recipients={mock.recipients}
-            recipientId={mock.recipients[2].id}
-            onRecipientChange={() => {}}
             featureLabel={mock.features[0]}
             targetLabel={mock.targetPath}
             targetPrefix={t.product.destination}

@@ -30,7 +30,6 @@ it('streams independent features without changing selection or recipients', asyn
   store.getState().setRecipient('feature-1', 'implementer')
   store.getState().setRecipient('feature-2', 'tester')
   const view = store.getState().view
-  const recipients = store.getState().recipients
   store.getState().sendMessage('feature-1', 'Implement')
   store.getState().sendMessage('feature-2', 'Test')
   vi.advanceTimersByTime(250)
@@ -74,7 +73,8 @@ it('streams independent features without changing selection or recipients', asyn
   expect(first.state).toBe('waiting')
   expect(second.state).toBe('waiting')
   expect(store.getState().view).toEqual(view)
-  expect(store.getState().recipients).toEqual(recipients)
+  // Each hand-off covered one turn only, so later prompts go back to the phase agent.
+  expect(store.getState().recipients).toEqual({})
 })
 it('preserves partial output when explicitly interrupted and does nothing when idle', async () => {
   const store = await setup()
@@ -132,7 +132,7 @@ it('reuses a localized terminal while preserving previous output', async () => {
   store.getState().sendMessage('feature-1', 'Test')
   vi.runAllTimers()
   const first = streamed(store.getState().snapshot!.features[0])[0]
-  store.getState().sendMessage('feature-1', 'Again')
+  store.getState().sendMessage('feature-1', 'Again', 'tester')
   vi.runAllTimers()
   const terminals = streamed(store.getState().snapshot!.features[0])
   expect(terminals).toHaveLength(1)

@@ -62,7 +62,7 @@ it('keeps the answering tool during streaming and uses new settings for later re
     tool: originalTool,
     status: 'completed',
   })
-  store.getState().sendMessage('feature-1', 'Again')
+  store.getState().sendMessage('feature-1', 'Again', 'tester')
   vi.runAllTimers()
   expect(store.getState().snapshot!.features[0].messages.at(-1)?.tool).toBe('grok')
 })

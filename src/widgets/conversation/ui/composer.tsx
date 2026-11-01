@@ -1,28 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { ArrowRight } from 'lucide-react'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Textarea,
-} from '@/shared/ui'
+import { Textarea } from '@/shared/ui'
 
 const sendShortcut = 'Ctrl+Enter'
-
-export interface ComposerRecipient {
-  id: string
-  label: string
-  roleLabel?: string
-}
 
 export interface ComposerProps {
   focusKey?: number
   autoFocus?: boolean
-  recipients: ComposerRecipient[]
-  recipientId: string
-  onRecipientChange: (id: string) => void
   featureLabel: string
   targetLabel: string
   targetPrefix?: string
@@ -30,7 +14,6 @@ export interface ComposerProps {
   onChange: (value: string) => void
   onSend: () => void
   placeholder: string
-  recipientLabel?: string
   contextLabel?: string
   sendLabel?: string
   shortcutHint?: string
@@ -39,9 +22,6 @@ export interface ComposerProps {
 export function Composer({
   autoFocus = false,
   focusKey,
-  recipients,
-  recipientId,
-  onRecipientChange,
   featureLabel,
   targetLabel,
   targetPrefix,
@@ -49,7 +29,6 @@ export function Composer({
   onChange,
   onSend,
   placeholder,
-  recipientLabel = 'Recipient',
   contextLabel = 'Context',
   sendLabel = 'Send',
   shortcutHint = 'Press Ctrl+Enter to send',
@@ -60,7 +39,6 @@ export function Composer({
     if (autoFocus || previousFocusKey.current !== focusKey) field.current?.focus()
     previousFocusKey.current = focusKey
   }, [autoFocus, focusKey])
-  const selected = recipients.find((item) => item.id === recipientId)
   const [hintBefore, hintAfter] = shortcutHint.includes(sendShortcut)
     ? shortcutHint.split(sendShortcut, 2)
     : [shortcutHint, null]
@@ -74,30 +52,8 @@ export function Composer({
       }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-border/60 pb-2 text-[11px]">
-        <div className="flex items-center gap-3">
-          <Select value={recipientId} onValueChange={onRecipientChange}>
-            <SelectTrigger
-              size="sm"
-              aria-label={recipientLabel}
-              className="h-6 gap-1.5 rounded-[3px] border-transparent bg-transparent px-1.5 text-[12px] font-medium text-foreground hover:border-border hover:bg-secondary dark:bg-transparent dark:hover:bg-secondary data-[state=open]:border-border data-[state=open]:bg-secondary [&_svg:not([class*='size-'])]:size-3.5"
-            >
-              <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
-              <SelectValue>{selected?.label}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {recipients.map((item) => (
-                <SelectItem
-                  key={item.id}
-                  aria-labelledby={undefined}
-                  value={item.id}
-                  aria-label={item.roleLabel ? `${item.label}, ${item.roleLabel}` : undefined}
-                  title={item.roleLabel ? `${item.label}, ${item.roleLabel}` : undefined}
-                >
-                  {item.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* min-h-7 keeps the header as tall as it was with the agent selector. */}
+        <div className="flex min-h-7 items-center gap-3">
           <span className="truncate text-muted-foreground/80">
             {contextLabel}:{' '}
             <strong className="font-normal text-foreground/90">{featureLabel}</strong>

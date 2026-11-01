@@ -60,9 +60,6 @@ it('shows the workflow mode and marks only the current cycle stage', () => {
 it('labels the composer target so it is not confused with the opened folder', () => {
   render(
     <Composer
-      recipients={[{ id: 'implementer', label: 'Implementer' }]}
-      recipientId="implementer"
-      onRecipientChange={() => {}}
       featureLabel="Login"
       targetLabel="~/dev/projects/forja"
       targetPrefix="Destination"
@@ -139,12 +136,9 @@ it('explains terminal icon actions and tabs with tooltips on keyboard focus', as
   expect(await screen.findByRole('tooltip')).toHaveTextContent('Implementer · dev · Running')
 })
 
-it('renders a single recipient chevron that flips while the select is open', () => {
+it('renders no agent selector: the chat phase or an @ mention picks the agent', () => {
   render(
     <Composer
-      recipients={[{ id: 'implementer', label: 'Implementer' }]}
-      recipientId="implementer"
-      onRecipientChange={() => {}}
       featureLabel="Login"
       targetLabel="~/dev/projects/forja"
       value=""
@@ -153,20 +147,12 @@ it('renders a single recipient chevron that flips while the select is open', () 
       placeholder="Send an instruction"
     />,
   )
-  const trigger = screen.getByRole('combobox', { name: 'Recipient' })
-  const chevrons = trigger.querySelectorAll('svg')
-  expect(chevrons).toHaveLength(1)
-  expect(chevrons[0].getAttribute('class')).toContain(
-    'group-data-[state=open]/select-trigger:rotate-180',
-  )
+  expect(screen.queryByRole('combobox')).toBeNull()
 })
 
 it('renders the send shortcut inside the hint as a keyboard chip', () => {
   render(
     <Composer
-      recipients={[{ id: 'implementer', label: 'Implementer' }]}
-      recipientId="implementer"
-      onRecipientChange={() => {}}
       featureLabel="Login"
       targetLabel="~/dev/projects/forja"
       value=""

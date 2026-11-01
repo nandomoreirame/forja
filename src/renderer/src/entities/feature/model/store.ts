@@ -138,7 +138,8 @@ export interface WorkbenchState {
   openFeature(id: string): void
   selectFeature(id: string): void
   closeFeature(id: string): void
-  sendMessage(id: string, text: string): void
+  /** Sends a prompt; `role` hands this turn to another agent, else the chat phase answers. */
+  sendMessage(id: string, text: string, role?: AgentId): void
   interrupt(id: string): void
   appendPrompt(id: string, prompt: string, role: AgentId): void
   openProject(id: string): Promise<void>
@@ -757,7 +758,6 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         set((state) => ({
           snapshot: { ...snapshot, features: [...snapshot.features, feature] },
           openFeatureIds: [...state.openFeatureIds, id],
-          recipients: { ...state.recipients, [id]: role },
         }))
         // The new feature takes the place of the New chat tab it was sent from.
         const from = get().view
@@ -777,12 +777,19 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         if (get().openFeatureIds.includes(id))
           get().navigate({ kind: 'conversation', featureId: id })
       },
-      sendMessage(id, text) {
+      sendMessage(id, text, turnAgent) {
         const feature = get().snapshot?.features.find((item) => item.id === id)
         const prompt = text.trim()
         if (!feature || !prompt) return
         get().interrupt(id)
-        const role = get().recipients[id] ?? feature.stage
+        // A mention or a prefilled hand-off covers one turn only; then the phase agent answers.
+        const role = turnAgent ?? get().recipients[id] ?? feature.stage
+        if (id in get().recipients)
+          set((state) => {
+            const recipients = { ...state.recipients }
+            delete recipients[id]
+            return { recipients }
+          })
         const messageId = `${id}:agent-${feature.messages.length + 2}`
         const startedAt = Date.now()
         const createdAt = new Date(startedAt).toISOString()
@@ -927,8 +934,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       },
       appendPrompt(id, prompt, role) {
         if (!prompt.trim() || !get().snapshot?.features.some((feature) => feature.id === id)) return
-        get().setRecipient(id, role)
-        get().sendMessage(id, prompt)
+        get().sendMessage(id, prompt, role)
       },
       closeFeature(id) {
         // Closing only hides the tab: a running agent keeps going in the background and the
@@ -1039,7 +1045,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             historyIndex: 0,
             loading: false,
             openFeatureIds: snapshot.features.filter((f) => !f.archived).map((f) => f.id),
-            recipients: Object.fromEntries(snapshot.features.map((f) => [f.id, f.stage])),
+            recipients: {},
             terminalTabs: {},
             openDocumentIds: [],
             documents: {},

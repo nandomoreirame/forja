@@ -30,7 +30,9 @@ it('adds a demand and starts it only after confirmation', async () => {
     'aria-selected',
     'true',
   )
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Miner')
+  expect(
+    within(screen.getByRole('list', { name: 'Conversation' })).getAllByText('Miner').length,
+  ).toBeGreaterThan(0)
   fireEvent.click(screen.getByRole('tab', { name: /Backlog/ }))
   expect(screen.queryByRole('listitem', { name: /Export reports/ })).toBeNull()
 })

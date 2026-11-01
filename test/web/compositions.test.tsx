@@ -25,12 +25,8 @@ it('selects a feature by stable id rather than its display label', () => {
 it('sends only through explicit submit and reports text changes without side effects', () => {
   const onSend = vi.fn()
   const onChange = vi.fn()
-  const onRecipientChange = vi.fn()
   render(
     <Composer
-      recipients={[{ id: 'implementer', label: 'Implementer' }]}
-      recipientId="implementer"
-      onRecipientChange={onRecipientChange}
       featureLabel="Login"
       targetLabel="~/dev/projects/forja"
       value=""
@@ -45,7 +41,6 @@ it('sends only through explicit submit and reports text changes without side eff
   expect(onChange).toHaveBeenCalledWith('fix')
   expect(onSend).not.toHaveBeenCalled()
   expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
-  expect(onRecipientChange).not.toHaveBeenCalled()
 })
 
 it('renders terminal tabs with a terminal icon and a focusable add control', () => {

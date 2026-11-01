@@ -1,46 +1,48 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
 
-it('lets the combobox override a mention until a new mention is typed', async () => {
+const lastAuthor = () =>
+  within(screen.getByRole('list', { name: 'Conversation' }))
+    .getAllByText(/./, { selector: '[data-slot="message-author"]' })
+    .at(-1)?.textContent
+
+const send = (field: HTMLElement, text: string) => {
+  fireEvent.change(field, { target: { value: text } })
+  fireEvent.keyDown(field, { key: 'Enter', ctrlKey: true })
+}
+
+it('hands one turn to the last agent mentioned and ignores mentions in code', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const field = await screen.findByRole('textbox', { name: /Send your prompt/ })
-  const recipient = screen.getByRole('combobox', { name: 'Recipient' })
-  fireEvent.change(field, { target: { value: '@tester' } })
-  expect(recipient).toHaveTextContent('Temperer')
-  fireEvent.click(recipient)
-  fireEvent.click(screen.getByRole('option', { name: 'Moldmaker, Planner' }))
-  fireEvent.change(field, { target: { value: '@tester please check' } })
-  expect(recipient).toHaveTextContent('Moldmaker')
-  fireEvent.change(field, { target: { value: '@tester please check @tester' } })
-  expect(recipient).toHaveTextContent('Temperer')
-  fireEvent.click(recipient)
-  fireEvent.click(screen.getByRole('option', { name: 'Moldmaker, Planner' }))
-  fireEvent.change(field, { target: { value: '@tester please check' } })
-  expect(recipient).toHaveTextContent('Moldmaker')
+  send(field, '@tester please check @moldmaker')
+  expect(lastAuthor()).toBe('Moldmaker')
+  send(field, 'Run `@tester` later')
+  expect(lastAuthor()).toBe('Miner')
 })
 
-it('switches recipients through the composer without changing the selected feature', async () => {
+it('keeps the selected chat while mentions change the answering agent', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const tab = await screen.findByRole('tab', { name: /Login with OAuth/ })
-  for (const role of ['Polisher, Reviewer', 'Temperer, Tester']) {
-    fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
-    fireEvent.click(screen.getByRole('option', { name: role }))
-    expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent(
-      role.split(',')[0],
-    )
+  const field = screen.getByRole('textbox', { name: /Send your prompt/ })
+  for (const [mention, author] of [
+    ['@polisher', 'Polisher'],
+    ['@temperador', 'Temperer'],
+  ]) {
+    send(field, `${mention} take a look`)
+    expect(lastAuthor()).toBe(author)
     expect(tab).toHaveAttribute('aria-selected', 'true')
   }
 })
 
-it('returns from another view through a feature row and selects a recipient by mention', async () => {
+it('returns from another view through a chat row and mentions an agent', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   await screen.findByRole('tab', { name: /Login with OAuth/ })
   fireEvent.keyDown(window, { key: ',', ctrlKey: true })
   expect(screen.queryByRole('textbox', { name: /Send your prompt/ })).toBeNull()
   fireEvent.click(screen.getByRole('button', { name: /^Login with OAuth ·/ }))
   const prompt = await screen.findByRole('textbox', { name: /Send your prompt/ })
-  fireEvent.change(prompt, { target: { value: '@tester' } })
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Temperer')
+  send(prompt, '@tester')
+  expect(lastAuthor()).toBe('Temperer')
 })

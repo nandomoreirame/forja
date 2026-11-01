@@ -30,7 +30,6 @@ it('renames an agent in Settings and shows the name with its role in the tooltip
   )
   fireEvent.focus(within(cycle).getByText('Scout').closest('li')!.querySelector('[tabindex]')!)
   expect(await screen.findByRole('tooltip')).toHaveTextContent('Scout, Research')
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Scout')
 })
 
 it('saves an empty name as the default and preserves the accessible author role and tool', async () => {

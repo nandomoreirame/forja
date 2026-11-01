@@ -1,9 +1,8 @@
 import { useEffect } from 'react'
 import { Composer } from '@/widgets/conversation'
 import { getDictionary } from '@/shared/i18n'
-import { agentIds } from '@/renderer/src/shared/api'
-import { agentName, useWorkbench } from '@/renderer/src/entities/feature'
-import { mentionedRoles } from './recipient'
+import { useWorkbench } from '@/renderer/src/entities/feature'
+import { mentionedAgent } from './recipient'
 
 export function ComposerController({ featureId }: { featureId: string }) {
   const state = useWorkbench((s) => s)
@@ -21,38 +20,17 @@ export function ComposerController({ featureId }: { featureId: string }) {
     <Composer
       focusKey={state.composeActivation}
       autoFocus={pendingFocus}
-      recipients={agentIds.map((id) => ({
-        id,
-        label: agentName(id, state.source.locale, state.agentNames),
-        roleLabel: d.product[id],
-      }))}
-      recipientId={state.recipients[featureId] ?? feature.stage}
-      onRecipientChange={(id) => {
-        const role = agentIds.find((agent) => agent === id)
-        if (role) state.setRecipient(featureId, role)
-      }}
       featureLabel={feature.name}
       targetLabel={state.snapshot?.project.path ?? ''}
       targetPrefix={a.destination}
       value={prompt}
-      onChange={(value) => {
-        const mentions = mentionedRoles(value)
-        const previousMentions = mentionedRoles(prompt)
-        if (
-          mentions.length >= previousMentions.length &&
-          mentions.join() !== previousMentions.join()
-        ) {
-          const role = mentions.at(-1)
-          if (role) state.setRecipient(featureId, role)
-        }
-        state.setDraft(featureId, value)
-      }}
+      onChange={(value) => state.setDraft(featureId, value)}
       onSend={() => {
-        state.sendMessage(featureId, prompt)
+        // Without an @ mention the agent of the chat phase answers.
+        state.sendMessage(featureId, prompt, mentionedAgent(prompt, state.agentNames) ?? undefined)
         state.setDraft(featureId, '')
       }}
       placeholder={a.prompt}
-      recipientLabel={a.recipient}
       contextLabel={a.context}
       sendLabel={a.send}
       shortcutHint={a.shortcutHint}

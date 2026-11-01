@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { expect, it, vi } from 'vitest'
 import { SelectionPopover } from '../../src/renderer/src/features/document-reader/selection-popover'
 import { createMockSource } from '../../src/renderer/src/shared/api'
@@ -39,7 +39,7 @@ function selectText(node: Node) {
   fireEvent(document, new Event('selectionchange'))
 }
 
-it('appends a quoted excerpt to the feature draft, selects its author and focuses without sending', async () => {
+it('appends a quoted excerpt to the feature draft, hands the next turn to its author and focuses without sending', async () => {
   const source = createMockSource({ locale: 'en' })
   source.readArtifact = async () => 'A selected excerpt\n\nAnother paragraph'
   const send = vi.spyOn(source, 'streamReply')
@@ -52,7 +52,6 @@ it('appends a quoted excerpt to the feature draft, selects its author and focuse
   const draft = screen.getByRole('textbox', { name: /Send your prompt/ })
   expect(draft).toHaveValue('Keep my draft\nReview login-oauth/PLAN.md:\n> A selected excerpt')
   expect(draft).toHaveFocus()
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Moldmaker')
   expect(send).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('tab', { name: /Catalog search/ }))
   expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveValue('')
@@ -63,6 +62,15 @@ it('appends a quoted excerpt to the feature draft, selects its author and focuse
   expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveValue(
     'Keep my draft\nReview login-oauth/PLAN.md:\n> A selected excerpt',
   )
+  // The excerpt's author takes the next turn, without an agent selector.
+  fireEvent.keyDown(screen.getByRole('textbox', { name: /Send your prompt/ }), {
+    key: 'Enter',
+    ctrlKey: true,
+  })
+  const authors = within(screen.getByRole('list', { name: 'Conversation' })).getAllByText(/./, {
+    selector: '[data-slot="message-author"]',
+  })
+  expect(authors.at(-1)).toHaveTextContent('Moldmaker')
 })
 
 it('responds to keyboard selection changes and hides on Escape, collapse and outside selections', async () => {
