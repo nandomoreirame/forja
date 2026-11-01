@@ -65,7 +65,7 @@ it('preselects Research from New spec and permits changing the recipient', async
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Reviewer')
 })
 
-it('reactivates the requested agent and focus without losing the draft', async () => {
+it('opens another focused conversation tab and keeps the first draft and agent', async () => {
   render(
     <WorkbenchPage
       source={createMockSource({ locale: 'en' })}
@@ -82,7 +82,10 @@ it('reactivates the requested agent and focus without losing the draft', async (
   fireEvent.click(add)
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
   expect(screen.getByRole('textbox')).toHaveFocus()
+  expect(screen.getByRole('textbox')).toHaveValue('')
+  fireEvent.click(screen.getAllByRole('tab', { name: /New conversation/ })[0])
   expect(screen.getByRole('textbox')).toHaveValue('Keep draft')
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Reviewer')
 })
 it('changes the agent within the current feature and keeps valid tab relationships', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)

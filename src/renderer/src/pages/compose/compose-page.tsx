@@ -6,7 +6,7 @@ export function ComposePage() {
   return (
     <section className="mx-auto flex min-h-0 w-full max-w-[760px] flex-1 items-center justify-center p-6">
       <div className="w-full">
-        <FeatureComposer key={view.role} role={view.role} autoFocus />
+        <FeatureComposer key={view.id} id={view.id} autoFocus />
       </div>
     </section>
   )

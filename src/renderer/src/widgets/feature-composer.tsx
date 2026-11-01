@@ -1,23 +1,15 @@
-import { useState, useEffect } from 'react'
 import { Composer } from '@/widgets/conversation'
 import { getDictionary } from '@/shared/i18n'
 import type { RoleId } from '@/renderer/src/shared/api'
 import { roleIds } from '@/renderer/src/shared/api'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-export function FeatureComposer({
-  role,
-  autoFocus = false,
-}: {
-  role: RoleId
-  autoFocus?: boolean
-}) {
+/** Composer of one New conversation tab; its agent and prompt live in the store per tab. */
+export function FeatureComposer({ id, autoFocus = false }: { id: string; autoFocus?: boolean }) {
   const state = useWorkbench((s) => s)
   const activation = state.composeActivation
-  const [prompt, setPrompt] = useState('')
-  const [recipient, setRecipient] = useState(role)
-  useEffect(() => {
-    setRecipient(role)
-  }, [role, activation])
+  const tab = state.composeTabs.find((item) => item.id === id)
+  if (!tab) return null
+  const { prompt, role: recipient } = tab
   const d = getDictionary(state.source.locale)
   const a = d.app
   return (
@@ -27,18 +19,15 @@ export function FeatureComposer({
       recipients={roleIds.map((id) => ({ id, label: d.product[id] }))}
       recipientId={recipient}
       onRecipientChange={(id) => {
-        if (roleIds.includes(id as RoleId)) {
-          setRecipient(id as RoleId)
-        }
+        if (roleIds.includes(id as RoleId)) state.setComposeDraft(tab.id, { role: id as RoleId })
       }}
       featureLabel={a.newContext}
       targetLabel={state.snapshot?.project.path ?? ''}
       targetPrefix={a.destination}
       value={prompt}
-      onChange={setPrompt}
+      onChange={(value) => state.setComposeDraft(tab.id, { prompt: value })}
       onSend={() => {
         state.createFeatureFromPrompt(prompt, recipient)
-        setPrompt('')
       }}
       placeholder={a.prompt}
       recipientLabel={a.recipient}

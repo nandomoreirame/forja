@@ -8,7 +8,7 @@ it('creates immutable unique features with their selected recipient and first me
   await store.getState().openProject('nandomoreira.dev')
   const before = store.getState().snapshot
   store.getState().startCompose('planner')
-  expect(store.getState().view).toEqual({ kind: 'compose', role: 'planner' })
+  expect(store.getState().view).toMatchObject({ kind: 'compose', role: 'planner' })
   const id = store.getState().createFeatureFromPrompt('Rate limit public endpoints', 'planner')
   expect(store.getState().view).toEqual({ kind: 'conversation', featureId: id })
   expect(store.getState().openFeatureIds).toEqual([id])
@@ -53,10 +53,10 @@ it('requires an open project and defaults new conversations to Research', async 
     'feature-4',
   ])
   store.getState().startCompose()
-  expect(store.getState().view).toEqual({ kind: 'compose', role: 'research' })
+  expect(store.getState().view).toMatchObject({ kind: 'compose', role: 'research' })
   expect(() => store.getState().createFeatureFromPrompt('  ', 'research')).toThrow('Empty prompt')
   store.getState().selectFeature('missing')
-  expect(store.getState().view).toEqual({ kind: 'compose', role: 'research' })
+  expect(store.getState().view).toMatchObject({ kind: 'compose', role: 'research' })
 })
 
 it('appends follow-up prompts to the selected mock feature without changing fixtures', async () => {

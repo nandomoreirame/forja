@@ -25,10 +25,15 @@ export type View =
   | { kind: 'authoring' }
   | { kind: 'home' }
   | { kind: 'archived' }
-  | { kind: 'compose'; role: RoleId }
+  | { kind: 'compose'; role: RoleId; id: string }
   | { kind: 'conversation'; featureId: string }
   | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
   | { kind: 'document'; documentId: string }
+export interface ComposeTab {
+  id: string
+  role: RoleId
+  prompt: string
+}
 export interface WorkbenchState {
   memories: MemoryRecord[]
   libraryDocuments: Record<string, LibraryDocument>
@@ -91,8 +96,11 @@ export interface WorkbenchState {
   archivedOpen: boolean
   openArchived(): void
   closeArchived(): void
-  composeOpen: boolean
-  closeCompose(): void
+  /** New conversation tabs, each with its own agent and unsent prompt. */
+  composeTabs: ComposeTab[]
+  selectCompose(id: string): void
+  setComposeDraft(id: string, draft: Partial<Pick<ComposeTab, 'role' | 'prompt'>>): void
+  closeCompose(id?: string): void
   closeAuthoring(): void
   /** Closes whatever tab is showing (Ctrl+W); does nothing on the empty state. */
   closeActiveTab(): void
@@ -149,6 +157,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
   const replies = new Map<string, { cancel: () => void }>()
   const documentReads = new Map<string, Promise<string>>()
   let authoringCancel: (() => void) | undefined
+  let composeSequence = 0
   let previousDocumentView: View = { kind: 'home' }
   let request = 0
   let skillsRequest = 0
@@ -159,23 +168,22 @@ export function createWorkbenchStore(source: WorkbenchSource) {
     const pageFlags = (view: View): Partial<WorkbenchState> =>
       view.kind === 'archived'
         ? { archivedOpen: true }
-        : view.kind === 'compose'
-          ? { composeOpen: true }
-          : view.kind === 'settings'
-            ? { settingsOpen: true }
-            : {}
+        : view.kind === 'settings'
+          ? { settingsOpen: true }
+          : {}
     // Drops a page's entries from history and, when it is showing, moves to the previous view.
-    const leavePage = (kind: 'settings' | 'archived' | 'compose' | 'authoring') => {
+    const leavePage = (kind: 'settings' | 'archived' | 'authoring' | ((view: View) => boolean)) => {
+      const matches = (view: View) => (typeof kind === 'function' ? kind(view) : view.kind === kind)
       const state = get()
       const history: View[] = []
       let historyIndex = -1
       state.history.forEach((entry, index) => {
-        if (entry.kind === kind) return
+        if (matches(entry)) return
         history.push(entry)
         if (index <= state.historyIndex) historyIndex = history.length - 1
       })
       let view = state.view
-      if (view.kind === kind) {
+      if (matches(view)) {
         view =
           history[historyIndex] ??
           (state.openFeatureIds.length
@@ -473,7 +481,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       openFeatureIds: [],
       settingsOpen: false,
       archivedOpen: false,
-      composeOpen: false,
+      composeTabs: [],
       lastSettings: {},
       drafts: {},
       setDraft(id, text) {
@@ -505,8 +513,13 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       },
       startCompose(role = 'research') {
         if (!get().snapshot) return
-        get().navigate({ kind: 'compose', role })
-        set((state) => ({ composeOpen: true, composeActivation: state.composeActivation + 1 }))
+        // Every call opens another tab, like a new untitled editor.
+        const id = `compose-${++composeSequence}`
+        set((state) => ({
+          composeTabs: [...state.composeTabs, { id, role, prompt: '' }],
+          composeActivation: state.composeActivation + 1,
+        }))
+        get().navigate({ kind: 'compose', role, id })
       },
       setLocale(locale) {
         if (get().source.locale === locale) return
@@ -531,9 +544,23 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         if (!get().archivedOpen) return
         set({ archivedOpen: false, ...leavePage('archived') })
       },
-      closeCompose() {
-        if (!get().composeOpen) return
-        set({ composeOpen: false, ...leavePage('compose') })
+      selectCompose(id) {
+        const tab = get().composeTabs.find((item) => item.id === id)
+        if (tab) get().navigate({ kind: 'compose', role: tab.role, id })
+      },
+      setComposeDraft(id, draft) {
+        set((state) => ({
+          composeTabs: state.composeTabs.map((tab) => (tab.id === id ? { ...tab, ...draft } : tab)),
+        }))
+      },
+      closeCompose(id) {
+        const view = get().view
+        const target = id ?? (view.kind === 'compose' ? view.id : undefined)
+        if (!get().composeTabs.some((tab) => tab.id === target)) return
+        set((state) => ({
+          composeTabs: state.composeTabs.filter((tab) => tab.id !== target),
+          ...leavePage((entry) => entry.kind === 'compose' && entry.id === target),
+        }))
       },
       closeActiveTab() {
         const view = get().view
@@ -541,7 +568,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         else if (view.kind === 'document') get().closeDocument(view.documentId)
         else if (view.kind === 'settings') get().closeSettings()
         else if (view.kind === 'archived') get().closeArchived()
-        else if (view.kind === 'compose') get().closeCompose()
+        else if (view.kind === 'compose') get().closeCompose(view.id)
         else if (view.kind === 'authoring') get().closeAuthoring()
       },
       closeAuthoring() {
@@ -578,8 +605,9 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           openFeatureIds: [...state.openFeatureIds, id],
           recipients: { ...state.recipients, [id]: role },
         }))
-        // The new feature takes the place of the New conversation tab.
-        if (get().composeOpen) set({ composeOpen: false, ...leavePage('compose') })
+        // The new feature takes the place of the New conversation tab it was sent from.
+        const from = get().view
+        if (from.kind === 'compose') get().closeCompose(from.id)
         get().navigate({ kind: 'conversation', featureId: id })
         get().sendMessage(id, prompt)
         return id

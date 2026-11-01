@@ -13,7 +13,7 @@ import { FeatureTabs, type FeatureTabItem } from '@/widgets/workbench'
  * that renders them, so navigating elsewhere keeps them open; only their close button removes
  * them. Closing a feature tab never stops its agent.
  */
-type PageId = 'settings' | 'archived' | 'compose' | 'authoring'
+type PageId = 'settings' | 'archived' | 'authoring'
 
 export function WorkbenchTabs() {
   const state = useWorkbench((s) => s)
@@ -63,12 +63,6 @@ export function WorkbenchTabs() {
       icon: <Archive aria-hidden="true" className={icon} />,
     },
     {
-      id: 'compose',
-      label: a.newConversation,
-      open: state.composeOpen,
-      icon: <MessageSquarePlus aria-hidden="true" className={icon} />,
-    },
-    {
       id: 'authoring',
       icon: <BookOpen aria-hidden="true" className={icon} />,
       label:
@@ -78,6 +72,13 @@ export function WorkbenchTabs() {
   ]
   for (const page of pages)
     if (page.open) items.push({ id: page.id, label: page.label, icon: page.icon })
+  const composeIds = state.composeTabs.map((tab) => tab.id)
+  for (const id of composeIds)
+    items.push({
+      id,
+      label: a.newConversation,
+      icon: <MessageSquarePlus aria-hidden="true" className={icon} />,
+    })
   if (!items.length) return null
   const isPage = (id: string): id is PageId => pages.some((page) => page.id === id)
   const selectedId =
@@ -85,9 +86,11 @@ export function WorkbenchTabs() {
       ? state.view.featureId
       : state.view.kind === 'document'
         ? state.view.documentId
-        : isPage(state.view.kind)
-          ? state.view.kind
-          : ''
+        : state.view.kind === 'compose'
+          ? state.view.id
+          : isPage(state.view.kind)
+            ? state.view.kind
+            : ''
   return (
     <FeatureTabs
       selectedId={selectedId}
@@ -103,7 +106,7 @@ export function WorkbenchTabs() {
         if (state.openDocumentIds.includes(id)) void state.openDocument(id)
         else if (id === 'settings') state.openSettings()
         else if (id === 'archived') state.openArchived()
-        else if (id === 'compose') state.startCompose()
+        else if (composeIds.includes(id)) state.selectCompose(id)
         else if (id === 'authoring') state.navigate({ kind: 'authoring' })
         else state.selectFeature(id)
       }}
@@ -111,7 +114,7 @@ export function WorkbenchTabs() {
         if (state.openDocumentIds.includes(id)) state.closeDocument(id)
         else if (id === 'settings') state.closeSettings()
         else if (id === 'archived') state.closeArchived()
-        else if (id === 'compose') state.closeCompose()
+        else if (composeIds.includes(id)) state.closeCompose(id)
         else if (id === 'authoring') state.closeAuthoring()
         else state.closeFeature(id)
       }}
