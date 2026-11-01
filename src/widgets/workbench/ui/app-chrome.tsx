@@ -6,6 +6,9 @@ import {
   TooltipContent,
   TooltipTrigger,
   TooltipProvider,
+  ToolIcon,
+  toolNames,
+  type ToolId,
 } from '@/shared/ui'
 import { Search, Terminal, ChevronLeft, ChevronRight } from 'lucide-react'
 export interface AppTopbarProps {
@@ -132,6 +135,8 @@ export function AppStatusbar({ items, end }: AppStatusbarProps) {
 export interface FeatureCycleStage {
   label: string
   state: 'done' | 'current' | 'pending'
+  tool?: ToolId
+  toolLabel?: string
 }
 
 export interface FeatureContextProps {
@@ -171,32 +176,49 @@ export function FeatureContext({
       {cycle?.length ? (
         <div className="flex items-center gap-2 border-t border-border pt-1.5 text-[11px]">
           <span className="text-muted-foreground">{cycleLabel}:</span>
-          <ol aria-label={cycleLabel} className="flex flex-wrap items-center gap-2">
-            {cycle.map((stage, index) => (
-              <li
-                key={stage.label}
-                aria-current={stage.state === 'current' ? 'step' : undefined}
-                className={
-                  stage.state === 'current'
-                    ? 'flex items-center gap-1 font-medium text-primary'
-                    : stage.state === 'done'
-                      ? 'text-foreground'
-                      : 'text-muted-foreground'
-                }
-              >
-                {index > 0 ? (
-                  <span aria-hidden="true" className="mr-2 font-normal text-muted-foreground">
-                    →
-                  </span>
-                ) : null}
-                {stage.state === 'current' ? (
-                  <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
-                ) : null}
-                {stage.label}
-                {stage.state === 'done' ? <span aria-hidden="true"> ✓</span> : null}
-              </li>
-            ))}
-          </ol>
+          <TooltipProvider>
+            <ol aria-label={cycleLabel} className="flex flex-wrap items-center gap-2">
+              {cycle.map((stage, index) => (
+                <li
+                  key={stage.label}
+                  aria-current={stage.state === 'current' ? 'step' : undefined}
+                  className={
+                    stage.state === 'current'
+                      ? 'flex items-center gap-1 font-medium text-primary'
+                      : stage.state === 'done'
+                        ? 'flex items-center gap-1 text-foreground'
+                        : 'flex items-center gap-1 text-muted-foreground'
+                  }
+                >
+                  {index > 0 ? (
+                    <span aria-hidden="true" className="mr-2 font-normal text-muted-foreground">
+                      →
+                    </span>
+                  ) : null}
+                  {stage.state === 'current' ? (
+                    <span aria-hidden="true" className="size-1.5 rounded-full bg-primary" />
+                  ) : null}
+                  {stage.tool ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span
+                          tabIndex={0}
+                          className="inline-flex rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+                        >
+                          <ToolIcon tool={stage.tool} />
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {stage.label} · {stage.toolLabel ?? toolNames[stage.tool]}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : null}
+                  {stage.label}
+                  {stage.state === 'done' ? <span aria-hidden="true"> ✓</span> : null}
+                </li>
+              ))}
+            </ol>
+          </TooltipProvider>
         </div>
       ) : null}
     </section>

@@ -1,7 +1,7 @@
 import { Code, FileText, MessageCircle, Pencil, TriangleAlert, Zap } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { cn } from '@/shared/ui/utils'
-import { ForjaMark } from '@/shared/ui'
+import { ForjaMark, toolIds } from '@/shared/ui'
 import { Button } from '@/shared/ui'
 import {
   AppStatusbar,
@@ -335,6 +335,7 @@ export function StyleguideSections({ locale }: { locale: Locale }) {
                   cycleLabel={sc.cycle}
                   cycle={roles.map((label, index) => ({
                     label,
+                    tool: toolIds[index],
                     state: index < 2 ? 'done' : index === 2 ? 'current' : 'pending',
                   }))}
                 />

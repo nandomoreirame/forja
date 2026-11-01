@@ -22,7 +22,7 @@ export function WorkbenchTabs() {
     .map((feature) => ({
       id: feature.id,
       label: feature.name,
-      tool: feature.tool,
+      tool: state.agentTools[feature.stage] ?? feature.tool,
       state:
         feature.state === 'running' ? 'running' : feature.state === 'waiting' ? 'waiting' : 'idle',
     }))

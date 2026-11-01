@@ -33,6 +33,7 @@ export function ConversationPage() {
             cycleLabel={a.cycle}
             cycle={roleIds.map((role, index) => ({
               label: d.product[role],
+              tool: state.agentTools[role],
               state:
                 index === roleIds.indexOf(feature.stage)
                   ? 'current'
