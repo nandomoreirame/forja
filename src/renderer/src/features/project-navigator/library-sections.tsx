@@ -1,4 +1,5 @@
-import { useId, useState } from 'react'
+import { useState } from 'react'
+import { NavigatorSection } from './section'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import {
   Button,
@@ -27,7 +28,6 @@ export function MemoriesSection({ locale }: { locale: Locale }) {
 function LibrarySection({ locale, kind }: { locale: Locale; kind: LibraryKind }) {
   const state = useWorkbench((s) => s)
   const a = getDictionary(locale).app
-  const heading = useId()
   const [open, setOpen] = useState(false)
   const [error, setError] = useState(false)
   const items =
@@ -39,13 +39,11 @@ function LibrarySection({ locale, kind }: { locale: Locale; kind: LibraryKind })
           scope: memory.scope,
         }))
   return (
-    <section
-      aria-labelledby={heading}
-      className="mx-3 flex min-h-0 shrink flex-col border-t border-border pt-3"
+    <NavigatorSection
+      section={kind === 'skill' ? 'skills' : 'memories'}
+      title={kind === 'skill' ? a.skills : a.memories}
+      count={items.length}
     >
-      <h2 id={heading} className="flex justify-between pb-1 text-[11px] uppercase tracking-wider">
-        <span>{kind === 'skill' ? a.skills : a.memories}</span> <span>{items.length}</span>
-      </h2>
       <div
         data-testid="section-scroll"
         className={`max-h-[16.5rem] shrink overflow-y-auto ${items.length ? 'min-h-16' : 'min-h-0'}`}
@@ -104,6 +102,6 @@ function LibrarySection({ locale, kind }: { locale: Locale; kind: LibraryKind })
           </div>
         </DialogContent>
       </Dialog>
-    </section>
+    </NavigatorSection>
   )
 }

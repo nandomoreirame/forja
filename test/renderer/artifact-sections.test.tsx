@@ -29,7 +29,9 @@ it('shows linked specs and plans, highlights the selected feature and has no add
   const other = within(specs).getByRole('button', { name: /Catalog search/ })
   expect(other).not.toHaveAttribute('data-current')
   expect(other).toHaveClass('text-muted-foreground')
-  const plan = within(plans).getAllByRole('button')[0]
+  const plan = within(plans)
+    .getAllByRole('button')
+    .find((button) => button.hasAttribute('data-current'))!
   expect(plan).toHaveTextContent(/spec/i)
   expect(plan).toHaveAttribute('data-current', 'true')
   expect(within(sidebar).queryByRole('button', { name: /Add plan/ })).toBeNull()
@@ -55,10 +57,9 @@ it('omits archived artifacts, counts visible rows and updates selection', async 
     'data-current',
     'true',
   )
-  expect(within(plans).getByRole('button', { name: /catalog-search/ })).toHaveAttribute(
-    'data-current',
-    'true',
-  )
+  expect(
+    within(plans).getByRole('button', { name: /^(?!Archive )catalog-search/ }),
+  ).toHaveAttribute('data-current', 'true')
 })
 
 it('opens a document with the keyboard and renders small state badges', async () => {
@@ -101,15 +102,20 @@ it('keeps unlinked library artifacts on one line without repeating the slug', as
       { id: 'p2', name: 'other/PLAN.md', kind: 'plan', state: 'draft', author: 'planner' },
     ],
   }))
-  const spec = within(specs).getByRole('button', { name: /real\/SPEC.md/ })
+  const spec = within(specs).getByRole('button', { name: /^(?!Archive )real\/SPEC.md/ })
   expect(spec).toHaveTextContent(/^real\/SPEC.mdReady$/)
-  expect(within(plans).getByRole('button', { name: /real\/PLAN.md/ })).toHaveTextContent(
-    /^real\/PLAN.mdReady$/,
-  )
-  expect(within(plans).getByRole('button', { name: /other\/PLAN.md/ })).toHaveTextContent(
-    /^other\/PLAN.mdReady$/,
-  )
-  for (const row of [spec, ...within(plans).getAllByRole('button')]) {
+  expect(
+    within(plans).getByRole('button', { name: /^(?!Archive )real\/PLAN.md/ }),
+  ).toHaveTextContent(/^real\/PLAN.mdReady$/)
+  expect(
+    within(plans).getByRole('button', { name: /^(?!Archive )other\/PLAN.md/ }),
+  ).toHaveTextContent(/^other\/PLAN.mdReady$/)
+  for (const row of [
+    spec,
+    ...within(plans)
+      .getAllByRole('button')
+      .filter((button) => button.textContent?.includes('.md')),
+  ]) {
     expect(row).not.toHaveAttribute('data-current')
     expect(row).toHaveClass('text-foreground')
   }

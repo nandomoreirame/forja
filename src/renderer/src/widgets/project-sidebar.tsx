@@ -1,4 +1,4 @@
-import { Plug, Settings } from 'lucide-react'
+import { Archive, Plug, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
@@ -36,6 +36,11 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       </div>
       <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
         <div className="space-y-0.5">
+          <WorkspaceButton
+            icon={<Archive />}
+            label={a.archived}
+            onClick={() => state.navigate({ kind: 'archived' })}
+          />
           <WorkspaceButton
             icon={<Plug />}
             label="Connectors"

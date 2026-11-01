@@ -1,3 +1,5 @@
+import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
+import { ArchivedPage } from '@/renderer/src/pages/archived'
 import { DocumentPage, AuthoringPage } from '@/renderer/src/pages/document'
 import { ComposePage } from '@/renderer/src/pages/compose'
 import { ConversationPage } from '@/renderer/src/pages/conversation'
@@ -31,37 +33,6 @@ import { IconButton } from '@/renderer/src/shared/ui/icon-button'
 import { TerminalFooterToolbar, TerminalPanel } from '@/renderer/src/features/terminal'
 import { UsagePopover } from '@/renderer/src/features/usage/usage-popover'
 const mainLayoutKey = 'react-resizable-panels:forja-main:content:terminal'
-
-const collapsedTerminal = (value: string) => {
-  try {
-    const layout: unknown = JSON.parse(value)
-    return Boolean(
-      layout && typeof layout === 'object' && (layout as Record<string, unknown>).terminal === 0,
-    )
-  } catch {
-    return false
-  }
-}
-
-// Layout sizes are a per-viewer convenience; storage can be unavailable (private mode, tests).
-const layoutStorage = {
-  getItem(key: string) {
-    try {
-      return localStorage.getItem(key)
-    } catch {
-      return null
-    }
-  },
-  setItem(key: string, value: string) {
-    // A terminal panel dragged closed must reopen at its last real size, as in VS Code.
-    if (collapsedTerminal(value)) return
-    try {
-      localStorage.setItem(key, value)
-    } catch {
-      // Keep the in-memory layout when storage is unavailable.
-    }
-  },
-}
 
 export function WorkbenchPage({
   source,
@@ -211,7 +182,9 @@ function WorkbenchShell() {
                 {terminalMaximized ? null : (
                   <ResizablePanel id="content" minSize={120}>
                     <div className="flex h-full min-h-0 flex-col overflow-auto">
-                      {s.view.kind === 'authoring' ? (
+                      {s.view.kind === 'archived' ? (
+                        <ArchivedPage />
+                      ) : s.view.kind === 'authoring' ? (
                         <AuthoringPage />
                       ) : s.view.kind === 'home' ? (
                         <HomePage />

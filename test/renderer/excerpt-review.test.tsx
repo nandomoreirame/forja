@@ -46,7 +46,7 @@ it('appends a quoted excerpt to the feature draft, selects its author and focuse
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
   const field = await screen.findByRole('textbox', { name: /Send your prompt/ })
   fireEvent.change(field, { target: { value: 'Keep my draft' } })
-  fireEvent.click(screen.getByRole('button', { name: /login-oauth\/PLAN.md/ }))
+  fireEvent.click(screen.getByRole('button', { name: /^login-oauth\/PLAN.md/ }))
   selectText(await screen.findByText('A selected excerpt'))
   fireEvent.click(screen.getByRole('button', { name: 'Review with agent' }))
   const draft = screen.getByRole('textbox', { name: /Send your prompt/ })
@@ -111,7 +111,7 @@ it('uses the explicit feature link even when the artifact name points elsewhere'
   }
   source.readArtifact = async () => 'Explicit feature excerpt'
   render(<WorkbenchPage source={source} initialProjectId="dev" />)
-  fireEvent.click(await screen.findByRole('button', { name: /login-oauth\/PLAN.md/ }))
+  fireEvent.click(await screen.findByRole('button', { name: /^login-oauth\/PLAN.md/ }))
   selectText(await screen.findByText('Explicit feature excerpt'))
   fireEvent.click(screen.getByRole('button', { name: 'Review with agent' }))
   fireEvent.click(screen.getByRole('tab', { name: /Catalog search/ }))

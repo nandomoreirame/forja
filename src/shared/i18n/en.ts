@@ -30,6 +30,11 @@ export const en = {
     searchProjects: 'Search recent projects',
     pickerUnavailable: 'Use the desktop app to select a folder in this browser.',
     features: 'Features',
+    archived: 'Archived',
+    archive: 'Archive',
+    restore: 'Restore',
+    interruptBeforeArchive: 'Interrupt the agent before archiving',
+    archivedEmpty: 'No archived items.',
     featureNavigator: {
       finished: 'Finished',
       integrated: 'Integrated',

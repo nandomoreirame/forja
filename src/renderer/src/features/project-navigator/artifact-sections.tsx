@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { NavigatorSection, ArchiveAction } from './section'
 import { ClipboardList } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui'
@@ -24,18 +24,15 @@ function ArtifactSection({ locale, kind }: { locale: Locale; kind: Artifact['kin
   const state = useWorkbench((s) => s)
   const snapshot = state.snapshot!
   const a = getDictionary(locale).app
-  const headingId = useId()
   const items = snapshot.artifacts.filter((item) => item.kind === kind && !item.archived)
   const selectedFeatureId = state.view.kind === 'conversation' ? state.view.featureId : undefined
   const title = kind === 'spec' ? a.specs : kind === 'plan' ? a.plans : a.reviews
   return (
-    <section
-      aria-labelledby={headingId}
-      className="mx-3 flex min-h-0 shrink flex-col border-t border-border pt-3"
+    <NavigatorSection
+      section={kind === 'spec' ? 'specs' : kind === 'plan' ? 'plans' : 'reviews'}
+      title={title}
+      count={items.length}
     >
-      <h2 id={headingId} className="flex justify-between pb-1 text-[11px] uppercase tracking-wider">
-        <span>{title}</span> <span>{items.length}</span>
-      </h2>
       <div
         data-testid="section-scroll"
         className={`max-h-[16.5rem] shrink overflow-y-auto ${items.length ? 'min-h-16' : 'min-h-0'}`}
@@ -52,37 +49,48 @@ function ArtifactSection({ locale, kind }: { locale: Locale; kind: Artifact['kin
           const current = Boolean(item.featureId && item.featureId === selectedFeatureId)
           const dimmed = Boolean(item.featureId && selectedFeatureId && !current)
           return (
-            <Tooltip key={item.id}>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  data-current={current ? 'true' : undefined}
-                  className={`flex w-full items-start gap-2 px-2 py-1.5 text-left hover:bg-accent ${dimmed ? 'text-muted-foreground' : 'text-foreground'} ${focus}`}
-                  onClick={() => void state.openDocument(item.id)}
-                >
-                  <ClipboardList aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
-                  {subtitle ? (
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate">{item.name}</span>
-                      <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
-                        <span className="truncate">{subtitle}</span>
-                        <StatusBadge size="sm" state={item.state}>
+            <div key={item.id} className="group flex items-center">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    data-current={current ? 'true' : undefined}
+                    className={`flex min-w-0 flex-1 items-start gap-2 px-2 py-1.5 text-left hover:bg-accent ${dimmed ? 'text-muted-foreground' : 'text-foreground'} ${focus}`}
+                    onClick={() => void state.openDocument(item.id)}
+                  >
+                    <ClipboardList aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+                    {subtitle ? (
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{item.name}</span>
+                        <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
+                          <span className="truncate">{subtitle}</span>
+                          <StatusBadge size="sm" state={item.state}>
+                            {a.states[item.state]}
+                          </StatusBadge>
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                        <span className="min-w-0 flex-1 truncate">{item.name}</span>
+                        <StatusBadge size="sm" state={item.state} className="shrink-0">
                           {a.states[item.state]}
                         </StatusBadge>
                       </span>
-                    </span>
-                  ) : (
-                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                      <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                      <StatusBadge size="sm" state={item.state} className="shrink-0">
-                        {a.states[item.state]}
-                      </StatusBadge>
-                    </span>
-                  )}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{subtitle ? `${item.name} · ${subtitle}` : item.name}</TooltipContent>
-            </Tooltip>
+                    )}
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {subtitle ? `${item.name} · ${subtitle}` : item.name}
+                </TooltipContent>
+              </Tooltip>
+              {kind !== 'review' && (
+                <ArchiveAction
+                  name={item.name}
+                  locale={locale}
+                  onClick={() => state.archiveItem({ kind, id: item.id })}
+                />
+              )}
+            </div>
           )
         })}
       </div>
@@ -95,6 +103,6 @@ function ArtifactSection({ locale, kind }: { locale: Locale; kind: Artifact['kin
           {a.newSpec}
         </button>
       )}
-    </section>
+    </NavigatorSection>
   )
 }

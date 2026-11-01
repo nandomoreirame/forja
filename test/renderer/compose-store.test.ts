@@ -51,7 +51,6 @@ it('requires an open project and defaults new conversations to Research', async 
     'feature-2',
     'feature-3',
     'feature-4',
-    'feature-5',
   ])
   store.getState().startCompose()
   expect(store.getState().view).toEqual({ kind: 'compose', role: 'research' })

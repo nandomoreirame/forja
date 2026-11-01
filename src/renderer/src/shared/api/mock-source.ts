@@ -95,6 +95,18 @@ export function createMockSource({
     async listProjects() {
       return structuredClone(fixtures.map((item) => item.project))
     },
+    saveArchiveState(snapshot) {
+      const fixture = fixtures.find((item) => item.project.id === snapshot.project.id)
+      if (!fixture) return
+      fixture.features = fixture.features.map((item) => ({
+        ...item,
+        archived: snapshot.features.find((feature) => feature.id === item.id)?.archived,
+      }))
+      fixture.artifacts = fixture.artifacts.map((item) => ({
+        ...item,
+        archived: snapshot.artifacts.find((artifact) => artifact.id === item.id)?.archived,
+      }))
+    },
     async loadProject(id) {
       const snapshot = fixtures.find((item) => item.project.id === id)
       if (!snapshot) throw new Error('Unknown project')

@@ -1,3 +1,8 @@
+import {
+  archiveCascade,
+  restoreCascade,
+  type ArchiveTarget,
+} from '@/renderer/src/shared/lib/archive'
 import { selectProjectDirectory } from '@/renderer/src/shared/lib/directory-picker'
 import { getDictionary } from '@/shared/i18n'
 import { featureIdentity } from './feature-name'
@@ -17,6 +22,7 @@ import type {
 export type View =
   | { kind: 'authoring' }
   | { kind: 'home' }
+  | { kind: 'archived' }
   | { kind: 'compose'; role: RoleId }
   | { kind: 'conversation'; featureId: string }
   | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
@@ -55,6 +61,8 @@ export interface WorkbenchState {
   openDocument(id: string): Promise<void>
   closeDocument(id: string): void
   approveDocument(id: string): void
+  archiveItem(target: ArchiveTarget): void
+  restoreItem(target: ArchiveTarget): void
   openFeatureIds: string[]
   settingsOpen: boolean
   lastSettings: { tab?: SettingsTab; role?: RoleId }
@@ -275,7 +283,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           : get().libraryDocuments[id]
         if (
           !snapshot ||
-          (!snapshot.artifacts.some((artifact) => artifact.id === id) && !libraryDocument)
+          (!snapshot.artifacts.some((artifact) => artifact.id === id && !artifact.archived) &&
+            !libraryDocument)
         )
           throw new Error('Unknown artifact')
         if (libraryDocument)
@@ -296,7 +305,12 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             if (documentReads.get(id) === pending) documentReads.delete(id)
           }
         }
-        if (token !== request || get().snapshot?.project.id !== snapshot.project.id) return
+        if (
+          token !== request ||
+          get().snapshot?.project.id !== snapshot.project.id ||
+          get().snapshot?.artifacts.some((artifact) => artifact.id === id && artifact.archived)
+        )
+          return
         if (get().view.kind !== 'document') previousDocumentView = get().view
         set((state) => ({
           documents: { ...state.documents, [id]: content },
@@ -353,6 +367,30 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             ),
           },
         })
+      },
+      archiveItem(target) {
+        const snapshot = get().snapshot
+        if (!snapshot) return
+        if (
+          target.kind === 'feature' &&
+          snapshot.features.find((f) => f.id === target.id)?.state === 'running'
+        )
+          return
+        const next = archiveCascade(snapshot, target)
+        if (next === snapshot) return
+        set({ snapshot: next })
+        if (target.kind === 'feature') get().closeFeature(target.id)
+        for (const artifact of next.artifacts) {
+          if (artifact.archived) get().closeDocument(artifact.id)
+        }
+        source.saveArchiveState?.(next)
+      },
+      restoreItem(target) {
+        const snapshot = get().snapshot
+        if (!snapshot) return
+        const next = restoreCascade(snapshot, target)
+        set({ snapshot: next })
+        source.saveArchiveState?.(next)
       },
       openFeatureIds: [],
       settingsOpen: false,
@@ -659,8 +697,9 @@ export function createWorkbenchStore(source: WorkbenchSource) {
           failedOperation = null
           documentReads.clear()
           previousDocumentView = { kind: 'home' }
-          const view: View = snapshot.features[0]
-            ? { kind: 'conversation', featureId: snapshot.features[0].id }
+          const first = snapshot.features.find((feature) => !feature.archived)
+          const view: View = first
+            ? { kind: 'conversation', featureId: first.id }
             : { kind: 'home' }
           set({
             projects,
@@ -682,7 +721,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             history: [view],
             historyIndex: 0,
             loading: false,
-            openFeatureIds: snapshot.features.map((f) => f.id),
+            openFeatureIds: snapshot.features.filter((f) => !f.archived).map((f) => f.id),
             recipients: Object.fromEntries(snapshot.features.map((f) => [f.id, f.stage])),
             terminalTabs: {},
             openDocumentIds: [],

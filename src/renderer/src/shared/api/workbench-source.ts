@@ -152,6 +152,7 @@ export interface WorkbenchSource {
   addProject(project: ProjectSummary): Promise<ProjectSnapshot>
   listProjects(): Promise<ProjectSummary[]>
   loadProject(id: string): Promise<ProjectSnapshot>
+  saveArchiveState?(snapshot: ProjectSnapshot): void
   scanSkills(root: string): Promise<ProjectSnapshot['skills']>
   readArtifact(id: string): Promise<string>
   streamReply(

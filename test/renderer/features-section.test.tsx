@@ -14,7 +14,7 @@ it('lists every feature by attention, reopens a closed tab and drops the Agents 
   expect(rows[0]).toHaveAccessibleName(/Catalog search/)
   fireEvent.click(screen.getByRole('button', { name: 'Close Catalog search' }))
   expect(screen.queryByRole('tab', { name: /Catalog search/ })).toBeNull()
-  fireEvent.click(within(features).getByRole('button', { name: /Catalog search/ }))
+  fireEvent.click(within(features).getByRole('button', { name: /^(?!Archive )Catalog search/ }))
   expect(screen.getByRole('tab', { name: /Catalog search/ })).toHaveAttribute(
     'aria-selected',
     'true',
@@ -23,11 +23,11 @@ it('lists every feature by attention, reopens a closed tab and drops the Agents 
     'aria-expanded',
     'false',
   )
-  fireEvent.click(within(features).getByRole('button', { name: /Login with OAuth/ }))
+  fireEvent.click(within(features).getByRole('button', { name: /^(?!Archive )Login with OAuth/ }))
   const history = screen.getByRole('list', { name: 'Conversation' }).textContent
   fireEvent.click(screen.getByRole('button', { name: 'Close Login with OAuth' }))
   fireEvent.click(screen.getByRole('button', { name: 'Close feature' }))
-  fireEvent.click(within(features).getByRole('button', { name: /Login with OAuth/ }))
+  fireEvent.click(within(features).getByRole('button', { name: /^(?!Archive )Login with OAuth/ }))
   expect(screen.getByRole('list', { name: 'Conversation' }).textContent).toBe(history)
 })
 
@@ -43,18 +43,25 @@ it('shows finished end states and lets Tab reach every visible feature row', asy
     within(section).getByRole('heading', { name: `Features ${visible.length}` }),
   ).toBeInTheDocument()
   for (const feature of visible.filter((f) => f.endState)) {
-    expect(within(section).queryByRole('button', { name: new RegExp(feature.name) })).toBeNull()
+    expect(
+      within(section).queryByRole('button', { name: new RegExp('^(?!Archive )' + feature.name) }),
+    ).toBeNull()
   }
   fireEvent.click(within(section).getByRole('button', { name: /Finished/ }))
   const rows = within(section).getAllByRole('button', { name: /·/ })
   expect(rows).toHaveLength(visible.length)
   for (const feature of visible.filter((f) => f.endState)) {
     expect(
-      within(section).getByRole('button', { name: new RegExp(feature.name) }),
+      within(section).getByRole('button', { name: new RegExp('^(?!Archive )' + feature.name) }),
     ).toHaveAccessibleName(/Integrated|Abandoned/)
   }
   within(section).getByRole('button', { name: 'Collapse sidebar' }).focus()
-  for (const target of within(section).getAllByRole('button').slice(1)) {
+  const buttons = Array.from(
+    section.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]'),
+  ).filter((element) => !element.closest('[hidden]'))
+  for (const target of buttons.slice(
+    buttons.findIndex((button) => button.getAttribute('aria-label') === 'Collapse sidebar') + 1,
+  )) {
     await user.tab()
     expect(target).toHaveFocus()
   }
@@ -87,13 +94,13 @@ it('localizes feature states and finished entries in Portuguese', async () => {
   const section = within(sidebar).getByRole('region', { name: /Features/ })
   const stalled = snapshot.features.find((feature) => feature.stalled)!
   expect(
-    within(section).getByRole('button', { name: new RegExp(stalled.name) }),
+    within(section).getByRole('button', { name: new RegExp('^(?!Arquivar )' + stalled.name) }),
   ).toHaveAccessibleName(/Sem progresso/)
   const finished = within(section).getByRole('button', { name: /Finalizadas/ })
   fireEvent.click(finished)
   const integrated = snapshot.features.find((feature) => feature.endState === 'integrated')!
   expect(
-    within(section).getByRole('button', { name: new RegExp(integrated.name) }),
+    within(section).getByRole('button', { name: new RegExp('^(?!Arquivar )' + integrated.name) }),
   ).toHaveAccessibleName(/Integrada/)
   expect(within(section).getByRole('button', { name: '+ Nova conversa' })).toBeInTheDocument()
 })
@@ -120,8 +127,10 @@ it('shows integrated features as completed and abandoned ones as interrupted', a
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
   const section = within(sidebar).getByRole('region', { name: /Features/ })
   fireEvent.click(within(section).getByRole('button', { name: /Finished/ }))
-  const integratedRow = within(section).getByRole('button', { name: new RegExp(finished.name) })
-  const abandonedRow = within(section).getByRole('button', { name: /Dropped idea/ })
+  const integratedRow = within(section).getByRole('button', {
+    name: new RegExp('^(?!Archive )' + finished.name),
+  })
+  const abandonedRow = within(section).getByRole('button', { name: /^(?!Archive )Dropped idea/ })
   expect(integratedRow).toHaveAccessibleName(/Integrated/)
   expect(abandonedRow).toHaveAccessibleName(/Abandoned/)
   expect(integratedRow.querySelector('[data-slot="status-badge"]')).toHaveAttribute(

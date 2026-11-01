@@ -30,6 +30,11 @@ export const ptBr = {
     searchProjects: 'Buscar projetos recentes',
     pickerUnavailable: 'Use o aplicativo desktop para selecionar uma pasta neste navegador.',
     features: 'Features',
+    archived: 'Arquivados',
+    archive: 'Arquivar',
+    restore: 'Restaurar',
+    interruptBeforeArchive: 'Interrompa o agente antes de arquivar',
+    archivedEmpty: 'Nenhum item arquivado.',
     featureNavigator: {
       finished: 'Finalizadas',
       integrated: 'Integrada',
