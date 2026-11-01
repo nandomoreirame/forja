@@ -34,7 +34,7 @@ function createWindow(): void {
     minHeight: 480,
     title: 'Forja',
     frame: false,
-    backgroundColor: '#0e0e0e',
+    backgroundColor: '#0b0b0c',
     show: false,
     webPreferences: {
       preload: join(import.meta.dirname, '../preload/index.cjs'),

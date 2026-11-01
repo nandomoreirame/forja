@@ -26,10 +26,10 @@ export function terminalFont() {
 }
 
 const theme = {
-  background: '#0e0e0e',
+  background: '#0b0b0c',
   foreground: '#e4e4e7',
   cursor: '#F5A623',
-  cursorAccent: '#0e0e0e',
+  cursorAccent: '#0b0b0c',
   selectionBackground: '#F5A62355',
   // VS Code's default integrated terminal palette.
   black: '#000000',
@@ -130,7 +130,7 @@ export function XtermView({
       ref={host}
       role="group"
       aria-label={label}
-      className="min-h-0 flex-1 overflow-hidden bg-[#0e0e0e] px-2 py-1"
+      className="min-h-0 flex-1 overflow-hidden bg-[#0b0b0c] px-2 py-1"
     />
   )
 }

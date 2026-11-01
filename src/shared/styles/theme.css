@@ -186,7 +186,8 @@
 :root,
 .dark {
   color-scheme: dark;
-  --background: #0e0e0e;
+  /* Terminal Noir surface.base, the window and editor background. */
+  --background: #0b0b0c;
   --foreground: #e6e6e6;
   --card: #121214;
   --card-foreground: #e6e6e6;
