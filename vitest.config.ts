@@ -7,6 +7,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['test/setup.ts'],
+    // Full WorkbenchPage renders take under 1s alone but exceed 5s when every worker runs at once.
+    testTimeout: 15_000,
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
