@@ -7,7 +7,7 @@
 **Architecture:** Follow the parent spec and public module contracts. All backend authority stays in core; browser compositions stay shared and side-effect free. Never depend on site internals from Electron.
 **Tech Stack:** Electron, React, TypeScript, SQLite, Zod; shadcn/ui and Tailwind for UI; Vitest/RTL and Playwright for tests.
 **Order:** 13 of 13
-**Total Tasks:** 4
+**Total Tasks:** 5
 **Estimated Complexity:** medium
 **Status:** Approved scope, planned; not implemented.
 
@@ -32,6 +32,15 @@
 - Reopening restores durable state without resurrecting OS processes.
 - Full exit stops owned resources and output remains bounded.
 - Site, Electron, two-feature Git flow and all five live CLI capabilities have truthful acceptance evidence.
+- Quitting with running owned work asks for confirmation and cancelling keeps everything running (REQ-099).
+
+## Checks
+
+Checks for the requirements added on 2026-11-01 (2026-11-01 improvement review). Requirements planned before the checks format keep their acceptance and per-task checks above.
+
+**Run shutdown**: `npx vitest run test/recovery/shutdown.test.ts --reporter=verbose`
+
+- C1 (REQ-099): quitting with running owned work requires confirmation listing it. Proof: run shutdown | PASS asks before quitting with running work
 
 ## Tasks
 
@@ -278,6 +287,63 @@ Run: `rtk npm test -- test/engines/smoke-manifest.test.ts`. Expected: PASS. Add 
 - Security docs match actual bind/authorization behavior; no invented sandbox/privacy guarantees.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 5: Confirm quitting while owned work is running
+
+**Requirement:** REQ-099, REQ-034
+**Depends on:** Task 1
+**Files:**
+
+- Modify: `src/core/recovery/shutdown.ts`
+- Modify: `src/main/index.ts`
+- Test: `test/recovery/shutdown.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it } from 'vitest'
+import { quitPlan } from '../../src/core/recovery/shutdown'
+it('asks before quitting with running work', () => {
+  expect(quitPlan([])).toEqual({ confirm: false, items: [] })
+  expect(quitPlan([{ feature: 'Login with OAuth', kind: 'agent', label: 'Implementer' }, { feature: 'Login with OAuth', kind: 'command', label: 'npm run dev' }])).toEqual({
+    confirm: true,
+    items: ['Login with OAuth · Implementer', 'Login with OAuth · npm run dev'],
+  })
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/recovery/shutdown.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+In the main process, intercept `before-quit` (and the window close that quits) while core reports owned running turns or managed commands: prevent the quit, show a native confirmation listing the items from `quitPlan`, and on confirm run the graceful stop of REQ-034 before quitting; on cancel keep the app and the work running. Quitting with nothing running stays immediate.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/recovery/shutdown.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- Cancel keeps every turn and command running and the window open.
+- Confirm stops owned process trees gracefully before exit (REQ-034).
+- A second quit request while the dialog is open does not open a second dialog.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
 **Step 5: Commit at implementation time**
 

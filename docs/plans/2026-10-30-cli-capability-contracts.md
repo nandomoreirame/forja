@@ -7,7 +7,7 @@
 **Architecture:** Follow the parent spec and public module contracts. All backend authority stays in core; browser compositions stay shared and side-effect free. Never depend on site internals from Electron.
 **Tech Stack:** Electron, React, TypeScript, SQLite, Zod; shadcn/ui and Tailwind for UI; Vitest/RTL and Playwright for tests.
 **Order:** 02 of 13
-**Total Tasks:** 3
+**Total Tasks:** 4
 **Estimated Complexity:** small
 **Status:** Approved scope, planned; not implemented.
 
@@ -29,6 +29,15 @@
 - All five IDs have versioned discovery/protocol records.
 - Controlled-ready requires actual restriction proof.
 - Missing live validation is reported as pending. A protocol fixture is not model-auth proof.
+- Every CLI contract records its fallback status signal and the event fields it may keep (REQ-095).
+
+## Checks
+
+Checks for the requirements added on 2026-11-01 (2026-11-01 improvement review). Requirements planned before the checks format keep their acceptance and per-task checks above.
+
+**Run contracts**: `npx vitest run test/engines/capabilities.test.ts --reporter=verbose`
+
+- C1 (REQ-095): each CLI contract names its fallback status signal and keeps only the event type and time. Proof: run contracts | PASS records a fallback status signal per CLI
 
 ## Tasks
 
@@ -226,6 +235,80 @@ Run: `rtk npm test -- test/engines/contract-matrix.test.ts`. Expected: PASS. Add
 - Never capture tokens/system environment/auth-store files; sanitize fixtures before versioning.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 4: Record each CLI's fallback status signal
+
+**Requirement:** REQ-095
+**Depends on:** Task 3
+**Files:**
+
+- Modify: `src/core/engines/capabilities.ts`
+- Modify: `docs/technical/cli-capabilities.md`
+- Test: `test/engines/capabilities.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it } from 'vitest'
+import { fallbackSignal, fallbackEventFields } from '../../src/core/engines/capabilities'
+it('records a fallback status signal per CLI', () => {
+  expect(fallbackSignal('claude')).toBe('hooks')
+  expect(fallbackSignal('codex')).toBe('notify')
+  expect(fallbackSignal('opencode')).toBe('plugin')
+  expect(fallbackSignal('agy')).toBe('osc7501')
+  expect(fallbackSignal('grok')).toBe('window-title')
+  // Fallback events never carry prompt, command or output content.
+  expect(fallbackEventFields).toEqual(['type', 'at'])
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/engines/capabilities.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+Extend the verified capability record with the secondary signal used when the structured stream lacks waiting/turn-end events (mapping: Claude per-invocation `--settings` hooks, Codex `notify`, OpenCode event plugin through the per-process config variable, agy `AGY_CLI_OSC7501=on`, Grok window title). Record the signal only after the probe proves it on the installed version; an unproven signal stays `none` and the adapter relies on the stream alone. Document each signal, its activation (environment or per-invocation flag only, never a user config edit) and the event names it maps in `docs/technical/cli-capabilities.md`.
+
+```typescript
+export type FallbackSignal = 'hooks' | 'notify' | 'plugin' | 'osc7501' | 'window-title' | 'none'
+export const fallbackEventFields = ['type', 'at'] as const
+const signals: Record<EngineId, FallbackSignal> = {
+  claude: 'hooks',
+  codex: 'notify',
+  opencode: 'plugin',
+  agy: 'osc7501',
+  grok: 'window-title',
+}
+export function fallbackSignal(engine: EngineId): FallbackSignal {
+  return signals[engine] ?? 'none'
+}
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/engines/capabilities.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- A contract whose probe could not confirm the signal reports `none`, not the expected value.
+- Activating a signal uses only per-process environment or per-invocation flags; a test asserts no file under the user home is written.
+- The contract matrix fixture covers all five CLIs.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
 **Step 5: Commit at implementation time**
 

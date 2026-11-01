@@ -7,7 +7,7 @@
 **Architecture:** Follow the parent spec and public module contracts. All backend authority stays in core; browser compositions stay shared and side-effect free. Never depend on site internals from Electron.
 **Tech Stack:** Electron, React, TypeScript, SQLite, Zod; shadcn/ui and Tailwind for UI; Vitest/RTL and Playwright for tests.
 **Order:** 04 of 13
-**Total Tasks:** 4
+**Total Tasks:** 6
 **Estimated Complexity:** medium
 **Status:** Approved scope, planned; not implemented.
 
@@ -32,6 +32,17 @@
 - Configure exactly five agents and the permitted settings.
 - Read arbitrary explicitly configured skill folders without edits.
 - Global composer remains independent from manual settings saves.
+- Skills from the native CLI folders appear read-only with their origin (REQ-101).
+- Each tool has an off-by-default plan usage switch that explains what is read before enabling (REQ-102).
+
+## Checks
+
+Checks for the requirements added on 2026-11-01 (2026-11-01 improvement review). Requirements planned before the checks format keep their acceptance and per-task checks above.
+
+**Run settings**: `npx vitest run test/skills/catalog.test.ts test/ui/settings.test.tsx --reporter=verbose`
+
+- C1 (REQ-101): native CLI skill folders join the catalog with origins and the configured folder wins collisions. Proof: run settings | PASS merges native skill folders with origins
+- C2 (REQ-102): plan usage switches start off and disclose the file and endpoint before enabling. Proof: run settings | PASS plan usage is opt-in per tool
 
 ## Tasks
 
@@ -310,6 +321,131 @@ Run: `rtk npm test -- test/ui/settings.test.tsx`. Expected: PASS. Add and run th
 - Saving while an agent runs leaves its snapshot unchanged.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 5: Read native CLI skill folders with their origin
+
+**Requirement:** REQ-101, REQ-017, REQ-051
+**Depends on:** Task 2
+**Files:**
+
+- Modify: `src/core/skills/catalog.ts`
+- Test: `test/skills/catalog.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it } from 'vitest'
+import { mergeCatalogs, nativeSkillRoots } from '../../src/core/skills/catalog'
+it('merges native skill folders with origins', () => {
+  expect(nativeSkillRoots('/repo')).toEqual([
+    { origin: 'claude', root: '~/.claude/skills' },
+    { origin: 'codex', root: '~/.codex/skills' },
+    { origin: 'agents', root: '~/.agents/skills' },
+    { origin: 'project', root: '/repo/.agents/skills' },
+  ])
+  const merged = mergeCatalogs([
+    { origin: 'configured', skills: [{ id: 'git' }] },
+    { origin: 'claude', skills: [{ id: 'git' }, { id: 'review' }] },
+  ])
+  expect(merged).toEqual([
+    { id: 'git', origin: 'configured' },
+    { id: 'review', origin: 'claude' },
+  ])
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/skills/catalog.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+Scan the native roots with the same bounded, symlink-safe reader as the configured folder (REQ-017), read-only, skipping missing roots silently and reporting unreadable entries. Keep the configured folder first on id collisions, then the native roots in the listed order. Any role may select any listed skill; injection reuses the existing context builder, which tells the agent to read that `SKILL.md` as data (REQ-051) and never copies, installs or edits files.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/skills/catalog.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- A missing native root yields no error and no entries.
+- A symlink escaping its root is rejected like in the configured folder.
+- Selecting a native skill for a role adds its path to the context without writing any file.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 6: Add opt-in plan usage switches to Settings
+
+**Requirement:** REQ-102, REQ-082
+**Depends on:** Task 4
+**Files:**
+
+- Modify: `src/renderer/src/pages/settings/settings-page.tsx`
+- Test: `test/ui/settings.test.tsx`
+
+**Team:**
+
+- Track: frontend
+- Implementer: frontend-engineer (skills: frontend-design, nextjs-fsd-conventions, test-driven-development)
+- Reviewers: type-safety-reviewer, test-reviewer, accessibility-guardrails
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+import { fireEvent, render, screen } from '@testing-library/react'
+import { expect, it } from 'vitest'
+import { createMockSource } from '../../src/renderer/src/shared/api'
+import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
+it('plan usage is opt-in per tool', async () => {
+  render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
+  fireEvent.keyDown(window, { key: ',', ctrlKey: true })
+  fireEvent.click(await screen.findByRole('tab', { name: 'Agents' }))
+  const toggle = screen.getByRole('switch', { name: 'Show plan usage for claude' })
+  expect(toggle).not.toBeChecked()
+  fireEvent.click(toggle)
+  expect(screen.getByRole('dialog', { name: /Plan usage/ })).toHaveTextContent('~/.claude/.credentials.json')
+  expect(screen.getByRole('dialog', { name: /Plan usage/ })).toHaveTextContent('api.anthropic.com')
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/ui/settings.test.tsx`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+Add one "Show plan usage" switch per tool (off by default) to the agent tool settings. Turning one on opens a confirmation dialog that names the file read (or the `agy /quota` command) and the endpoint called, states that the login is read in memory only and never stored, and enables the switch only after confirmation. Persist the flag through the settings source; the usage popover (REQ-082) shows unavailable for tools left off.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/ui/settings.test.tsx`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- Cancelling the dialog leaves the switch off and saves nothing.
+- agy's dialog names the `/quota` command and no credential file.
+- Keyboard: the switch and the dialog actions are reachable and labelled.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
 **Step 5: Commit at implementation time**
 

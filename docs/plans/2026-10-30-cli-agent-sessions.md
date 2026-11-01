@@ -7,7 +7,7 @@
 **Architecture:** Follow the parent spec and public module contracts. All backend authority stays in core; browser compositions stay shared and side-effect free. Never depend on site internals from Electron.
 **Tech Stack:** Electron, React, TypeScript, SQLite, Zod; shadcn/ui and Tailwind for UI; Vitest/RTL and Playwright for tests.
 **Order:** 08 of 13
-**Total Tasks:** 8
+**Total Tasks:** 10
 **Estimated Complexity:** medium
 **Status:** Approved scope, planned; not implemented.
 
@@ -32,6 +32,17 @@
 - Each requested CLI has a separately verified controlled adapter; no unsupported tool is called supported.
 - User-auth sessions are reused without copying credentials.
 - Interrupt/queue, permission requests and resume behavior are per-feature and recorded.
+- Waiting and turn-end states arrive even when a CLI stream omits them, from content-free fallback signals (REQ-095).
+- Opted-in plan usage is read on the AIBar model without ever persisting or logging a credential (REQ-102).
+
+## Checks
+
+Checks for the requirements added on 2026-11-01 (2026-11-01 improvement review). Requirements planned before the checks format keep their acceptance and per-task checks above.
+
+**Run sessions**: `npx vitest run test/engines/fallback-status.test.ts test/usage/plan-usage.test.ts --reporter=verbose`
+
+- C1 (REQ-095): fallback signals become waiting or done events with only type and time. Proof: run sessions | PASS maps fallback signals to content-free events
+- C2 (REQ-102): plan usage is queried only for opted-in tools and never exposes the token. Proof: run sessions | PASS reads usage only when opted in
 
 ## Tasks
 
@@ -616,6 +627,146 @@ Run: `rtk npm test -- test/sessions/watchdog.test.ts`. Expected: PASS. Add and r
 - Cost from turns with and without cost fields never sums into a fabricated total.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 9: Derive waiting and turn-end states from fallback signals
+
+**Requirement:** REQ-095, REQ-018
+**Depends on:** Task 8
+**Files:**
+
+- Create: `src/core/engines/fallback-status.ts`
+- Test: `test/engines/fallback-status.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it } from 'vitest'
+import { fromFallback } from '../../src/core/engines/fallback-status'
+it('maps fallback signals to content-free events', () => {
+  const at = '2026-11-01T12:00:00.000Z'
+  expect(fromFallback('osc7501', '\u001b]7501;blocked\u0007', at)).toEqual({ type: 'waiting', at })
+  expect(fromFallback('osc7501', '\u001b]7501;done\u0007', at)).toEqual({ type: 'done', at })
+  expect(fromFallback('hooks', JSON.stringify({ hook_event_name: 'Stop', prompt: 'secret' }), at)).toEqual({ type: 'done', at })
+  expect(fromFallback('window-title', '⚠ Action Required · grok', at)).toEqual({ type: 'waiting', at })
+  expect(fromFallback('hooks', 'not json', at)).toBeUndefined()
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/engines/fallback-status.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+Feed each adapter's secondary channel (from its capability contract, REQ-095) into the normalized event stream as `waiting` or `done` only when the structured stream has not already reported that state for the turn. Keep exactly `type` and `at`: drop every other field of hook payloads, OSC sequences or titles before they leave the parser. Hook settings are passed per invocation and write to a per-turn file inside the Forja data folder that is deleted at turn end. Malformed input is ignored with a bounded diagnostic counter, never surfaced as a fabricated state (REQ-052).
+
+```typescript
+import type { FallbackSignal } from './capabilities'
+export interface FallbackEvent { type: 'waiting' | 'done'; at: string }
+const hookStates: Record<string, FallbackEvent['type']> = { Stop: 'done', Notification: 'waiting', PermissionRequest: 'waiting' }
+export function fromFallback(signal: FallbackSignal, raw: string, at: string): FallbackEvent | undefined {
+  if (signal === 'osc7501') {
+    const state = /\u001b\]7501;(\w+)\u0007/.exec(raw)?.[1]
+    return state === 'blocked' ? { type: 'waiting', at } : state === 'done' ? { type: 'done', at } : undefined
+  }
+  if (signal === 'window-title') return /Action Required/.test(raw) ? { type: 'waiting', at } : undefined
+  if (signal === 'hooks') {
+    try {
+      const type = hookStates[(JSON.parse(raw) as { hook_event_name?: string }).hook_event_name ?? '']
+      return type ? { type, at } : undefined
+    } catch {
+      return undefined
+    }
+  }
+  return undefined
+}
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/engines/fallback-status.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- A structured `permission` event already received for the turn suppresses the duplicate fallback event.
+- The per-turn hook file lives under the Forja data folder and is removed at turn end, including after a crash on next start.
+- A hook payload with a prompt field never reaches persistence or logs (assert on the stored row).
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 10: Query opt-in plan usage on the AIBar model
+
+**Requirement:** REQ-102, REQ-015, REQ-060
+**Depends on:** Task 1
+**Files:**
+
+- Create: `src/core/usage/plan-usage.ts`
+- Create: `src/core/usage/providers.ts`
+- Test: `test/usage/plan-usage.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it, vi } from 'vitest'
+import { readPlanUsage } from '../../src/core/usage/plan-usage'
+it('reads usage only when opted in and never exposes the token', async () => {
+  const readLogin = vi.fn(async () => ({ accessToken: 'tok-123', expiresAt: Date.now() + 60_000 }))
+  const fetchUsage = vi.fn(async () => ({ five_hour: { utilization: 42, resets_at: '2026-11-01T15:00:00Z' } }))
+  expect(await readPlanUsage('claude', { enabled: false, readLogin, fetchUsage })).toEqual({ status: 'unavailable' })
+  expect(readLogin).not.toHaveBeenCalled()
+  const usage = await readPlanUsage('claude', { enabled: true, readLogin, fetchUsage })
+  expect(usage).toMatchObject({ status: 'ok', windows: [{ kind: 'five-hour', used: 42 }] })
+  expect(JSON.stringify(usage)).not.toContain('tok-123')
+  const expired = vi.fn(async () => ({ accessToken: 'tok-123', expiresAt: Date.now() - 1 }))
+  expect(await readPlanUsage('claude', { enabled: true, readLogin: expired, fetchUsage })).toEqual({ status: 'login-expired' })
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/usage/plan-usage.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+Implement one provider per tool with the endpoints already proven by the user's AIBar plugin: Claude `GET https://api.anthropic.com/api/oauth/usage` (headers `Authorization: Bearer`, `anthropic-beta: oauth-2025-04-20`, a Claude CLI `User-Agent`) from `~/.claude/.credentials.json`; Codex `GET https://chatgpt.com/backend-api/wham/usage` from `~/.codex/auth.json`; Grok `GET https://cli-chat-proxy.grok.com/v1/billing?format=credits` from `~/.grok/auth.json`; agy runs `agy -p "/quota" --output-format json` and reads no credential; OpenCode reports unavailable unless its official usage source is verified. Credentials are read only when the tool is enabled in Settings, live only in the function scope and request headers, and are never written, copied, cached, logged, put in argv or refreshed (REQ-015 as amended). Results map to the REQ-082 window model; failures keep the last value marked unavailable.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/usage/plan-usage.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- A disabled tool performs no file read and no network call (spies stay untouched).
+- Logs and persisted snapshots of a failing request contain no token or Authorization header.
+- An expired login returns `login-expired`; no refresh request is sent.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
 **Step 5: Commit at implementation time**
 

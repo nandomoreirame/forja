@@ -7,7 +7,7 @@
 **Architecture:** Follow the parent spec and public module contracts. All backend authority stays in core; browser compositions stay shared and side-effect free. Never depend on site internals from Electron.
 **Tech Stack:** Electron, React, TypeScript, SQLite, Zod; shadcn/ui and Tailwind for UI; Vitest/RTL and Playwright for tests.
 **Order:** 12 of 13
-**Total Tasks:** 5
+**Total Tasks:** 6
 **Estimated Complexity:** medium
 **Status:** Approved scope, planned; not implemented.
 
@@ -35,6 +35,15 @@
 - Corrections are bidirectionally linked and automatic attempts bounded.
 - Final approval and integration are one human action bound to current code, confirmed gates on the merge result and review.
 - Human gates are only spec, plan, final approval and push; the correction loop runs on machine gates.
+- Implementer subtasks run one at a time in the feature worktree, at most three per turn and one level deep (REQ-100).
+
+## Checks
+
+Checks for the requirements added on 2026-11-01 (2026-11-01 improvement review). Requirements planned before the checks format keep their acceptance and per-task checks above.
+
+**Run subtasks**: `npx vitest run test/workflow/subtasks.test.ts --reporter=verbose`
+
+- C1 (REQ-100): subtasks run sequentially, at most three per Implementer turn and never nested. Proof: run subtasks | PASS runs implementer subtasks one at a time within limits
 
 ## Tasks
 
@@ -375,6 +384,63 @@ Run: `rtk npx playwright test --config test/e2e/playwright.config.ts test/e2e/gu
 - No model/API network calls during deterministic E2E.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 6: Run sequential Implementer subtasks through the Forja MCP
+
+**Requirement:** REQ-100, REQ-007, REQ-025, REQ-048
+**Depends on:** Task 3
+**Files:**
+
+- Create: `src/core/workflow/subtasks.ts`
+- Test: `test/workflow/subtasks.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it } from 'vitest'
+import { createSubtaskQueue } from '../../src/core/workflow/subtasks'
+it('runs implementer subtasks one at a time within limits', async () => {
+  const order: string[] = []
+  const queue = createSubtaskQueue({ run: async (task) => { order.push(task.prompt); return 'ok' } })
+  await Promise.all(['a', 'b', 'c'].map((prompt) => queue.delegate({ from: 'implementer', prompt, engine: 'codex' })))
+  expect(order).toEqual(['a', 'b', 'c'])
+  await expect(queue.delegate({ from: 'implementer', prompt: 'd', engine: 'codex' })).rejects.toThrow('limit')
+  await expect(queue.delegate({ from: 'subtask', prompt: 'e', engine: 'codex' })).rejects.toThrow('nested')
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/workflow/subtasks.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+Expose a `delegate_subtask` Forja MCP tool to the Implementer only. Each call is validated in core (role, feature ownership, configured engine), queued per Implementer turn and run sequentially in the same feature worktree while the Implementer turn waits, so REQ-007 still holds one active turn per feature. A subtask gets the Implementer restrictions, cannot approve, waive or commit, and cannot call `delegate_subtask`; the REQ-025 turn commit includes its delta. Record each subtask (engine, prompt summary, state, result, timestamps) linked to the Implementer turn and show it under that turn in the conversation.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/workflow/subtasks.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- A Tester or Reviewer calling `delegate_subtask` is rejected in core.
+- Stopping the Implementer turn stops the running subtask and cancels queued ones.
+- A subtask's file changes appear in the Implementer turn commit, never in a separate commit.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
 **Step 5: Commit at implementation time**
 

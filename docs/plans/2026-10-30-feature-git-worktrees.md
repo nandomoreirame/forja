@@ -7,7 +7,7 @@
 **Architecture:** Follow the parent spec and public module contracts. All backend authority stays in core; browser compositions stay shared and side-effect free. Never depend on site internals from Electron.
 **Tech Stack:** Electron, React, TypeScript, SQLite, Zod; shadcn/ui and Tailwind for UI; Vitest/RTL and Playwright for tests.
 **Order:** 06 of 13
-**Total Tasks:** 6
+**Total Tasks:** 8
 **Estimated Complexity:** medium
 **Status:** Approved scope, planned; not implemented.
 
@@ -32,6 +32,17 @@
 - Integration never proceeds on stale approval, conflicts, red gates on the merge result or unrelated dirty work; push is separate.
 - Each Git target has human-confirmed repository gates and test patterns before implementation.
 - Integrated and abandoned features are read-only and cleanup is explicit.
+- Confirmed git-ignored local files such as `.env` reach new worktrees and never enter commits (REQ-097).
+- Files changed by more than one active feature are flagged in both, without blocking integration (REQ-098).
+
+## Checks
+
+Checks for the requirements added on 2026-11-01 (2026-11-01 improvement review). Requirements planned before the checks format keep their acceptance and per-task checks above.
+
+**Run worktrees**: `npx vitest run test/git/local-files.test.ts test/git/overlap.test.ts --reporter=verbose`
+
+- C1 (REQ-097): only confirmed git-ignored files inside the repository are copied into a new worktree. Proof: run worktrees | PASS proposes root env files and refuses paths outside the repository
+- C2 (REQ-098): a file changed by two active features is reported in both. Proof: run worktrees | PASS reports files changed by more than one feature
 
 ## Tasks
 
@@ -436,6 +447,117 @@ Run: `rtk npm test -- test/git/cleanup.test.ts`. Expected: PASS. Add and run the
 - A start request on an integrated or abandoned feature is rejected in core.
 
 Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. Once the site exists, keep its typecheck/build covered by the root checks. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 7: Copy confirmed git-ignored local files into new worktrees
+
+**Requirement:** REQ-097, REQ-050
+**Depends on:** Task 2
+**Files:**
+
+- Create: `src/core/git/local-files.ts`
+- Modify: `src/core/git/worktrees.ts`
+- Test: `test/git/local-files.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it } from 'vitest'
+import { proposeLocalFiles, copyablePath } from '../../src/core/git/local-files'
+it('proposes root env files and refuses paths outside the repository', () => {
+  expect(proposeLocalFiles(['.env', '.env.local', 'src/.env', 'README.md'])).toEqual(['.env', '.env.local'])
+  expect(copyablePath('/repo', '.env', { ignored: true })).toBe(true)
+  expect(copyablePath('/repo', '.env', { ignored: false })).toBe(false)
+  expect(copyablePath('/repo', '../secrets/.env', { ignored: true })).toBe(false)
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/git/local-files.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+When a Git target is bound, list root files matching `.env*`, confirm with `git check-ignore` that each is ignored, and propose them; store the human-confirmed list per target repository. On worktree creation copy each confirmed file (canonical path inside the repository, still ignored, regular file, size-bounded) into the same relative path of the worktree with the source mode preserved. A file that stopped being ignored is skipped with a warning, so it can never show up in the owned delta or the integration merge. Never log file contents.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/git/local-files.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- Real temp repo: a confirmed `.env` appears in the new worktree and `git status` there stays clean.
+- A symlink pointing outside the repository is refused.
+- Changing the list later affects only worktrees created afterwards.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
+
+**Step 5: Commit at implementation time**
+
+Invoke `git-commit` only in the separately authorized implementation workflow after the task gates pass. Include the task-owned code and tests; preserve unrelated index entries. Never push. This planning run does not execute commits.
+
+### Task 8: Warn about files changed by more than one active feature
+
+**Requirement:** REQ-098, REQ-026
+**Depends on:** Task 3
+**Files:**
+
+- Create: `src/core/git/overlap.ts`
+- Test: `test/git/overlap.test.ts`
+
+**Team:**
+
+- Track: backend
+- Implementer: backend-engineer (skills: typescript-backend, security-guardrails, test-driven-development)
+- Reviewers: business-logic-reviewer, security-reviewer, type-safety-reviewer, test-reviewer
+
+**Step 1: Write the failing test**
+
+Write this acceptance-focused test before implementing behavior. If the public module is absent, introduce only a compiling no-op surface to make the stated assertion fail; do not count an import/fixture syntax failure as RED.
+
+```typescript
+// @vitest-environment node
+import { expect, it } from 'vitest'
+import { overlaps } from '../../src/core/git/overlap'
+it('reports files changed by more than one feature', () => {
+  expect(overlaps({ f1: ['a.ts', 'b.ts'], f2: ['b.ts', 'c.ts'], f3: ['d.ts'] })).toEqual({
+    f1: { 'b.ts': ['f2'] },
+    f2: { 'b.ts': ['f1'] },
+  })
+})
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `rtk npm test -- test/git/overlap.test.ts`
+
+Expected: FAIL because the specified behavior is not implemented. Verify the failure concerns this behavior, not a missing dependency, environment or invalid test.
+
+**Step 3: Write minimal implementation**
+
+Compute each active feature's changed paths against its base (committed delta plus uncommitted owned changes) on every turn end and every 10 seconds while a turn runs, scoped to features of the same target repository. Publish the overlap map through core state; the renderer marks the paths in the Changes pane and the feature context, and the final-approval card repeats the list. Overlap never blocks approval; merge conflicts still follow REQ-026/REQ-050.
+
+**Step 4: Run test to verify it passes**
+
+Run: `rtk npm test -- test/git/overlap.test.ts`. Expected: PASS. Add and run these meaningful negative/integration checks before completing the task:
+
+- Features of different target repositories never overlap.
+- Integrated or abandoned features drop out of the map.
+- The final-approval card lists the shared files and still allows approval.
+
+Run the task gates from the repository root: `rtk npm run lint`, `rtk npm run typecheck`, `rtk npm test`, `rtk npm run build`. A passing mock is not evidence of a real process, Git mutation or CLI compatibility.
 
 **Step 5: Commit at implementation time**
 
