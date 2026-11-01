@@ -160,6 +160,11 @@ The scaffold defines SQLite settings, a health-only IPC schema, an engine interf
 112. **[REQ-112]** WHEN the source control flag is on THEN the core SHALL report the working tree changes of the feature worktree (or the opened repository) with git short status (modified, untracked, added, deleted), and the Changes section SHALL list them with file name, folder and status letter.
 113. **[REQ-113]** WHEN the source control flag is on THEN the statusbar SHALL show the commits behind and ahead of the branch upstream (or the feature base) with tooltips naming the base, refreshed after turns and Git operations, and show only the branch when no upstream exists.
 114. **[REQ-114]** WHEN new agent avatars are evaluated THEN the system SHALL present minimal faces in a minimal style (a rounded square in the agent color with two eyes that move while it speaks, and a distinct anvil-and-hammer mark for the Ferreiro, keeping the tool corner badge) first as a Stitch layout and a styleguide preview beside the current mascots, and SHALL replace REQ-089 mascots in the app only after the user approves the preview.
+115. **[REQ-115]** WHEN a feature appears in the Features section or as a tab THEN the system SHALL show its state as a distinct glyph in the state color instead of a dot: an animated spinner while working (static under reduced motion), `‖` waiting for the user, `✔` done, `●` idle, `↻` interrupted, `✗` failed and `×` ended, each with its state name in the accessible name and tooltip.
+116. **[REQ-116]** WHEN the Explorer or Changes flag is on and the user activates a file THEN the system SHALL open it in an editor tab: an Explorer file as a read-only preview with line numbers and syntax coloring, and a changed file as a side-by-side diff of the base and working versions with added and removed lines highlighted (a deleted file shows only the base, an untracked file only the working version); content comes from `WorkbenchSource` and binary or oversized files show a notice instead of content.
+117. **[REQ-117]** WHEN the `backlog-board` flag is on and the user opens Backlog from the sidebar (below the plan usage panel, above Archived) THEN the system SHALL open a Backlog tab listing demands not yet started with title, description and creation date, let the user add, edit and remove a demand, and start a demand by confirming its hand-off to Research, which turns it into a feature.
+118. **[REQ-118]** WHEN the `backlog-board` flag is on and the user opens Board from the sidebar THEN the system SHALL open a Board tab with the columns Backlog, Research, Plan, Implement, Testing, Review and Done, placing each demand and non-archived feature by its stage (Done for integrated features) as a card with name, current agent tool icon and status glyph (REQ-115); cards SHALL open their feature or demand and SHALL NOT be dragged between stages, which only approvals and hand-offs change (REQ-009).
+119. **[REQ-119]** WHEN a project is open THEN the first sidebar section SHALL be titled Chats (in both languages) instead of Features and list every non-archived conversation started with an agent, whether a feature, a bug or a Ferreiro chat; a Ferreiro chat SHALL appear after its first sent message, named from that prompt and marked with the Ferreiro avatar, and closing its tab SHALL NOT remove it; ordering, status glyphs (REQ-115) and row actions follow REQ-083.
 
 ### P2 (Should Have)
 
@@ -243,6 +248,8 @@ None in this delivery; deferred items are explicit below.
 | 32 | General agent | Add the Ferreiro (New chat, summaries, confirmed skill and memory drafts); RPI agents stay specialists; backlog demands and custom agents are future work | Nothing is created without the user. |
 | 33 | Agent names | Ferreiro, Minerador, Moldador, Bigorneiro, Temperador, Polidor (en: Smith, Miner, Moldmaker, Anvilsmith, Temperer, Polisher), user-editable, role in tooltip | User choice 2026-11-01. |
 | 34 | Mascots | Trial minimal faces through Stitch and the styleguide before replacing REQ-089 | The user wants to see them before deciding. |
+| 35 | Status, previews and board | Clear animated status glyphs; file preview and side-by-side diff behind the Explorer and source control flags; Backlog and Board pages as tabs behind a new `backlog-board` flag, opened from the sidebar below the usage panel (REQ-115 to REQ-118) | User request on 2026-11-01; backlog persistence does not exist in core yet, so both pages stay flagged until it does. |
+| 36 | Section name | Rename Features to Chats (same word in English and Portuguese) and list Ferreiro chats after their first message (REQ-119) | Matches the New chat button, avoids the CLI session meaning of sessions, and covers features, bugs and backlog conversations. |
 
 ## Constraints
 
@@ -393,6 +400,11 @@ None in this delivery; deferred items are explicit below.
 | REQ-112 | Source control changes | P1 | Approved 2026-11-01; not implemented |
 | REQ-113 | Branch sync status | P1 | Approved 2026-11-01; not implemented |
 | REQ-114 | Minimal agent faces trial | P1 | Approved 2026-11-01; not implemented |
+| REQ-115 | Clear animated feature status glyphs | P1 | Approved 2026-11-01; not implemented |
+| REQ-116 | File preview and change diff | P1 | Approved 2026-11-01; not implemented |
+| REQ-117 | Backlog page | P1 | Approved 2026-11-01; not implemented |
+| REQ-118 | RPI board page | P1 | Approved 2026-11-01; not implemented |
+| REQ-119 | Chats section for every agent conversation | P1 | Approved 2026-11-01; not implemented |
 
 ## Implementation Sequence
 
