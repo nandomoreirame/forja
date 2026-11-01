@@ -38,12 +38,19 @@ it('shows row badges and actions only on hover or focus', async () => {
   const sidebar = await renderSidebar()
   const specs = within(sidebar).getByRole('region', { name: /Specs/ })
   const row = within(specs).getByRole('button', { name: /^login-oauth\/SPEC.md/ })
-  const hover = row.closest('[data-slot="pane-row"]')!.querySelector('[data-slot="row-hover"]')!
-  expect(hover).toHaveClass('hidden', 'group-hover/row:flex', 'group-focus-within/row:flex')
+  const paneRow = row.closest('[data-slot="pane-row"]')!
+  expect(paneRow).toHaveClass('relative')
+  const hover = paneRow.querySelector('[data-slot="row-hover"]')!
+  // Badges and actions overlay the end of the name instead of shrinking it.
+  expect(hover).toHaveClass('absolute', 'right-0', 'bg-accent', 'hidden', 'group-hover/row:flex')
+  expect(hover).toHaveClass('group-focus-within/row:flex')
+  // Clicks on badges reach the row; only the action buttons take pointer events.
+  expect(hover).toHaveClass('pointer-events-none', '[&_button]:pointer-events-auto')
   expect(hover.querySelector('[data-slot="status-badge"]')).not.toBeNull()
   expect(within(hover as HTMLElement).getByRole('button', { name: /^Archive/ })).toBeInTheDocument()
   const actions = specs.querySelector('[data-slot="pane-actions"]')!
-  expect(actions).toHaveClass('opacity-0', 'group-hover/pane:opacity-100')
+  expect(actions).toHaveClass('absolute', 'invisible', 'group-hover/pane:visible')
+  expect(actions).toHaveClass('group-focus-within/pane:visible')
   expect(
     within(actions as HTMLElement).getByRole('button', { name: 'New spec' }),
   ).toBeInTheDocument()
@@ -77,4 +84,48 @@ it('collapses a pane to its header and expands it again', async () => {
   expect(plans.querySelector('[data-slot="pane-body"]')).not.toBeVisible()
   fireEvent.click(header)
   expect(header).toHaveAttribute('aria-expanded', 'true')
+})
+
+it('shows no tooltip over rows', async () => {
+  const sidebar = await renderSidebar()
+  const specs = within(sidebar).getByRole('region', { name: /Specs/ })
+  const row = within(specs).getByRole('button', { name: /^login-oauth\/SPEC.md/ })
+  expect(row).not.toHaveAttribute('data-state')
+  fireEvent.focus(row)
+  fireEvent.pointerMove(row)
+  expect(screen.queryByRole('tooltip')).toBeNull()
+})
+
+it('keeps every header count at the same right edge', async () => {
+  const sidebar = await renderSidebar()
+  for (const header of within(sidebar).getAllByRole('button', { expanded: true })) {
+    if (!header.closest('[data-slot="pane-header"]')) continue
+    const count = header.querySelector('[data-slot="pane-count"]')!
+    expect(count).toHaveClass('ml-auto')
+    expect(header.closest('[data-slot="pane-header"]')!.lastElementChild).toBe(
+      header.closest('h2')!.parentElement!.querySelector('[data-slot="pane-actions"]') ??
+        header.closest('h2'),
+    )
+  }
+})
+
+it('separates panes with a border and leaves a filler so collapsed panes stack on top', async () => {
+  const sidebar = await renderSidebar()
+  for (const separator of within(sidebar).getAllByRole('separator'))
+    expect(separator).toHaveClass('bg-border')
+  expect(sidebar.querySelector('[data-slot="pane-filler"]')).not.toBeNull()
+})
+
+it('starts Skills and Memories collapsed, like VS Code secondary views', async () => {
+  const sidebar = await renderSidebar()
+  for (const title of ['Features', 'Specs', 'Plans', 'Reviews'])
+    expect(within(sidebar).getByRole('button', { name: new RegExp('^' + title) })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+  for (const title of ['Skills', 'Memories'])
+    expect(within(sidebar).getByRole('button', { name: new RegExp('^' + title) })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
 })

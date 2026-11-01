@@ -124,12 +124,15 @@ it('collapses each section with the keyboard while preserving the heading count'
     const section = within(sidebar).getByRole('region', { name: new RegExp('^' + title) })
     const header = within(section).getByRole('button', { name: new RegExp('^' + title) })
     const name = header.textContent
+    const wasOpen = header.getAttribute('aria-expanded') === 'true'
     header.focus()
     await user.keyboard('{Enter}')
-    expect(header).toHaveAttribute('aria-expanded', 'false')
+    expect(header).toHaveAttribute('aria-expanded', String(!wasOpen))
     expect(header.textContent).toBe(name)
-    expect(document.getElementById(header.getAttribute('aria-controls')!)).not.toBeVisible()
-    expect(localStorage.getItem('forja.sidebar.' + title.toLowerCase())).toBe('false')
+    const body = document.getElementById(header.getAttribute('aria-controls')!)
+    if (wasOpen) expect(body).not.toBeVisible()
+    else expect(body).toBeVisible()
+    expect(localStorage.getItem('forja.sidebar.' + title.toLowerCase())).toBe(String(!wasOpen))
   }
 })
 

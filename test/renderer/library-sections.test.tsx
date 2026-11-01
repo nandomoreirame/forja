@@ -1,11 +1,17 @@
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, it, vi } from 'vitest'
+import { beforeEach, expect, it, vi } from 'vitest'
 import { createWorkbenchStore } from '../../src/renderer/src/entities/feature'
 import { MarkdownPreview } from '../../src/widgets/documents/ui/markdown-preview'
 import type { ReplyEvent, WorkbenchSource } from '../../src/renderer/src/shared/api'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
+
+// Skills and Memories start collapsed; these tests work with their rows.
+beforeEach(() => {
+  localStorage.setItem('forja.sidebar.skills', 'true')
+  localStorage.setItem('forja.sidebar.memories', 'true')
+})
 
 it('labels skills and memories by scope and removes Memory from the workspace menu and Settings', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)

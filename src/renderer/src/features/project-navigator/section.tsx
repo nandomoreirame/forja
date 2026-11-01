@@ -15,9 +15,9 @@ import { cn } from '@/shared/ui/utils'
 
 // VS Code pane metrics: 22 px headers and rows (paneview.ts DEFAULT_PANE_HEADER_SIZE,
 // TreeRenderer.ITEM_HEIGHT). A collapsed pane keeps only its header; an expanded one keeps
-// at least one row.
+// a 120 px body, VS Code's default minimumBodySize for vertical panes.
 export const paneHeaderSize = 22
-const paneMinSize = paneHeaderSize * 2
+const paneMinSize = paneHeaderSize + 120
 
 export const rowFocus =
   'focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-ring'
@@ -34,6 +34,7 @@ export function NavigatorSection({
   actions,
   empty,
   defaultSize,
+  defaultOpen = true,
 }: {
   section: string
   title: string
@@ -44,12 +45,17 @@ export function NavigatorSection({
   /** Message shown when the pane has no items. */
   empty?: string
   defaultSize?: number | string
+  /** Open state before the viewer chooses one; like VS Code, secondary panes start collapsed. */
+  defaultOpen?: boolean
 }) {
   const id = useId()
   const heading = useId()
   const key = `forja.sidebar.${section}`
   const panel = usePanelRef()
-  const [open, setOpen] = useState(() => layoutStorage.getItem(key) !== 'false')
+  const [open, setOpen] = useState(() => {
+    const stored = layoutStorage.getItem(key)
+    return stored === null ? defaultOpen : stored !== 'false'
+  })
   const toggle = (next: boolean) => {
     layoutStorage.setItem(key, String(next))
     setOpen(next)
@@ -73,9 +79,10 @@ export function NavigatorSection({
       minSize={paneMinSize}
       defaultSize={open ? defaultSize : paneHeaderSize}
       onResize={() => {
-        // Dragging a pane down to its header collapses it, as in VS Code.
+        // Follow collapses made by the group (a drag to the header, or too little height for
+        // every pane) without storing them as the viewer's choice.
         const collapsed = panel.current?.isCollapsed() ?? !open
-        if (collapsed === open) toggle(!collapsed)
+        if (collapsed === open) setOpen(!collapsed)
       }}
     >
       <section
@@ -85,7 +92,7 @@ export function NavigatorSection({
       >
         <div
           data-slot="pane-header"
-          className="flex h-[22px] shrink-0 items-center pr-2 text-muted-foreground"
+          className="relative flex h-[22px] shrink-0 items-center pr-2 text-muted-foreground"
         >
           <h2 id={heading} className="min-w-0 flex-1">
             <button
@@ -104,13 +111,16 @@ export function NavigatorSection({
                 <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
               )}
               <span className="truncate">{title}</span>{' '}
-              <span className="ml-auto pl-2 font-normal tabular-nums">{count}</span>
+              <span data-slot="pane-count" className="ml-auto pl-2 font-normal tabular-nums">
+                {count}
+              </span>
             </button>
           </h2>
           {actions ? (
+            // Actions cover the count on hover, so the count never moves.
             <div
               data-slot="pane-actions"
-              className="flex items-center gap-0.5 pl-1 opacity-0 group-focus-within/pane:opacity-100 group-hover/pane:opacity-100"
+              className="invisible absolute inset-y-0 right-1 flex items-center gap-0.5 bg-sidebar pl-1 group-focus-within/pane:visible group-hover/pane:visible"
             >
               {actions}
             </div>
@@ -145,7 +155,7 @@ export function PaneRow({
     <div
       data-slot="pane-row"
       className={cn(
-        'group/row flex h-[22px] items-center hover:bg-accent focus-within:bg-accent',
+        'group/row relative flex h-[22px] items-center hover:bg-accent focus-within:bg-accent',
         current && 'bg-accent',
       )}
     >
@@ -153,7 +163,7 @@ export function PaneRow({
       {hover ? (
         <span
           data-slot="row-hover"
-          className="hidden shrink-0 items-center gap-1 pr-2 group-focus-within/row:flex group-hover/row:flex"
+          className="pointer-events-none absolute inset-y-0 right-0 hidden items-center gap-1 bg-accent pl-1.5 pr-2 group-focus-within/row:flex group-hover/row:flex [&_button]:pointer-events-auto [&_[tabindex]]:pointer-events-auto"
         >
           {hover}
         </span>

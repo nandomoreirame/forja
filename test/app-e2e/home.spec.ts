@@ -5,6 +5,8 @@ test('home shell, panel toggles and view history work', async ({ page }) => {
   await expect(page.getByRole('complementary')).toHaveCount(0)
   await page.keyboard.press('Control+r')
   await page.getByRole('option', { name: /nandomoreira.dev/ }).click()
+  // Pane actions show on hover, as in VS Code.
+  await page.getByRole('region', { name: /^Features/ }).hover()
   await page.getByRole('button', { name: 'Collapse sidebar' }).click()
   await expect(page.getByRole('complementary', { name: 'nandomoreira.dev' })).toHaveCount(0)
   await page.getByRole('button', { name: 'Expand sidebar' }).click()
@@ -13,7 +15,10 @@ test('home shell, panel toggles and view history work', async ({ page }) => {
     'aria-pressed',
     'true',
   )
-  await page.getByRole('main').getByRole('button', { name: /New conversation/ }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /New conversation/ })
+    .click()
   await page.getByRole('button', { name: 'Back', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'FORJA' })).toBeVisible()
 })

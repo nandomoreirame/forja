@@ -2,7 +2,7 @@ import { Archive, Plug, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
-import { ResizableHandle, ResizablePanelGroup, useDefaultLayout } from '@/shared/ui'
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup, useDefaultLayout } from '@/shared/ui'
 import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
 import {
   FeaturesSection,
@@ -20,7 +20,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
   const paneLayout = useDefaultLayout({
     id: 'forja-sidebar-panes',
     storage: layoutStorage,
-    panelIds: ['features', 'specs', 'plans', 'reviews', 'skills', 'memories'],
+    panelIds: ['features', 'specs', 'plans', 'reviews', 'skills', 'memories', 'pane-filler'],
   })
   return (
     <aside
@@ -30,16 +30,18 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
       {/* VS Code style panes: each one resizes from the sash above it and collapses to its header. */}
       <ResizablePanelGroup orientation="vertical" className="min-h-0 flex-1" {...paneLayout}>
         <FeaturesSection locale={locale} />
-        <ResizableHandle />
+        <ResizableHandle className="bg-border" />
         <SpecsSection locale={locale} />
-        <ResizableHandle />
+        <ResizableHandle className="bg-border" />
         <PlansSection locale={locale} />
-        <ResizableHandle />
+        <ResizableHandle className="bg-border" />
         <ReviewsSection locale={locale} />
-        <ResizableHandle />
+        <ResizableHandle className="bg-border" />
         <SkillsSection locale={locale} />
-        <ResizableHandle />
+        <ResizableHandle className="bg-border" />
         <MemoriesSection locale={locale} />
+        {/* Absorbs the free height so collapsed panes stack at the top, as in VS Code. */}
+        <ResizablePanel id="pane-filler" minSize={0} defaultSize={0} data-slot="pane-filler" />
       </ResizablePanelGroup>
       <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
         <div className="space-y-0.5">

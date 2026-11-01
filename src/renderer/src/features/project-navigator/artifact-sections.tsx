@@ -1,7 +1,7 @@
 import { NavigatorSection, ArchiveAction, PaneAction, PaneRow, rowButton } from './section'
 import { ClipboardList, Plus } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
-import { StatusBadge, Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui'
+import { StatusBadge } from '@/shared/ui'
 import { cn } from '@/shared/ui/utils'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { ProjectSnapshot } from '@/renderer/src/shared/api'
@@ -71,32 +71,25 @@ function ArtifactSection({ locale, kind }: { locale: Locale; kind: Artifact['kin
               </>
             }
           >
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  aria-label={[item.name, subtitle, a.states[item.state]]
-                    .filter(Boolean)
-                    .join(' · ')}
-                  data-current={current ? 'true' : undefined}
-                  className={cn(
-                    rowButton,
-                    'pl-5',
-                    dimmed ? 'text-muted-foreground' : 'text-foreground',
-                  )}
-                  onClick={() => void state.openDocument(item.id)}
-                >
-                  <ClipboardList aria-hidden="true" className="size-4 shrink-0" />
-                  <span className="min-w-0 truncate">
-                    {item.name}
-                    {subtitle ? (
-                      <span className="ml-1.5 text-[12px] text-muted-foreground">{subtitle}</span>
-                    ) : null}
-                  </span>
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>{subtitle ? `${item.name} · ${subtitle}` : item.name}</TooltipContent>
-            </Tooltip>
+            <button
+              type="button"
+              aria-label={[item.name, subtitle, a.states[item.state]].filter(Boolean).join(' · ')}
+              data-current={current ? 'true' : undefined}
+              className={cn(
+                rowButton,
+                'pl-5',
+                dimmed ? 'text-muted-foreground' : 'text-foreground',
+              )}
+              onClick={() => void state.openDocument(item.id)}
+            >
+              <ClipboardList aria-hidden="true" className="size-4 shrink-0" />
+              <span className="min-w-0 truncate">
+                {item.name}
+                {subtitle ? (
+                  <span className="ml-1.5 text-[12px] text-muted-foreground">{subtitle}</span>
+                ) : null}
+              </span>
+            </button>
           </PaneRow>
         )
       })}

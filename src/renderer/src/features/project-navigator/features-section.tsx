@@ -19,7 +19,7 @@ import {
   Plus,
 } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
-import { StatusBadge, Tooltip, TooltipContent, TooltipTrigger, type UiState } from '@/shared/ui'
+import { StatusBadge, type UiState } from '@/shared/ui'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { FeatureSnapshot } from '@/renderer/src/shared/api'
 import { cn } from '@/shared/ui/utils'
@@ -84,24 +84,19 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
           </>
         }
       >
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              aria-label={`${feature.name} · ${role} · ${label}`}
-              aria-current={current ? 'true' : undefined}
-              className={cn(rowButton, 'pl-5 text-foreground')}
-              onClick={() => state.openFeature(feature.id)}
-            >
-              <span
-                aria-hidden="true"
-                className={`ml-1 mr-1 size-1.5 shrink-0 rounded-full ${badgeState === 'running' ? 'bg-primary motion-safe:animate-pulse' : badgeState === 'failed' ? 'bg-destructive' : badgeState === 'completed' ? 'bg-success' : 'bg-muted-foreground'}`}
-              />
-              <span className="min-w-0 truncate">{feature.name}</span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>{feature.name}</TooltipContent>
-        </Tooltip>
+        <button
+          type="button"
+          aria-label={`${feature.name} · ${role} · ${label}`}
+          aria-current={current ? 'true' : undefined}
+          className={cn(rowButton, 'pl-5 text-foreground')}
+          onClick={() => state.openFeature(feature.id)}
+        >
+          <span
+            aria-hidden="true"
+            className={`ml-1 mr-1 size-1.5 shrink-0 rounded-full ${badgeState === 'running' ? 'bg-primary motion-safe:animate-pulse' : badgeState === 'failed' ? 'bg-destructive' : badgeState === 'completed' ? 'bg-success' : 'bg-muted-foreground'}`}
+          />
+          <span className="min-w-0 truncate">{feature.name}</span>
+        </button>
       </PaneRow>
     )
   }

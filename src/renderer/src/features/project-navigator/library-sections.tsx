@@ -48,6 +48,7 @@ function LibrarySection({ locale, kind }: { locale: Locale; kind: LibraryKind })
       title={kind === 'skill' ? a.skills : a.memories}
       count={items.length}
       defaultSize="15%"
+      defaultOpen={false}
       empty={a.libraryEmpty}
       actions={
         <Dialog open={open} onOpenChange={setOpen}>
@@ -99,22 +100,17 @@ function LibrarySection({ locale, kind }: { locale: Locale; kind: LibraryKind })
             </StatusBadge>
           }
         >
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                className={cn(rowButton, 'pl-5')}
-                onClick={() => {
-                  setError(false)
-                  void state.openDocument(item.id).catch(() => setError(true))
-                }}
-              >
-                <Icon aria-hidden="true" className="size-4 shrink-0" />
-                <span className="min-w-0 truncate">{item.name}</span>
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>{item.name}</TooltipContent>
-          </Tooltip>
+          <button
+            type="button"
+            className={cn(rowButton, 'pl-5')}
+            onClick={() => {
+              setError(false)
+              void state.openDocument(item.id).catch(() => setError(true))
+            }}
+          >
+            <Icon aria-hidden="true" className="size-4 shrink-0" />
+            <span className="min-w-0 truncate">{item.name}</span>
+          </button>
         </PaneRow>
       ))}
       {error && (
