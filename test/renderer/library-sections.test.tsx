@@ -233,8 +233,10 @@ it('keeps library row and creation focus outlines inside clipped sections', asyn
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
   for (const name of [/Skills/, /Memories/]) {
     const section = within(sidebar).getByRole('region', { name })
-    for (const button of await within(section).findAllByRole('button')) {
-      expect(button).toHaveClass('focus-visible:-outline-offset-2')
+    const body = section.querySelector('[data-slot="pane-body"]') as HTMLElement
+    const rows = await within(body).findAllByRole('button')
+    for (const button of [within(section).getByRole('button', { expanded: true }), ...rows]) {
+      expect(button.className).toMatch(/focus-visible:-outline-offset-\d/)
     }
   }
 })

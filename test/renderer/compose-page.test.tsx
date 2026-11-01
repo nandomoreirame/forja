@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { expect, it } from 'vitest'
 import { createMockSource } from '../../src/renderer/src/shared/api'
 import { WorkbenchPage } from '../../src/renderer/src/pages/workbench'
@@ -9,7 +9,12 @@ it('selects Planner in the composer, sends a feature and closes back to Research
       initialProjectId="nandomoreira.dev"
     />,
   )
-  fireEvent.click(await screen.findByRole('button', { name: '+ New conversation' }))
+  fireEvent.click(
+    within(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).getByRole(
+      'button',
+      { name: 'New conversation' },
+    ),
+  )
   const field = screen.getByRole('textbox', { name: /Send your prompt/ })
   expect(field).toHaveFocus()
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
@@ -43,11 +48,16 @@ it('preselects Research from New spec and permits changing the recipient', async
       initialProjectId="nandomoreira.dev"
     />,
   )
-  fireEvent.click(await screen.findByRole('button', { name: '+ New conversation' }))
+  fireEvent.click(
+    within(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).getByRole(
+      'button',
+      { name: 'New conversation' },
+    ),
+  )
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
   fireEvent.click(screen.getByRole('option', { name: 'Tester' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Tester')
-  fireEvent.click(screen.getByRole('button', { name: '+ New spec' }))
+  fireEvent.click(screen.getByRole('button', { name: 'New spec' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
   fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
   fireEvent.click(screen.getByRole('option', { name: 'Reviewer' }))
@@ -65,7 +75,7 @@ it('reactivates the requested agent and focus without losing the draft', async (
       initialProjectId="nandomoreira.dev"
     />,
   )
-  const add = await screen.findByRole('button', { name: '+ New spec' })
+  const add = await screen.findByRole('button', { name: 'New spec' })
   fireEvent.click(add)
   const field = screen.getByRole('textbox')
   fireEvent.change(field, { target: { value: 'Keep draft' } })

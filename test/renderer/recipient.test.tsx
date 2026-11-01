@@ -37,7 +37,7 @@ it('returns from another view through a feature row and selects a recipient by m
   await screen.findByRole('tab', { name: /Login with OAuth/ })
   fireEvent.keyDown(window, { key: ',', ctrlKey: true })
   expect(screen.queryByRole('textbox', { name: /Send your prompt/ })).toBeNull()
-  fireEvent.click(screen.getByRole('button', { name: /Login with OAuth ·/ }))
+  fireEvent.click(screen.getByRole('button', { name: /^Login with OAuth ·/ }))
   const prompt = await screen.findByRole('textbox', { name: /Send your prompt/ })
   fireEvent.change(prompt, { target: { value: '@tester' } })
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Tester')

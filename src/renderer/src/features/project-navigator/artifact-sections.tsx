@@ -1,11 +1,11 @@
-import { NavigatorSection, ArchiveAction } from './section'
-import { ClipboardList } from 'lucide-react'
+import { NavigatorSection, ArchiveAction, PaneAction, PaneRow, rowButton } from './section'
+import { ClipboardList, Plus } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui'
+import { cn } from '@/shared/ui/utils'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { ProjectSnapshot } from '@/renderer/src/shared/api'
 
-const focus = 'focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2'
 type Artifact = ProjectSnapshot['artifacts'][number]
 
 export function SpecsSection({ locale }: { locale: Locale }) {
@@ -32,77 +32,74 @@ function ArtifactSection({ locale, kind }: { locale: Locale; kind: Artifact['kin
       section={kind === 'spec' ? 'specs' : kind === 'plan' ? 'plans' : 'reviews'}
       title={title}
       count={items.length}
+      defaultSize={kind === 'review' ? '10%' : '20%'}
+      empty={kind === 'spec' ? a.specsEmpty : kind === 'plan' ? a.plansEmpty : a.reviewsEmpty}
+      actions={
+        kind === 'spec' ? (
+          <PaneAction label={a.newSpec} onClick={() => state.startCompose('research')}>
+            <Plus aria-hidden="true" />
+          </PaneAction>
+        ) : undefined
+      }
     >
-      <div
-        data-testid="section-scroll"
-        className={`max-h-[16.5rem] shrink overflow-y-auto ${items.length ? 'min-h-16' : 'min-h-0'}`}
-      >
-        {items.map((item) => {
-          // Only linked artifacts get a subtitle; unlinked library files already carry the slug.
-          const feature = snapshot.features.find((feature) => feature.id === item.featureId)
-          const spec = item.specId
-            ? snapshot.artifacts.find(
-                (artifact) => artifact.kind === 'spec' && artifact.id === item.specId,
-              )
-            : undefined
-          const subtitle = kind === 'plan' ? spec?.name : feature?.name
-          const current = Boolean(item.featureId && item.featureId === selectedFeatureId)
-          const dimmed = Boolean(item.featureId && selectedFeatureId && !current)
-          return (
-            <div key={item.id} className="group flex items-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    data-current={current ? 'true' : undefined}
-                    className={`flex min-w-0 flex-1 items-start gap-2 px-2 py-1.5 text-left hover:bg-accent ${dimmed ? 'text-muted-foreground' : 'text-foreground'} ${focus}`}
-                    onClick={() => void state.openDocument(item.id)}
-                  >
-                    <ClipboardList aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" />
+      {items.map((item) => {
+        // Only linked artifacts get a description; unlinked library files already carry the slug.
+        const feature = snapshot.features.find((feature) => feature.id === item.featureId)
+        const spec = item.specId
+          ? snapshot.artifacts.find(
+              (artifact) => artifact.kind === 'spec' && artifact.id === item.specId,
+            )
+          : undefined
+        const subtitle = kind === 'plan' ? spec?.name : feature?.name
+        const current = Boolean(item.featureId && item.featureId === selectedFeatureId)
+        const dimmed = Boolean(item.featureId && selectedFeatureId && !current)
+        return (
+          <PaneRow
+            key={item.id}
+            hover={
+              <>
+                <StatusBadge size="sm" state={item.state}>
+                  {a.states[item.state]}
+                </StatusBadge>
+                {kind !== 'review' && (
+                  <ArchiveAction
+                    name={item.name}
+                    locale={locale}
+                    onClick={() => state.archiveItem({ kind, id: item.id })}
+                  />
+                )}
+              </>
+            }
+          >
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={[item.name, subtitle, a.states[item.state]]
+                    .filter(Boolean)
+                    .join(' · ')}
+                  data-current={current ? 'true' : undefined}
+                  className={cn(
+                    rowButton,
+                    'pl-5',
+                    dimmed ? 'text-muted-foreground' : 'text-foreground',
+                  )}
+                  onClick={() => void state.openDocument(item.id)}
+                >
+                  <ClipboardList aria-hidden="true" className="size-4 shrink-0" />
+                  <span className="min-w-0 truncate">
+                    {item.name}
                     {subtitle ? (
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate">{item.name}</span>
-                        <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
-                          <span className="truncate">{subtitle}</span>
-                          <StatusBadge size="sm" state={item.state}>
-                            {a.states[item.state]}
-                          </StatusBadge>
-                        </span>
-                      </span>
-                    ) : (
-                      <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                        <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                        <StatusBadge size="sm" state={item.state} className="shrink-0">
-                          {a.states[item.state]}
-                        </StatusBadge>
-                      </span>
-                    )}
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {subtitle ? `${item.name} · ${subtitle}` : item.name}
-                </TooltipContent>
-              </Tooltip>
-              {kind !== 'review' && (
-                <ArchiveAction
-                  name={item.name}
-                  locale={locale}
-                  onClick={() => state.archiveItem({ kind, id: item.id })}
-                />
-              )}
-            </div>
-          )
-        })}
-      </div>
-      {kind === 'spec' && (
-        <button
-          type="button"
-          className={`w-full py-1 text-left text-muted-foreground hover:text-primary ${focus}`}
-          onClick={() => state.startCompose('research')}
-        >
-          {a.newSpec}
-        </button>
-      )}
+                      <span className="ml-1.5 text-[12px] text-muted-foreground">{subtitle}</span>
+                    ) : null}
+                  </span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{subtitle ? `${item.name} · ${subtitle}` : item.name}</TooltipContent>
+            </Tooltip>
+          </PaneRow>
+        )
+      })}
     </NavigatorSection>
   )
 }

@@ -65,7 +65,7 @@ it('shows finished end states and lets Tab reach every visible feature row', asy
     await user.tab()
     expect(target).toHaveFocus()
   }
-  fireEvent.click(within(section).getByRole('button', { name: '+ New conversation' }))
+  fireEvent.click(within(section).getByRole('button', { name: 'New conversation' }))
   expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveFocus()
 })
 
@@ -82,7 +82,7 @@ it('keeps only the new conversation action in an empty feature list', async () =
   const section = within(sidebar).getByRole('region', { name: /Features/ })
   expect(within(section).getByRole('heading', { name: 'Features 0' })).toBeInTheDocument()
   expect(within(section).queryByRole('button', { name: /·|Finished/ })).toBeNull()
-  fireEvent.click(within(section).getByRole('button', { name: '+ New conversation' }))
+  fireEvent.click(within(section).getByRole('button', { name: 'New conversation' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
 })
 
@@ -102,7 +102,7 @@ it('localizes feature states and finished entries in Portuguese', async () => {
   expect(
     within(section).getByRole('button', { name: new RegExp('^(?!Arquivar )' + integrated.name) }),
   ).toHaveAccessibleName(/Integrada/)
-  expect(within(section).getByRole('button', { name: '+ Nova conversa' })).toBeInTheDocument()
+  expect(within(section).getByRole('button', { name: 'Nova conversa' })).toBeInTheDocument()
 })
 
 it('shows integrated features as completed and abandoned ones as interrupted', async () => {
@@ -133,12 +133,10 @@ it('shows integrated features as completed and abandoned ones as interrupted', a
   const abandonedRow = within(section).getByRole('button', { name: /^(?!Archive )Dropped idea/ })
   expect(integratedRow).toHaveAccessibleName(/Integrated/)
   expect(abandonedRow).toHaveAccessibleName(/Abandoned/)
-  expect(integratedRow.querySelector('[data-slot="status-badge"]')).toHaveAttribute(
-    'data-state',
-    'completed',
-  )
-  expect(abandonedRow.querySelector('[data-slot="status-badge"]')).toHaveAttribute(
-    'data-state',
-    'interrupted',
-  )
+  expect(
+    integratedRow.closest('[data-slot="pane-row"]')!.querySelector('[data-slot="status-badge"]'),
+  ).toHaveAttribute('data-state', 'completed')
+  expect(
+    abandonedRow.closest('[data-slot="pane-row"]')!.querySelector('[data-slot="status-badge"]'),
+  ).toHaveAttribute('data-state', 'interrupted')
 })

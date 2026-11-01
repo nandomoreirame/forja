@@ -2,6 +2,8 @@ import { Archive, Plug, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
+import { ResizableHandle, ResizablePanelGroup, useDefaultLayout } from '@/shared/ui'
+import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
 import {
   FeaturesSection,
   SpecsSection,
@@ -15,25 +17,30 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
   const snapshot = state.snapshot!
   const d = getDictionary(locale)
   const a = d.app
+  const paneLayout = useDefaultLayout({
+    id: 'forja-sidebar-panes',
+    storage: layoutStorage,
+    panelIds: ['features', 'specs', 'plans', 'reviews', 'skills', 'memories'],
+  })
   return (
     <aside
       aria-label={snapshot.project.name}
       className="flex h-full w-full flex-col border-r border-border bg-sidebar text-xs"
     >
-      {/* Sections scroll on their own (up to 8 rows each) and shrink when the sidebar is short. */}
-      <div
-        data-slot="sidebar-sections"
-        className="flex min-h-0 flex-1 flex-col overflow-hidden py-2"
-      >
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
-          <FeaturesSection locale={locale} />
-          <SpecsSection locale={locale} />
-          <PlansSection locale={locale} />
-          <ReviewsSection locale={locale} />
-          <SkillsSection locale={locale} />
-          <MemoriesSection locale={locale} />
-        </div>
-      </div>
+      {/* VS Code style panes: each one resizes from the sash above it and collapses to its header. */}
+      <ResizablePanelGroup orientation="vertical" className="min-h-0 flex-1" {...paneLayout}>
+        <FeaturesSection locale={locale} />
+        <ResizableHandle />
+        <SpecsSection locale={locale} />
+        <ResizableHandle />
+        <PlansSection locale={locale} />
+        <ResizableHandle />
+        <ReviewsSection locale={locale} />
+        <ResizableHandle />
+        <SkillsSection locale={locale} />
+        <ResizableHandle />
+        <MemoriesSection locale={locale} />
+      </ResizablePanelGroup>
       <nav aria-label={a.workspace} className="shrink-0 border-t border-border p-2">
         <div className="space-y-0.5">
           <WorkspaceButton

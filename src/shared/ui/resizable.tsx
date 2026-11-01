@@ -42,4 +42,4 @@ function ResizableHandle({
 }
 
 export { ResizableHandle, ResizablePanel, ResizablePanelGroup }
-export { useDefaultLayout, useGroupRef } from 'react-resizable-panels'
+export { useDefaultLayout, useGroupRef, usePanelRef } from 'react-resizable-panels'

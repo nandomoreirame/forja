@@ -1,4 +1,11 @@
-import { NavigatorSection, ArchiveAction } from './section'
+import {
+  NavigatorSection,
+  ArchiveAction,
+  PaneAction,
+  PaneRow,
+  rowButton,
+  rowFocus,
+} from './section'
 import { useId, useState } from 'react'
 import {
   Search,
@@ -9,12 +16,13 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Plus,
 } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, Tooltip, TooltipContent, TooltipTrigger, type UiState } from '@/shared/ui'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { FeatureSnapshot } from '@/renderer/src/shared/api'
-import { IconButton } from '@/renderer/src/shared/ui/icon-button'
+import { cn } from '@/shared/ui/utils'
 import { groupFeatures } from './model'
 
 const icons = {
@@ -24,7 +32,6 @@ const icons = {
   tester: FlaskConical,
   reviewer: GitPullRequest,
 }
-const focus = 'focus-visible:outline-2 focus-visible:outline-ring focus-visible:-outline-offset-2'
 
 export function FeaturesSection({ locale }: { locale: Locale }) {
   const state = useWorkbench((s) => s)
@@ -54,46 +61,48 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
           : feature.state === 'waiting' || feature.state === 'running'
             ? a.states[feature.state]
             : a.idle
+    const current = state.view.kind === 'conversation' && state.view.featureId === feature.id
     return (
-      <div key={feature.id} className="group flex items-center">
+      <PaneRow
+        key={feature.id}
+        current={current}
+        hover={
+          <>
+            <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
+              <Icon aria-hidden="true" className="size-3.5 shrink-0" />
+              {role}
+            </span>
+            <StatusBadge size="sm" state={badgeState}>
+              {label}
+            </StatusBadge>
+            <ArchiveAction
+              name={feature.name}
+              locale={locale}
+              disabled={feature.state === 'running'}
+              onClick={() => state.archiveItem({ kind: 'feature', id: feature.id })}
+            />
+          </>
+        }
+      >
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
               aria-label={`${feature.name} · ${role} · ${label}`}
-              aria-current={
-                state.view.kind === 'conversation' && state.view.featureId === feature.id
-                  ? 'true'
-                  : undefined
-              }
-              className={`flex min-w-0 flex-1 items-start gap-2 px-3 py-1.5 text-left hover:bg-accent aria-current:bg-accent ${focus}`}
+              aria-current={current ? 'true' : undefined}
+              className={cn(rowButton, 'pl-5 text-foreground')}
               onClick={() => state.openFeature(feature.id)}
             >
               <span
                 aria-hidden="true"
-                className={`mt-1.5 size-1.5 shrink-0 rounded-full ${badgeState === 'running' ? 'bg-primary motion-safe:animate-pulse' : badgeState === 'failed' ? 'bg-destructive' : badgeState === 'completed' ? 'bg-success' : 'bg-muted-foreground'}`}
+                className={`ml-1 mr-1 size-1.5 shrink-0 rounded-full ${badgeState === 'running' ? 'bg-primary motion-safe:animate-pulse' : badgeState === 'failed' ? 'bg-destructive' : badgeState === 'completed' ? 'bg-success' : 'bg-muted-foreground'}`}
               />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate">{feature.name}</span>
-                <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-muted-foreground">
-                  <Icon aria-hidden="true" className="size-3 shrink-0" />
-                  <span className="shrink-0 whitespace-nowrap">{role}</span>
-                  <StatusBadge size="sm" state={badgeState}>
-                    {label}
-                  </StatusBadge>
-                </span>
-              </span>
+              <span className="min-w-0 truncate">{feature.name}</span>
             </button>
           </TooltipTrigger>
           <TooltipContent>{feature.name}</TooltipContent>
         </Tooltip>
-        <ArchiveAction
-          name={feature.name}
-          locale={locale}
-          disabled={feature.state === 'running'}
-          onClick={() => state.archiveItem({ kind: 'feature', id: feature.id })}
-        />
-      </div>
+      </PaneRow>
     )
   }
   return (
@@ -101,48 +110,44 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
       section="features"
       title={a.features}
       count={active.length + groups.finished.length}
-      className="flex shrink-0 flex-col [&>div:first-child]:px-3"
-      action={
-        <IconButton
-          className="size-5"
-          label={a.collapseLeft}
-          onClick={() => state.togglePanel('left')}
-        >
-          <ChevronLeft className="size-3" />
-        </IconButton>
+      defaultSize="25%"
+      empty={copy.empty}
+      actions={
+        <>
+          <PaneAction label={a.newConversation} onClick={() => state.startCompose()}>
+            <Plus aria-hidden="true" />
+          </PaneAction>
+          <PaneAction label={a.collapseLeft} onClick={() => state.togglePanel('left')}>
+            <ChevronLeft aria-hidden="true" />
+          </PaneAction>
+        </>
       }
     >
-      <div data-testid="section-scroll" className="max-h-[22rem] overflow-y-auto">
-        {active.map(row)}
-        {groups.finished.length > 0 && (
-          <>
-            <button
-              type="button"
-              aria-expanded={finishedOpen}
-              aria-controls={finishedId}
-              onClick={() => setFinishedOpen(!finishedOpen)}
-              className={`flex w-full items-center gap-1 px-3 py-1 text-muted-foreground hover:bg-accent ${focus}`}
-            >
-              {finishedOpen ? (
-                <ChevronDown aria-hidden="true" className="size-3" />
-              ) : (
-                <ChevronRight aria-hidden="true" className="size-3" />
-              )}
-              {copy.finished} <span className="ml-auto">{groups.finished.length}</span>
-            </button>
-            <div id={finishedId} hidden={!finishedOpen}>
-              {groups.finished.map(row)}
-            </div>
-          </>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => state.startCompose()}
-        className={`w-full px-3 py-1 text-left text-muted-foreground hover:bg-accent hover:text-primary ${focus}`}
-      >
-        + {a.newConversation}
-      </button>
+      {active.map(row)}
+      {groups.finished.length > 0 && (
+        <>
+          <button
+            type="button"
+            aria-expanded={finishedOpen}
+            aria-controls={finishedId}
+            onClick={() => setFinishedOpen(!finishedOpen)}
+            className={cn(
+              'flex h-[22px] w-full items-center gap-1 pl-3 pr-2 text-[13px] text-muted-foreground hover:bg-accent',
+              rowFocus,
+            )}
+          >
+            {finishedOpen ? (
+              <ChevronDown aria-hidden="true" className="size-4" />
+            ) : (
+              <ChevronRight aria-hidden="true" className="size-4" />
+            )}
+            {copy.finished} <span className="ml-auto tabular-nums">{groups.finished.length}</span>
+          </button>
+          <div id={finishedId} hidden={!finishedOpen}>
+            {groups.finished.map(row)}
+          </div>
+        </>
+      )}
     </NavigatorSection>
   )
 }

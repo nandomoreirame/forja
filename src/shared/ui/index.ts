@@ -42,6 +42,7 @@ export {
   ResizablePanelGroup,
   useDefaultLayout,
   useGroupRef,
+  usePanelRef,
 } from './resizable'
 export { AgentMascot, agentSprites, type AgentRole, type AgentSprite } from './agent-mascot'
 export { ScrollArea, ScrollBar } from './scroll-area'

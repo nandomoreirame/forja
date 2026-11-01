@@ -129,7 +129,6 @@ it('collapses each section with the keyboard while preserving the heading count'
     expect(header).toHaveAttribute('aria-expanded', 'false')
     expect(header.textContent).toBe(name)
     expect(document.getElementById(header.getAttribute('aria-controls')!)).not.toBeVisible()
-    expect(within(section).queryByTestId('section-scroll')).not.toBeVisible()
     expect(localStorage.getItem('forja.sidebar.' + title.toLowerCase())).toBe('false')
   }
 })

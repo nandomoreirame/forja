@@ -1,19 +1,21 @@
 import { useState } from 'react'
-import { NavigatorSection } from './section'
+import { BookOpen, Brain, Plus } from 'lucide-react'
+import { NavigatorSection, PaneRow, rowButton } from './section'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import {
   Button,
   Dialog,
-  DialogTrigger,
   DialogContent,
   DialogTitle,
   DialogDescription,
   DialogClose,
+  DialogTrigger,
   StatusBadge,
   Tooltip,
   TooltipTrigger,
   TooltipContent,
 } from '@/shared/ui'
+import { cn } from '@/shared/ui/utils'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { LibraryKind } from '@/renderer/src/shared/api'
 
@@ -38,70 +40,88 @@ function LibrarySection({ locale, kind }: { locale: Locale; kind: LibraryKind })
           name: memory.title,
           scope: memory.scope,
         }))
+  const Icon = kind === 'skill' ? BookOpen : Brain
+  const newLabel = kind === 'skill' ? a.newSkill : a.newMemory
   return (
     <NavigatorSection
       section={kind === 'skill' ? 'skills' : 'memories'}
       title={kind === 'skill' ? a.skills : a.memories}
       count={items.length}
+      defaultSize="15%"
+      empty={a.libraryEmpty}
+      actions={
+        <Dialog open={open} onOpenChange={setOpen}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={newLabel}
+                  className="size-5 [&_svg]:size-4"
+                >
+                  <Plus aria-hidden="true" />
+                </Button>
+              </DialogTrigger>
+            </TooltipTrigger>
+            <TooltipContent>{newLabel}</TooltipContent>
+          </Tooltip>
+          <DialogContent showCloseButton={false}>
+            <DialogTitle>{kind === 'skill' ? a.skillScope : a.memoryScope}</DialogTitle>
+            <DialogDescription>{a.scopeDescription}</DialogDescription>
+            <div className="flex gap-2">
+              {(['project', 'global'] as const).map((scope) => (
+                <Button
+                  key={scope}
+                  variant="outline"
+                  onClick={() => {
+                    setOpen(false)
+                    state.startAuthoring(kind, scope)
+                  }}
+                >
+                  {scope === 'project' ? a.projectScope : a.globalScope}
+                </Button>
+              ))}
+              <DialogClose asChild>
+                <Button variant="ghost">{a.cancel}</Button>
+              </DialogClose>
+            </div>
+          </DialogContent>
+        </Dialog>
+      }
     >
-      <div
-        data-testid="section-scroll"
-        className={`max-h-[16.5rem] shrink overflow-y-auto ${items.length ? 'min-h-16' : 'min-h-0'}`}
-      >
-        {items.map((item) => (
-          <Tooltip key={item.id}>
+      {items.map((item) => (
+        <PaneRow
+          key={item.id}
+          hover={
+            <StatusBadge size="sm" state="draft">
+              {item.scope === 'project' ? a.projectScopeLabel : a.globalScopeLabel}
+            </StatusBadge>
+          }
+        >
+          <Tooltip>
             <TooltipTrigger asChild>
               <button
                 type="button"
-                className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-accent focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                className={cn(rowButton, 'pl-5')}
                 onClick={() => {
                   setError(false)
                   void state.openDocument(item.id).catch(() => setError(true))
                 }}
               >
-                <span className="min-w-0 flex-1 truncate">{item.name}</span>
-                <StatusBadge size="sm" state="draft">
-                  {item.scope === 'project' ? a.projectScopeLabel : a.globalScopeLabel}
-                </StatusBadge>
+                <Icon aria-hidden="true" className="size-4 shrink-0" />
+                <span className="min-w-0 truncate">{item.name}</span>
               </button>
             </TooltipTrigger>
             <TooltipContent>{item.name}</TooltipContent>
           </Tooltip>
-        ))}
-        {!items.length && <p className="py-1 text-muted-foreground">{a.libraryEmpty}</p>}
-      </div>
-      {error && <p role="alert">{a.documentError}</p>}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <button
-            type="button"
-            className="w-full py-1 text-left text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
-          >
-            {kind === 'skill' ? a.newSkill : a.newMemory}
-          </button>
-        </DialogTrigger>
-        <DialogContent showCloseButton={false}>
-          <DialogTitle>{kind === 'skill' ? a.skillScope : a.memoryScope}</DialogTitle>
-          <DialogDescription>{a.scopeDescription}</DialogDescription>
-          <div className="flex gap-2">
-            {(['project', 'global'] as const).map((scope) => (
-              <Button
-                key={scope}
-                variant="outline"
-                onClick={() => {
-                  setOpen(false)
-                  state.startAuthoring(kind, scope)
-                }}
-              >
-                {scope === 'project' ? a.projectScope : a.globalScope}
-              </Button>
-            ))}
-            <DialogClose asChild>
-              <Button variant="ghost">{a.cancel}</Button>
-            </DialogClose>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </PaneRow>
+      ))}
+      {error && (
+        <p role="alert" className="pl-5 text-[12px] text-destructive">
+          {a.documentError}
+        </p>
+      )}
     </NavigatorSection>
   )
 }

@@ -52,7 +52,7 @@ it('omits archived artifacts, counts visible rows and updates selection', async 
   expect(within(specs).getByRole('heading', { name: 'Specs 4' })).toBeInTheDocument()
   expect(within(plans).getByRole('heading', { name: 'Plans 4' })).toBeInTheDocument()
   expect(within(sidebar).queryByRole('button', { name: /legacy-import/ })).toBeNull()
-  fireEvent.click(within(sidebar).getByRole('button', { name: /Catalog search ·/ }))
+  fireEvent.click(within(sidebar).getByRole('button', { name: /^Catalog search ·/ }))
   expect(within(specs).getByRole('button', { name: /Catalog search/ })).toHaveAttribute(
     'data-current',
     'true',
@@ -71,9 +71,12 @@ it('opens a document with the keyboard and renders small state badges', async ()
     ),
   }))
   const row = within(specs).getByRole('button', { name: /Login with OAuth/ })
-  expect(row).toHaveTextContent('Approved')
-  expect(row.querySelector('[data-slot="status-badge"]')).toHaveAttribute('data-size', 'sm')
-  expect(within(specs).getByRole('button', { name: /Catalog search/ })).toHaveTextContent('Stale')
+  const paneRow = row.closest('[data-slot="pane-row"]')!
+  expect(paneRow).toHaveTextContent('Approved')
+  expect(paneRow.querySelector('[data-slot="status-badge"]')).toHaveAttribute('data-size', 'sm')
+  expect(within(specs).getByRole('button', { name: /Catalog search/ })).toHaveAccessibleName(
+    /Stale$/,
+  )
   row.focus()
   await user.keyboard('{Enter}')
   expect(await screen.findByRole('tab', { name: /^login-oauth\/SPEC.md/ })).toHaveAttribute(
@@ -82,14 +85,14 @@ it('opens a document with the keyboard and renders small state badges', async ()
   )
 })
 
-it('keeps empty section headers and avoids a minimum list height', async () => {
+it('keeps empty section headers with an empty message', async () => {
   const { specs, plans } = await setup((snapshot) => ({ ...snapshot, artifacts: [] }))
   for (const [section, title] of [
     [specs, 'Specs'],
     [plans, 'Plans'],
   ] as const) {
     expect(within(section).getByRole('heading', { name: `${title} 0` })).toBeInTheDocument()
-    expect(within(section).getByTestId('section-scroll')).not.toHaveClass('min-h-16')
+    expect(section).toHaveTextContent(title === 'Specs' ? 'No specs yet.' : 'No plans yet.')
   }
 })
 
@@ -103,12 +106,14 @@ it('keeps unlinked library artifacts on one line without repeating the slug', as
     ],
   }))
   const spec = within(specs).getByRole('button', { name: /^(?!Archive )real\/SPEC.md/ })
-  expect(spec).toHaveTextContent(/^real\/SPEC.mdReady$/)
+  const line = (button: HTMLElement) => button.closest('[data-slot="pane-row"]')!
+  expect(spec).toHaveTextContent(/^real\/SPEC.md$/)
+  expect(line(spec)).toHaveTextContent(/^real\/SPEC.mdReady$/)
   expect(
-    within(plans).getByRole('button', { name: /^(?!Archive )real\/PLAN.md/ }),
+    line(within(plans).getByRole('button', { name: /^(?!Archive )real\/PLAN.md/ })),
   ).toHaveTextContent(/^real\/PLAN.mdReady$/)
   expect(
-    within(plans).getByRole('button', { name: /^(?!Archive )other\/PLAN.md/ }),
+    line(within(plans).getByRole('button', { name: /^(?!Archive )other\/PLAN.md/ })),
   ).toHaveTextContent(/^other\/PLAN.mdReady$/)
   for (const row of [
     spec,
