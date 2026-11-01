@@ -1,12 +1,4 @@
-import {
-  NavigatorSection,
-  ArchiveAction,
-  PaneAction,
-  PaneRow,
-  rowButton,
-  rowFocus,
-} from './section'
-import { useId, useState } from 'react'
+import { NavigatorSection, ArchiveAction, PaneAction, PaneRow, rowButton } from './section'
 import {
   Search,
   ClipboardList,
@@ -14,8 +6,6 @@ import {
   FlaskConical,
   GitPullRequest,
   ChevronLeft,
-  ChevronRight,
-  ChevronDown,
   Plus,
 } from 'lucide-react'
 import { getDictionary, type Locale } from '@/shared/i18n'
@@ -38,8 +28,6 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
   const d = getDictionary(locale)
   const a = d.app
   const copy = a.featureNavigator
-  const finishedId = useId()
-  const [finishedOpen, setFinishedOpen] = useState(false)
   const groups = groupFeatures(state.snapshot!.features)
   const active = [...groups.attention, ...groups.running, ...groups.idle]
   const row = (feature: FeatureSnapshot) => {
@@ -118,31 +106,7 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
         </>
       }
     >
-      {active.map(row)}
-      {groups.finished.length > 0 && (
-        <>
-          <button
-            type="button"
-            aria-expanded={finishedOpen}
-            aria-controls={finishedId}
-            onClick={() => setFinishedOpen(!finishedOpen)}
-            className={cn(
-              'flex h-[22px] w-full items-center gap-1 pl-3 pr-2 text-[13px] text-muted-foreground hover:bg-accent',
-              rowFocus,
-            )}
-          >
-            {finishedOpen ? (
-              <ChevronDown aria-hidden="true" className="size-4" />
-            ) : (
-              <ChevronRight aria-hidden="true" className="size-4" />
-            )}
-            {copy.finished} <span className="ml-auto tabular-nums">{groups.finished.length}</span>
-          </button>
-          <div id={finishedId} hidden={!finishedOpen}>
-            {groups.finished.map(row)}
-          </div>
-        </>
-      )}
+      {[...active, ...groups.finished].map(row)}
     </NavigatorSection>
   )
 }

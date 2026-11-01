@@ -111,16 +111,19 @@ export function NavigatorSection({
                 <ChevronRight aria-hidden="true" className="size-4 shrink-0" />
               )}
               <span className="truncate">{title}</span>{' '}
-              <span data-slot="pane-count" className="ml-auto pl-2 font-normal tabular-nums">
+              <span
+                data-slot="pane-count"
+                className="ml-auto min-w-6 pl-2 text-right font-normal tabular-nums"
+              >
                 {count}
               </span>
             </button>
           </h2>
           {actions ? (
-            // Actions cover the count on hover, so the count never moves.
+            // Actions sit left of the count on hover, covering the end of the title only.
             <div
               data-slot="pane-actions"
-              className="invisible absolute inset-y-0 right-1 flex items-center gap-0.5 bg-sidebar pl-1 group-focus-within/pane:visible group-hover/pane:visible"
+              className="invisible absolute inset-y-0 right-8 flex items-center gap-0.5 bg-sidebar pl-1 group-focus-within/pane:visible group-hover/pane:visible"
             >
               {actions}
             </div>

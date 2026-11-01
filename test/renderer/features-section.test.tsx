@@ -19,10 +19,8 @@ it('lists every feature by attention, reopens a closed tab and drops the Agents 
     'aria-selected',
     'true',
   )
-  expect(within(features).getByRole('button', { name: /Finished/ })).toHaveAttribute(
-    'aria-expanded',
-    'false',
-  )
+  // Finished features sit in the same list, after the others (no Finished subgroup).
+  expect(within(features).queryByRole('button', { name: /^Finished/ })).toBeNull()
   fireEvent.click(within(features).getByRole('button', { name: /^(?!Archive )Login with OAuth/ }))
   const history = screen.getByRole('list', { name: 'Conversation' }).textContent
   fireEvent.click(screen.getByRole('button', { name: 'Close Login with OAuth' }))
@@ -42,12 +40,6 @@ it('shows finished end states and lets Tab reach every visible feature row', asy
   expect(
     within(section).getByRole('heading', { name: `Features ${visible.length}` }),
   ).toBeInTheDocument()
-  for (const feature of visible.filter((f) => f.endState)) {
-    expect(
-      within(section).queryByRole('button', { name: new RegExp('^(?!Archive )' + feature.name) }),
-    ).toBeNull()
-  }
-  fireEvent.click(within(section).getByRole('button', { name: /Finished/ }))
   const rows = within(section).getAllByRole('button', { name: /·/ })
   expect(rows).toHaveLength(visible.length)
   for (const feature of visible.filter((f) => f.endState)) {
@@ -81,7 +73,7 @@ it('keeps only the new conversation action in an empty feature list', async () =
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
   const section = within(sidebar).getByRole('region', { name: /Features/ })
   expect(within(section).getByRole('heading', { name: 'Features 0' })).toBeInTheDocument()
-  expect(within(section).queryByRole('button', { name: /·|Finished/ })).toBeNull()
+  expect(within(section).queryByRole('button', { name: /·/ })).toBeNull()
   fireEvent.click(within(section).getByRole('button', { name: 'New conversation' }))
   expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
 })
@@ -96,8 +88,6 @@ it('localizes feature states and finished entries in Portuguese', async () => {
   expect(
     within(section).getByRole('button', { name: new RegExp('^(?!Arquivar )' + stalled.name) }),
   ).toHaveAccessibleName(/Sem progresso/)
-  const finished = within(section).getByRole('button', { name: /Finalizadas/ })
-  fireEvent.click(finished)
   const integrated = snapshot.features.find((feature) => feature.endState === 'integrated')!
   expect(
     within(section).getByRole('button', { name: new RegExp('^(?!Arquivar )' + integrated.name) }),
@@ -126,7 +116,6 @@ it('shows integrated features as completed and abandoned ones as interrupted', a
   )
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
   const section = within(sidebar).getByRole('region', { name: /Features/ })
-  fireEvent.click(within(section).getByRole('button', { name: /Finished/ }))
   const integratedRow = within(section).getByRole('button', {
     name: new RegExp('^(?!Archive )' + finished.name),
   })
@@ -139,4 +128,16 @@ it('shows integrated features as completed and abandoned ones as interrupted', a
   expect(
     abandonedRow.closest('[data-slot="pane-row"]')!.querySelector('[data-slot="status-badge"]'),
   ).toHaveAttribute('data-state', 'interrupted')
+})
+
+it('lists finished features after the active ones in the same list', async () => {
+  const source = createMockSource({ locale: 'en' })
+  const snapshot = await source.loadProject('dev')
+  render(<WorkbenchPage source={source} initialProjectId="dev" />)
+  const sidebar = await screen.findByRole('complementary', { name: 'dev' })
+  const section = within(sidebar).getByRole('region', { name: /Features/ })
+  const rows = within(section).getAllByRole('button', { name: /·/ })
+  const finished = snapshot.features.find((f) => f.endState && !f.archived)!
+  expect(rows.at(-1)).toHaveAccessibleName(new RegExp('^' + finished.name))
+  expect(within(section).queryByText(/^Finished/)).toBeNull()
 })

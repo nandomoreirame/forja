@@ -96,17 +96,19 @@ it('shows no tooltip over rows', async () => {
   expect(screen.queryByRole('tooltip')).toBeNull()
 })
 
-it('keeps every header count at the same right edge', async () => {
+it('keeps every header count at the same right edge, with actions to its left', async () => {
   const sidebar = await renderSidebar()
   for (const header of within(sidebar).getAllByRole('button', { expanded: true })) {
     if (!header.closest('[data-slot="pane-header"]')) continue
-    const count = header.querySelector('[data-slot="pane-count"]')!
-    expect(count).toHaveClass('ml-auto')
-    expect(header.closest('[data-slot="pane-header"]')!.lastElementChild).toBe(
-      header.closest('h2')!.parentElement!.querySelector('[data-slot="pane-actions"]') ??
-        header.closest('h2'),
+    expect(header.querySelector('[data-slot="pane-count"]')).toHaveClass(
+      'ml-auto',
+      'min-w-6',
+      'text-right',
     )
   }
+  const specs = within(sidebar).getByRole('region', { name: /Specs/ })
+  // The count stays visible on hover; actions sit just left of it.
+  expect(specs.querySelector('[data-slot="pane-actions"]')).toHaveClass('right-8')
 })
 
 it('separates panes with a border and leaves a filler so collapsed panes stack on top', async () => {
