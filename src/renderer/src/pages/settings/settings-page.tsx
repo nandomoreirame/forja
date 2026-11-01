@@ -17,7 +17,7 @@ import {
   TabsTrigger,
   Textarea,
 } from '@/shared/ui'
-import { getDictionary } from '@/shared/i18n'
+import { getDictionary, type Locale } from '@/shared/i18n'
 import { useWorkbench } from '@/renderer/src/entities/feature'
 import type { AgentProfile } from '@/renderer/src/features/agent-settings/model'
 import {
@@ -38,6 +38,12 @@ import { WorkbenchTabs } from '@/renderer/src/widgets/workbench-tabs'
 
 const catalogSkills = ['rpi-implement', 'git', 'git-flow']
 
+// English is the primary language; each name is written in its own language.
+const languages: { id: Locale; name: string }[] = [
+  { id: 'en', name: 'English' },
+  { id: 'pt-br', name: 'Português (Brasil)' },
+]
+
 const defaultGeneral: NonNullable<SettingsSnapshot['general']> = {
   skillsRoot: '~/.skills',
   interruptPolicy: 'interrupt',
@@ -57,7 +63,7 @@ export function SettingsPage() {
   const [connectors, setConnectors] = useState<ConnectorSnapshot[]>([])
   const [pending, setPending] = useState<(() => void) | null>(null)
   const viewTab = state.view.kind === 'settings' ? state.view.tab : undefined
-  const [tab, setTab] = useState<SettingsTab>(viewTab === 'general' ? 'general' : 'agents')
+  const [tab, setTab] = useState<SettingsTab>(viewTab ?? 'general')
   const feature = state.snapshot?.features.find((item) => item.id === state.openFeatureIds[0])
 
   useEffect(() => {
@@ -128,6 +134,7 @@ export function SettingsPage() {
     await state.refreshAgentTools()
     if (next.general?.skillsRoot !== lastScannedRoot.current)
       await refreshSkills(next.general?.skillsRoot)
+    if (next.general?.language) state.setLocale(next.general.language)
     setSaved(structuredClone(next))
     setDraft(structuredClone(next))
     setEdited(false)
@@ -161,11 +168,11 @@ export function SettingsPage() {
         {draft ? (
           <Tabs value={tab} onValueChange={selectTab}>
             <TabsList variant="line">
-              <TabsTrigger value="agents" onClick={() => selectTab('agents')}>
-                {a.agentsTab}
-              </TabsTrigger>
               <TabsTrigger value="general" onClick={() => selectTab('general')}>
                 {a.generalTab}
+              </TabsTrigger>
+              <TabsTrigger value="agents" onClick={() => selectTab('agents')}>
+                {a.agentsTab}
               </TabsTrigger>
               <TabsTrigger value="connectors" onClick={() => selectTab('connectors')}>
                 Connectors
@@ -289,6 +296,29 @@ export function SettingsPage() {
               </section>
             </TabsContent>
             <TabsContent value="general" className="mt-5 space-y-5">
+              <Field label={a.language}>
+                <Select
+                  value={draft.general?.language ?? state.source.locale}
+                  onValueChange={(value) => {
+                    setEdited(true)
+                    setDraft({
+                      ...draft,
+                      general: { ...draft.general!, language: value as Locale },
+                    })
+                  }}
+                >
+                  <SelectTrigger aria-label={a.language} className="w-full sm:w-64">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((language) => (
+                      <SelectItem key={language.id} value={language.id}>
+                        {language.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
               <Field label={a.skillsFolder}>
                 <div className="flex gap-2">
                   <Input

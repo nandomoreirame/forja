@@ -5,7 +5,8 @@ import {
   type ArchiveTarget,
 } from '@/renderer/src/shared/lib/archive'
 import { selectProjectDirectory } from '@/renderer/src/shared/lib/directory-picker'
-import { getDictionary } from '@/shared/i18n'
+import { getDictionary, type Locale } from '@/shared/i18n'
+import { saveLocale } from '@/renderer/src/shared/lib/locale'
 import { featureIdentity } from './feature-name'
 import { createStore } from 'zustand/vanilla'
 import type {
@@ -83,6 +84,8 @@ export interface WorkbenchState {
   setRecipient(id: string, role: RoleId): void
   startCompose(role?: RoleId): void
   openSettings(options?: { tab?: SettingsTab; role?: RoleId }): void
+  /** Switches the UI language for this session and remembers it for the next launch. */
+  setLocale(locale: Locale): void
   closeSettings(): void
   createFeatureFromPrompt(prompt: string, role: RoleId): string
   openFeature(id: string): void
@@ -206,7 +209,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         authoringCancel?.()
         set({ authoring: { kind, scope, name, messages: [], running: false } })
         get().navigate({ kind: 'authoring' })
-        get().sendAuthoring(getDictionary(source.locale).app.authoringPrompt)
+        get().sendAuthoring(getDictionary(get().source.locale).app.authoringPrompt)
       },
       sendAuthoring(text) {
         const current = get().authoring
@@ -461,6 +464,12 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         get().navigate({ kind: 'compose', role })
         set((state) => ({ composeActivation: state.composeActivation + 1 }))
       },
+      setLocale(locale) {
+        if (get().source.locale === locale) return
+        saveLocale(locale)
+        // A new source object re-renders every reader of source.locale; data stays the same.
+        set({ source: { ...get().source, locale } })
+      },
       openSettings(options = {}) {
         const next = { ...get().lastSettings, ...options }
         set({ settingsOpen: true, lastSettings: next })
@@ -615,7 +624,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
                           ...terminals,
                           {
                             id: event.terminalId,
-                            label: `${getDictionary(source.locale).product[role]} · ${event.line.includes('npm test') ? 'tests' : 'dev'}`,
+                            label: `${getDictionary(get().source.locale).product[role]} · ${event.line.includes('npm test') ? 'tests' : 'dev'}`,
                             state: 'running',
                             output: event.line,
                             kind: 'agent',

@@ -7,6 +7,7 @@ it('enables Save only after an edit and guards leaving with unsaved changes', as
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const sidebar = await screen.findByRole('complementary', { name: 'dev' })
   fireEvent.click(within(sidebar).getByRole('button', { name: 'Settings' }))
+  fireEvent.click(await screen.findByRole('tab', { name: 'Agents' }))
   const save = await screen.findByRole('button', { name: 'Save changes' })
   expect(save).toBeDisabled()
   expect(screen.getByText(/of 3 active/)).toHaveTextContent('2 of 3 active')

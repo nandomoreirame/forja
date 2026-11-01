@@ -98,6 +98,8 @@ export interface SettingsSnapshot {
     autoInvoke: boolean
   }[]
   general?: {
+    /** App language; absent means the source's own locale. */
+    language?: Locale
     skillsRoot: string
     interruptPolicy: 'interrupt' | 'queue'
     guidedMode: true

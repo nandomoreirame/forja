@@ -58,7 +58,7 @@ export function ProjectSidebar({ locale }: { locale: Locale }) {
           <WorkspaceButton
             icon={<Settings />}
             label={a.settings}
-            onClick={() => state.openSettings({ tab: 'agents' })}
+            onClick={() => state.openSettings({ tab: 'general' })}
           />
         </div>
       </nav>

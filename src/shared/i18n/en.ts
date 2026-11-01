@@ -196,6 +196,7 @@ export const en = {
     activeSkills: 'active',
     autoInvoke: 'Auto-invoke this agent',
     autoInvokeDescription: 'Never approves specs, plans or Git integration.',
+    language: 'Language',
     skillsFolder: 'Skills folder',
     refresh: 'Refresh',
     interruptPolicy: 'Interrupt policy',

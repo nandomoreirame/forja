@@ -196,6 +196,7 @@ export const ptBr = {
     activeSkills: 'ativas',
     autoInvoke: 'Invocar este agente automaticamente',
     autoInvokeDescription: 'Nunca aprova specs, planos ou integração Git.',
+    language: 'Idioma',
     skillsFolder: 'Pasta de skills',
     refresh: 'Atualizar',
     interruptPolicy: 'Política de interrupção',
