@@ -14,11 +14,9 @@ it('starts without a project and opens a selected recent project', async () => {
   fireEvent.click(await screen.findByRole('option', { name: /nandomoreira.dev/ }))
   expect(await screen.findByRole('complementary', { name: 'nandomoreira.dev' })).toBeInTheDocument()
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-  fireEvent.click(
-    within(screen.getByRole('main')).getByRole('button', { name: /New chat/ }),
-  )
+  fireEvent.click(within(screen.getByRole('main')).getByRole('button', { name: /New chat/ }))
   expect(screen.getByRole('textbox')).toHaveFocus()
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Miner')
   expect(screen.queryByRole('heading', { name: 'FORJA' })).toBeNull()
   fireEvent.keyDown(window, { key: 'ArrowLeft', altKey: true })
   expect(screen.getByRole('heading', { name: 'FORJA' })).toBeInTheDocument()

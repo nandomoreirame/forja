@@ -18,7 +18,7 @@ import {
   Textarea,
 } from '@/shared/ui'
 import { getDictionary, type Locale } from '@/shared/i18n'
-import { useWorkbench } from '@/renderer/src/entities/feature'
+import { agentName, agentIds, type AgentId, useWorkbench } from '@/renderer/src/entities/feature'
 import type { AgentProfile } from '@/renderer/src/features/agent-settings/model'
 import {
   effortOptions,
@@ -28,9 +28,7 @@ import {
 } from '@/renderer/src/features/agent-settings/model'
 import { UnsavedDialog } from '@/renderer/src/features/agent-settings/unsaved-dialog'
 import {
-  roleIds,
   type ConnectorSnapshot,
-  type RoleId,
   type SettingsSnapshot,
   type SettingsTab,
 } from '@/renderer/src/shared/api'
@@ -58,6 +56,7 @@ export function SettingsPage() {
   const [saved, setSaved] = useState<SettingsSnapshot | null>(null)
   const [draft, setDraft] = useState<SettingsSnapshot | null>(null)
   const [edited, setEdited] = useState(false)
+  const [selectedAgent, setSelectedAgent] = useState<AgentId | null>(null)
   const lastScannedRoot = useRef<string | undefined>(undefined)
   const [connectors, setConnectors] = useState<ConnectorSnapshot[]>([])
   const [pending, setPending] = useState<(() => void) | null>(null)
@@ -87,12 +86,13 @@ export function SettingsPage() {
     if (viewTab) setTab(viewTab)
   }, [viewTab])
 
-  const activeRole: RoleId =
-    state.view.kind === 'settings' && state.view.role
+  const activeRole: AgentId =
+    selectedAgent ??
+    (state.view.kind === 'settings' && state.view.role
       ? state.view.role
       : feature
         ? (state.recipients[feature.id] ?? feature.stage)
-        : 'research'
+        : 'research')
   const profile = draft?.agents.find((item) => item.id === activeRole)
   const savedProfile = saved?.agents.find((item) => item.id === activeRole)
   const dirty =
@@ -125,6 +125,11 @@ export function SettingsPage() {
     if (!draft) return
     const next = {
       ...draft,
+      agentNames: Object.fromEntries(
+        Object.entries(draft.agentNames ?? {}).flatMap(([id, name]) =>
+          name.trim() ? [[id, name.trim()]] : [],
+        ),
+      ),
       agents: draft.agents.map(
         (item) => normalizeProfile(item as unknown as AgentProfile) as unknown as typeof item,
       ),
@@ -145,11 +150,15 @@ export function SettingsPage() {
     const target = next as SettingsTab
     request(() => {
       setTab(target)
-      state.openSettings({ tab: target, role: activeRole })
+      state.openSettings({ tab: target, role: activeRole === 'smith' ? undefined : activeRole })
     })
   }
-  const selectAgent = (role: RoleId) => {
-    request(() => state.openSettings({ tab: 'agents', role }))
+  const selectAgent = (role: AgentId) => {
+    request(() => {
+      // The view only routes RPI roles; the Smith is kept locally until another role is chosen.
+      setSelectedAgent(role === 'smith' ? role : null)
+      if (role !== 'smith') state.openSettings({ tab: 'agents', role })
+    })
   }
   const activeSkills = profile?.skills ?? []
   const inactivityMessage = draft
@@ -177,121 +186,141 @@ export function SettingsPage() {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="agents" className="mt-5 space-y-5">
+              <Field label={a.agentNameLabel}>
+                <Input
+                  aria-label={a.agentNameLabel}
+                  value={draft.agentNames?.[activeRole] ?? ''}
+                  placeholder={agentName(activeRole, state.source.locale, {})}
+                  onChange={(event) => {
+                    setEdited(true)
+                    setDraft({
+                      ...draft,
+                      agentNames: { ...draft.agentNames, [activeRole]: event.target.value },
+                    })
+                  }}
+                />
+              </Field>
               <div className="grid gap-4 md:grid-cols-[180px_1fr]">
                 <div className="space-y-2">
                   <Label htmlFor="settings-agent">{a.agent}</Label>
                   <Select
                     value={activeRole}
-                    onValueChange={(value) => selectAgent(value as RoleId)}
+                    onValueChange={(value) => selectAgent(value as AgentId)}
                   >
                     <SelectTrigger id="settings-agent" aria-label={a.agent} className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {roleIds.map((role) => (
+                      {agentIds.map((role) => (
                         <SelectItem key={role} value={role}>
-                          {d.product[role]}
+                          {agentName(role, state.source.locale, draft.agentNames ?? {})}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label={a.aiTool} hint={a.detectedOnSystem}>
-                    <Select
-                      value={profile?.tool}
-                      onValueChange={(value) =>
-                        updateProfile({ tool: value as AgentProfile['tool'], effort: 'default' })
-                      }
-                    >
-                      <SelectTrigger aria-label={a.aiTool} className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(['claude', 'codex', 'opencode', 'agy', 'grok'] as const).map((tool) => (
-                          <SelectItem key={tool} value={tool}>
-                            {tool}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label={a.model} hint={a.toolDefault}>
-                    <Input
-                      aria-label={a.model}
-                      value={profile?.model ?? ''}
-                      placeholder={a.toolDefault}
-                      onChange={(event) => updateProfile({ model: event.target.value })}
+                {profile ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label={a.aiTool} hint={a.detectedOnSystem}>
+                      <Select
+                        value={profile?.tool}
+                        onValueChange={(value) =>
+                          updateProfile({ tool: value as AgentProfile['tool'], effort: 'default' })
+                        }
+                      >
+                        <SelectTrigger aria-label={a.aiTool} className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(['claude', 'codex', 'opencode', 'agy', 'grok'] as const).map((tool) => (
+                            <SelectItem key={tool} value={tool}>
+                              {tool}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label={a.model} hint={a.toolDefault}>
+                      <Input
+                        aria-label={a.model}
+                        value={profile?.model ?? ''}
+                        placeholder={a.toolDefault}
+                        onChange={(event) => updateProfile({ model: event.target.value })}
+                      />
+                    </Field>
+                    <Field label={a.reasoningLevel} hint={a.supportedByTool}>
+                      <Select
+                        value={profile?.effort}
+                        onValueChange={(value) => updateProfile({ effort: value })}
+                      >
+                        <SelectTrigger aria-label={a.reasoningLevel} className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {effortOptions(profile?.tool ?? 'claude').map((effort) => (
+                            <SelectItem key={effort} value={effort}>
+                              {effort}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+                ) : null}
+              </div>
+              {profile ? (
+                <>
+                  <Field label={a.additionalInstructions}>
+                    <Textarea
+                      aria-label={a.additionalInstructions}
+                      value={profile?.instructions ?? ''}
+                      onChange={(event) => updateProfile({ instructions: event.target.value })}
+                      rows={4}
                     />
                   </Field>
-                  <Field label={a.reasoningLevel} hint={a.supportedByTool}>
-                    <Select
-                      value={profile?.effort}
-                      onValueChange={(value) => updateProfile({ effort: value })}
-                    >
-                      <SelectTrigger aria-label={a.reasoningLevel} className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {effortOptions(profile?.tool ?? 'claude').map((effort) => (
-                          <SelectItem key={effort} value={effort}>
-                            {effort}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-              </div>
-              <Field label={a.additionalInstructions}>
-                <Textarea
-                  aria-label={a.additionalInstructions}
-                  value={profile?.instructions ?? ''}
-                  onChange={(event) => updateProfile({ instructions: event.target.value })}
-                  rows={4}
-                />
-              </Field>
-              <section
-                role="group"
-                aria-label={a.agentSkills}
-                className="space-y-3 rounded-md border border-border p-4"
-              >
-                <div>
-                  <h2 className="text-sm font-medium">{a.agentSkills}</h2>
-                  <p className="text-xs text-muted-foreground">
-                    {activeSkills.length} of {catalogSkills.length} {a.activeSkills}
-                  </p>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {catalogSkills.map((skill) => (
-                    <label key={skill} className="flex items-center gap-2 text-xs">
-                      <Checkbox
-                        aria-label={skill}
-                        checked={activeSkills.includes(skill)}
-                        onCheckedChange={(checked) =>
-                          updateProfile({
-                            skills: checked
-                              ? [...activeSkills, skill]
-                              : activeSkills.filter((item) => item !== skill),
-                          })
-                        }
-                      />
-                      {skill}
-                    </label>
-                  ))}
-                </div>
-              </section>
-              <section className="flex items-center justify-between rounded-md border border-border p-4">
-                <div>
-                  <h2 className="text-sm font-medium">{a.autoInvoke}</h2>
-                  <p className="text-xs text-muted-foreground">{a.autoInvokeDescription}</p>
-                </div>
-                <Switch
-                  aria-label={a.autoInvoke}
-                  checked={profile?.autoInvoke ?? false}
-                  onCheckedChange={(checked) => updateProfile({ autoInvoke: checked })}
-                />
-              </section>
+                  <section
+                    role="group"
+                    aria-label={a.agentSkills}
+                    className="space-y-3 rounded-md border border-border p-4"
+                  >
+                    <div>
+                      <h2 className="text-sm font-medium">{a.agentSkills}</h2>
+                      <p className="text-xs text-muted-foreground">
+                        {activeSkills.length} of {catalogSkills.length} {a.activeSkills}
+                      </p>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {catalogSkills.map((skill) => (
+                        <label key={skill} className="flex items-center gap-2 text-xs">
+                          <Checkbox
+                            aria-label={skill}
+                            checked={activeSkills.includes(skill)}
+                            onCheckedChange={(checked) =>
+                              updateProfile({
+                                skills: checked
+                                  ? [...activeSkills, skill]
+                                  : activeSkills.filter((item) => item !== skill),
+                              })
+                            }
+                          />
+                          {skill}
+                        </label>
+                      ))}
+                    </div>
+                  </section>
+                  <section className="flex items-center justify-between rounded-md border border-border p-4">
+                    <div>
+                      <h2 className="text-sm font-medium">{a.autoInvoke}</h2>
+                      <p className="text-xs text-muted-foreground">{a.autoInvokeDescription}</p>
+                    </div>
+                    <Switch
+                      aria-label={a.autoInvoke}
+                      checked={profile?.autoInvoke ?? false}
+                      onCheckedChange={(checked) => updateProfile({ autoInvoke: checked })}
+                    />
+                  </section>
+                </>
+              ) : null}
             </TabsContent>
             <TabsContent value="general" className="mt-5 space-y-5">
               <Field label={a.language}>

@@ -142,6 +142,7 @@ export function AppStatusbar({ start, items = [], end }: AppStatusbarProps) {
 
 export interface FeatureCycleStage {
   label: string
+  roleLabel?: string
   state: 'done' | 'current' | 'pending'
   tool?: ToolId
   toolLabel?: string
@@ -215,7 +216,8 @@ export function FeatureCycle({
       >
         {cycle.map((stage, index) => (
           <li
-            key={stage.label}
+            key={index}
+            aria-label={stage.roleLabel ? `${stage.label}, ${stage.roleLabel}` : undefined}
             aria-current={stage.state === 'current' ? 'step' : undefined}
             className={
               stage.state === 'current'
@@ -244,7 +246,9 @@ export function FeatureCycle({
                   </span>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {stage.label} · {stage.toolLabel ?? toolNames[stage.tool]}
+                  {stage.label}
+                  {stage.roleLabel ? `, ${stage.roleLabel}` : ''} ·{' '}
+                  {stage.toolLabel ?? toolNames[stage.tool]}
                 </TooltipContent>
               </Tooltip>
             ) : null}

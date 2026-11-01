@@ -186,6 +186,7 @@ export const en = {
     workingDirectory: 'Working directory',
     settingsTitle: 'Settings',
     settingsDescription: 'Configure the fixed RPI agents and workflow defaults.',
+    agentNameLabel: 'Name',
     agentsTab: 'Agents',
     generalTab: 'General',
     saveChanges: 'Save changes',

@@ -9,6 +9,7 @@ import {
 } from '@/shared/i18n'
 import type { ChatMessage, RoleId } from '@/renderer/src/shared/api'
 import { toolNames, type ToolId } from '@/shared/ui'
+import { agentName, type AgentId } from '@/renderer/src/entities/feature'
 import { HandoffLink } from './handoff-link'
 
 const highlightMs = 2000
@@ -39,8 +40,10 @@ export function History({
   locale,
   stage,
   toolFor,
+  agentNames = {},
   onViewRequest,
 }: {
+  agentNames?: Partial<Record<AgentId, string>>
   messages: ChatMessage[]
   locale: Locale
   stage: RoleId
@@ -111,7 +114,11 @@ export function History({
             parts: m.parts,
             attachments: m.attachments,
             highlighted: m.id === highlightedId,
-            author: m.role === 'user' ? d.app.you : d.product[m.author ?? stage],
+            authorLabel: agent
+              ? `${agentName(agent, locale, agentNames)}, ${d.product[agent]}${tool ? ` · ${toolNames[tool]}` : ''}`
+              : undefined,
+            author:
+              m.role === 'user' ? d.app.you : agentName(m.author ?? stage, locale, agentNames),
             action:
               m.role === 'event' && m.linkTo ? (
                 <HandoffLink

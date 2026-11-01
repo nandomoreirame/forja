@@ -186,6 +186,7 @@ export const ptBr = {
     workingDirectory: 'Diretório de trabalho',
     settingsTitle: 'Configurações',
     settingsDescription: 'Configure os agentes fixos do RPI e os padrões do fluxo.',
+    agentNameLabel: 'Nome',
     agentsTab: 'Agentes',
     generalTab: 'Geral',
     saveChanges: 'Salvar alterações',

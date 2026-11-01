@@ -17,7 +17,7 @@ it('appends a streamed reply chunk by chunk and renders its code block when comp
     vi.advanceTimersByTime(250)
   })
   const partial = reply().textContent ?? ''
-  expect(partial).toContain('Implementer')
+  expect(partial).toContain('Anvilsmith')
   await act(async () => {
     vi.advanceTimersByTime(300)
   })

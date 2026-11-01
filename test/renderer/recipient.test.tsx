@@ -8,26 +8,28 @@ it('lets the combobox override a mention until a new mention is typed', async ()
   const field = await screen.findByRole('textbox', { name: /Send your prompt/ })
   const recipient = screen.getByRole('combobox', { name: 'Recipient' })
   fireEvent.change(field, { target: { value: '@tester' } })
-  expect(recipient).toHaveTextContent('Tester')
+  expect(recipient).toHaveTextContent('Temperer')
   fireEvent.click(recipient)
-  fireEvent.click(screen.getByRole('option', { name: 'Planner' }))
+  fireEvent.click(screen.getByRole('option', { name: 'Moldmaker, Planner' }))
   fireEvent.change(field, { target: { value: '@tester please check' } })
-  expect(recipient).toHaveTextContent('Planner')
+  expect(recipient).toHaveTextContent('Moldmaker')
   fireEvent.change(field, { target: { value: '@tester please check @tester' } })
-  expect(recipient).toHaveTextContent('Tester')
+  expect(recipient).toHaveTextContent('Temperer')
   fireEvent.click(recipient)
-  fireEvent.click(screen.getByRole('option', { name: 'Planner' }))
+  fireEvent.click(screen.getByRole('option', { name: 'Moldmaker, Planner' }))
   fireEvent.change(field, { target: { value: '@tester please check' } })
-  expect(recipient).toHaveTextContent('Planner')
+  expect(recipient).toHaveTextContent('Moldmaker')
 })
 
 it('switches recipients through the composer without changing the selected feature', async () => {
   render(<WorkbenchPage source={createMockSource({ locale: 'en' })} initialProjectId="dev" />)
   const tab = await screen.findByRole('tab', { name: /Login with OAuth/ })
-  for (const role of ['Reviewer', 'Tester']) {
+  for (const role of ['Polisher, Reviewer', 'Temperer, Tester']) {
     fireEvent.click(screen.getByRole('combobox', { name: 'Recipient' }))
     fireEvent.click(screen.getByRole('option', { name: role }))
-    expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent(role)
+    expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent(
+      role.split(',')[0],
+    )
     expect(tab).toHaveAttribute('aria-selected', 'true')
   }
 })
@@ -40,5 +42,5 @@ it('returns from another view through a feature row and selects a recipient by m
   fireEvent.click(screen.getByRole('button', { name: /^Login with OAuth ·/ }))
   const prompt = await screen.findByRole('textbox', { name: /Send your prompt/ })
   fireEvent.change(prompt, { target: { value: '@tester' } })
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Tester')
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Temperer')
 })

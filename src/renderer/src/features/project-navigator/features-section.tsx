@@ -1,14 +1,15 @@
 import { NavigatorSection, ArchiveAction, PaneRow, rowButton } from './section'
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { StatusBadge, ToolIcon, toolNames, type UiState } from '@/shared/ui'
-import { useWorkbench } from '@/renderer/src/entities/feature'
+import { agentName, useWorkbench } from '@/renderer/src/entities/feature'
 import type { FeatureSnapshot } from '@/renderer/src/shared/api'
 import { cn } from '@/shared/ui/utils'
 import { groupFeatures } from './model'
 
 export function FeaturesSection({ locale }: { locale: Locale }) {
   const state = useWorkbench((s) => s)
-  const a = getDictionary(locale).app
+  const d = getDictionary(locale)
+  const a = d.app
   const copy = a.featureNavigator
   const groups = groupFeatures(state.snapshot!.features)
   const active = [...groups.attention, ...groups.running, ...groups.idle]
@@ -53,7 +54,7 @@ export function FeaturesSection({ locale }: { locale: Locale }) {
       >
         <button
           type="button"
-          aria-label={`${feature.name} · ${toolNames[tool]} · ${label}`}
+          aria-label={`${feature.name} · ${agentName(feature.stage, locale, state.agentNames)}, ${d.product[feature.stage]} · ${toolNames[tool]} · ${label}`}
           aria-current={current ? 'true' : undefined}
           className={cn(rowButton, 'pl-5 text-foreground')}
           onClick={() => state.openFeature(feature.id)}

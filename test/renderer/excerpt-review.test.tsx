@@ -52,7 +52,7 @@ it('appends a quoted excerpt to the feature draft, selects its author and focuse
   const draft = screen.getByRole('textbox', { name: /Send your prompt/ })
   expect(draft).toHaveValue('Keep my draft\nReview login-oauth/PLAN.md:\n> A selected excerpt')
   expect(draft).toHaveFocus()
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Planner')
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Moldmaker')
   expect(send).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('tab', { name: /Catalog search/ }))
   expect(screen.getByRole('textbox', { name: /Send your prompt/ })).toHaveValue('')

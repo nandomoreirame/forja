@@ -19,13 +19,13 @@ it('shows each agent tool in the cycle and the current stage tool on the tab', a
       within(stage).getByRole('img', { name: toolNames[agents[index].tool] }),
     ).toBeInTheDocument()
   }
-  const research = within(cycle).getByText('Research').closest('li')!
+  const research = within(cycle).getByText('Miner').closest('li')!
   expect(research).toHaveAttribute('aria-current', 'step')
   expect(research).toHaveClass('text-primary')
   const icon = within(research).getByRole('img', { name: 'Codex' })
   expect(icon.closest('[tabindex="0"]')).toHaveClass('focus-visible:outline-ring')
   fireEvent.focus(icon)
-  expect(await screen.findByRole('tooltip')).toHaveTextContent('Research · Codex')
+  expect(await screen.findByRole('tooltip')).toHaveTextContent('Miner, Research · Codex')
   expect(screen.getByRole('tooltip').closest('[data-slot="tooltip-content"]')).toHaveClass(
     'bg-popover',
   )

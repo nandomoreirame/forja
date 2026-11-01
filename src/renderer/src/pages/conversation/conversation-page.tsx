@@ -5,7 +5,7 @@ import { Button } from '@/shared/ui'
 import { roleIds } from '@/renderer/src/shared/api'
 import { FeatureContext, FeatureCycle } from '@/widgets/workbench'
 import { getDictionary } from '@/shared/i18n'
-import { useWorkbench } from '@/renderer/src/entities/feature'
+import { agentName, useWorkbench } from '@/renderer/src/entities/feature'
 import { ComposerController } from '@/renderer/src/features/composer'
 export function ConversationPage() {
   const state = useWorkbench((s) => s)
@@ -21,7 +21,8 @@ export function ConversationPage() {
   const flowOpen = flowFor === feature.id
   const headerButton = 'h-5 gap-1 px-1.5 text-[11px] [&_svg]:size-3.5'
   const cycle = roleIds.map((role, index) => ({
-    label: d.product[role],
+    label: agentName(role, state.source.locale, state.agentNames),
+    roleLabel: d.product[role],
     tool: state.agentTools[role],
     state:
       index === roleIds.indexOf(feature.stage)
@@ -100,6 +101,7 @@ export function ConversationPage() {
         </div>
         <History
           key={feature.id}
+          agentNames={state.agentNames}
           messages={feature.messages}
           locale={state.source.locale}
           stage={feature.stage}

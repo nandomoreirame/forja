@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { Composer } from '@/widgets/conversation'
 import { getDictionary } from '@/shared/i18n'
 import { roleIds, type RoleId } from '@/renderer/src/shared/api'
-import { useWorkbench } from '@/renderer/src/entities/feature'
+import { agentName, useWorkbench } from '@/renderer/src/entities/feature'
 import { mentionedRoles } from './recipient'
 
 export function ComposerController({ featureId }: { featureId: string }) {
@@ -21,7 +21,11 @@ export function ComposerController({ featureId }: { featureId: string }) {
     <Composer
       focusKey={state.composeActivation}
       autoFocus={pendingFocus}
-      recipients={roleIds.map((id) => ({ id, label: d.product[id] }))}
+      recipients={roleIds.map((id) => ({
+        id,
+        label: agentName(id, state.source.locale, state.agentNames),
+        roleLabel: d.product[id],
+      }))}
       recipientId={state.recipients[featureId] ?? feature.stage}
       onRecipientChange={(id) => {
         if (roleIds.includes(id as RoleId)) state.setRecipient(featureId, id as RoleId)

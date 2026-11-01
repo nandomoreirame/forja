@@ -29,10 +29,7 @@ it('opens a new conversation as a tab beside the open features', async () => {
   await renderDev()
   const strip = document.querySelector('[data-slot="tab-strip"]') as HTMLElement
   fireEvent.click(within(strip).getByRole('button', { name: 'New chat' }))
-  expect(screen.getByRole('tab', { name: /New chat/ })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
+  expect(screen.getByRole('tab', { name: /New chat/ })).toHaveAttribute('aria-selected', 'true')
   expect(screen.getByRole('tab', { name: /Login with OAuth/ })).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Close New chat' }))
   expect(screen.queryByRole('tab', { name: /New chat/ })).toBeNull()
@@ -55,6 +52,6 @@ it('shows the running AI tool instead of the agent name in the feature row', asy
   const row = within(features).getByRole('button', { name: /^Login with OAuth/ }).parentElement!
   expect(row.querySelector('[data-slot="row-hover"] [data-slot="tool-icon"]')).not.toBeNull()
   expect(within(features).getByRole('button', { name: /^Login with OAuth/ })).toHaveAccessibleName(
-    /^Login with OAuth · (Claude|Codex|OpenCode|Antigravity|Grok)/,
+    /^Login with OAuth · Miner, Research · (Claude|Codex|OpenCode|Antigravity|Grok)/,
   )
 })

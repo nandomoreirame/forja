@@ -36,7 +36,7 @@ it('shows linked specs and plans, highlights the selected feature and has no add
   expect(plan).toHaveAttribute('data-current', 'true')
   expect(within(sidebar).queryByRole('button', { name: /Add plan/ })).toBeNull()
   fireEvent.click(within(specs).getByRole('button', { name: /New spec/ }))
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Miner')
   for (const section of [specs, plans]) {
     for (const row of within(section)
       .getAllByRole('button')

@@ -14,6 +14,7 @@ const sendShortcut = 'Ctrl+Enter'
 export interface ComposerRecipient {
   id: string
   label: string
+  roleLabel?: string
 }
 
 export interface ComposerProps {
@@ -85,7 +86,13 @@ export function Composer({
             </SelectTrigger>
             <SelectContent>
               {recipients.map((item) => (
-                <SelectItem key={item.id} value={item.id}>
+                <SelectItem
+                  key={item.id}
+                  aria-labelledby={undefined}
+                  value={item.id}
+                  aria-label={item.roleLabel ? `${item.label}, ${item.roleLabel}` : undefined}
+                  title={item.roleLabel ? `${item.label}, ${item.roleLabel}` : undefined}
+                >
                   {item.label}
                 </SelectItem>
               ))}

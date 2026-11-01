@@ -73,10 +73,8 @@ it('leaves the empty feature list without actions and starts conversations from 
   expect(within(section).getByRole('heading', { name: 'Features 0' })).toBeInTheDocument()
   expect(within(section).queryByRole('button', { name: /·/ })).toBeNull()
   expect(within(section).queryByRole('button', { name: 'New chat' })).toBeNull()
-  fireEvent.click(
-    within(screen.getByRole('main')).getAllByRole('button', { name: /^New chat/ })[0],
-  )
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Research')
+  fireEvent.click(within(screen.getByRole('main')).getAllByRole('button', { name: /^New chat/ })[0])
+  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveTextContent('Miner')
 })
 
 it('localizes feature states and finished entries in Portuguese', async () => {
