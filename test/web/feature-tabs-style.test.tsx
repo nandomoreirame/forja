@@ -23,6 +23,12 @@ it('draws VS Code tabs: flush left, full height, plain inactive tabs, open-botto
   expect(active).toMatch(/\bbg-background\b/)
   expect(active).toMatch(/first:border-l-transparent/)
   expect(inactive).toMatch(/\bborder-transparent\b/)
+  // Switching tabs must not change their width: same weight, only color and opacity differ.
+  expect(active).not.toMatch(/\bfont-(medium|semibold|bold)\b/)
+  expect(inactive).not.toMatch(/\bfont-(medium|semibold|bold)\b/)
+  expect(active).toMatch(/\btext-foreground\b/)
+  expect(active).not.toMatch(/\bopacity-/)
+  expect(inactive).toMatch(/\bopacity-60\b/)
 })
 
 it('uses the shared tab style for editor and terminal tabs', () => {

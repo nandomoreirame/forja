@@ -11,8 +11,11 @@ export const tabStripClassName = 'h-9 min-w-0 items-stretch shadow-[inset_0_-1px
 export function tabClassName(active: boolean) {
   return cn(
     'group/tab flex min-w-0 shrink-0 items-center self-stretch whitespace-nowrap border-x text-[11px] first:border-l-transparent',
+    // Same font weight in both states so switching tabs never changes their width: the active
+    // tab is full bright, inactive ones are dimmed (icons included) and brighten on hover.
+    'text-foreground transition-opacity motion-reduce:transition-none',
     active
-      ? 'border-border bg-background font-medium text-foreground'
-      : 'border-transparent text-muted-foreground hover:text-foreground data-[hovered=true]:text-foreground',
+      ? 'border-border bg-background'
+      : 'border-transparent opacity-60 hover:opacity-90 data-[hovered=true]:opacity-90',
   )
 }
