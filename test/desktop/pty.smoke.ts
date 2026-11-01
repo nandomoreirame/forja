@@ -28,7 +28,10 @@ try {
   }, project)
   await page.getByRole('button', { name: /Open project|Abrir projeto/ }).click()
   await expect(page.getByRole('complementary', { name: 'pty-project' })).toBeVisible()
-  await page.getByRole('button', { name: /New conversation|Nova conversa/ }).click()
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: /New conversation|Nova conversa/ })
+    .click()
   await page.keyboard.type('Check the shell')
   await page.keyboard.press('Control+Enter')
   // Opening an empty panel starts the first shell on its own.
