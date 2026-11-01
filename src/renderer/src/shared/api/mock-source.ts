@@ -4,6 +4,7 @@ import { authoringReplies, mockReplies } from './mock-replies'
 import { mockArtifactMarkdown, mockProjects } from './mock-data'
 import {
   roleIds,
+  type FileContent,
   type ReplyEvent,
   type ReplyTimer,
   type SettingsSnapshot,
@@ -113,6 +114,21 @@ export function createMockSource({
       if (id === 'dev' && loadSkills)
         snapshot.skills = await scanSkills(settings.general!.skillsRoot)
       return structuredClone(snapshot)
+    },
+    async readFile(path) {
+      return mockFile(path)
+    },
+    async readDiff(path) {
+      const change = fixtures.flatMap((item) => item.changes).find((item) => item.path === path)
+      const file = mockFile(path)
+      if (!change || file.kind !== 'text') return { kind: 'binary' }
+      const base = file.text
+      const working = base
+        .replace('Mock content', 'Updated mock content')
+        .concat('\nA line added in the working tree.')
+      if (change.status === 'U' || change.status === 'A') return { kind: 'text', base: '', working }
+      if (change.status === 'D') return { kind: 'text', base, working: '' }
+      return { kind: 'text', base, working }
     },
     async readArtifact(id) {
       if (libraryMarkdown.has(id)) return libraryMarkdown.get(id)!
@@ -293,5 +309,27 @@ export function createMockSource({
         },
       ]
     },
+  }
+}
+
+const binaryExtensions = /\.(png|jpe?g|gif|webp|ico|pdf|zip|woff2?)$/i
+
+/** Deterministic sample text per path; secrets such as `.env` are never previewed. */
+function mockFile(path: string): FileContent {
+  const name = path.split('/').at(-1) ?? path
+  if (binaryExtensions.test(name) || /^\.env(\.|$)/.test(name)) return { kind: 'binary' }
+  const comment = /\.(md)$/.test(name) ? '#' : /\.(sh|yml|ya?ml)$/.test(name) ? '#' : '//'
+  return {
+    kind: 'text',
+    text: [
+      `${comment} ${name}`,
+      '',
+      `${comment} Mock content of ${path}.`,
+      "export const example = 'value'",
+      '',
+      'export function demo() {',
+      '  return example',
+      '}',
+    ].join('\n'),
   }
 }

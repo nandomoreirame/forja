@@ -1,5 +1,6 @@
 import { layoutStorage } from '@/renderer/src/shared/lib/layout-storage'
 import { ArchivedPage } from '@/renderer/src/pages/archived'
+import { FileViewPage } from '@/renderer/src/pages/file-view'
 import { DocumentPage, AuthoringPage } from '@/renderer/src/pages/document'
 import { ComposePage } from '@/renderer/src/pages/compose'
 import { ConversationPage } from '@/renderer/src/pages/conversation'
@@ -198,6 +199,8 @@ function WorkbenchShell() {
                             <ConversationPage />
                           ) : s.view.kind === 'document' ? (
                             <DocumentPage />
+                          ) : s.view.kind === 'file' ? (
+                            <FileViewPage />
                           ) : s.view.kind === 'settings' ? (
                             <SettingsPage />
                           ) : null}

@@ -138,6 +138,11 @@ export interface MemoryRecord {
   author: RoleId
   date: string
 }
+/** Text of one project file; binary and oversized files are reported instead of read. */
+export type FileContent =
+  { kind: 'text'; text: string } | { kind: 'binary' } | { kind: 'too-large' }
+/** Base (HEAD) and working tree text of a changed file; an empty side means added or deleted. */
+export type FileDiff = { kind: 'text'; base: string; working: string } | { kind: 'binary' }
 export interface ConnectorSnapshot {
   id: string
   name: string
@@ -181,6 +186,10 @@ export interface WorkbenchSource {
   saveArchiveState?(snapshot: ProjectSnapshot): void
   scanSkills(root: string): Promise<ProjectSnapshot['skills']>
   readArtifact(id: string): Promise<string>
+  /** Reads a project file for the preview (mock: generated sample text). */
+  readFile(path: string): Promise<FileContent>
+  /** Reads both sides of a working tree change (mock: generated sample text). */
+  readDiff(path: string): Promise<FileDiff>
   streamReply(
     request: { featureId: string; role: AgentId; prompt: string; authoring?: LibraryKind },
     onEvent: (event: ReplyEvent) => void,

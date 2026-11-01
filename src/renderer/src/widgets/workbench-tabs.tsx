@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { Archive, BookOpen, FileText, MessageSquarePlus, Settings } from 'lucide-react'
+import { Archive, BookOpen, FileDiff, FileText, MessageSquarePlus, Settings } from 'lucide-react'
 import { StatusBadge } from '@/shared/ui'
-import { useWorkbench } from '@/renderer/src/entities/feature'
+import { fileTabId, useWorkbench } from '@/renderer/src/entities/feature'
 import { getDictionary } from '@/shared/i18n'
 import { FeatureTabs, type FeatureTabItem } from '@/widgets/workbench'
 
@@ -53,6 +53,20 @@ export function WorkbenchTabs() {
       })
   }
   const icon = 'size-3'
+  const fileTabs = new Map(state.fileTabs.map((tab) => [fileTabId(tab.path, tab.mode), tab]))
+  for (const [id, tab] of fileTabs) {
+    const name = tab.path.split('/').at(-1) ?? tab.path
+    items.push({
+      id,
+      label: tab.mode === 'diff' ? a.fileView.diffTab.replace('{name}', name) : name,
+      icon:
+        tab.mode === 'diff' ? (
+          <FileDiff aria-hidden="true" className={icon} />
+        ) : (
+          <FileText aria-hidden="true" className={icon} />
+        ),
+    })
+  }
   const pages: { id: PageId; label: string; open: boolean; icon: ReactNode }[] = [
     {
       id: 'settings',
@@ -92,9 +106,11 @@ export function WorkbenchTabs() {
         ? state.view.documentId
         : state.view.kind === 'compose'
           ? state.view.id
-          : isPage(state.view.kind)
-            ? state.view.kind
-            : ''
+          : state.view.kind === 'file'
+            ? fileTabId(state.view.path, state.view.mode)
+            : isPage(state.view.kind)
+              ? state.view.kind
+              : ''
   return (
     <FeatureTabs
       selectedId={selectedId}
@@ -103,11 +119,15 @@ export function WorkbenchTabs() {
           ? `feature-panel-${state.view.featureId}`
           : state.view.kind === 'document'
             ? `document-panel-${state.view.documentId}`
-            : undefined
+            : state.view.kind === 'file'
+              ? `document-panel-${fileTabId(state.view.path, state.view.mode)}`
+              : undefined
       }
       items={items}
       onSelect={(id) => {
-        if (state.openDocumentIds.includes(id)) void state.openDocument(id)
+        const file = fileTabs.get(id)
+        if (file) void state.openFile(file.path, file.mode)
+        else if (state.openDocumentIds.includes(id)) void state.openDocument(id)
         else if (id === 'settings') state.openSettings()
         else if (id === 'archived') state.openArchived()
         else if (composeIds.includes(id)) state.selectCompose(id)
@@ -115,7 +135,9 @@ export function WorkbenchTabs() {
         else state.selectFeature(id)
       }}
       onClose={(id) => {
-        if (state.openDocumentIds.includes(id)) state.closeDocument(id)
+        const file = fileTabs.get(id)
+        if (file) state.closeFile(file.path, file.mode)
+        else if (state.openDocumentIds.includes(id)) state.closeDocument(id)
         else if (id === 'settings') state.closeSettings()
         else if (id === 'archived') state.closeArchived()
         else if (composeIds.includes(id)) state.closeCompose(id)

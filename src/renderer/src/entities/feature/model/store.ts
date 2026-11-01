@@ -8,6 +8,7 @@ import { selectProjectDirectory } from '@/renderer/src/shared/lib/directory-pick
 import { getDictionary, type Locale } from '@/shared/i18n'
 import { saveLocale } from '@/renderer/src/shared/lib/locale'
 import { featureIdentity } from './feature-name'
+import { isEnabled } from '@/renderer/src/shared/lib/feature-flags'
 import { createStore } from 'zustand/vanilla'
 import type {
   FeatureSnapshot,
@@ -21,6 +22,8 @@ import type {
   AgentId,
   SettingsTab,
   WorkbenchSource,
+  FileContent,
+  FileDiff,
 } from '@/renderer/src/shared/api'
 export type View =
   | { kind: 'authoring' }
@@ -30,6 +33,12 @@ export type View =
   | { kind: 'conversation'; featureId: string }
   | { kind: 'settings'; tab?: SettingsTab; role?: RoleId }
   | { kind: 'document'; documentId: string }
+  | { kind: 'file'; path: string; mode: FileMode }
+export type FileMode = 'preview' | 'diff'
+export interface FileTab {
+  path: string
+  mode: FileMode
+}
 export interface ComposeTab {
   id: string
   role: AgentId
@@ -72,6 +81,11 @@ export interface WorkbenchState {
   pickingDirectory: boolean
   loadProjects(): Promise<void>
   openDocumentIds: string[]
+  /** Explorer previews and Changes diffs open as tabs, one per path and mode. */
+  fileTabs: FileTab[]
+  fileContents: Record<string, FileContent | FileDiff>
+  openFile(path: string, mode: FileMode): Promise<void>
+  closeFile(path: string, mode: FileMode): void
   documents: Record<string, string>
   openDocument(id: string): Promise<void>
   closeDocument(id: string): void
@@ -131,6 +145,8 @@ export interface WorkbenchState {
   setTerminalShell(featureId: string, terminalId: string, shell: string): void
   setTerminalProcess(featureId: string, terminalId: string, name: string): void
 }
+export const fileKey = (path: string, mode: FileMode) => `${mode}:${path}`
+export const fileTabId = (path: string, mode: FileMode) => `file:${fileKey(path, mode)}`
 const shellNumber = (id: string) => Number(/-shell-(\d+)$/.exec(id)?.[1] ?? 0)
 
 // Terminals opened with no feature selected belong to the project and start in its folder
@@ -375,6 +391,39 @@ export function createWorkbenchStore(source: WorkbenchSource) {
       },
       openDocumentIds: [],
       documents: {},
+      fileTabs: [],
+      fileContents: {},
+      async openFile(path, mode) {
+        const snapshot = get().snapshot
+        if (!snapshot || !isEnabled(mode === 'preview' ? 'explorer' : 'source-control')) return
+        const key = fileKey(path, mode)
+        if (!(key in get().fileContents)) {
+          const content = await (mode === 'preview' ? source.readFile(path) : source.readDiff(path))
+          if (get().snapshot?.project.id !== snapshot.project.id) return
+          set((state) => ({ fileContents: { ...state.fileContents, [key]: content } }))
+        }
+        set((state) => ({
+          fileTabs: state.fileTabs.some((tab) => tab.path === path && tab.mode === mode)
+            ? state.fileTabs
+            : [...state.fileTabs, { path, mode }],
+        }))
+        get().navigate({ kind: 'file', path, mode })
+      },
+      closeFile(path, mode) {
+        const matches = (view: View) =>
+          view.kind === 'file' && view.path === path && view.mode === mode
+        if (!get().fileTabs.some((tab) => tab.path === path && tab.mode === mode)) return
+        const key = fileKey(path, mode)
+        set((state) => {
+          const fileContents = { ...state.fileContents }
+          delete fileContents[key]
+          return {
+            fileTabs: state.fileTabs.filter((tab) => tab.path !== path || tab.mode !== mode),
+            fileContents,
+            ...leavePage(matches),
+          }
+        })
+      },
       async openDocument(id) {
         const snapshot = get().snapshot
         const skill = snapshot?.skills.find((item) => item.id === id)
@@ -580,6 +629,7 @@ export function createWorkbenchStore(source: WorkbenchSource) {
         const view = get().view
         if (view.kind === 'conversation') get().closeFeature(view.featureId)
         else if (view.kind === 'document') get().closeDocument(view.documentId)
+        else if (view.kind === 'file') get().closeFile(view.path, view.mode)
         else if (view.kind === 'settings') get().closeSettings()
         else if (view.kind === 'archived') get().closeArchived()
         else if (view.kind === 'compose') get().closeCompose(view.id)
@@ -903,6 +953,8 @@ export function createWorkbenchStore(source: WorkbenchSource) {
             terminalTabs: {},
             openDocumentIds: [],
             documents: {},
+            fileTabs: [],
+            fileContents: {},
             drafts: {},
             summaries: {},
           })

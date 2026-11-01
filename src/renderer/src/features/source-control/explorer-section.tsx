@@ -11,6 +11,7 @@ import { changeIndex, sortNodes, statusTone } from './model'
 /** The project file tree, like VS Code's Explorer, with git colors, letters and folder dots. */
 export function ExplorerSection({ locale }: { locale: Locale }) {
   const snapshot = useWorkbench((s) => s.snapshot!)
+  const openFile = useWorkbench((s) => s.openFile)
   const a = getDictionary(locale).app
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set())
   const index = changeIndex(snapshot.changes)
@@ -77,28 +78,35 @@ export function ExplorerSection({ locale }: { locale: Locale }) {
       }
       const status = index.files.get(path)
       return (
+        // The click lands on the row; the inner button gives keyboard focus and Enter.
         <li
           key={path}
           role="treeitem"
           aria-level={level}
           aria-label={label(node.name, status)}
-          style={{ paddingLeft: 8 + (level - 1) * 12 + 20 }}
-          className={cn(
-            'flex h-[22px] items-center gap-1 pr-3 text-[13px] hover:bg-accent',
-            dimmed ?? 'text-foreground',
-            status && statusTone[status],
-          )}
+          onClick={() => void openFile(path, 'preview')}
         >
-          <FileIcon name={node.name} className="text-muted-foreground" />
-          <span className="truncate">{node.name}</span>
-          {status ? (
-            <span
-              aria-hidden="true"
-              className="ml-auto w-4 shrink-0 text-center text-[12px] font-medium"
-            >
-              {status}
-            </span>
-          ) : null}
+          <button
+            type="button"
+            style={{ paddingLeft: 8 + (level - 1) * 12 + 20 }}
+            className={cn(
+              'flex h-[22px] w-full items-center gap-1 pr-3 text-left text-[13px] hover:bg-accent',
+              rowFocus,
+              dimmed ?? 'text-foreground',
+              status && statusTone[status],
+            )}
+          >
+            <FileIcon name={node.name} className="text-muted-foreground" />
+            <span className="truncate">{node.name}</span>
+            {status ? (
+              <span
+                aria-hidden="true"
+                className="ml-auto w-4 shrink-0 text-center text-[12px] font-medium"
+              >
+                {status}
+              </span>
+            ) : null}
+          </button>
         </li>
       )
     })
