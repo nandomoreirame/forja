@@ -1,4 +1,0 @@
-coverage_threshold: 80
-e2e: false
-property_tests: false
-performance_budget: false
