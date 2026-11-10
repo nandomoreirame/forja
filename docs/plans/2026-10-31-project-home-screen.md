@@ -407,7 +407,7 @@ Expected: FAIL on the asserted behavior, not on a missing dependency, environmen
 
 **Step 3: Write minimal implementation**
 
-Create a Playwright config separate from the Electron one planned in guided-rpi-orchestration (`test/e2e/`): `testDir: test/app-e2e`, `webServer` running `npm run dev:web -- --port 5180 --strictPort`, `baseURL: http://127.0.0.1:5180`, Chromium only, `locale: 'en-US'`. Add `"test:e2e:app": "playwright test --config test/app-e2e/playwright.config.ts"` to `package.json`. Exclude `test/app-e2e/**` in `vitest.config.ts`. Later mock-screen plans add their own specs to this folder.
+Create a Playwright config separate from the Electron one planned in ferreiro-orchestrator (`test/e2e/`): `testDir: test/app-e2e`, `webServer` running `npm run dev:web -- --port 5180 --strictPort`, `baseURL: http://127.0.0.1:5180`, Chromium only, `locale: 'en-US'`. Add `"test:e2e:app": "playwright test --config test/app-e2e/playwright.config.ts"` to `package.json`. Exclude `test/app-e2e/**` in `vitest.config.ts`. Later mock-screen plans add their own specs to this folder.
 
 **Step 4: Run test to verify it passes**
 

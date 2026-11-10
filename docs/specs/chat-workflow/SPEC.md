@@ -16,7 +16,7 @@ The Forja interface already works around chats: a New chat talks to the Ferreiro
 
 **Product objective:** An opinionated AI agent development environment built around the RPI workflow, from specification to review, with you in control of every stage.
 
-**Relationship to other specs.** `functional-mvp` stays as the history of the interface already delivered (REQ-061 to REQ-119 and the slices 01a to 01j). This spec supersedes every `functional-mvp` requirement that is not implemented, and the slices with plans not started (`project-feature-state`, `cli-capability-contracts`, `cli-agent-sessions`, `guided-rpi-orchestration`, `artifact-approval-gates`, `feature-git-worktrees`, `managed-command-runtime`, `loop-harness`, `document-review-reader`, `feature-workbench-composer`, `agent-settings-skills`, `attention-notifications`, `recovery-mvp-acceptance`, `ferreiro-agent`, `project-explorer`, `source-control-changes`, and the core parts of `terminal-panel-footer`). Their plans are discarded and replaced by the slices listed in Implementation Sequence. Requirements carried over keep their intent and gain chat vocabulary; their origin is named in the traceability table.
+**Relationship to other specs.** `functional-mvp` stays as the history of the interface already delivered (REQ-061 to REQ-119 and the slices 01 to 01j). This spec supersedes every `functional-mvp` requirement that is not implemented. The former core slices with plans not started (02 to 17 of the old queue) were removed from the repository on 2026-11-01 and rewritten as the slices listed in Implementation Sequence; the delivered part of the former `terminal-panel-footer` is recorded in slice 13. Requirements carried over keep their intent and gain chat vocabulary; their origin is named in the traceability table.
 
 **Vocabulary.**
 
@@ -306,19 +306,19 @@ None. Do not add unapproved scope to make a task appear complete.
 
 | Slice | Covers | Depends on |
 | --- | --- | --- |
-| 20 `chat-core-store` | REQ-001 to REQ-006, REQ-031, REQ-033 (store side), REQ-063, REQ-064 | none |
-| 21 `ipc-workbench-source` | REQ-065, REQ-069 | 20 |
-| 22 `cli-capability-adapters` | REQ-012, REQ-057, REQ-058, REQ-062, REQ-066 | none |
-| 23 `forja-mcp-gateway` | REQ-011 (grants), REQ-028, REQ-048 to REQ-050 | 20 |
-| 24 `chat-turns` | REQ-007 to REQ-010, REQ-013 to REQ-016 | 21, 22, 23 |
-| 25 `artifact-publication` | REQ-025 to REQ-027, REQ-029, REQ-030 | 20, 23 |
-| 26 `ferreiro-orchestrator` | REQ-011, REQ-017, REQ-018, REQ-021 to REQ-023, REQ-032 | 24, 25 |
-| 27 `chat-worktrees` | REQ-024, REQ-036 to REQ-041 | 20, 23 |
-| 28 `test-review-loop` | REQ-019, REQ-020, REQ-047 | 26, 27 |
-| 29 `acceptance-merge` | REQ-042 to REQ-046 | 27, 28 |
-| 30 `backlog-board-core` | REQ-031 to REQ-035 | 20, 26 |
-| 31 `terminals-runtime` | REQ-051, REQ-052 | 23 |
-| 32 `project-files-source-control` | REQ-053 to REQ-055 | 20, 27 |
-| 33 `settings-skills-usage` | REQ-056, REQ-059, REQ-060 | 20, 22 |
-| 34 `attention-notifications` | REQ-061 | 24 |
-| 35 `recovery-acceptance` | REQ-063, REQ-067, REQ-068, REQ-070 | all |
+| 02 `chat-core-store` | REQ-001 to REQ-006, REQ-031, REQ-033 (store side), REQ-063, REQ-064 | none |
+| 03 `ipc-workbench-source` | REQ-065, REQ-069 | 02 |
+| 04 `cli-capability-adapters` | REQ-012, REQ-057, REQ-058, REQ-062, REQ-066 | none |
+| 05 `forja-mcp-gateway` | REQ-011 (grants), REQ-028, REQ-048 to REQ-050 | 02 |
+| 06 `chat-turns` | REQ-007 to REQ-010, REQ-013 to REQ-016 | 03, 04, 05 |
+| 07 `artifact-publication` | REQ-025 to REQ-027, REQ-029, REQ-030 | 02, 05 |
+| 08 `ferreiro-orchestrator` | REQ-011, REQ-017, REQ-018, REQ-021 to REQ-023, REQ-032 | 06, 07 |
+| 09 `chat-worktrees` | REQ-024, REQ-036 to REQ-041 | 02, 05 |
+| 10 `test-review-loop` | REQ-019, REQ-020, REQ-047 | 08, 09 |
+| 11 `acceptance-merge` | REQ-042 to REQ-046 | 09, 10 |
+| 12 `backlog-board-core` | REQ-031 to REQ-035 | 02, 08 |
+| 13 `terminals-runtime` | REQ-048 (command tabs), REQ-051, REQ-052, REQ-063 (transcripts) | 05 |
+| 14 `project-files-source-control` | REQ-053 to REQ-055 | 02, 09 |
+| 15 `settings-skills-usage` | REQ-056, REQ-059, REQ-060 | 02, 04 |
+| 16 `attention-notifications` | REQ-061 | 06 |
+| 17 `recovery-acceptance` | REQ-063, REQ-067, REQ-068, REQ-070 | all |

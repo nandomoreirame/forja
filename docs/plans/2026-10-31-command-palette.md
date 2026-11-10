@@ -147,7 +147,7 @@ Expected: FAIL on the asserted behavior, not on a missing dependency, environmen
 
 **Step 3: Write minimal implementation**
 
-`CommandPalette` renders `CommandDialog` with a Recent projects group (folder icon, name, path, relative time from `relative-time.ts` using `Intl.RelativeTimeFormat`, check mark on the current project) and, unless `scope` is `recent`, a Commands group: New conversation (Ctrl+N), Recent projects (Ctrl+R), Settings, Toggle terminals and "Open folder…" disabled with a localized hint (the trusted picker belongs to project-feature-state). Use `CommandShortcut` for keys and `CommandEmpty` for the localized empty state. The row anatomy follows the Stitch "Menu de projetos aberto" rows, rendered inside the bar. Copy lives in the shared dictionaries.
+`CommandPalette` renders `CommandDialog` with a Recent projects group (folder icon, name, path, relative time from `relative-time.ts` using `Intl.RelativeTimeFormat`, check mark on the current project) and, unless `scope` is `recent`, a Commands group: New conversation (Ctrl+N), Recent projects (Ctrl+R), Settings, Toggle terminals and "Open folder…" disabled with a localized hint (the trusted picker belongs to chat-core-store). Use `CommandShortcut` for keys and `CommandEmpty` for the localized empty state. The row anatomy follows the Stitch "Menu de projetos aberto" rows, rendered inside the bar. Copy lives in the shared dictionaries.
 
 **Step 4: Run test to verify it passes**
 

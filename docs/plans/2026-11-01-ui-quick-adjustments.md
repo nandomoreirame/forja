@@ -405,7 +405,7 @@ Expected: FAIL because the specified behavior is not implemented. Verify the fai
 
 **Step 3: Write minimal implementation**
 
-Show "by <Ferreiro display name>" with the Ferreiro face or mark beside the summary date. The mock text stays in `WorkbenchSource.summarizeConversation`; the real turn is ferreiro-agent's job.
+Show "by <Ferreiro display name>" with the Ferreiro face or mark beside the summary date. The mock text stays in `WorkbenchSource.summarizeConversation`; the real turn is ferreiro-orchestrator's job.
 
 **Step 4: Run test to verify it passes**
 

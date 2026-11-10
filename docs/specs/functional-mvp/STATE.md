@@ -11,18 +11,18 @@ validation_status: planning-validated
 review_status: not-started
 plan_paths:
   - docs/plans/2026-10-30-web-foundation-landing-styleguide.md
-  - docs/plans/2026-10-30-cli-capability-contracts.md
-  - docs/plans/2026-10-30-project-feature-state.md
-  - docs/plans/2026-10-30-agent-settings-skills.md
-  - docs/plans/2026-10-30-artifact-approval-gates.md
-  - docs/plans/2026-10-30-feature-git-worktrees.md
-  - docs/plans/2026-10-30-managed-command-runtime.md
-  - docs/plans/2026-10-30-cli-agent-sessions.md
-  - docs/plans/2026-10-30-feature-workbench-composer.md
-  - docs/plans/2026-10-30-document-review-reader.md
-  - docs/plans/2026-10-30-terminal-panel-footer.md
-  - docs/plans/2026-10-30-guided-rpi-orchestration.md
-  - docs/plans/2026-10-30-recovery-mvp-acceptance.md
+  - docs/plans/2026-11-01-cli-capability-adapters.md
+  - docs/plans/2026-11-01-chat-core-store.md
+  - docs/plans/2026-11-01-settings-skills-usage.md
+  - docs/plans/2026-11-01-artifact-publication.md
+  - docs/plans/2026-11-01-chat-worktrees.md
+  - docs/plans/2026-11-01-forja-mcp-gateway.md
+  - docs/plans/2026-11-01-chat-turns.md
+  - docs/plans/2026-11-01-chat-turns.md
+  - docs/plans/2026-11-01-artifact-publication.md
+  - docs/plans/2026-11-01-terminals-runtime.md
+  - docs/plans/2026-11-01-ferreiro-orchestrator.md
+  - docs/plans/2026-11-01-recovery-acceptance.md
 ---
 
 # Planning Complete
@@ -59,7 +59,7 @@ The user requested including SPEC and PLAN documentation in each feature progres
 
 ## 2026-10-31 Business-rule review
 
-The user reviewed the approved specs and plans before production implementation of the desktop slices. Decisions are recorded as Grilling Log rows 15 to 25 in SPEC.md. Summary: the human implementation approval was removed in favor of confirmed repository gates; artifacts live in the feature worktree created at Git binding; core runs human-confirmed gates as the only validation evidence and also on the merge result; final approval and integration are one action; the Tester edits test files only; blocking findings can be waived with a reason; a handoff matrix, feature end states, stalled-turn handling and usage visibility were added (REQ-055 to REQ-060). feature-git-worktrees gained Tasks 5 and 6 and cli-agent-sessions gained Task 8, for 65 tasks in total. The delivered web slice is unaffected.
+The user reviewed the approved specs and plans before production implementation of the desktop slices. Decisions are recorded as Grilling Log rows 15 to 25 in SPEC.md. Summary: the human implementation approval was removed in favor of confirmed repository gates; artifacts live in the feature worktree created at Git binding; core runs human-confirmed gates as the only validation evidence and also on the merge result; final approval and integration are one action; the Tester edits test files only; blocking findings can be waived with a reason; a handoff matrix, feature end states, stalled-turn handling and usage visibility were added (REQ-055 to REQ-060). chat-worktrees gained Tasks 5 and 6 and chat-turns gained Task 8, for 65 tasks in total. The delivered web slice is unaffected.
 
 ## 2026-10-31 Mock screens
 

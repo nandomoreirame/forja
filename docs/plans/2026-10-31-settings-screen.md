@@ -72,7 +72,7 @@ Expected: FAIL on the asserted behavior, not on a missing dependency, environmen
 
 **Step 3: Write minimal implementation**
 
-Types: `AgentProfile` (role, tool, optional model, effort, instructions, skills, autoInvoke) and `GeneralSettings` (skillsRoot, interruptPolicy `interrupt | queue`, guidedMode read-only, correctionRounds fixed at 3, inactivityMinutes 1 to 120). `normalizeProfile` trims and turns a blank model into `undefined` (tool default; never invent a model). `isDirty` compares normalized values with set semantics for skills. `effortOptions(tool)` reads a mock capability table (`default` always; extra levels only where the mock marks support) until cli-capability-contracts provides real evidence.
+Types: `AgentProfile` (role, tool, optional model, effort, instructions, skills, autoInvoke) and `GeneralSettings` (skillsRoot, interruptPolicy `interrupt | queue`, guidedMode read-only, correctionRounds fixed at 3, inactivityMinutes 1 to 120). `normalizeProfile` trims and turns a blank model into `undefined` (tool default; never invent a model). `isDirty` compares normalized values with set semantics for skills. `effortOptions(tool)` reads a mock capability table (`default` always; extra levels only where the mock marks support) until cli-capability-adapters provides real evidence.
 
 **Step 4: Run test to verify it passes**
 

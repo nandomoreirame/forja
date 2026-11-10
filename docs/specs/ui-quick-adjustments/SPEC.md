@@ -14,7 +14,7 @@ The workbench mock grew features that the functional MVP cannot back yet, the ag
 
 **Product objective:** An opinionated AI agent development environment built around the RPI workflow, from specification to review, with you in control of every stage.
 
-Frontend-only slice decided on 2026-11-01. The renderer mock layer (`WorkbenchSource`, `createMockSource`) keeps all data; no core, IPC or CLI change is part of this slice. The real Ferreiro sessions, summary turns and confirmed skill writes live in [ferreiro-agent](../ferreiro-agent/SPEC.md); Explorer and Changes become [project-explorer](../project-explorer/SPEC.md) and [source-control-changes](../source-control-changes/SPEC.md).
+Frontend-only slice decided on 2026-11-01. The renderer mock layer (`WorkbenchSource`, `createMockSource`) keeps all data; no core, IPC or CLI change is part of this slice. The real Ferreiro sessions, summary turns and confirmed skill writes live in [ferreiro-orchestrator](../ferreiro-orchestrator/SPEC.md); Explorer and Changes become [project-files-source-control](../project-files-source-control/SPEC.md) and [project-files-source-control](../project-files-source-control/SPEC.md).
 
 ## Verified Claims
 
@@ -68,7 +68,7 @@ None.
 - The usage panel reuses the REQ-082 data shape from `WorkbenchSource` and the Terminal Noir tokens.
 - Status glyphs live in one shared component used by the Features rows, feature tabs and board cards.
 - Previews and diffs open as editor tabs; the line diff is a small pure function in `src/renderer/src/shared/lib`, without a new dependency.
-- Backlog and Board are page tabs (REQ-103) gated by the `backlog-board` flag; demands live in the mock source until project-feature-state persists them.
+- Backlog and Board are page tabs (REQ-103) gated by the `backlog-board` flag; demands live in the mock source until chat-core-store persists them.
 - Mascot faces are drafted in Stitch first, then built as a styleguide-only component; the app keeps `AgentMascot` until approval.
 
 ## Grilling Log
@@ -90,8 +90,8 @@ No scope beyond the listed requirements. No implementation, commits, deployment 
 
 ## Out of Scope
 
-- Real CLI sessions for the Ferreiro, real summaries and file writes (ferreiro-agent).
-- Real usage numbers (REQ-102 in cli-agent-sessions).
+- Real CLI sessions for the Ferreiro, real summaries and file writes (ferreiro-orchestrator).
+- Real usage numbers (REQ-102 in chat-turns).
 - Backlog demands and custom agents.
 
 ## Test Strategy

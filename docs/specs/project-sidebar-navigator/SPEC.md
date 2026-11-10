@@ -50,7 +50,7 @@ None.
 
 ## Architecture Decisions
 
-- Feature grouping, ordering and archive cascade are pure functions in the renderer (`features/project-navigator/model.ts`) so core can reuse the rules when slice 05 (project-feature-state) persists them.
+- Feature grouping, ordering and archive cascade are pure functions in the renderer (`features/project-navigator/model.ts`) so core can reuse the rules when slice 05 (chat-core-store) persists them.
 - Archive state lives in the mock source and store (`archived` flags on features and artifacts); the real slice stores it in SQLite without touching project files.
 - Section collapse uses the same per-viewer storage as the resizable layout.
 
@@ -58,7 +58,7 @@ None.
 
 | Item | Reason |
 | --- | --- |
-| Real skill and memory files, scopes on disk and the specialist agents | agent-settings-skills and later slices wire them; this slice is mock. |
+| Real skill and memory files, scopes on disk and the specialist agents | settings-skills-usage and later slices wire them; this slice is mock. |
 | Deleting files | Archive only hides items from the interface by decision. |
 | Drag and drop reordering | Not requested. |
 

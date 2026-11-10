@@ -13,7 +13,7 @@ Specs, plans and reviews listed in the sidebar cannot be opened. The document re
 
 **Product objective:** An opinionated AI agent development environment built around the RPI workflow, from specification to review, with you in control of every stage.
 
-These screens are frontend-only and navigable with mock data. They run in the desktop renderer (`npm run dev` and `npm run dev:web`), replace the static welcome scaffold, and become the base that later slices wire to core: feature-workbench-composer (09) and terminal-panel-footer (11) modify these files instead of creating parallel pages. No CLI, Git, MCP, PTY, filesystem or network call happens in these slices. Requested by the user on 2026-10-31.
+These screens are frontend-only and navigable with mock data. They run in the desktop renderer (`npm run dev` and `npm run dev:web`), replace the static welcome scaffold, and become the base that later slices wire to core: chat-turns (09) and terminals-runtime (11) modify these files instead of creating parallel pages. No CLI, Git, MCP, PTY, filesystem or network call happens in these slices. Requested by the user on 2026-10-31.
 
 Shared decisions for the six screen slices (`project-home-screen`, `command-palette`, `new-conversation-composer`, `conversation-screen`, `settings-screen`, `document-viewer-screen`):
 
@@ -53,14 +53,14 @@ None.
 ## Edge Cases
 
 - Opening an already open document focuses its tab instead of duplicating it.
-- The mock approve action only changes mock state; it is a stand-in for the human-only core command of artifact-approval-gates.
+- The mock approve action only changes mock state; it is a stand-in for the human-only core command of artifact-publication.
 - A selection shorter than 3 characters or outside the document body does not show the popover.
 - Mock Markdown never contains raw HTML; the shared renderer stays the sanitizing boundary.
 
 ## Architecture Decisions
 
 - Depends on: conversation-screen.
-- Paths match document-review-reader Tasks 3 and 4 (`src/renderer/src/pages/document/`, `src/renderer/src/features/document-reader/selection-popover.tsx`), so those tasks wire these files to the artifact reader instead of creating them.
+- Paths match artifact-publication Tasks 3 and 4 (`src/renderer/src/pages/document/`, `src/renderer/src/features/document-reader/selection-popover.tsx`), so those tasks wire these files to the artifact reader instead of creating them.
 - Reuse `src/widgets` and `src/shared/ui`; mock data comes only from `WorkbenchSource`.
 
 ## Out of Scope
