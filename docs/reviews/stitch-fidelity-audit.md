@@ -39,10 +39,10 @@ AI Elements patterns are copied into the repository, not installed as a package.
 | AI Elements pattern | Forja component | Recommendation |
 | --- | --- | --- |
 | Message (+ Bubble) | `src/widgets/conversation/ui/messages.tsx` | Adopt the structure (`Message`, `MessageContent`, `MessageFooter`). It renders plain props, has no avatar or timestamp, and needs no AI SDK. Keep `react-markdown` instead of adding Streamdown unless streamed partial Markdown proves broken. |
-| Chat / Message Scroller | conversation list (feature-workbench-composer Task 4) | Adopt. It covers "auto-scroll only near the end" and keeping the reading position while text streams. |
+| Chat / Message Scroller | conversation list (chat-turns Task 4) | Adopt. It covers "auto-scroll only near the end" and keeping the reading position while text streams. |
 | Prompt Input (Input Group) | `src/widgets/conversation/ui/composer.tsx` | Adopt partially. Use `InputGroup` for the layout. Keep the Stitch recipient combobox, the context line and Ctrl+Enter (Prompt Input sends on Enter). No attachments in the MVP. |
 | Tool / Trace / Terminal / Code Block | agent command executions (REQ-028) | Adopt Trace as the collapsible tool-call line inside the conversation. The terminal panel stays on the Stitch terminal anatomy. Replace `useChat` with core events. |
-| Confirmation (Item) | CLI permission requests (cli-agent-sessions Task 7) | Adopt the Approve/Deny layout for the CLI's native permission prompts only. Artifact approvals keep the Stitch ApprovalNotice. |
+| Confirmation (Item) | CLI permission requests (chat-turns Task 7) | Adopt the Approve/Deny layout for the CLI's native permission prompts only. Artifact approvals keep the Stitch ApprovalNotice. |
 | Test Results | Tester gates (REQ-055) | Adopt for the evidence card of the confirmed gates. |
 | Queue | queued messages (REQ-006) | Adopt for the FIFO queue in queue mode. |
 | Plan / Task | plan tasks in MarkdownPreview, Implementer progress | Optional. Only if a plan's progress is shown outside the document. |

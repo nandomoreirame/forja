@@ -4,45 +4,53 @@
 
 Um ambiente de desenvolvimento com agentes de IA, opinativo sobre o fluxo RPI, da especificação à revisão, com você no controle de cada etapa.
 
-Atualizado em: 31/10/2026.
+Atualizado em: 01/11/2026.
 
 ## Status atual
 
-A [spec principal do MVP, em inglês](docs/specs/functional-mvp/SPEC.md), está aprovada. A fila contém **19 specs e planos aprovados, 93 tarefas e 79 requisitos**. A implementação dessa fila começou: **3/19 entregas implementadas, validadas e revisadas de forma independente; a base web também está implementada e validada, com revisão pendente (22/93 tarefas no total)**.
+A [spec chat-workflow](docs/specs/chat-workflow/SPEC.md) (aprovada em 01/11/2026) é a mãe de todas as fatias de core; a [spec do MVP funcional](docs/specs/functional-mvp/SPEC.md) continua como registro da interface entregue. A fila contém **28 specs e planos ativos, 158 tarefas e 70 requisitos de core**. Implementação: **64/158 tarefas; 10/28 entregas implementadas e validadas, 6 delas revisadas de forma independente**. As fatias substituídas (02 a 10, 12 a 17) mantêm seus arquivos com `phase: superseded` e ficam fora destes números.
 
 O scaffold Electron com a tela inicial já está implementado. Ele é o ponto de partida; o fluxo RPI, os componentes shadcn compartilhados e as integrações com as CLIs continuam planejados.
 
-O progresso combinado da documentação e da implementação é **39%**: SPEC aprovada vale 10%, PLAN pronto vale 10% e as tarefas de implementação validadas representam os 80% restantes por feature. A contagem de tarefas abaixo acompanha somente a implementação; a revisão da base web e o aceite visual do usuário continuam separados.
+O progresso combinado da documentação e da implementação é **53%**: SPEC aprovada vale 10%, PLAN pronto vale 10% e as tarefas de implementação validadas representam os 80% restantes por feature. A contagem de tarefas abaixo acompanha somente a implementação; a revisão da base web e o aceite visual do usuário continuam separados.
 
 ## Ordem de execução
 
-As fatias 01a a 01f são telas mock navegáveis, só de frontend, adicionadas em 31/10/2026. Elas rodam no renderer do desktop com uma fonte de dados mock trocável e viram as telas que as fatias 04, 09, 10 e 11 ligam ao core. A implementação recomendada é em dois lotes sequenciais: 01a a 01c, depois 01d a 01f.
+As fatias 01a a 01f são telas mock navegáveis, só de frontend, adicionadas em 31/10/2026. Elas rodam no renderer do desktop com uma fonte de dados mock trocável e viram as telas que as fatias do chat-workflow (02 a 17) ligam ao core. A implementação recomendada é em dois lotes sequenciais: 01a a 01c, depois 01d a 01f.
 
 A tabela apresenta a sequência recomendada. Cada plano declara suas dependências. Uma capacidade ausente em uma CLI bloqueia o trabalho que depende dela, sem impedir a entrega web independente. A aprovação da spec e a conclusão da implementação são estados separados.
 
 As specs e os planos técnicos vinculados abaixo permanecem em inglês, conforme o formato RPI. Seus identificadores não são traduzidos.
 
-| Ordem | Spec                                                                                      | Plano                                                                                | Tarefas concluídas | Spec / plano      | Implementação | Validação / revisão independente |
-| ----- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------ | ----------------- | ------------- | -------------------------------- |
-| 01    | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Plano de implementação](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8                | Aprovada / pronto | Implementada  | Aprovada / pendente              |
-| 01a   | [project-home-screen](docs/specs/project-home-screen/SPEC.md)                             | [Plano de implementação](docs/plans/2026-10-31-project-home-screen.md)               | 6/6                | Aprovada / pronto | Implementada  | Aprovada / aprovada              |
-| 01b   | [command-palette](docs/specs/command-palette/SPEC.md)                                     | [Plano de implementação](docs/plans/2026-10-31-command-palette.md)                   | 4/4                | Aprovada / pronto | Implementada  | Aprovada / aprovada              |
-| 01c   | [new-conversation-composer](docs/specs/new-conversation-composer/SPEC.md)                 | [Plano de implementação](docs/plans/2026-10-31-new-conversation-composer.md)         | 4/4                | Aprovada / pronto | Implementada  | Aprovada / aprovada              |
-| 01d   | [conversation-screen](docs/specs/conversation-screen/SPEC.md)                             | [Plano de implementação](docs/plans/2026-10-31-conversation-screen.md)               | 0/6                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 01e   | [settings-screen](docs/specs/settings-screen/SPEC.md)                                     | [Plano de implementação](docs/plans/2026-10-31-settings-screen.md)                   | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 01f   | [document-viewer-screen](docs/specs/document-viewer-screen/SPEC.md)                       | [Plano de implementação](docs/plans/2026-10-31-document-viewer-screen.md)            | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 02    | [cli-capability-contracts](docs/specs/cli-capability-contracts/SPEC.md)                   | [Plano de implementação](docs/plans/2026-10-30-cli-capability-contracts.md)          | 0/3                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 03    | [project-feature-state](docs/specs/project-feature-state/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-project-feature-state.md)             | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 04    | [agent-settings-skills](docs/specs/agent-settings-skills/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-agent-settings-skills.md)             | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 05    | [artifact-approval-gates](docs/specs/artifact-approval-gates/SPEC.md)                     | [Plano de implementação](docs/plans/2026-10-30-artifact-approval-gates.md)           | 0/5                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 06    | [feature-git-worktrees](docs/specs/feature-git-worktrees/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-feature-git-worktrees.md)             | 0/6                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 07    | [managed-command-runtime](docs/specs/managed-command-runtime/SPEC.md)                     | [Plano de implementação](docs/plans/2026-10-30-managed-command-runtime.md)           | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 08    | [cli-agent-sessions](docs/specs/cli-agent-sessions/SPEC.md)                               | [Plano de implementação](docs/plans/2026-10-30-cli-agent-sessions.md)                | 0/8                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 09    | [feature-workbench-composer](docs/specs/feature-workbench-composer/SPEC.md)               | [Plano de implementação](docs/plans/2026-10-30-feature-workbench-composer.md)        | 0/5                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 10    | [document-review-reader](docs/specs/document-review-reader/SPEC.md)                       | [Plano de implementação](docs/plans/2026-10-30-document-review-reader.md)            | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 11    | [terminal-panel-footer](docs/specs/terminal-panel-footer/SPEC.md)                         | [Plano de implementação](docs/plans/2026-10-30-terminal-panel-footer.md)             | 0/5                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 12    | [guided-rpi-orchestration](docs/specs/guided-rpi-orchestration/SPEC.md)                   | [Plano de implementação](docs/plans/2026-10-30-guided-rpi-orchestration.md)          | 0/5                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
-| 13    | [recovery-mvp-acceptance](docs/specs/recovery-mvp-acceptance/SPEC.md)                     | [Plano de implementação](docs/plans/2026-10-30-recovery-mvp-acceptance.md)           | 0/4                | Aprovada / pronto | Planejada     | Não executada / não iniciada     |
+| Ordem | Spec | Plano | Tarefas concluídas | Spec / plano | Implementação | Validação / revisão independente |
+| --- | --- | --- | --- | --- | --- | --- |
+| 01 | [web-foundation-landing-styleguide](docs/specs/web-foundation-landing-styleguide/SPEC.md) | [Plano](docs/plans/2026-10-30-web-foundation-landing-styleguide.md) | 8/8 | Aprovada / pronto | Implemented | Passed / pending |
+| 01a | [project-home-screen](docs/specs/project-home-screen/SPEC.md) | [Plano](docs/plans/2026-10-31-project-home-screen.md) | 6/6 | Aprovada / pronto | Implemented | Passed / passed |
+| 01b | [command-palette](docs/specs/command-palette/SPEC.md) | [Plano](docs/plans/2026-10-31-command-palette.md) | 4/4 | Aprovada / pronto | Implemented | Passed / passed |
+| 01c | [new-conversation-composer](docs/specs/new-conversation-composer/SPEC.md) | [Plano](docs/plans/2026-10-31-new-conversation-composer.md) | 4/4 | Aprovada / pronto | Implemented | Passed / passed |
+| 01d | [conversation-screen](docs/specs/conversation-screen/SPEC.md) | [Plano](docs/plans/2026-10-31-conversation-screen.md) | 7/7 | Aprovada / pronto | Implemented | Passed / passed |
+| 01e | [settings-screen](docs/specs/settings-screen/SPEC.md) | [Plano](docs/plans/2026-10-31-settings-screen.md) | 6/6 | Aprovada / pronto | Implemented | Passed / not started |
+| 01f | [document-viewer-screen](docs/specs/document-viewer-screen/SPEC.md) | [Plano](docs/plans/2026-10-31-document-viewer-screen.md) | 4/4 | Aprovada / pronto | Implemented | Passed / passed (Claude only) |
+| 01g | [project-sidebar-navigator](docs/specs/project-sidebar-navigator/SPEC.md) | [Plano](docs/plans/2026-10-31-project-sidebar-navigator.md) | 6/6 | Aprovada / pronto | Implemented | Passed / passed (Claude only) |
+| 01h | [conversation-agent-identity](docs/specs/conversation-agent-identity/SPEC.md) | [Plano](docs/plans/2026-10-31-conversation-agent-identity.md) | 5/5 | Aprovada / pronto | Implemented | Passed / pending |
+| 01i | [workbench-ui-refresh](docs/specs/workbench-ui-refresh/SPEC.md) | [Plano](docs/plans/2026-11-01-workbench-ui-refresh.md) | 0/5 | Aprovada / pronto | Implemented (evidence tasks open) | Passed / not started |
+| 01j | [ui-quick-adjustments](docs/specs/ui-quick-adjustments/SPEC.md) | [Plano](docs/plans/2026-11-01-ui-quick-adjustments.md) | 14/14 | Aprovada / pronto | Implemented | Passed / pending (no reviewer available) |
+| 02 | [chat-core-store](docs/specs/chat-core-store/SPEC.md) | [Plano](docs/plans/2026-11-01-chat-core-store.md) | 0/7 | Aprovada / pronto | Planned | Not run / not started |
+| 03 | [ipc-workbench-source](docs/specs/ipc-workbench-source/SPEC.md) | [Plano](docs/plans/2026-11-01-ipc-workbench-source.md) | 0/5 | Aprovada / pronto | Planned | Not run / not started |
+| 04 | [cli-capability-adapters](docs/specs/cli-capability-adapters/SPEC.md) | [Plano](docs/plans/2026-11-01-cli-capability-adapters.md) | 0/10 | Aprovada / pronto | Planned | Not run / not started |
+| 05 | [forja-mcp-gateway](docs/specs/forja-mcp-gateway/SPEC.md) | [Plano](docs/plans/2026-11-01-forja-mcp-gateway.md) | 0/5 | Aprovada / pronto | Planned | Not run / not started |
+| 06 | [chat-turns](docs/specs/chat-turns/SPEC.md) | [Plano](docs/plans/2026-11-01-chat-turns.md) | 0/7 | Aprovada / pronto | Planned | Not run / not started |
+| 07 | [artifact-publication](docs/specs/artifact-publication/SPEC.md) | [Plano](docs/plans/2026-11-01-artifact-publication.md) | 0/5 | Aprovada / pronto | Planned | Not run / not started |
+| 08 | [ferreiro-orchestrator](docs/specs/ferreiro-orchestrator/SPEC.md) | [Plano](docs/plans/2026-11-01-ferreiro-orchestrator.md) | 0/8 | Aprovada / pronto | Planned | Not run / not started |
+| 09 | [chat-worktrees](docs/specs/chat-worktrees/SPEC.md) | [Plano](docs/plans/2026-11-01-chat-worktrees.md) | 0/7 | Aprovada / pronto | Planned | Not run / not started |
+| 10 | [test-review-loop](docs/specs/test-review-loop/SPEC.md) | [Plano](docs/plans/2026-11-01-test-review-loop.md) | 0/3 | Aprovada / pronto | Planned | Not run / not started |
+| 11 | [acceptance-merge](docs/specs/acceptance-merge/SPEC.md) | [Plano](docs/plans/2026-11-01-acceptance-merge.md) | 0/6 | Aprovada / pronto | Planned | Not run / not started |
+| 12 | [backlog-board-core](docs/specs/backlog-board-core/SPEC.md) | [Plano](docs/plans/2026-11-01-backlog-board-core.md) | 0/5 | Aprovada / pronto | Planned | Not run / not started |
+| 13 | [terminals-runtime](docs/specs/terminals-runtime/SPEC.md) | [Plano](docs/plans/2026-11-01-terminals-runtime.md) | 0/4 | Aprovada / pronto | Planned | Not run / not started |
+| 14 | [project-files-source-control](docs/specs/project-files-source-control/SPEC.md) | [Plano](docs/plans/2026-11-01-project-files-source-control.md) | 0/4 | Aprovada / pronto | Planned | Not run / not started |
+| 15 | [settings-skills-usage](docs/specs/settings-skills-usage/SPEC.md) | [Plano](docs/plans/2026-11-01-settings-skills-usage.md) | 0/3 | Aprovada / pronto | Planned | Not run / not started |
+| 16 | [attention-notifications](docs/specs/attention-notifications/SPEC.md) | [Plano](docs/plans/2026-11-01-attention-notifications.md) | 0/3 | Aprovada / pronto | Planned | Not run / not started |
+| 17 | [recovery-acceptance](docs/specs/recovery-acceptance/SPEC.md) | [Plano](docs/plans/2026-11-01-recovery-acceptance.md) | 0/4 | Aprovada / pronto | Planned | Not run / not started |
 
 ## Primeira entrega: base web
 
@@ -66,12 +74,12 @@ A implementação deve seguir as [referências visuais e exceções aprovadas](d
 
 ## Entregas seguintes
 
-1. Verificar os contratos das cinco CLIs instaladas, especialmente a conexão MCP e a restrição efetiva do shell nativo.
-2. Adicionar projetos por pasta, estado das features, configurações dos agentes fixos e skills somente leitura.
-3. Adicionar aprovações de artefatos, worktrees por feature e execução gerenciada acompanhável.
-4. Conectar os cinco adaptadores de CLI e a interface de features com compositor global.
-5. Adicionar revisão de trechos de documentos, terminais do usuário, abas dos agentes e previews no footer.
-6. Concluir a orquestração guiada, as rodadas limitadas de correção, a recuperação e o aceite no Linux.
+1. Persistir chats, itens de backlog e histórico no core (02) e servi-los ao renderer por IPC (03).
+2. Verificar as cinco CLIs e normalizar seus fluxos (04); adicionar o gateway MCP com escopo e o executor gerenciado (05).
+3. Rodar turnos reais por chat (06) e publicar, validar e aprovar os resultados (07).
+4. Deixar o Ferreiro orquestrar as fases, com avanço automático após aprovações (08).
+5. Implementar em worktrees próprios (09), ciclar teste e revisão (10), aceitar com preview rodando e fazer o merge (11).
+6. Tornar backlog e Board reais (12), concluir terminais (13), arquivos e controle de versão (14), configurações e uso (15), atenção (16) e então recuperação e aceite ao vivo (17).
 
 ## Regras de status
 
